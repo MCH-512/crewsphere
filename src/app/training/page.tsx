@@ -7,154 +7,320 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { CheckCircle, BookOpen, PlayCircle, Award } from "lucide-react";
+import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon } from "lucide-react";
 import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-interface CompletedTraining {
+interface Course {
   id: string;
   title: string;
-  dateCompleted: string;
-  provider: string;
-  certificateId: string;
-  icon: LucideIcon;
+  description: string;
+  category: string; // e.g., Safety, Aircraft Systems, Regulations, Service from placeholderQuizzes
+  courseIcon: LucideIcon;
   imageHint: string;
-  expiryDate?: string;
+  contentStatus: 'NotStarted' | 'InProgress' | 'Completed';
+  quizId: string; // Maps to an ID from placeholderQuizzes or a conceptual quiz
+  quizTitle: string;
+  quizStatus: 'NotTaken' | 'Attempted' | 'Passed' | 'Failed';
+  quizScore?: number;
+  certificateDetails?: {
+    provider: string;
+    certificateId: string;
+    expiryDate?: string;
+  };
 }
 
-const completedTrainings: CompletedTraining[] = [
-  { id: "CT001", title: "Basic Safety Procedures", dateCompleted: "2024-03-15", provider: "In-House", certificateId: "CERT-BSP-001", icon: CheckCircle, imageHint: "safety checkmark", expiryDate: "2026-03-15" },
-  { id: "CT002", title: "Customer Service Excellence", dateCompleted: "2024-01-20", provider: "SkyHigh Training Co.", certificateId: "CERT-CSE-002", icon: Award, imageHint: "customer service award" },
-  { id: "CT003", title: "First Aid & CPR Certification", dateCompleted: "2023-11-05", provider: "Red Cross", certificateId: "CERT-FA-CPR-003", icon: CheckCircle, imageHint: "first aid", expiryDate: "2025-11-05" },
+const initialCourses: Course[] = [
+  {
+    id: "CRS001",
+    title: "Emergency Procedures Review",
+    description: "Master standard emergency protocols and aircraft-specific procedures.",
+    category: "Safety",
+    courseIcon: BookOpen,
+    imageHint: "emergency exit",
+    contentStatus: 'NotStarted',
+    quizId: "QZ001",
+    quizTitle: "Emergency Procedures Quiz",
+    quizStatus: 'NotTaken',
+  },
+  {
+    id: "CRS002",
+    title: "Boeing 787 Systems Overview",
+    description: "Understand the key systems of the Boeing 787 Dreamliner.",
+    category: "Aircraft Systems",
+    courseIcon: BookOpen,
+    imageHint: "aircraft cockpit",
+    contentStatus: 'InProgress',
+    quizId: "QZ002",
+    quizTitle: "B787 Systems Quiz",
+    quizStatus: 'NotTaken',
+  },
+  {
+    id: "CRS003",
+    title: "Dangerous Goods Handling Regulations",
+    description: "Stay current with regulations for handling dangerous goods.",
+    category: "Regulations",
+    courseIcon: BookOpen,
+    imageHint: "hazard symbol",
+    contentStatus: 'Completed', // Pre-completed course content for demo
+    quizId: "QZ003",
+    quizTitle: "Dangerous Goods Quiz",
+    quizStatus: 'NotTaken',
+  },
+  {
+    id: "CRS004",
+    title: "Customer Service Excellence Program",
+    description: "Learn techniques for superior passenger experience.",
+    category: "Service",
+    courseIcon: BookOpen,
+    imageHint: "flight attendant",
+    contentStatus: 'Completed',
+    quizId: "QZ004",
+    quizTitle: "Service Scenarios Quiz",
+    quizStatus: 'Passed', // Pre-passed quiz for demo
+    quizScore: 92,
+    certificateDetails: { provider: "SkyHigh Training Co.", certificateId: "CERT-CSE-004", expiryDate: "2026-07-01" }
+  },
+   {
+    id: "CRS005",
+    title: "First Aid & CPR Refresher",
+    description: "Annual refresher for First Aid & CPR certification.",
+    category: "Safety",
+    courseIcon: BookOpen,
+    imageHint: "first aid kit",
+    contentStatus: 'Completed',
+    quizId: "QZ005",
+    quizTitle: "First Aid & CPR Quiz",
+    quizStatus: 'Failed', // Pre-failed quiz for demo
+    quizScore: 65,
+    certificateDetails: { provider: "Red Cross", certificateId: "CERT-FA-CPR-005" } // expiry logic can be added
+  },
 ];
 
-const recommendedCourses = [
-  { id: "RC001", title: "Advanced Crew Resource Management (CRM)", description: "Enhance teamwork and decision-making skills in high-pressure situations.", progress: 0, type: "Advanced", icon: BookOpen, imageHint: "team collaboration" },
-  { id: "RC002", title: "Handling Difficult Passengers", description: "Strategies for de-escalation and managing challenging passenger interactions.", progress: 25, type: "Specialization", icon: PlayCircle, imageHint: "conflict resolution" },
-  { id: "RC003", title: "Aviation Security Awareness", description: "Updated protocols and threat identification techniques.", progress: 75, type: "Mandatory Update", icon: BookOpen, imageHint: "security shield" },
-];
 
 export default function TrainingPage() {
+  const { toast } = useToast();
+  const [courses, setCourses] = React.useState<Course[]>(initialCourses);
+  const [selectedCourseForQuiz, setSelectedCourseForQuiz] = React.useState<Course | null>(null);
+  const [selectedCourseForCert, setSelectedCourseForCert] = React.useState<Course | null>(null);
+  const [isQuizDialogOpen, setIsQuizDialogOpen] = React.useState(false);
+  const [isCertDialogOpen, setIsCertDialogOpen] = React.useState(false);
+
+  const handleCourseAction = (courseId: string) => {
+    const course = courses.find(c => c.id === courseId);
+    if (!course) return;
+
+    if (course.contentStatus !== 'Completed') {
+      // Simulate completing course content
+      setCourses(prevCourses => prevCourses.map(c => 
+        c.id === courseId ? { ...c, contentStatus: 'Completed' } : c
+      ));
+      toast({ title: "Course Content Viewed", description: `You have completed the material for "${course.title}". You can now take the quiz.` });
+    } else {
+      // Open quiz dialog
+      setSelectedCourseForQuiz(course);
+      setIsQuizDialogOpen(true);
+    }
+  };
+
+  const simulateQuiz = (courseId: string, passed: boolean) => {
+    const score = passed ? Math.floor(Math.random() * 21) + 80 : Math.floor(Math.random() * 40) + 40; // 80-100 if passed, 40-79 if failed
+    
+    setCourses(prevCourses => prevCourses.map(c => {
+      if (c.id === courseId) {
+        const newQuizStatus = passed ? 'Passed' : 'Failed';
+        const newCourseData: Course = {
+          ...c,
+          quizStatus: newQuizStatus,
+          quizScore: score,
+        };
+        if (passed && !newCourseData.certificateDetails) {
+            // Assign mock certificate details if passed and none exist
+            newCourseData.certificateDetails = {
+                provider: "In-House Certification",
+                certificateId: `CERT-${c.id}-${new Date().getFullYear()}`,
+                expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString().split('T')[0] // Expires in 2 years
+            };
+        }
+        return newCourseData;
+      }
+      return c;
+    }));
+
+    const course = courses.find(c => c.id === courseId);
+    toast({
+      title: `Quiz ${passed ? 'Passed' : 'Failed'}`,
+      description: `You scored ${score}% on the "${course?.quizTitle}". ${passed ? 'Congratulations! Your certificate is now available.' : 'Please review the material and try again.'}`,
+      variant: passed ? "default" : "destructive",
+    });
+    setIsQuizDialogOpen(false);
+    setSelectedCourseForQuiz(null);
+  };
+
+  const openCertificateDialog = (course: Course) => {
+    setSelectedCourseForCert(course);
+    setIsCertDialogOpen(true);
+  };
+
+  const availableCourses = courses.filter(c => c.quizStatus !== 'Passed');
+  const completedWithCerts = courses.filter(c => c.quizStatus === 'Passed');
+
   return (
     <div className="space-y-8">
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl font-headline">My Training Dashboard</CardTitle>
-          <CardDescription>Track your completed trainings and explore recommended courses to enhance your skills.</CardDescription>
+          <CardTitle className="text-2xl font-headline">My Training Hub</CardTitle>
+          <CardDescription>Complete courses, pass quizzes, and earn certificates to enhance your skills.</CardDescription>
         </CardHeader>
         <CardContent>
-           <p className="text-muted-foreground">Stay up-to-date with your certifications and continuously improve your expertise.</p>
+           <p className="text-muted-foreground">Track your progress and stay up-to-date with your certifications.</p>
         </CardContent>
       </Card>
 
       <section>
         <h2 className="text-xl font-semibold mb-4 font-headline flex items-center">
-          <CheckCircle className="mr-2 h-6 w-6 text-green-500" />
-          Completed Trainings
+          <BookOpen className="mr-2 h-6 w-6 text-primary" />
+          Available & In-Progress Courses
         </h2>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {completedTrainings.map((training) => {
-            const Icon = training.icon;
-            return (
-            <Card key={training.id} className="shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <Image src={`https://placehold.co/80x80.png`} alt={training.title} width={60} height={60} className="rounded-lg" data-ai-hint={training.imageHint} />
-                  <div>
-                    <CardTitle className="text-lg">{training.title}</CardTitle>
-                    <Badge variant="secondary" className="mt-1 bg-green-100 text-green-700 border-green-300">Completed</Badge>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Date Completed: {training.dateCompleted}
-                </p>
-                <p className="text-sm text-muted-foreground">Provider: {training.provider}</p>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="mt-4 w-full">View Certificate</Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[650px]">
-                    <DialogHeader>
-                      <DialogTitle>Certificate of Completion</DialogTitle>
-                      <DialogDescription>
-                        This certificate is awarded for the successful completion of the {training.title} training program.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="mx-auto my-4">
-                        <Image src="https://placehold.co/500x350.png" alt="Certificate Preview" width={500} height={350} className="rounded-md border" data-ai-hint="certificate document" />
-                      </div>
-                      <div className="space-y-1 text-sm">
-                        <p><strong>Issued to:</strong> Alex Crewman (Demo User)</p>
-                        <p><strong>Training Program:</strong> {training.title}</p>
-                        <p><strong>Certificate ID:</strong> {training.certificateId}</p>
-                        <p><strong>Date Issued:</strong> {training.dateCompleted}</p>
-                        <p><strong>Issuing Body:</strong> {training.provider}</p>
-                        {training.expiryDate && <p><strong>Valid Until:</strong> {training.expiryDate}</p>}
-                      </div>
+        {availableCourses.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {availableCourses.map((course) => {
+              const CourseActionIcon = course.contentStatus !== 'Completed' ? ChevronRight : 
+                                       course.quizStatus === 'NotTaken' ? HelpCircle : 
+                                       course.quizStatus === 'Failed' ? XCircle : PlayCircle;
+              return (
+              <Card key={course.id} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
+                <CardHeader className="flex-shrink-0">
+                  <div className="flex items-start gap-3 mb-2">
+                    <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint} />
+                    <div>
+                      <CardTitle className="text-lg">{course.title}</CardTitle>
+                      <Badge variant="outline" className="mt-1">{course.category}</Badge>
                     </div>
-                    <DialogFooter>
-                      <DialogClose asChild>
-                        <Button type="button" variant="secondary">Close</Button>
-                      </DialogClose>
-                      <Button type="button" onClick={() => alert('Download functionality not implemented yet.')}>Download PDF</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </CardContent>
-            </Card>
-          )})}
-        </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-grow flex flex-col justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-3 h-16 overflow-hidden">
+                      {course.description}
+                    </p>
+                    <div className="text-xs text-muted-foreground mb-1">
+                        Content: <Badge variant={course.contentStatus === 'Completed' ? 'default' : 'secondary'} className={course.contentStatus === 'Completed' ? 'bg-green-500/20 text-green-700 border-green-500/30' : '' }>{course.contentStatus}</Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-3">
+                        Quiz: <Badge variant={course.quizStatus === 'Failed' ? 'destructive' : 'secondary'} >{course.quizStatus} {course.quizScore && `(${course.quizScore}%)`}</Badge>
+                    </div>
+                  </div>
+                  <Button onClick={() => handleCourseAction(course.id)} className="w-full mt-2">
+                    <CourseActionIcon className="mr-2 h-4 w-4" />
+                    {course.contentStatus !== 'Completed' ? (course.contentStatus === 'NotStarted' ? 'Start Course' : 'Continue Course') :
+                     course.quizStatus === 'Failed' ? 'Retake Quiz' : 'Take Quiz'}
+                  </Button>
+                </CardContent>
+              </Card>
+            )})}
+          </div>
+        ) : (
+          <p className="text-muted-foreground">No courses currently available or in progress. Check the completed section!</p>
+        )}
       </section>
 
       <section>
         <h2 className="text-xl font-semibold mb-4 font-headline flex items-center">
-          <BookOpen className="mr-2 h-6 w-6 text-primary" />
-          Recommended & In-Progress Courses
+          <Award className="mr-2 h-6 w-6 text-green-500" />
+          Completed Trainings & Certificates
         </h2>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {recommendedCourses.map((course) => {
-             const Icon = course.icon;
-             return (
-            <Card key={course.id} className="shadow-md hover:shadow-lg transition-shadow">
-               <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint} />
-                  <div>
-                    <CardTitle className="text-lg">{course.title}</CardTitle>
-                     <Badge variant="default" className="mt-1">{course.type}</Badge>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-3 h-16 overflow-hidden">
-                  {course.description}
-                </p>
-                {course.progress > 0 && (
-                  <div className="mb-3">
-                    <div className="flex justify-between text-sm text-muted-foreground mb-1">
-                      <span>Progress</span>
-                      <span>{course.progress}%</span>
+        {completedWithCerts.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {completedWithCerts.map((course) => (
+              <Card key={course.id} className="shadow-md hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint} />
+                    <div>
+                      <CardTitle className="text-lg">{course.title}</CardTitle>
+                       <Badge variant="default" className="mt-1 bg-green-100 text-green-700 border-green-300">Passed ({course.quizScore}%)</Badge>
                     </div>
-                    <Progress value={course.progress} aria-label={`${course.title} progress ${course.progress}%`} />
                   </div>
-                )}
-                <Button className="w-full" disabled={course.progress === 100}>
-                  {course.progress === 0 && "Enroll Now"}
-                  {course.progress > 0 && course.progress < 100 && "Continue Course"}
-                  {course.progress === 100 && "Completed"}
-                </Button>
-              </CardContent>
-            </Card>
-          )})}
-        </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Completed on: {course.certificateDetails?.expiryDate ? new Date(new Date(course.certificateDetails.expiryDate).setFullYear(new Date(course.certificateDetails.expiryDate).getFullYear() - 2)).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]} (Simulated)
+                  </p>
+                  <p className="text-sm text-muted-foreground">Provider: {course.certificateDetails?.provider}</p>
+                  <Button variant="outline" size="sm" className="mt-4 w-full" onClick={() => openCertificateDialog(course)}>
+                    <FileTextIcon className="mr-2 h-4 w-4"/> View Certificate
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+           <p className="text-muted-foreground">No trainings completed yet. Finish a course and pass the quiz to earn a certificate!</p>
+        )}
       </section>
+
+      {/* Quiz Simulation Dialog */}
+      <Dialog open={isQuizDialogOpen} onOpenChange={setIsQuizDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Take Quiz: {selectedCourseForQuiz?.quizTitle}</DialogTitle>
+            <DialogDescription>
+              This is a simulation. In a real system, you would answer quiz questions here.
+              For now, choose to simulate passing or failing. A passing score is 80% or more.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <p className="text-sm text-muted-foreground">Course: {selectedCourseForQuiz?.title}</p>
+            <p className="text-sm">Click a button below to simulate your quiz result.</p>
+          </div>
+          <DialogFooter className="gap-2 sm:justify-between">
+             <Button variant="outline" onClick={() => simulateQuiz(selectedCourseForQuiz!.id, false)}>
+              <XCircle className="mr-2 h-4 w-4"/> Simulate Fail (e.g., 60%)
+            </Button>
+            <Button onClick={() => simulateQuiz(selectedCourseForQuiz!.id, true)}>
+              <CheckCircle className="mr-2 h-4 w-4"/> Simulate Pass (e.g., 85%)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Certificate Viewing Dialog */}
+      <Dialog open={isCertDialogOpen} onOpenChange={setIsCertDialogOpen}>
+          <DialogContent className="sm:max-w-[650px]">
+            <DialogHeader>
+              <DialogTitle>Certificate of Completion</DialogTitle>
+              <DialogDescription>
+                This certificate is awarded for the successful completion of the {selectedCourseForCert?.title} program.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="mx-auto my-4">
+                <Image src="https://placehold.co/500x350.png" alt="Certificate Preview" width={500} height={350} className="rounded-md border" data-ai-hint="certificate document" />
+              </div>
+              <div className="space-y-1 text-sm">
+                <p><strong>Issued to:</strong> Alex Crewman (Demo User)</p>
+                <p><strong>Training Program:</strong> {selectedCourseForCert?.title}</p>
+                <p><strong>Certificate ID:</strong> {selectedCourseForCert?.certificateDetails?.certificateId}</p>
+                <p><strong>Date Issued:</strong> {selectedCourseForCert?.certificateDetails?.expiryDate ? new Date(new Date(selectedCourseForCert.certificateDetails.expiryDate).setFullYear(new Date(selectedCourseForCert.certificateDetails.expiryDate).getFullYear() - 2)).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}</p>
+                <p><strong>Issuing Body:</strong> {selectedCourseForCert?.certificateDetails?.provider}</p>
+                {selectedCourseForCert?.certificateDetails?.expiryDate && <p><strong>Valid Until:</strong> {selectedCourseForCert.certificateDetails.expiryDate}</p>}
+                 <p className="font-semibold mt-2">Achieved Score: {selectedCourseForCert?.quizScore}%</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">Close</Button>
+              </DialogClose>
+              <Button type="button" onClick={() => alert('Download functionality not implemented yet.')}>Download PDF</Button>
+            </DialogFooter>
+          </DialogContent>
+      </Dialog>
+
       <div className="text-center mt-8">
-        <Button variant="link">Browse Full Course Catalog</Button>
+        <Button variant="link">Browse Full Course Catalog (Conceptual)</Button>
       </div>
     </div>
   );
 }
-
