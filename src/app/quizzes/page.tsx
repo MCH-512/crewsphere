@@ -5,12 +5,13 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ListChecks, PlayCircle, CheckCircle, Zap, AlertTriangle, Loader2 } from "lucide-react";
+import { ListChecks, PlayCircle, CheckCircle, Zap, AlertTriangle, Loader2, BookOpen } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, Timestamp, orderBy, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, query, Timestamp, orderBy, doc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 interface CourseForQuiz {
   id: string; // Firestore document ID from courses collection
@@ -20,6 +21,7 @@ interface CourseForQuiz {
   imageHint: string;
   quizId: string;
   quizTitle: string;
+  mandatory: boolean;
 }
 
 interface UserProgressForQuiz {
@@ -33,6 +35,8 @@ interface CombinedQuizItem extends CourseForQuiz {
   statusLabel: string;
   actionLabel: string;
   ActionIcon: React.ElementType;
+  actionDisabled: boolean;
+  actionLink?: string;
 }
 
 export default function QuizzesPage() {
@@ -62,7 +66,10 @@ export default function QuizzesPage() {
         const progressDocRef = doc(db, "userTrainingProgress", progressDocId);
         const progressSnap = await getDoc(progressDocRef);
 
-        let userProgress: UserProgressForQuiz | undefined;
+        let userProgress: UserProgressForQuiz = {
+            contentStatus: 'NotStarted',
+            quizStatus: 'NotTaken',
+        };
         if (progressSnap.exists()) {
           const data = progressSnap.data();
           userProgress = {
@@ -70,35 +77,35 @@ export default function QuizzesPage() {
             quizStatus: data.quizStatus || 'NotTaken',
             quizScore: data.quizScore,
           };
-        } else {
-            userProgress = {
-                contentStatus: 'NotStarted',
-                quizStatus: 'NotTaken',
-            };
         }
 
         let statusLabel = "Not Started";
         let actionLabel = "Start Quiz";
-        let ActionIcon: React.ElementType = Zap;
+        let ActionIcon: React.ElementType = PlayCircle;
+        let actionDisabled = false;
+        let actionLink: string | undefined = undefined;
 
-        if (userProgress) {
-          if (userProgress.quizStatus === 'Passed') {
-            statusLabel = `Completed (Score: ${userProgress.quizScore}%)`;
-            actionLabel = "Review Quiz";
-            ActionIcon = CheckCircle;
-          } else if (userProgress.quizStatus === 'Failed') {
-            statusLabel = `Failed (Score: ${userProgress.quizScore}%)`;
-            actionLabel = "Retake Quiz";
-            ActionIcon = PlayCircle;
-          } else if (userProgress.contentStatus === 'Completed' && (userProgress.quizStatus === 'NotTaken' || userProgress.quizStatus === 'Attempted')) {
-            statusLabel = "Ready to Take";
-            actionLabel = "Start Quiz";
-            ActionIcon = PlayCircle;
-          } else if (userProgress.contentStatus === 'InProgress') {
-             statusLabel = "Course In Progress";
-             actionLabel = "View Course First"; // Or disable quiz
-             ActionIcon = PlayCircle; // Or a different icon
-          }
+
+        if (userProgress.contentStatus !== 'Completed') {
+            statusLabel = userProgress.contentStatus === 'NotStarted' ? "Course Not Started" : "Course In Progress";
+            actionLabel = "Complete Course First";
+            ActionIcon = BookOpen;
+            actionLink = "/training"; // Link to general training page
+            actionDisabled = false; // Make it a link, not a disabled button
+        } else { // Content is Completed
+            if (userProgress.quizStatus === 'Passed') {
+                statusLabel = `Passed (Score: ${userProgress.quizScore}%)`;
+                actionLabel = "Review Quiz"; // Or "View Certificate"
+                ActionIcon = CheckCircle;
+            } else if (userProgress.quizStatus === 'Failed') {
+                statusLabel = `Failed (Score: ${userProgress.quizScore}%)`;
+                actionLabel = "Retake Quiz";
+                ActionIcon = PlayCircle;
+            } else { // NotTaken or Attempted
+                statusLabel = "Ready for Quiz";
+                actionLabel = "Start Quiz";
+                ActionIcon = Zap;
+            }
         }
         
         combinedQuizItems.push({
@@ -107,6 +114,8 @@ export default function QuizzesPage() {
           statusLabel,
           actionLabel,
           ActionIcon,
+          actionDisabled,
+          actionLink,
         });
       }
       setQuizzes(combinedQuizItems);
@@ -125,10 +134,15 @@ export default function QuizzesPage() {
     }
   }, [user, authLoading, fetchQuizzesAndProgress]);
 
-  const handleQuizAction = (quizTitle: string) => {
+  const handleQuizAction = (quizTitle: string, link?: string) => {
+    if (link) {
+        // Using window.location.href for simplicity, Next.js router.push can also be used
+        window.location.href = link;
+        return;
+    }
     toast({
-      title: `Quiz: ${quizTitle}`,
-      description: "Full quiz-taking functionality is coming soon!",
+      title: `Quiz Action: ${quizTitle}`,
+      description: "Full quiz-taking or review functionality is coming soon!",
     });
   };
 
@@ -190,13 +204,19 @@ export default function QuizzesPage() {
          <Card className="text-muted-foreground p-6 text-center shadow-md">
             <ListChecks className="mx-auto h-12 w-12 text-primary mb-4" />
             <p className="font-semibold">No quizzes available at the moment.</p>
-            <p className="text-sm">Please check back later, or ensure courses are added in the system.</p>
+            <p className="text-sm">Please check back later, or ensure courses are added and content is completed via the Training Hub.</p>
           </Card>
       )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {quizzes.map((quiz) => {
           const Icon = quiz.ActionIcon;
+          const buttonContent = (
+            <>
+                <Icon className="mr-2 h-4 w-4" />
+                {quiz.actionLabel}
+            </>
+          );
           return (
             <Card key={quiz.id} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
               <CardHeader className="flex-shrink-0">
@@ -207,30 +227,40 @@ export default function QuizzesPage() {
                         width={70}
                         height={70}
                         className="rounded-lg"
-                        data-ai-hint={quiz.imageHint}
+                        data-ai-hint={quiz.imageHint || "quiz icon"}
                     />
                     <div>
                         <CardTitle className="text-lg mb-1">{quiz.quizTitle}</CardTitle>
                         <Badge variant="outline">{quiz.category}</Badge>
+                         {quiz.mandatory && (
+                            <Badge variant="destructive" className="mt-1 ml-1 text-xs">Mandatory</Badge>
+                        )}
                     </div>
                 </div>
               </CardHeader>
               <CardContent className="flex-grow flex flex-col justify-between">
                 <div>
-                    <p className="text-sm text-muted-foreground mb-3 h-16 overflow-hidden">
-                      {quiz.description} {/* Using course description for now */}
+                    <p className="text-sm text-muted-foreground mb-3 h-16 overflow-hidden" title={quiz.description}>
+                      {quiz.description}
                     </p>
                     <div className="text-xs text-muted-foreground mb-3">
-                        <span>~10-20 Questions (Placeholder)</span>
-                        <span className="ml-2 font-semibold">
-                            Status: {quiz.statusLabel}
+                        <span>~10-20 Questions (Placeholder)</span> |
+                        <span className="ml-1 font-semibold">
+                           Status: {quiz.statusLabel}
                         </span>
                     </div>
                 </div>
-                <Button className="w-full mt-2" onClick={() => handleQuizAction(quiz.quizTitle)}>
-                  <Icon className="mr-2 h-4 w-4" />
-                  {quiz.actionLabel}
-                </Button>
+                {quiz.actionLink ? (
+                     <Button asChild className="w-full mt-2" disabled={quiz.actionDisabled}>
+                        <Link href={quiz.actionLink}>
+                           {buttonContent}
+                        </Link>
+                    </Button>
+                ) : (
+                    <Button className="w-full mt-2" onClick={() => handleQuizAction(quiz.quizTitle)} disabled={quiz.actionDisabled}>
+                     {buttonContent}
+                    </Button>
+                )}
               </CardContent>
             </Card>
           );
@@ -248,11 +278,10 @@ export default function QuizzesPage() {
               <li>Stay current with evolving standards and regulations.</li>
               <li>Prepare for formal assessments and evaluations.</li>
             </ul>
-            <p className="font-semibold">New quizzes are added regularly. Check back often!</p>
+            <p className="font-semibold">Complete course content via the Training Hub to unlock quizzes. New quizzes are added regularly!</p>
         </CardContent>
       </Card>
     </div>
   );
 }
-
     
