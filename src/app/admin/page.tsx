@@ -2,6 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing, Plane, PlusCircle, CheckSquare, Edit3, FileSignature, ClipboardCheck, AlertTriangle } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminConsolePage() {
   return (
@@ -95,7 +96,9 @@ export default function AdminConsolePage() {
                   Review, manage, and respond to user-submitted requests (e.g., leave, schedule changes).
                 </p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm"><Eye className="mr-2 h-4 w-4" />View All Requests</Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/admin/user-requests"><Eye className="mr-2 h-4 w-4" />View All Requests</Link>
+                    </Button>
                     <Button variant="default" size="sm"><BellRing className="mr-2 h-4 w-4" />Pending (3)</Button>
                 </div>
               </CardContent>
