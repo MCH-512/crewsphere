@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing, Plane } from "lucide-react";
+import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing, Plane, PlusCircle } from "lucide-react";
 
 export default function AdminConsolePage() {
   return (
@@ -12,7 +12,7 @@ export default function AdminConsolePage() {
           <div>
             <CardTitle className="text-2xl font-headline">Admin Console</CardTitle>
             <CardDescription>
-              Manage application settings, users, documents, training, requests, flights, and system health.
+              Manage application settings, users, documents, training, courses, requests, flights, and system health.
             </CardDescription>
           </div>
         </CardHeader>
@@ -46,13 +46,26 @@ export default function AdminConsolePage() {
             </Card>
             <Card className="shadow-sm">
               <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <BookOpen className="h-6 w-6 text-primary" />
+                <CardTitle className="text-lg">Courses Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-3">Create, update, and organize training courses, modules, and learning materials.</p>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" />Create New Course</Button>
+                    <Button variant="ghost" size="sm"><Eye className="mr-2 h-4 w-4" />View All Courses</Button>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm">
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
                 <GraduationCap className="h-6 w-6 text-primary" />
                 <CardTitle className="text-lg">Training Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground mb-3">Create, assign, and track training courses, quizzes, and certifications.</p>
+                <p className="text-sm text-muted-foreground mb-3">Assign training to users, track completion, and manage certifications.</p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm"><BookOpen className="mr-2 h-4 w-4" />Manage Courses</Button>
+                    <Button variant="outline" size="sm">Assign Training</Button>
                     <Button variant="ghost" size="sm"><BarChart3 className="mr-2 h-4 w-4" />View Progress</Button>
                 </div>
               </CardContent>
