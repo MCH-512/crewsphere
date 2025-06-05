@@ -107,7 +107,7 @@ export default function AdminUserRequestsPage() {
     }
   };
 
-  if (authLoading || (isLoading && requests.length === 0)) {
+  if (authLoading || (isLoading && requests.length === 0 && !user)) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -149,7 +149,13 @@ export default function AdminUserRequestsPage() {
               <AlertTriangle className="h-5 w-5" /> {error}
             </div>
           )}
-          {requests.length === 0 && !error && (
+          {isLoading && requests.length === 0 && (
+             <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="ml-3 text-muted-foreground">Loading request list...</p>
+            </div>
+          )}
+          {!isLoading && requests.length === 0 && !error && (
             <p className="text-muted-foreground text-center py-8">No user requests found at this time.</p>
           )}
           {requests.length > 0 && (
