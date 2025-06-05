@@ -21,8 +21,17 @@ interface Alert {
   content: string;
   level: "critical" | "warning" | "info";
   createdAt: Timestamp;
-  userId?: string; // For user-specific alerts
-  iconName?: string; // e.g., "Briefcase", "GraduationCap"
+  userId?: string; 
+  iconName?: string; 
+}
+
+interface FeaturedCourse {
+  id: string;
+  title: string;
+  description: string;
+  imageHint: string;
+  mandatory: boolean;
+  category: string;
 }
 
 
@@ -37,6 +46,11 @@ export default function DashboardPage() {
   const [alerts, setAlerts] = React.useState<Alert[]>([]);
   const [alertsLoading, setAlertsLoading] = React.useState(true);
   const [alertsError, setAlertsError] = React.useState<string | null>(null);
+
+  const [featuredTrainings, setFeaturedTrainings] = React.useState<FeaturedCourse[]>([]);
+  const [featuredTrainingsLoading, setFeaturedTrainingsLoading] = React.useState(true);
+  const [featuredTrainingsError, setFeaturedTrainingsError] = React.useState<string | null>(null);
+
 
   React.useEffect(() => {
     if (user) {
@@ -82,17 +96,15 @@ export default function DashboardPage() {
       setAlertsLoading(true);
       setAlertsError(null);
       try {
-        // Query for user-specific alerts
         const userAlertsQuery = query(
           collection(db, "alerts"),
           where("userId", "==", user.uid),
           orderBy("createdAt", "desc"),
           limit(3)
         );
-        // Query for global alerts (where userId is not set)
         const globalAlertsQuery = query(
           collection(db, "alerts"),
-          where("userId", "==", null), // Or where("isGlobal", "==", true) if you prefer
+          where("userId", "==", null), 
           orderBy("createdAt", "desc"),
           limit(3)
         );
@@ -105,10 +117,15 @@ export default function DashboardPage() {
         const fetchedUserAlerts = userAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alert));
         const fetchedGlobalAlerts = globalAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alert));
         
-        // Combine, sort by date, and limit
         const combinedAlerts = [...fetchedUserAlerts, ...fetchedGlobalAlerts]
           .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
-          .slice(0, 3); // Ensure we only show a max of 3 combined
+          .reduce((acc, current) => { // Remove duplicates by ID, preferring user-specific if ID is same
+            if (!acc.find(item => item.id === current.id)) {
+              acc.push(current);
+            }
+            return acc;
+          }, [] as Alert[])
+          .slice(0, 3); 
 
         setAlerts(combinedAlerts);
       } catch (err) {
@@ -120,6 +137,56 @@ export default function DashboardPage() {
       }
     }
     fetchAlerts();
+  }, [user, toast]);
+
+  React.useEffect(() => {
+    async function fetchFeaturedTrainings() {
+      setFeaturedTrainingsLoading(true);
+      setFeaturedTrainingsError(null);
+      try {
+        // Try to get 2 mandatory courses first
+        let q = query(
+          collection(db, "courses"), 
+          where("mandatory", "==", true), 
+          orderBy("title"), // Or a 'priority' or 'createdAt' field if you add one
+          limit(2)
+        );
+        let querySnapshot = await getDocs(q);
+        let fetchedCourses = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FeaturedCourse));
+
+        // If fewer than 2 mandatory courses, fetch any other courses to make up the difference
+        if (fetchedCourses.length < 2) {
+          const existingIds = fetchedCourses.map(c => c.id);
+          const needed = 2 - fetchedCourses.length;
+          
+          q = query(
+            collection(db, "courses"), 
+            orderBy("title"), // Or a different order
+            limit(needed + existingIds.length) // Fetch enough to potentially get new ones
+          );
+          querySnapshot = await getDocs(q);
+          const additionalCourses = querySnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as FeaturedCourse))
+            .filter(course => !existingIds.includes(course.id)) // Don't include already fetched mandatory ones
+            .slice(0, needed);
+          fetchedCourses = [...fetchedCourses, ...additionalCourses];
+        }
+        
+        setFeaturedTrainings(fetchedCourses.slice(0, 2)); // Ensure max 2
+      } catch (err) {
+        console.error("Error fetching featured trainings:", err);
+        setFeaturedTrainingsError("Failed to load featured trainings.");
+        toast({ title: "Training Error", description: "Could not load featured trainings.", variant: "destructive" });
+      } finally {
+        setFeaturedTrainingsLoading(false);
+      }
+    }
+    if (user) { // Only fetch if user is logged in, or adjust if trainings are public
+        fetchFeaturedTrainings();
+    } else {
+        setFeaturedTrainingsLoading(false);
+        setFeaturedTrainings([]); // No trainings if not logged in
+    }
   }, [user, toast]);
 
 
@@ -173,7 +240,6 @@ export default function DashboardPage() {
 
   const getIconForAlert = (alert: Alert): LucideIcon => {
     if (alert.iconName) {
-        // Simple mapping for now, can be expanded
         if (alert.iconName.toLowerCase() === "briefcase") return Briefcase;
         if (alert.iconName.toLowerCase() === "graduationcap") return GraduationCap;
     }
@@ -370,24 +436,47 @@ export default function DashboardPage() {
                 <CardDescription>Mandatory & recommended courses.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-4 p-3 border rounded-lg bg-card">
-                <Image src="https://placehold.co/100x100.png" alt="Course thumbnail" width={60} height={60} className="rounded-md" data-ai-hint="emergency slide" />
-                <div>
-                  <h3 className="font-semibold text-sm">SEP - Evacuation Drills (Rec.)</h3>
-                  <p className="text-xs text-muted-foreground">Annual recurrent for evacuation.</p>
-                  <Badge variant="destructive" className="mt-1 text-xs">Mandatory</Badge><br/>
-                  <Button size="sm" className="mt-2 text-xs" asChild><Link href="/training">Go to Training</Link></Button>
+              {featuredTrainingsLoading && (
+                <div className="flex items-center space-x-2 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Loading featured trainings...</span>
                 </div>
-              </div>
-              <div className="flex items-center gap-4 p-3 border rounded-lg bg-card">
-                <Image src="https://placehold.co/100x100.png" alt="Course thumbnail" width={60} height={60} className="rounded-md" data-ai-hint="first aid kit" />
-                <div>
-                  <h3 className="font-semibold text-sm">Advanced First Aid Onboard</h3>
-                  <p className="text-xs text-muted-foreground">Handling medical situations.</p>
-                   <Badge variant="outline" className="mt-1 text-xs">Recommended</Badge><br/>
-                  <Button size="sm" className="mt-2 text-xs" asChild><Link href="/training">Go to Training</Link></Button>
+              )}
+              {featuredTrainingsError && (
+                <div className="flex items-center space-x-2 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  <span>{featuredTrainingsError}</span>
                 </div>
-              </div>
+              )}
+              {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.length === 0 && user && (
+                <p className="text-sm text-muted-foreground">No featured trainings available at this time.</p>
+              )}
+               {!featuredTrainingsLoading && !featuredTrainingsError && !user && (
+                <p className="text-sm text-muted-foreground">Log in to see featured trainings.</p>
+              )}
+              {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.map((course) => (
+                <div key={course.id} className="flex items-center gap-4 p-3 border rounded-lg bg-card">
+                  <Image 
+                    src={`https://placehold.co/100x100.png`} 
+                    alt={course.title} 
+                    width={60} 
+                    height={60} 
+                    className="rounded-md" 
+                    data-ai-hint={course.imageHint || "training material"} 
+                  />
+                  <div>
+                    <h3 className="font-semibold text-sm">{course.title}</h3>
+                    <p className="text-xs text-muted-foreground truncate w-40" title={course.description}>{course.description}</p>
+                    {course.mandatory ? (
+                        <Badge variant="destructive" className="mt-1 text-xs">Mandatory</Badge>
+                    ) : (
+                        <Badge variant="outline" className="mt-1 text-xs">Recommended</Badge>
+                    )}
+                    <br/>
+                    <Button size="sm" className="mt-2 text-xs" asChild><Link href="/training">Go to Training</Link></Button>
+                  </div>
+                </div>
+              ))}
             </CardContent>
         </Card>
       </div>
