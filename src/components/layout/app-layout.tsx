@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Sidebar,
   SidebarHeader,
@@ -45,8 +45,13 @@ import {
   Calculator,
   FileSignature,
   ListChecks,
+  LogIn,
+  UserPlus,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -59,14 +64,14 @@ const navItems = [
   { href: "/insights", label: "AI Insights", icon: Brain },
   { href: "/training", label: "Training", icon: GraduationCap },
   { href: "/quizzes", label: "Quizzes", icon: ListChecks },
-  { href: "/admin", label: "Admin Console", icon: ServerCog },
+  { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true }, // Example for role-based access later
 ];
 
 // Theme toggle functionality (simple example)
 const useTheme = () => {
   const [theme, setTheme] = React.useState("light");
   React.useEffect(() => {
-    const localTheme = localStorage.getItem("theme");
+    const localTheme = typeof window !== "undefined" ? localStorage.getItem("theme") : "light";
     if (localTheme) {
       setTheme(localTheme);
       document.documentElement.classList.toggle("dark", localTheme === "dark");
@@ -76,7 +81,9 @@ const useTheme = () => {
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("theme", newTheme);
+    }
     document.documentElement.classList.toggle("dark", newTheme === "dark");
   };
   return { theme, toggleTheme };
@@ -85,8 +92,23 @@ const useTheme = () => {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { isMobile } = useSidebar();
   const { theme, toggleTheme } = useTheme();
+  const { user, loading, logout } = useAuth();
+  const { toast } = useToast();
+
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({ title: "Logged Out", description: "You have been successfully logged out." });
+      // router.push("/login") is handled by AuthProvider or logout function itself
+    } catch (error) {
+      console.error("Logout failed:", error);
+      toast({ title: "Logout Failed", description: "Could not log you out. Please try again.", variant: "destructive" });
+    }
+  };
 
   const pageTitles: { [key: string]: string } = {
     "/": "Dashboard",
@@ -101,8 +123,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/quizzes": "Quizzes",
     "/admin": "Admin Console",
     "/settings": "Settings",
+    "/login": "Login",
+    "/signup": "Sign Up",
   };
   const currentPageTitle = pageTitles[pathname] || "AirCrew Hub";
+
+  // Hide sidebar and header for login/signup pages
+  if (pathname === "/login" || pathname === "/signup") {
+    return <>{children}</>;
+  }
+  
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
 
   return (
     <>
@@ -116,26 +154,32 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <Separator />
         <SidebarContent className="p-2">
           <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href} passHref legacyBehavior>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.href}
-                    tooltip={{ children: item.label, side: "right", align: "center" }}
-                    className={cn(
-                      "justify-start",
-                      pathname === item.href && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground"
-                    )}
-                  >
-                    <a>
-                      <item.icon className="w-5 h-5" />
-                      <span>{item.label}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            ))}
+            {navItems.map((item) => {
+              // Basic RBAC placeholder: hide admin console if not admin (won't work fully without roles from DB)
+              if (item.adminOnly /* && user?.role !== 'admin' */) { 
+                // return null; // Enable this once roles are properly implemented
+              }
+              return (
+                <SidebarMenuItem key={item.href}>
+                  <Link href={item.href} passHref legacyBehavior>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.href}
+                      tooltip={{ children: item.label, side: "right", align: "center" }}
+                      className={cn(
+                        "justify-start",
+                        pathname === item.href && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground"
+                      )}
+                    >
+                      <a>
+                        <item.icon className="w-5 h-5" />
+                        <span>{item.label}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
         </SidebarContent>
         <Separator />
@@ -173,33 +217,55 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
               {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </Button>
-            <Button variant="ghost" size="icon" aria-label="Notifications">
-              <Bell className="h-5 w-5" />
-            </Button>
+            {user && (
+              <Button variant="ghost" size="icon" aria-label="Notifications">
+                <Bell className="h-5 w-5" />
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src="https://placehold.co/100x100.png" alt="User Avatar" data-ai-hint="user avatar" />
-                    <AvatarFallback>AC</AvatarFallback>
+                    <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User Avatar" data-ai-hint="user avatar" />
+                    <AvatarFallback>{user?.email ? user.email.substring(0, 2).toUpperCase() : "U"}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Link href="/settings" className="flex items-center w-full">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled>Support</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
+                {user ? (
+                  <>
+                    <DropdownMenuLabel>
+                      <p className="text-sm font-medium leading-none">{user.displayName || "User"}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/settings" className="flex items-center w-full">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Settings</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <>
+                    <DropdownMenuItem asChild>
+                       <Link href="/login" className="flex items-center w-full">
+                        <LogIn className="mr-2 h-4 w-4" />
+                        <span>Login</span>
+                      </Link>
+                    </DropdownMenuItem>
+                     <DropdownMenuItem asChild>
+                       <Link href="/signup" className="flex items-center w-full">
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        <span>Sign Up</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -211,4 +277,3 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </>
   );
 }
-
