@@ -43,7 +43,8 @@ import {
   SendHorizonal,
   Navigation,
   Calculator,
-  ListChecks, // Added ListChecks icon
+  ListChecks,
+  FileSignature, // Added FileSignature icon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -54,9 +55,10 @@ const navItems = [
   { href: "/requests", label: "Requests", icon: SendHorizonal },
   { href: "/airport-briefings", label: "Airport Briefings", icon: Navigation },
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
+  { href: "/purser-reports", label: "Purser Reports", icon: FileSignature }, // New Purser Reports item
   { href: "/insights", label: "AI Insights", icon: Brain },
   { href: "/training", label: "Training", icon: GraduationCap },
-  { href: "/quizzes", label: "Quizzes", icon: ListChecks }, // New Quizzes item
+  { href: "/quizzes", label: "Quizzes", icon: ListChecks },
   { href: "/admin", label: "Admin Console", icon: ServerCog },
 ];
 
@@ -93,9 +95,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/requests": "Submit a Request",
     "/airport-briefings": "Airport Briefings",
     "/flight-duty-calculator": "Flight Duty Calculator",
+    "/purser-reports": "Purser Reports", // New page title
     "/insights": "AI-Driven Operational Insights",
     "/training": "Training Tracker",
-    "/quizzes": "Quizzes", // New page title
+    "/quizzes": "Quizzes", 
     "/admin": "Admin Console",
     "/settings": "Settings",
   };
