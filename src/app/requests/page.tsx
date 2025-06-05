@@ -5,7 +5,6 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -28,6 +27,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SendHorizonal, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/auth-context";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const requestFormSchema = z.object({
   requestType: z.string({
@@ -54,6 +56,7 @@ const defaultValues: Partial<RequestFormValues> = {
 
 export default function RequestsPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<RequestFormValues>({
@@ -63,16 +66,41 @@ export default function RequestsPage() {
   });
 
   async function onSubmit(data: RequestFormValues) {
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to submit a request.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    console.log("Request submitted:", data);
-    toast({
-      title: "Request Submitted",
-      description: `Your ${data.requestType.toLowerCase()} for "${data.subject}" has been submitted.`,
-    });
-    form.reset();
-    setIsSubmitting(false);
+    try {
+      await addDoc(collection(db, "requests"), {
+        ...data,
+        userId: user.uid,
+        userEmail: user.email,
+        createdAt: serverTimestamp(),
+        status: "pending", 
+      });
+
+      toast({
+        title: "Request Submitted Successfully",
+        description: `Your ${data.requestType.toLowerCase()} for "${data.subject}" has been saved.`,
+      });
+      form.reset();
+    } catch (error) {
+      console.error("Error submitting request to Firestore:", error);
+      toast({
+        title: "Submission Failed",
+        description: "Could not save your request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -156,7 +184,7 @@ export default function RequestsPage() {
                 )}
               />
 
-              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+              <Button type="submit" disabled={isSubmitting || !user} className="w-full sm:w-auto">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -169,6 +197,9 @@ export default function RequestsPage() {
                   </>
                 )}
               </Button>
+               {!user && (
+                <p className="text-sm text-destructive">Please log in to submit a request.</p>
+              )}
             </form>
           </Form>
         </CardContent>
@@ -176,3 +207,4 @@ export default function RequestsPage() {
     </div>
   );
 }
+
