@@ -51,6 +51,7 @@ import {
   LogIn,
   UserPlus,
   Loader2,
+  BookOpen, // Added BookOpen for consistency if needed
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -68,7 +69,7 @@ const navItems = [
   { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
   { href: "/insights", label: "AI Insights", icon: Brain },
   { href: "/training", label: "Training", icon: GraduationCap },
-  { href: "/quizzes", label: "Quizzes", icon: ListChecks },
+  { href: "/quizzes", label: "Quizzes", icon: ListChecks }, // User-facing quizzes page
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];
 
@@ -113,6 +114,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Extended pageTitles for admin sub-pages
   const pageTitles: { [key: string]: string } = {
     "/": "Dashboard",
     "/documents": "Document Library",
@@ -124,39 +126,48 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/purser-reports": "Purser Report Generator",
     "/insights": "AI-Driven Operational Insights",
     "/training": "My Training Hub",
-    "/quizzes": "Quizzes",
-    "/admin": "Admin Console",
+    "/quizzes": "Quizzes", // User-facing quizzes page
     "/settings": "Settings",
     "/login": "Login",
     "/signup": "Sign Up",
+    // Admin Pages
+    "/admin": "Admin Console",
     "/admin/users": "User Management",
     "/admin/documents/upload": "Upload New Document",
     "/admin/alerts": "All Broadcast Alerts",
     "/admin/alerts/create": "Create New Alert",
     "/admin/courses": "Courses Management",
-    "/admin/courses/create": "Create New Training Course",
+    "/admin/courses/create": "Create New Training Course", // Also used for "Create New Quiz"
     "/admin/flights": "Manage Flights",
     "/admin/flights/create": "Add New Flight",
     "/admin/purser-reports": "Submitted Purser Reports",
     "/admin/user-requests": "User Submitted Requests",
+    "/admin/quizzes": "Quizzes Overview", // New admin page for quizzes
   };
   
   let currentTitle = "AirCrew Hub"; 
   let longestMatch = "";
+
+  // Improved title matching for nested routes
   for (const path in pageTitles) {
-      if (pathname === path || (pathname.startsWith(path) && path.endsWith('/') && path.length > longestMatch.length) || (pathname.startsWith(path + '/') && path.length > longestMatch.length)) {
-        if (path.length > longestMatch.length) {
-            longestMatch = path;
-            currentTitle = pageTitles[path];
-        }
-      } else if (pathname.startsWith(path) && path.length > longestMatch.length && !pageTitles[pathname]) {
-         longestMatch = path;
-         currentTitle = pageTitles[path];
+    if (pathname === path) {
+      if (path.length > longestMatch.length) {
+        longestMatch = path;
+        currentTitle = pageTitles[path];
       }
+    } else if (pathname.startsWith(path + '/') && path !== '/') {
+      // Check if path is a prefix of current pathname
+      if (path.length > longestMatch.length) {
+        longestMatch = path;
+        currentTitle = pageTitles[path]; // Set title to parent, breadcrumbs will show child
+      }
+    }
   }
+   // Final check if exact match was found after prefix matching
   if (pageTitles[pathname]) {
     currentTitle = pageTitles[pathname];
   }
+
 
   const currentPageTitle = currentTitle;
 
@@ -190,7 +201,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               if (item.adminOnly && user?.role !== 'admin') { 
                 return null; 
               }
-              const isActive = pathname === item.href || (pathname.startsWith(item.href + '/') && item.href !== "/") || (item.href === "/admin" && pathname.startsWith("/admin/"));
+              // Improved active state detection for nested admin routes
+              const isActive = pathname === item.href || 
+                               (item.href !== "/" && pathname.startsWith(item.href + '/')) ||
+                               (item.href === "/admin" && pathname.startsWith("/admin/"));
+
               return (
                 <SidebarMenuItem key={item.href}>
                   <Link href={item.href} passHref legacyBehavior>
@@ -243,7 +258,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
           {isMobile && <SidebarTrigger aria-label="Toggle sidebar" />}
           <div className="flex-1">
-            <h1 className="text-lg font-semibold text-foreground">{currentPageTitle}</h1>
+             {/* Breadcrumbs are now rendered before the children */}
           </div>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>
@@ -305,9 +320,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
           <Breadcrumbs /> 
+          <h1 className="text-2xl font-bold text-foreground mb-6 sr-only">{currentPageTitle}</h1> {/* Title for screen readers and context, visually covered by header or breadcrumbs */}
           {children}
         </main>
       </SidebarInset>
     </>
   );
 }
+
+    

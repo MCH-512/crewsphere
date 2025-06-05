@@ -55,7 +55,7 @@ export default function AdminConsolePage() {
       </Button>
     );
 
-    if (disabled) {
+    if (disabled && tooltipContent) {
       return (
         <TooltipProvider>
           <Tooltip>
@@ -187,8 +187,8 @@ export default function AdminConsolePage() {
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-3">Assign training to users, track completion, and manage certifications.</p>
                     <div className="flex gap-2">
-                        <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon">Assign Training</AdminButtonWithTooltip>
-                        <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon" >
+                        <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon. Use 'Courses Management' for now.">Assign Training</AdminButtonWithTooltip>
+                        <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon." >
                             <BarChart3 className="mr-2 h-4 w-4" />View Progress
                         </AdminButtonWithTooltip>
                     </div>
@@ -206,11 +206,11 @@ export default function AdminConsolePage() {
                       Create, edit, and manage quizzes, question banks, and review assessment results.
                     </p>
                     <div className="flex gap-2">
-                        <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon">
+                        <AdminButtonWithTooltip href="/admin/courses/create" tooltipContent="Define quiz details when creating a course.">
                             <PlusCircle className="mr-2 h-4 w-4" />Create New Quiz
                         </AdminButtonWithTooltip>
-                        <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon">
-                            <Edit3 className="mr-2 h-4 w-4" />Manage Question Banks
+                        <AdminButtonWithTooltip href="/admin/quizzes" tooltipContent="View all defined quizzes. Question bank management coming soon.">
+                            <Edit3 className="mr-2 h-4 w-4" />View All Quizzes
                         </AdminButtonWithTooltip>
                     </div>
                   </CardContent>
@@ -317,3 +317,5 @@ export default function AdminConsolePage() {
     </div>
   );
 }
+
+    
