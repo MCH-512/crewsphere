@@ -1,7 +1,8 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, FilePdf, FileSpreadsheet, FileText as FileTextIcon } from "lucide-react";
+import { Download, Eye, File, FileSpreadsheet, FileText as FileTextIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,12 +14,12 @@ import {
 } from "@/components/ui/select"
 
 const documents = [
-  { id: "FOM-2024-V3", title: "Flight Operations Manual", type: "Manual", version: "3.0", lastUpdated: "2024-07-15", category: "Operations", icon: FilePdf, size: "15.2MB" },
-  { id: "SPG-2024-V1.2", title: "Safety Procedures Guide", type: "Guide", version: "1.2", lastUpdated: "2024-06-28", category: "Safety", icon: FilePdf, size: "8.5MB" },
+  { id: "FOM-2024-V3", title: "Flight Operations Manual", type: "Manual", version: "3.0", lastUpdated: "2024-07-15", category: "Operations", icon: File, size: "15.2MB" },
+  { id: "SPG-2024-V1.2", title: "Safety Procedures Guide", type: "Guide", version: "1.2", lastUpdated: "2024-06-28", category: "Safety", icon: File, size: "8.5MB" },
   { id: "CHB-2023-V2", title: "Company Handbook", type: "Policy", version: "2.0", lastUpdated: "2023-12-10", category: "HR", icon: FileTextIcon, size: "3.1MB" },
   { id: "TRM-ADV-CRM", title: "Advanced CRM Training", type: "Training Material", version: "N/A", lastUpdated: "2024-05-01", category: "Training", icon: FileTextIcon, size: "12.0MB" },
   { id: "EMG-PROC-001", title: "Emergency Evacuation Checklist", type: "Checklist", version: "1.5", lastUpdated: "2024-07-01", category: "Safety", icon: FileSpreadsheet, size: "0.8MB" },
-  { id: "SVC-STD-JUL24", title: "In-flight Service Standards", type: "Standard", version: "July 2024", lastUpdated: "2024-07-05", category: "Service", icon: FilePdf, size: "2.5MB" },
+  { id: "SVC-STD-JUL24", title: "In-flight Service Standards", type: "Standard", version: "July 2024", lastUpdated: "2024-07-05", category: "Service", icon: File, size: "2.5MB" },
 ];
 
 export default function DocumentsPage() {
