@@ -40,8 +40,12 @@ export default function AdminConsolePage() {
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">Upload, categorize, and manage all shared documents and manuals.</p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm"><UploadCloud className="mr-2 h-4 w-4" />Upload New</Button>
-                    <Button variant="ghost" size="sm"><Eye className="mr-2 h-4 w-4" />View All</Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/admin/documents/upload"><UploadCloud className="mr-2 h-4 w-4" />Upload New</Link>
+                    </Button>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href="/documents"><Eye className="mr-2 h-4 w-4" />View All</Link>
+                    </Button>
                 </div>
               </CardContent>
             </Card>
