@@ -1,19 +1,27 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CalendarClock, BellRing, Annoyed, AlertTriangle, Info } from "lucide-react";
+import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const alerts = [
-    { id: 1, title: "Gate Change: Flight BA245", content: "Flight BA245 to London now departs from Gate C12 instead of A5.", level: "warning", time: "10m ago", icon: AlertTriangle },
-    { id: 2, title: "System Maintenance", content: "Brief system outage scheduled for 02:00 UTC tonight. Document access may be limited.", level: "info", time: "1h ago", icon: Info },
-    { id: 3, title: "Mandatory Safety Briefing", content: "All cabin crew attend briefing on new safety procedures. See schedule.", level: "critical", time: "3h ago", icon: Annoyed },
+    { id: 1, title: "Pre-Flight Briefing: Flight BA245", content: "Briefing scheduled for 12:00 UTC in Crew Room C.", level: "critical", time: "Upcoming", icon: Briefcase },
+    { id: 2, title: "Reminder: SEP Refresher Due", content: "Your Safety & Emergency Procedures refresher must be completed by Aug 15th.", level: "warning", time: "2w remaining", icon: GraduationCap },
+    { id: 3, title: "New Company Bulletin Issued", content: "Updated Unaccompanied Minors Policy (Doc ID: BUL-2024-08). Please review.", level: "info", time: "1d ago", icon: Info },
   ];
 
   const updates = [
-    { id: 1, title: "New Catering Options", content: "Updated menu for transatlantic flights effective August 1st.", date: "July 28, 2024" },
-    { id: 2, title: "Uniform Policy Update", content: "Minor adjustments to uniform guidelines. See Document ID: UPL-2024-03.", date: "July 25, 2024" },
-    { id: 3, title: "Welcome New Hires!", content: "Let's welcome our 5 new cabin crew members joining this week.", date: "July 22, 2024" },
+    { id: 1, title: "New In-flight Service Standards", content: "Updated service flow for long-haul flights effective August 1st. See DOC-SVC-0724.", date: "July 28, 2024" },
+    { id: 2, title: "Uniform Grooming Standards Reminder", content: "Please ensure adherence to the latest grooming guidelines (Doc ID: UGS-2024-01).", date: "July 25, 2024" },
+    { id: 3, title: "Welcome New Cabin Crew Class!", content: "Let's extend a warm welcome to our 12 new cabin crew members graduating today.", date: "July 22, 2024" },
+  ];
+
+  const safetyTips = [
+    { id: 1, tip: "Always perform thorough pre-flight safety checks on all emergency equipment in your assigned zone." },
+    { id: 2, tip: "In an emergency, remain calm, follow your training, and communicate clearly with passengers and fellow crew." },
+    { id: 3, tip: "Maintain situational awareness at all times, especially during critical phases of flight like boarding, takeoff, and landing." },
   ];
 
   return (
@@ -33,14 +41,16 @@ export default function DashboardPage() {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         <Card className="lg:col-span-1 shadow-md hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium font-headline">Upcoming Schedule</CardTitle>
+            <CardTitle className="text-lg font-medium font-headline">Upcoming Duty</CardTitle>
             <CalendarClock className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">FLT101 - JFK</div>
-            <p className="text-xs text-muted-foreground">Departure: 14:30 | July 30, 2024</p>
-            <Button variant="outline" size="sm" className="mt-4 w-full">
-              View Full Schedule <ArrowRight className="ml-2 h-4 w-4" />
+            <p className="text-xs text-muted-foreground">Report: 13:00 | July 30, 2024</p>
+            <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
+              <Link href="/schedule">
+                View Full Roster <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -71,6 +81,21 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      
+      <Card className="shadow-md hover:shadow-lg transition-shadow">
+        <CardHeader>
+            <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-green-600"/>Safety Tips</CardTitle>
+            <CardDescription>Stay sharp with these key safety reminders.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+            {safetyTips.slice(0,2).map((tip) => (
+                <div key={tip.id} className="flex items-start gap-3 p-3 border-l-4 border-green-500 bg-green-500/10 rounded-r-md">
+                    <ShieldCheck className="h-5 w-5 text-green-600 mt-0.5 shrink-0"/>
+                    <p className="text-sm text-green-700">{tip.tip}</p>
+                </div>
+            ))}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-3">
          <Card className="md:col-span-2 shadow-md hover:shadow-lg transition-shadow">
@@ -93,11 +118,19 @@ export default function DashboardPage() {
             <CardHeader>
                 <CardTitle className="font-headline">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-                <Button variant="default" className="w-full">Report Incident</Button>
-                <Button variant="outline" className="w-full">Request Leave</Button>
-                <Button variant="outline" className="w-full">View Payslip</Button>
-                <Button variant="outline" className="w-full">Access Helpdesk</Button>
+            <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Button variant="default" className="w-full" asChild>
+                  <Link href="/purser-reports"><FileText className="mr-2 h-4 w-4"/>Submit Report</Link>
+                </Button>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/schedule"><CalendarClock className="mr-2 h-4 w-4"/>View Roster</Link>
+                </Button>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/documents"><BookOpen className="mr-2 h-4 w-4"/>Flight Docs</Link>
+                </Button>
+                 <Button variant="outline" className="w-full" asChild>
+                  <Link href="/requests"><ArrowRight className="mr-2 h-4 w-4"/>Make Request</Link>
+                </Button>
             </CardContent>
         </Card>
       </div>
@@ -105,23 +138,23 @@ export default function DashboardPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline">Featured Training</CardTitle>
-          <CardDescription>Enhance your skills with our latest courses.</CardDescription>
+          <CardDescription>Enhance your skills with our latest courses. Mandatory items are highlighted.</CardDescription>
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 gap-4">
           <div className="flex items-center gap-4 p-4 border rounded-lg bg-card">
-            <Image src="https://placehold.co/100x100.png" alt="Course thumbnail" width={80} height={80} className="rounded-md" data-ai-hint="safety procedure" />
+            <Image src="https://placehold.co/100x100.png" alt="Course thumbnail" width={80} height={80} className="rounded-md" data-ai-hint="emergency slide" />
             <div>
-              <h3 className="font-semibold">Advanced Safety Procedures</h3>
-              <p className="text-sm text-muted-foreground">Master the latest emergency protocols.</p>
-              <Button size="sm" className="mt-2">Enroll Now</Button>
+              <h3 className="font-semibold">SEP - Evacuation Drills (Recurrent)</h3>
+              <p className="text-sm text-muted-foreground">Annual recurrent training for emergency evacuation.</p>
+              <Button size="sm" className="mt-2" asChild><Link href="/training">Go to Training</Link></Button>
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 border rounded-lg bg-card">
-            <Image src="https://placehold.co/100x100.png" alt="Course thumbnail" width={80} height={80} className="rounded-md" data-ai-hint="customer service" />
+            <Image src="https://placehold.co/100x100.png" alt="Course thumbnail" width={80} height={80} className="rounded-md" data-ai-hint="first aid" />
             <div>
-              <h3 className="font-semibold">Exceptional Customer Service</h3>
-              <p className="text-sm text-muted-foreground">Techniques for superior passenger experience.</p>
-              <Button size="sm" className="mt-2">Enroll Now</Button>
+              <h3 className="font-semibold">Advanced First Aid Techniques</h3>
+              <p className="text-sm text-muted-foreground">Handling common in-flight medical situations.</p>
+              <Button size="sm" className="mt-2" asChild><Link href="/training">Go to Training</Link></Button>
             </div>
           </div>
         </CardContent>

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon } from "lucide-react";
+import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle } from "lucide-react";
 import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -28,72 +28,91 @@ interface Course {
     certificateId: string;
     expiryDate?: string;
   };
+  mandatory: boolean;
 }
 
 const initialCourses: Course[] = [
   {
     id: "CRS001",
-    title: "Emergency Procedures Review",
-    description: "Master standard emergency protocols and aircraft-specific procedures.",
-    category: "Safety",
+    title: "SEP - Evacuation Procedures (Recurrent)",
+    description: "Annual recurrent training for standard emergency evacuation protocols and aircraft-specific procedures.",
+    category: "Safety & Emergency",
     courseIcon: BookOpen,
-    imageHint: "emergency exit",
+    imageHint: "emergency exit aircraft",
     contentStatus: 'NotStarted',
     quizId: "QZ001",
-    quizTitle: "Emergency Procedures Quiz",
+    quizTitle: "SEP Evacuation Quiz",
     quizStatus: 'NotTaken',
+    mandatory: true,
   },
   {
     id: "CRS002",
-    title: "Boeing 787 Systems Overview",
-    description: "Understand the key systems of the Boeing 787 Dreamliner.",
-    category: "Aircraft Systems",
+    title: "Boeing 777 Systems & Door Operations",
+    description: "Comprehensive training on Boeing 777 key systems, safety equipment, and door operation procedures.",
+    category: "Aircraft Specific",
     courseIcon: BookOpen,
-    imageHint: "aircraft cockpit",
+    imageHint: "aircraft door open",
     contentStatus: 'InProgress',
     quizId: "QZ002",
-    quizTitle: "B787 Systems Quiz",
+    quizTitle: "B777 Systems & Doors Quiz",
     quizStatus: 'NotTaken',
+    mandatory: true,
   },
   {
     id: "CRS003",
-    title: "Dangerous Goods Handling Regulations",
-    description: "Stay current with regulations for handling dangerous goods.",
-    category: "Regulations",
+    title: "Dangerous Goods Regulations (DGR) - Category 10",
+    description: "Ensure you're up-to-date with the latest IATA regulations for handling dangerous goods as cabin crew.",
+    category: "Regulatory",
     courseIcon: BookOpen,
-    imageHint: "hazard symbol",
+    imageHint: "hazard label package",
     contentStatus: 'Completed', 
     quizId: "QZ003",
-    quizTitle: "Dangerous Goods Quiz",
+    quizTitle: "DGR Cat. 10 Quiz",
     quizStatus: 'NotTaken',
+    mandatory: true,
   },
   {
     id: "CRS004",
-    title: "Customer Service Excellence Program",
-    description: "Learn techniques for superior passenger experience.",
-    category: "Service",
+    title: "Advanced Conflict Resolution",
+    description: "Techniques for de-escalating and managing challenging passenger interactions effectively.",
+    category: "Customer Service",
     courseIcon: BookOpen,
-    imageHint: "flight attendant",
+    imageHint: "negotiation discussion",
     contentStatus: 'Completed',
     quizId: "QZ004",
-    quizTitle: "Service Scenarios Quiz",
+    quizTitle: "Conflict Resolution Scenarios Quiz",
     quizStatus: 'Passed', 
     quizScore: 92,
-    certificateDetails: { provider: "SkyHigh Training Co.", certificateId: "CERT-CSE-004", expiryDate: "2026-07-01" }
+    certificateDetails: { provider: "SkyHigh Training Academy", certificateId: "CERT-ACR-004", expiryDate: "2026-07-01" },
+    mandatory: false,
   },
    {
     id: "CRS005",
-    title: "First Aid & CPR Refresher",
-    description: "Annual refresher for First Aid & CPR certification.",
-    category: "Safety",
+    title: "Aviation First Aid & CPR (Recurrent)",
+    description: "Biennial recurrent certification for First Aid & CPR, tailored for aviation environments.",
+    category: "Medical",
     courseIcon: BookOpen,
-    imageHint: "first aid kit",
+    imageHint: "first aid cpr",
     contentStatus: 'Completed',
     quizId: "QZ005",
-    quizTitle: "First Aid & CPR Quiz",
+    quizTitle: "Aviation First Aid & CPR Quiz",
     quizStatus: 'Failed', 
     quizScore: 65,
-    certificateDetails: { provider: "Red Cross", certificateId: "CERT-FA-CPR-005" } 
+    certificateDetails: { provider: "AeroMedical Trainers", certificateId: "CERT-AFA-CPR-005" } ,
+    mandatory: true,
+  },
+  {
+    id: "CRS006",
+    title: "Security Procedures & Threat Management",
+    description: "Training on recognizing and responding to security threats and suspicious activities on board.",
+    category: "Security",
+    courseIcon: BookOpen,
+    imageHint: "airport security check",
+    contentStatus: 'NotStarted',
+    quizId: "QZ006",
+    quizTitle: "Aviation Security Quiz",
+    quizStatus: 'NotTaken',
+    mandatory: true,
   },
 ];
 
@@ -135,11 +154,10 @@ export default function TrainingPage() {
           quizScore: score,
         };
         if (passed && !newCourseData.certificateDetails) {
-            // Assign mock certificate details if passed and none exist
             newCourseData.certificateDetails = {
-                provider: "In-House Certification",
+                provider: "In-House Certification Body",
                 certificateId: `CERT-${c.id}-${new Date().getFullYear()}`,
-                expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString().split('T')[0] // Expires in 2 years
+                expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + (c.title.toLowerCase().includes("recurrent") || c.title.toLowerCase().includes("refresher") ? 1 : 2))).toISOString().split('T')[0] 
             };
         }
         return newCourseData;
@@ -170,7 +188,7 @@ export default function TrainingPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="text-2xl font-headline">My Training Hub</CardTitle>
-          <CardDescription>Complete courses, pass quizzes, and earn certificates to enhance your skills.</CardDescription>
+          <CardDescription>Complete courses, pass quizzes, and earn certificates to enhance your skills. Mandatory trainings are marked.</CardDescription>
         </CardHeader>
         <CardContent>
            <p className="text-muted-foreground">Track your progress and stay up-to-date with your certifications.</p>
@@ -180,7 +198,7 @@ export default function TrainingPage() {
       <section>
         <h2 className="text-xl font-semibold mb-4 font-headline flex items-center">
           <BookOpen className="mr-2 h-6 w-6 text-primary" />
-          Available & In-Progress Courses
+          Available & In-Progress Training
         </h2>
         {availableCourses.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -196,6 +214,9 @@ export default function TrainingPage() {
                     <div>
                       <CardTitle className="text-lg">{course.title}</CardTitle>
                       <Badge variant="outline" className="mt-1">{course.category}</Badge>
+                      {course.mandatory && (
+                        <Badge variant="destructive" className="mt-1 ml-2">Mandatory</Badge>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -221,7 +242,11 @@ export default function TrainingPage() {
             )})}
           </div>
         ) : (
-          <p className="text-muted-foreground">No courses currently available or in progress. Check the completed section!</p>
+          <Card className="text-muted-foreground p-6 text-center">
+            <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
+            <p className="font-semibold">All available trainings are completed or certified!</p>
+            <p className="text-sm">Check the "Completed Trainings & Certificates" section below or look out for new assignments.</p>
+          </Card>
         )}
       </section>
 
@@ -235,19 +260,23 @@ export default function TrainingPage() {
             {completedWithCerts.map((course) => (
               <Card key={course.id} className="shadow-md hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <div className="flex items-center gap-3 mb-2">
+                  <div className="flex items-start gap-3 mb-2">
                     <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint} />
                     <div>
                       <CardTitle className="text-lg">{course.title}</CardTitle>
                        <Badge variant="default" className="mt-1 bg-green-100 text-green-700 border-green-300">Passed ({course.quizScore}%)</Badge>
+                        {course.mandatory && (
+                          <Badge variant="destructive" className="mt-1 ml-2">Mandatory</Badge>
+                        )}
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Completed on: {course.certificateDetails?.expiryDate ? new Date(new Date(course.certificateDetails.expiryDate).setFullYear(new Date(course.certificateDetails.expiryDate).getFullYear() - 2)).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]} (Simulated)
+                    Certified on: {course.certificateDetails?.expiryDate ? new Date(new Date(course.certificateDetails.expiryDate).setFullYear(new Date(course.certificateDetails.expiryDate).getFullYear() - (course.title.toLowerCase().includes("recurrent") || course.title.toLowerCase().includes("refresher") ? 1 : 2))).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
                   </p>
                   <p className="text-sm text-muted-foreground">Provider: {course.certificateDetails?.provider}</p>
+                  {course.certificateDetails?.expiryDate && <p className="text-sm text-muted-foreground">Expires: {course.certificateDetails.expiryDate}</p>}
                   <Button variant="outline" size="sm" className="mt-4 w-full" onClick={() => openCertificateDialog(course)}>
                     <FileTextIcon className="mr-2 h-4 w-4"/> View Certificate
                   </Button>
@@ -256,7 +285,11 @@ export default function TrainingPage() {
             ))}
           </div>
         ) : (
-           <p className="text-muted-foreground">No trainings completed yet. Finish a course and pass the quiz to earn a certificate!</p>
+           <Card className="text-muted-foreground p-6 text-center">
+            <BookOpen className="mx-auto h-12 w-12 text-primary mb-4" />
+            <p className="font-semibold">No trainings completed and certified yet.</p>
+            <p className="text-sm">Finish a course from the section above and pass the quiz to earn a certificate!</p>
+          </Card>
         )}
       </section>
 
@@ -272,6 +305,7 @@ export default function TrainingPage() {
           </DialogHeader>
           <div className="py-4 space-y-3">
             <p className="text-sm text-muted-foreground">Course: {selectedCourseForQuiz?.title}</p>
+            {selectedCourseForQuiz?.mandatory && <p className="text-sm font-semibold text-destructive flex items-center gap-1"><AlertTriangle className="h-4 w-4"/> This is a mandatory training quiz.</p>}
             <p className="text-sm">Click a button below to simulate your quiz result.</p>
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
@@ -296,32 +330,31 @@ export default function TrainingPage() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="mx-auto my-4">
-                <Image src="https://placehold.co/500x350.png" alt="Certificate Preview" width={500} height={350} className="rounded-md border" data-ai-hint="certificate document" />
+                <Image src="https://placehold.co/500x350.png" alt="Certificate Preview" width={500} height={350} className="rounded-md border" data-ai-hint="official certificate document" />
               </div>
               <div className="space-y-1 text-sm">
                 <p><strong>Issued to:</strong> Alex Crewman (Demo User)</p>
                 <p><strong>Training Program:</strong> {selectedCourseForCert?.title}</p>
                 <p><strong>Certificate ID:</strong> {selectedCourseForCert?.certificateDetails?.certificateId}</p>
-                <p><strong>Date Issued:</strong> {selectedCourseForCert?.certificateDetails?.expiryDate ? new Date(new Date(selectedCourseForCert.certificateDetails.expiryDate).setFullYear(new Date(selectedCourseForCert.certificateDetails.expiryDate).getFullYear() - 2)).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}</p>
+                <p><strong>Date Issued:</strong> {selectedCourseForCert?.certificateDetails?.expiryDate ? new Date(new Date(selectedCourseForCert.certificateDetails.expiryDate).setFullYear(new Date(selectedCourseForCert.certificateDetails.expiryDate).getFullYear() - (selectedCourseForCert.title.toLowerCase().includes("recurrent") || selectedCourseForCert.title.toLowerCase().includes("refresher") ? 1 : 2))).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}</p>
                 <p><strong>Issuing Body:</strong> {selectedCourseForCert?.certificateDetails?.provider}</p>
                 {selectedCourseForCert?.certificateDetails?.expiryDate && <p><strong>Valid Until:</strong> {selectedCourseForCert.certificateDetails.expiryDate}</p>}
                  <p className="font-semibold mt-2">Achieved Score: {selectedCourseForCert?.quizScore}%</p>
+                 {selectedCourseForCert?.mandatory && <p className="font-semibold text-destructive mt-1">This was a mandatory training.</p>}
               </div>
             </div>
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="secondary">Close</Button>
               </DialogClose>
-              <Button type="button" onClick={() => alert('Download functionality not implemented yet.')}>Download PDF</Button>
+              <Button type="button" onClick={() => {toast({title: "Feature Not Implemented", description: "PDF download is not available in this demo."});} }>Download PDF</Button>
             </DialogFooter>
           </DialogContent>
       </Dialog>
 
       <div className="text-center mt-8">
-        <Button variant="link">Browse Full Course Catalog (Conceptual)</Button>
+        <Button variant="link" onClick={() => {toast({title: "Feature Not Implemented", description: "Full course catalog browsing is not available in this demo."});}}>Browse Full Course Catalog (Conceptual)</Button>
       </div>
     </div>
   );
 }
-
-    
