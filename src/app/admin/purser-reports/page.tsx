@@ -16,6 +16,7 @@ import { ClipboardCheck, Loader2, AlertTriangle, RefreshCw, Eye } from "lucide-r
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { PurserReportInput, PurserReportOutput } from "@/ai/flows/purser-report-flow";
+import ReactMarkdown from 'react-markdown';
 
 interface StoredPurserReport {
   id: string;
@@ -24,7 +25,7 @@ interface StoredPurserReport {
   userId: string;
   userEmail: string;
   createdAt: Timestamp;
-  status: string;
+  status: string; // e.g. "submitted", "reviewed", "archived"
 }
 
 export default function AdminPurserReportsPage() {
@@ -176,7 +177,7 @@ export default function AdminPurserReportsPage() {
             <ScrollArea className="flex-grow pr-6">
               <div className="py-4 space-y-6">
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Key Highlights:</h3>
+                  <h3 className="font-semibold text-lg mb-2">Key Highlights (AI Generated):</h3>
                   {selectedReport.reportOutput.keyHighlights && selectedReport.reportOutput.keyHighlights.length > 0 ? (
                     <ul className="list-disc pl-5 space-y-1 text-sm bg-secondary/30 p-3 rounded-md">
                       {selectedReport.reportOutput.keyHighlights.map((highlight, index) => (
@@ -189,14 +190,14 @@ export default function AdminPurserReportsPage() {
                 </div>
                 
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Full AI Generated Report (Markdown):</h3>
+                  <h3 className="font-semibold text-lg mb-2">Full AI Generated Report:</h3>
                   <div className="prose prose-sm max-w-none dark:prose-invert text-foreground p-4 border rounded-md bg-background">
-                    <pre className="whitespace-pre-wrap font-sans text-sm">{selectedReport.reportOutput.formattedReport}</pre>
+                    <ReactMarkdown>{selectedReport.reportOutput.formattedReport}</ReactMarkdown>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Submitted Input Details:</h3>
+                  <h3 className="font-semibold text-lg mb-2">User Submitted Input Details:</h3>
                   <Card className="bg-background/50">
                     <CardContent className="pt-4 space-y-3 text-sm">
                        <p><strong>Aircraft:</strong> {selectedReport.reportInput.aircraftTypeRegistration}</p>
@@ -207,7 +208,7 @@ export default function AdminPurserReportsPage() {
                        </div>
                       
                        {Object.entries(selectedReport.reportInput).map(([key, value]) => {
-                         if (typeof value === 'string' && value.trim() !== "" && !['flightNumber', 'flightDate', 'departureAirport', 'arrivalAirport', 'aircraftTypeRegistration', 'crewMembers'].includes(key) ) {
+                         if (typeof value === 'string' && value.trim() !== "" && !['flightNumber', 'flightDate', 'departureAirport', 'arrivalAirport', 'aircraftTypeRegistration', 'crewMembers', 'generalFlightSummary'].includes(key) && value !== undefined && value !== null) {
                            const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
                            return (
                              <div key={key} className="border-t pt-2 mt-2">
@@ -218,6 +219,12 @@ export default function AdminPurserReportsPage() {
                          }
                          return null;
                        })}
+                        {selectedReport.reportInput.generalFlightSummary && (
+                            <div className="border-t pt-2 mt-2">
+                                <Label className="font-medium">General Flight Summary:</Label>
+                                <p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.generalFlightSummary}</p>
+                            </div>
+                        )}
                     </CardContent>
                   </Card>
                 </div>
