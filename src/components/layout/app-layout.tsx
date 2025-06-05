@@ -15,6 +15,9 @@ import {
   SidebarInset,
   SidebarTrigger,
   useSidebar,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -50,15 +53,16 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/auth-context"; // Ensure this path is correct
+import { useAuth } from "@/contexts/auth-context"; 
 import { useToast } from "@/hooks/use-toast";
-import { Breadcrumbs } from "./breadcrumbs"; // Import Breadcrumbs
+import { Breadcrumbs } from "./breadcrumbs"; 
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/requests", label: "Requests", icon: SendHorizonal },
+  { href: "/my-alerts", label: "My Alerts", icon: Bell },
   { href: "/airport-briefings", label: "Airport Briefings", icon: Navigation },
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
@@ -68,7 +72,7 @@ const navItems = [
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];
 
-// Theme toggle functionality (simple example)
+// Theme toggle functionality
 const useTheme = () => {
   const [theme, setTheme] = React.useState("light");
   React.useEffect(() => {
@@ -103,7 +107,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     try {
       await logout();
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
-      // router.push("/login") is handled by AuthProvider
     } catch (error) {
       console.error("Logout failed:", error);
       toast({ title: "Logout Failed", description: "Could not log you out. Please try again.", variant: "destructive" });
@@ -115,6 +118,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/documents": "Document Library",
     "/schedule": "My Schedule",
     "/requests": "Submit a Request",
+    "/my-alerts": "My Alerts",
     "/airport-briefings": "Airport Briefing Generator",
     "/flight-duty-calculator": "Flight Duty Calculator",
     "/purser-reports": "Purser Report Generator",
@@ -137,24 +141,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/admin/user-requests": "User Submitted Requests",
   };
   
-  // Find the most specific match for page titles
-  let currentTitle = "AirCrew Hub"; // Default title
+  let currentTitle = "AirCrew Hub"; 
   let longestMatch = "";
   for (const path in pageTitles) {
-      // Ensure that '/admin' does not incorrectly match '/admin/users' as more specific
-      // We want an exact match or a match that ends with a '/'
       if (pathname === path || (pathname.startsWith(path) && path.endsWith('/') && path.length > longestMatch.length) || (pathname.startsWith(path + '/') && path.length > longestMatch.length)) {
         if (path.length > longestMatch.length) {
             longestMatch = path;
             currentTitle = pageTitles[path];
         }
       } else if (pathname.startsWith(path) && path.length > longestMatch.length && !pageTitles[pathname]) {
-         // Fallback for dynamic paths if not explicitly defined, use parent
          longestMatch = path;
          currentTitle = pageTitles[path];
       }
   }
-   // If an exact match for the full pathname exists, prioritize it
   if (pageTitles[pathname]) {
     currentTitle = pageTitles[pathname];
   }
@@ -162,15 +161,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const currentPageTitle = currentTitle;
 
 
-  // Hide sidebar and header for login/signup pages
   if (pathname === "/login" || pathname === "/signup") {
     return <>{children}</>;
   }
   
-  if (loading && !user) { // Show loader only if genuinely loading auth state, not if user is already available
+  if (loading && !user) { 
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <Loader2 className="h-12 w-12 animate-spin text-primary" aria-label="Loading application state" />
       </div>
     );
   }
@@ -192,16 +190,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               if (item.adminOnly && user?.role !== 'admin') { 
                 return null; 
               }
+              const isActive = pathname === item.href || (pathname.startsWith(item.href + '/') && item.href !== "/") || (item.href === "/admin" && pathname.startsWith("/admin/"));
               return (
                 <SidebarMenuItem key={item.href}>
                   <Link href={item.href} passHref legacyBehavior>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname === item.href || (pathname.startsWith(item.href) && item.href !== "/")} // Highlight admin for subpages
+                      isActive={isActive}
                       tooltip={{ children: item.label, side: "right", align: "center" }}
                       className={cn(
                         "justify-start",
-                        (pathname === item.href || (pathname.startsWith(item.href) && item.href !== "/")) && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground"
+                        isActive && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground"
                       )}
                     >
                       <a>
@@ -242,16 +241,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       <SidebarInset>
         <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
-          {isMobile && <SidebarTrigger />}
+          {isMobile && <SidebarTrigger aria-label="Toggle sidebar" />}
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">{currentPageTitle}</h1>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+            <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>
               {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </Button>
             {user && (
-              <Button variant="ghost" size="icon" aria-label="Notifications">
+              <Button variant="ghost" size="icon" aria-label="View notifications">
                 <Bell className="h-5 w-5" />
               </Button>
             )}
@@ -305,12 +304,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
-          <Breadcrumbs /> {/* Add Breadcrumbs here */}
+          <Breadcrumbs /> 
           {children}
         </main>
       </SidebarInset>
     </>
   );
 }
-
-    

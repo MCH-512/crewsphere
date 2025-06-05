@@ -12,7 +12,7 @@ import { generateDailyBriefing, type DailyBriefingOutput } from "@/ai/flows/dail
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, limit, getDocs, Timestamp } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, getDocs, Timestamp, or } from "firebase/firestore";
 import { formatDistanceToNowStrict } from "date-fns";
 import ReactMarkdown from "react-markdown";
 
@@ -97,17 +97,20 @@ export default function DashboardPage() {
       setAlertsLoading(true);
       setAlertsError(null);
       try {
+        // Query for (user-specific alerts OR global alerts) AND limit combined result.
+        // Firestore doesn't support OR queries on different fields directly in a way that allows easy combination with limit before fetching.
+        // So, fetch both and combine/sort/limit in client.
         const userAlertsQuery = query(
           collection(db, "alerts"),
           where("userId", "==", user.uid),
           orderBy("createdAt", "desc"),
-          limit(3)
+          limit(3) // Limit user-specific alerts
         );
         const globalAlertsQuery = query(
           collection(db, "alerts"),
           where("userId", "==", null), 
           orderBy("createdAt", "desc"),
-          limit(3)
+          limit(3) // Limit global alerts
         );
         
         const [userAlertsSnapshot, globalAlertsSnapshot] = await Promise.all([
@@ -118,15 +121,16 @@ export default function DashboardPage() {
         const fetchedUserAlerts = userAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alert));
         const fetchedGlobalAlerts = globalAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alert));
         
+        // Combine, remove duplicates (preferring user-specific if IDs clash, though unlikely with unique IDs), sort, and limit
         const combinedAlerts = [...fetchedUserAlerts, ...fetchedGlobalAlerts]
-          .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
-          .reduce((acc, current) => { // Remove duplicates by ID, preferring user-specific if ID is same
+          .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()) // Sort all combined alerts by date
+          .reduce((acc, current) => { // Remove duplicates by ID
             if (!acc.find(item => item.id === current.id)) {
               acc.push(current);
             }
             return acc;
           }, [] as Alert[])
-          .slice(0, 3); 
+          .slice(0, 3); // Take the top 3 overall
 
         setAlerts(combinedAlerts);
       } catch (err) {
@@ -149,31 +153,30 @@ export default function DashboardPage() {
         let q = query(
           collection(db, "courses"), 
           where("mandatory", "==", true), 
-          orderBy("title"), // Or a 'priority' or 'createdAt' field if you add one
+          orderBy("title"), 
           limit(2)
         );
         let querySnapshot = await getDocs(q);
         let fetchedCourses = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FeaturedCourse));
 
-        // If fewer than 2 mandatory courses, fetch any other courses to make up the difference
         if (fetchedCourses.length < 2) {
           const existingIds = fetchedCourses.map(c => c.id);
           const needed = 2 - fetchedCourses.length;
           
           q = query(
             collection(db, "courses"), 
-            orderBy("title"), // Or a different order
-            limit(needed + existingIds.length) // Fetch enough to potentially get new ones
+            orderBy("title"), 
+            limit(needed + existingIds.length) 
           );
           querySnapshot = await getDocs(q);
           const additionalCourses = querySnapshot.docs
             .map(doc => ({ id: doc.id, ...doc.data() } as FeaturedCourse))
-            .filter(course => !existingIds.includes(course.id)) // Don't include already fetched mandatory ones
+            .filter(course => !existingIds.includes(course.id)) 
             .slice(0, needed);
           fetchedCourses = [...fetchedCourses, ...additionalCourses];
         }
         
-        setFeaturedTrainings(fetchedCourses.slice(0, 2)); // Ensure max 2
+        setFeaturedTrainings(fetchedCourses.slice(0, 2)); 
       } catch (err) {
         console.error("Error fetching featured trainings:", err);
         setFeaturedTrainingsError("Failed to load featured trainings.");
@@ -182,11 +185,11 @@ export default function DashboardPage() {
         setFeaturedTrainingsLoading(false);
       }
     }
-    if (user) { // Only fetch if user is logged in, or adjust if trainings are public
+    if (user) { 
         fetchFeaturedTrainings();
     } else {
         setFeaturedTrainingsLoading(false);
-        setFeaturedTrainings([]); // No trainings if not logged in
+        setFeaturedTrainings([]); 
     }
   }, [user, toast]);
 
@@ -226,8 +229,8 @@ export default function DashboardPage() {
       case 'warning':
         return {
           border: 'border-yellow-500/50 bg-yellow-500/10',
-          iconColor: 'text-yellow-600',
-          titleColor: 'text-yellow-700',
+          iconColor: 'text-yellow-600 dark:text-yellow-400',
+          titleColor: 'text-yellow-700 dark:text-yellow-300',
         };
       case 'info':
       default:
@@ -241,8 +244,9 @@ export default function DashboardPage() {
 
   const getIconForAlert = (alert: Alert): LucideIcon => {
     if (alert.iconName) {
-        if (alert.iconName.toLowerCase() === "briefcase") return Briefcase;
-        if (alert.iconName.toLowerCase() === "graduationcap") return GraduationCap;
+        const lowerIconName = alert.iconName.toLowerCase();
+        if (lowerIconName === "briefcase") return Briefcase;
+        if (lowerIconName === "graduationcap") return GraduationCap;
     }
     switch (alert.level) {
         case "critical": return AlertTriangle;
@@ -390,7 +394,7 @@ export default function DashboardPage() {
               </div>
             )}
              <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
-                <Link href="#">View All Alerts <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link href="/my-alerts">View All Alerts <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
           </CardContent>
         </Card>

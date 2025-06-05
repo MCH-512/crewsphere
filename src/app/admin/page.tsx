@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getCountFromServer } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 export default function AdminConsolePage() {
   const { user } = useAuth();
@@ -36,7 +37,7 @@ export default function AdminConsolePage() {
         description: "Could not fetch pending requests count.",
         variant: "destructive",
       });
-      setPendingRequestsCount(0); // Default to 0 on error
+      setPendingRequestsCount(0); 
     } finally {
       setIsLoadingCount(false);
     }
@@ -45,6 +46,47 @@ export default function AdminConsolePage() {
   React.useEffect(() => {
     fetchPendingRequestsCount();
   }, [fetchPendingRequestsCount]);
+
+  const AdminButtonWithTooltip = ({ href, children, tooltipContent, disabled }: { href?: string, children: React.ReactNode, tooltipContent: string, disabled?: boolean }) => {
+    const button = (
+      <Button variant="outline" size="sm" disabled={disabled} asChild={!!href && !disabled}>
+        {href && !disabled ? <Link href={href}>{children}</Link> : <>{children}</>}
+      </Button>
+    );
+
+    if (disabled) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>{button}</TooltipTrigger>
+            <TooltipContent><p>{tooltipContent}</p></TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    return button;
+  };
+  
+  const AdminActionButton = ({ children, tooltipContent, disabled, variant = "outline", action }: { children: React.ReactNode, tooltipContent?: string, disabled?: boolean, variant?: "outline" | "destructive" | "default", action?: () => void }) => {
+    const button = (
+      <Button variant={variant} size="sm" disabled={disabled} onClick={action}>
+        {children}
+      </Button>
+    );
+
+    if (disabled && tooltipContent) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>{button}</TooltipTrigger>
+            <TooltipContent><p>{tooltipContent}</p></TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    return button;
+  };
+
 
   return (
     <div className="space-y-6">
@@ -70,9 +112,9 @@ export default function AdminConsolePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">View and manage user accounts, roles, and permissions.</p>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/admin/users">Manage Users</Link>
-                </Button>
+                <AdminButtonWithTooltip href="/admin/users" tooltipContent="Manage user accounts">
+                  Manage Users
+                </AdminButtonWithTooltip>
               </CardContent>
             </Card>
             <Card className="shadow-sm">
@@ -83,12 +125,12 @@ export default function AdminConsolePage() {
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">Upload, categorize, and manage all shared documents and manuals.</p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/admin/documents/upload"><UploadCloud className="mr-2 h-4 w-4" />Upload New</Link>
-                    </Button>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href="/documents"><Eye className="mr-2 h-4 w-4" />View All</Link>
-                    </Button>
+                    <AdminButtonWithTooltip href="/admin/documents/upload" tooltipContent="Upload a new document">
+                      <UploadCloud className="mr-2 h-4 w-4" />Upload New
+                    </AdminButtonWithTooltip>
+                    <AdminButtonWithTooltip href="/documents" tooltipContent="View all documents" disabled={false}>
+                       <Eye className="mr-2 h-4 w-4" />View All
+                    </AdminButtonWithTooltip>
                 </div>
               </CardContent>
             </Card>
@@ -100,12 +142,12 @@ export default function AdminConsolePage() {
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">Create and manage global or user-specific alerts and notifications.</p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/admin/alerts/create"><PlusCircle className="mr-2 h-4 w-4" />Create Alert</Link>
-                    </Button>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href="/admin/alerts"><Eye className="mr-2 h-4 w-4" />View All</Link>
-                    </Button>
+                    <AdminButtonWithTooltip href="/admin/alerts/create" tooltipContent="Create a new alert">
+                      <PlusCircle className="mr-2 h-4 w-4" />Create Alert
+                    </AdminButtonWithTooltip>
+                    <AdminButtonWithTooltip href="/admin/alerts" tooltipContent="View all alerts">
+                      <Eye className="mr-2 h-4 w-4" />View All
+                    </AdminButtonWithTooltip>
                 </div>
               </CardContent>
             </Card>
@@ -117,12 +159,12 @@ export default function AdminConsolePage() {
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">Create, update, and organize training courses, modules, and learning materials.</p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/admin/courses/create"><PlusCircle className="mr-2 h-4 w-4" />Create New Course</Link>
-                    </Button>
-                    <Button variant="ghost" size="sm" asChild>
-                        <Link href="/admin/courses"><Eye className="mr-2 h-4 w-4" />View All Courses</Link>
-                    </Button>
+                    <AdminButtonWithTooltip href="/admin/courses/create" tooltipContent="Create a new course">
+                      <PlusCircle className="mr-2 h-4 w-4" />Create New Course
+                    </AdminButtonWithTooltip>
+                    <AdminButtonWithTooltip href="/admin/courses" tooltipContent="View all courses">
+                        <Eye className="mr-2 h-4 w-4" />View All Courses
+                    </AdminButtonWithTooltip>
                 </div>
               </CardContent>
             </Card>
@@ -134,8 +176,10 @@ export default function AdminConsolePage() {
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">Assign training to users, track completion, and manage certifications.</p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" disabled>Assign Training</Button>
-                    <Button variant="ghost" size="sm" disabled><BarChart3 className="mr-2 h-4 w-4" />View Progress</Button>
+                    <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon">Assign Training</AdminButtonWithTooltip>
+                    <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon" >
+                        <BarChart3 className="mr-2 h-4 w-4" />View Progress
+                    </AdminButtonWithTooltip>
                 </div>
               </CardContent>
             </Card>
@@ -149,8 +193,12 @@ export default function AdminConsolePage() {
                   Create, edit, and manage quizzes, question banks, and review assessment results.
                 </p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" disabled><PlusCircle className="mr-2 h-4 w-4" />Create New Quiz</Button>
-                    <Button variant="ghost" size="sm" disabled><Edit3 className="mr-2 h-4 w-4" />Manage Question Banks</Button>
+                    <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon">
+                        <PlusCircle className="mr-2 h-4 w-4" />Create New Quiz
+                    </AdminButtonWithTooltip>
+                    <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon">
+                        <Edit3 className="mr-2 h-4 w-4" />Manage Question Banks
+                    </AdminButtonWithTooltip>
                 </div>
               </CardContent>
             </Card>
@@ -164,9 +212,9 @@ export default function AdminConsolePage() {
                   Review, manage, and respond to user-submitted requests (e.g., leave, schedule changes).
                 </p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/admin/user-requests"><Eye className="mr-2 h-4 w-4" />View All Requests</Link>
-                    </Button>
+                    <AdminButtonWithTooltip href="/admin/user-requests" tooltipContent="View all user requests">
+                        <Eye className="mr-2 h-4 w-4" />View All Requests
+                    </AdminButtonWithTooltip>
                     <Button 
                       variant={pendingRequestsCount && pendingRequestsCount > 0 ? "destructive" : "outline"} 
                       size="sm" 
@@ -190,10 +238,12 @@ export default function AdminConsolePage() {
                   Access, review, and analyze submitted Purser Reports for operational insights and follow-up actions.
                 </p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/admin/purser-reports"><Eye className="mr-2 h-4 w-4" />View All Reports</Link>
-                    </Button>
-                    <Button variant="destructive" size="sm" disabled><AlertTriangle className="mr-2 h-4 w-4" />Flagged (0)</Button>
+                    <AdminButtonWithTooltip href="/admin/purser-reports" tooltipContent="View all purser reports">
+                        <Eye className="mr-2 h-4 w-4" />View All Reports
+                    </AdminButtonWithTooltip>
+                    <AdminActionButton disabled tooltipContent="Flagging feature coming soon" variant="destructive">
+                        <AlertTriangle className="mr-2 h-4 w-4" />Flagged (0)
+                    </AdminActionButton>
                 </div>
               </CardContent>
             </Card>
@@ -207,12 +257,12 @@ export default function AdminConsolePage() {
                   Manage flight schedules: flight numbers, dates, departure/arrival airports, ETD/ETA.
                 </p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/admin/flights"><Eye className="mr-2 h-4 w-4" />Manage Flights</Link>
-                    </Button>
-                    <Button variant="default" size="sm" asChild>
-                        <Link href="/admin/flights/create"><PlusCircle className="mr-2 h-4 w-4"/>Add New Flight</Link>
-                    </Button>
+                    <AdminButtonWithTooltip href="/admin/flights" tooltipContent="Manage flight schedules">
+                        <Eye className="mr-2 h-4 w-4" />Manage Flights
+                    </AdminButtonWithTooltip>
+                    <AdminButtonWithTooltip href="/admin/flights/create" tooltipContent="Add a new flight" disabled={false} >
+                        <PlusCircle className="mr-2 h-4 w-4"/>Add New Flight
+                    </AdminButtonWithTooltip>
                 </div>
               </CardContent>
             </Card>
@@ -223,7 +273,7 @@ export default function AdminConsolePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">Configure application-wide settings and integrations.</p>
-                <Button variant="outline" size="sm" disabled>Configure Settings</Button>
+                <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon">Configure Settings</AdminButtonWithTooltip>
               </CardContent>
             </Card>
             <Card className="shadow-sm">
@@ -233,7 +283,7 @@ export default function AdminConsolePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">Review system activity, changes, and important events.</p>
-                 <Button variant="outline" size="sm" disabled>View Logs</Button>
+                 <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon">View Logs</AdminButtonWithTooltip>
               </CardContent>
             </Card>
           </div>
@@ -242,5 +292,3 @@ export default function AdminConsolePage() {
     </div>
   );
 }
-
-    
