@@ -16,6 +16,9 @@ interface AuthContextType {
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
+// Define public paths that do not require authentication
+const PUBLIC_PATHS = ['/login', '/signup'];
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<User | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -39,11 +42,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   React.useEffect(() => {
-    if (!loading && !user && !['/login', '/signup'].includes(pathname)) {
-      // Allow access to login and signup pages even if not authenticated
-      if (pathname !== '/' && !pathname.startsWith('/_next/')) { // Add more public paths if needed
-         // router.push('/login'); // Temporarily disable forced redirect for easier development
-      }
+    if (loading) return; // Don't do anything while loading
+
+    const pathIsPublic = PUBLIC_PATHS.includes(pathname);
+
+    if (!user && !pathIsPublic) {
+      // If user is not logged in and trying to access a protected page, redirect to login
+      router.push('/login');
+    } else if (user && pathIsPublic) {
+      // If user is logged in and trying to access a public page (login/signup), redirect to dashboard
+      router.push('/');
     }
   }, [user, loading, pathname, router]);
 
@@ -51,8 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await firebaseSignOut(auth);
-      setUser(null);
-      router.push("/login");
+      setUser(null); // Explicitly set user to null on logout
+      // The useEffect above will handle redirecting to /login after user becomes null
     } catch (err) {
       if (err instanceof Error) {
         setError(err);
@@ -64,6 +72,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value = { user, loading, error, logout };
+
+  // Do not render children until loading is complete and redirection logic has had a chance to run
+  // This prevents brief flashes of protected content or login page when already authenticated.
+  if (loading) {
+    // You might want a more sophisticated loading screen here
+    return null; 
+  }
+  
+  // If not loading and trying to access a protected route without a user,
+  // or a public route with a user, the redirection will be in progress.
+  // Render children only if conditions are met (user for protected, no user for public).
+  const pathIsPublic = PUBLIC_PATHS.includes(pathname);
+  if ((!user && !pathIsPublic) || (user && pathIsPublic)) {
+    // Redirection is happening or should be happening, show a loader or null
+    // to prevent rendering the wrong page content briefly.
+    return null; // Or a global loader
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
