@@ -6,182 +6,239 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle } from "lucide-react";
+import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2 } from "lucide-react";
 import Image from "next/image";
-import type { LucideIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/auth-context";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, Timestamp, orderBy } from "firebase/firestore";
 
-interface Course {
-  id: string;
+interface CourseData {
+  id: string; // Firestore document ID
   title: string;
   description: string;
-  category: string; 
-  courseIcon: LucideIcon;
+  category: string;
   imageHint: string;
-  contentStatus: 'NotStarted' | 'InProgress' | 'Completed';
-  quizId: string; 
+  quizId: string;
   quizTitle: string;
+  mandatory: boolean;
+  // courseIcon can be mapped from category or be a default
+}
+
+interface UserProgressData {
+  userId: string;
+  courseId: string;
+  contentStatus: 'NotStarted' | 'InProgress' | 'Completed';
   quizStatus: 'NotTaken' | 'Attempted' | 'Passed' | 'Failed';
   quizScore?: number;
   certificateDetails?: {
     provider: string;
     certificateId: string;
-    expiryDate?: string;
+    issuedDate: string; // ISO String
+    expiryDate?: string; // ISO String
   };
-  mandatory: boolean;
+  lastUpdated: Timestamp;
 }
 
-const initialCourses: Course[] = [
-  {
-    id: "CRS001",
-    title: "SEP - Evacuation Procedures (Recurrent)",
-    description: "Annual recurrent training for standard emergency evacuation protocols and aircraft-specific procedures.",
-    category: "Safety & Emergency",
-    courseIcon: BookOpen,
-    imageHint: "emergency exit aircraft",
-    contentStatus: 'NotStarted',
-    quizId: "QZ001",
-    quizTitle: "SEP Evacuation Quiz",
-    quizStatus: 'NotTaken',
-    mandatory: true,
-  },
-  {
-    id: "CRS002",
-    title: "Boeing 777 Systems & Door Operations",
-    description: "Comprehensive training on Boeing 777 key systems, safety equipment, and door operation procedures.",
-    category: "Aircraft Specific",
-    courseIcon: BookOpen,
-    imageHint: "aircraft door open",
-    contentStatus: 'InProgress',
-    quizId: "QZ002",
-    quizTitle: "B777 Systems & Doors Quiz",
-    quizStatus: 'NotTaken',
-    mandatory: true,
-  },
-  {
-    id: "CRS003",
-    title: "Dangerous Goods Regulations (DGR) - Category 10",
-    description: "Ensure you're up-to-date with the latest IATA regulations for handling dangerous goods as cabin crew.",
-    category: "Regulatory",
-    courseIcon: BookOpen,
-    imageHint: "hazard label package",
-    contentStatus: 'Completed', 
-    quizId: "QZ003",
-    quizTitle: "DGR Cat. 10 Quiz",
-    quizStatus: 'NotTaken',
-    mandatory: true,
-  },
-  {
-    id: "CRS004",
-    title: "Advanced Conflict Resolution",
-    description: "Techniques for de-escalating and managing challenging passenger interactions effectively.",
-    category: "Customer Service",
-    courseIcon: BookOpen,
-    imageHint: "negotiation discussion",
-    contentStatus: 'Completed',
-    quizId: "QZ004",
-    quizTitle: "Conflict Resolution Scenarios Quiz",
-    quizStatus: 'Passed', 
-    quizScore: 92,
-    certificateDetails: { provider: "SkyHigh Training Academy", certificateId: "CERT-ACR-004", expiryDate: "2026-07-01" },
-    mandatory: false,
-  },
-   {
-    id: "CRS005",
-    title: "Aviation First Aid & CPR (Recurrent)",
-    description: "Biennial recurrent certification for First Aid & CPR, tailored for aviation environments.",
-    category: "Medical",
-    courseIcon: BookOpen,
-    imageHint: "first aid cpr",
-    contentStatus: 'Completed',
-    quizId: "QZ005",
-    quizTitle: "Aviation First Aid & CPR Quiz",
-    quizStatus: 'Failed', 
-    quizScore: 65,
-    certificateDetails: { provider: "AeroMedical Trainers", certificateId: "CERT-AFA-CPR-005" } ,
-    mandatory: true,
-  },
-  {
-    id: "CRS006",
-    title: "Security Procedures & Threat Management",
-    description: "Training on recognizing and responding to security threats and suspicious activities on board.",
-    category: "Security",
-    courseIcon: BookOpen,
-    imageHint: "airport security check",
-    contentStatus: 'NotStarted',
-    quizId: "QZ006",
-    quizTitle: "Aviation Security Quiz",
-    quizStatus: 'NotTaken',
-    mandatory: true,
-  },
-];
-
+interface CombinedCourse extends CourseData {
+  progress?: UserProgressData; // User's progress for this course
+}
 
 export default function TrainingPage() {
   const { toast } = useToast();
-  const [courses, setCourses] = React.useState<Course[]>(initialCourses);
-  const [selectedCourseForQuiz, setSelectedCourseForQuiz] = React.useState<Course | null>(null);
-  const [selectedCourseForCert, setSelectedCourseForCert] = React.useState<Course | null>(null);
+  const { user, loading: authLoading } = useAuth();
+  
+  const [courses, setCourses] = React.useState<CombinedCourse[]>([]);
+  const [isLoadingCourses, setIsLoadingCourses] = React.useState(true);
+  const [loadingError, setLoadingError] = React.useState<string | null>(null);
+
+  const [selectedCourseForQuiz, setSelectedCourseForQuiz] = React.useState<CombinedCourse | null>(null);
+  const [selectedCourseForCert, setSelectedCourseForCert] = React.useState<CombinedCourse | null>(null);
   const [isQuizDialogOpen, setIsQuizDialogOpen] = React.useState(false);
   const [isCertDialogOpen, setIsCertDialogOpen] = React.useState(false);
+  const [isUpdating, setIsUpdating] = React.useState(false);
 
-  const handleCourseAction = (courseId: string) => {
+  const fetchTrainingData = React.useCallback(async () => {
+    if (!user) {
+      setIsLoadingCourses(false);
+      return;
+    }
+    setIsLoadingCourses(true);
+    setLoadingError(null);
+    try {
+      const coursesQuery = query(collection(db, "courses"), orderBy("title"));
+      const coursesSnapshot = await getDocs(coursesQuery);
+      const fetchedCoursesData = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CourseData));
+
+      const combinedCoursesWithProgress: CombinedCourse[] = [];
+
+      for (const courseData of fetchedCoursesData) {
+        const progressDocId = `${user.uid}_${courseData.id}`;
+        const progressDocRef = doc(db, "userTrainingProgress", progressDocId);
+        const progressDocSnap = await getDoc(progressDocRef);
+
+        let userProgress: UserProgressData | undefined = undefined;
+        if (progressDocSnap.exists()) {
+          userProgress = progressDocSnap.data() as UserProgressData;
+        } else {
+          // Default progress if none exists (will be created on first action)
+           userProgress = {
+            userId: user.uid,
+            courseId: courseData.id,
+            contentStatus: 'NotStarted',
+            quizStatus: 'NotTaken',
+            lastUpdated: Timestamp.now() // Placeholder, will be updated
+          };
+        }
+        combinedCoursesWithProgress.push({ ...courseData, progress: userProgress });
+      }
+      setCourses(combinedCoursesWithProgress);
+    } catch (err) {
+      console.error("Error fetching training data:", err);
+      setLoadingError("Failed to load training data. Please try again.");
+      toast({ title: "Loading Error", description: "Could not fetch training data.", variant: "destructive" });
+    } finally {
+      setIsLoadingCourses(false);
+    }
+  }, [user, toast]);
+
+  React.useEffect(() => {
+    if (!authLoading && user) {
+      fetchTrainingData();
+    } else if (!authLoading && !user) {
+      setIsLoadingCourses(false); // Not logged in, no data to fetch
+    }
+  }, [authLoading, user, fetchTrainingData]);
+
+
+  const handleCourseAction = async (courseId: string) => {
+    if (!user) return;
     const course = courses.find(c => c.id === courseId);
     if (!course) return;
 
-    if (course.contentStatus !== 'Completed') {
-      // Simulate completing course content
-      setCourses(prevCourses => prevCourses.map(c => 
-        c.id === courseId ? { ...c, contentStatus: 'Completed' } : c
-      ));
-      toast({ title: "Course Content Viewed", description: `You have completed the material for "${course.title}". You can now take the quiz.` });
-    } else {
-      // Open quiz dialog
-      setSelectedCourseForQuiz(course);
-      setIsQuizDialogOpen(true);
+    setIsUpdating(true);
+    const progressDocId = `${user.uid}_${course.id}`;
+    const progressDocRef = doc(db, "userTrainingProgress", progressDocId);
+
+    try {
+      if (course.progress?.contentStatus !== 'Completed') {
+        const newProgressData: Partial<UserProgressData> = {
+          userId: user.uid,
+          courseId: course.id,
+          contentStatus: 'Completed',
+          lastUpdated: Timestamp.now(),
+        };
+        // If progress doc doesn't exist or contentStatus is not set, initialize other fields
+        if(!course.progress || !course.progress.quizStatus){
+            newProgressData.quizStatus = 'NotTaken';
+        }
+
+        await setDoc(progressDocRef, newProgressData, { merge: true });
+        toast({ title: "Course Content Viewed", description: `You have completed the material for "${course.title}". You can now take the quiz.` });
+        fetchTrainingData(); // Refresh data
+      } else {
+        setSelectedCourseForQuiz(course);
+        setIsQuizDialogOpen(true);
+      }
+    } catch (error) {
+      console.error("Error updating course progress:", error);
+      toast({ title: "Update Error", description: "Could not update course progress.", variant: "destructive" });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  const simulateQuiz = (courseId: string, passed: boolean) => {
-    const score = passed ? Math.floor(Math.random() * 21) + 80 : Math.floor(Math.random() * 40) + 40; // 80-100 if passed, 40-79 if failed
-    
-    setCourses(prevCourses => prevCourses.map(c => {
-      if (c.id === courseId) {
-        const newQuizStatus = passed ? 'Passed' : 'Failed';
-        const newCourseData: Course = {
-          ...c,
-          quizStatus: newQuizStatus,
-          quizScore: score,
-        };
-        if (passed && !newCourseData.certificateDetails) {
-            newCourseData.certificateDetails = {
-                provider: "In-House Certification Body",
-                certificateId: `CERT-${c.id}-${new Date().getFullYear()}`,
-                expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + (c.title.toLowerCase().includes("recurrent") || c.title.toLowerCase().includes("refresher") ? 1 : 2))).toISOString().split('T')[0] 
-            };
-        }
-        return newCourseData;
-      }
-      return c;
-    }));
-
+  const simulateQuiz = async (courseId: string, passed: boolean) => {
+    if (!user) return;
     const course = courses.find(c => c.id === courseId);
-    toast({
-      title: `Quiz ${passed ? 'Passed' : 'Failed'}`,
-      description: `You scored ${score}% on the "${course?.quizTitle}". ${passed ? 'Congratulations! Your certificate is now available.' : 'Please review the material and try again.'}`,
-      variant: passed ? "default" : "destructive",
-    });
-    setIsQuizDialogOpen(false);
-    setSelectedCourseForQuiz(null);
+    if (!course) return;
+    
+    setIsUpdating(true);
+    const progressDocId = `${user.uid}_${course.id}`;
+    const progressDocRef = doc(db, "userTrainingProgress", progressDocId);
+    const score = passed ? Math.floor(Math.random() * 21) + 80 : Math.floor(Math.random() * 40) + 40;
+
+    const newProgressData: Partial<UserProgressData> = {
+      userId: user.uid,
+      courseId: course.id,
+      quizStatus: passed ? 'Passed' : 'Failed',
+      quizScore: score,
+      lastUpdated: Timestamp.now(),
+    };
+
+    if (passed) {
+      const issuedDate = new Date().toISOString();
+      const expiryYears = course.title.toLowerCase().includes("recurrent") || course.title.toLowerCase().includes("refresher") ? 1 : 2;
+      const expiryDate = new Date(new Date().setFullYear(new Date().getFullYear() + expiryYears)).toISOString();
+      
+      newProgressData.certificateDetails = {
+        provider: "In-House Certification Body",
+        certificateId: `CERT-${course.id}-${new Date().getFullYear()}`,
+        issuedDate: issuedDate,
+        expiryDate: expiryDate,
+      };
+    }
+
+    try {
+      await setDoc(progressDocRef, newProgressData, { merge: true });
+      toast({
+        title: `Quiz ${passed ? 'Passed' : 'Failed'}`,
+        description: `You scored ${score}% on "${course.quizTitle}". ${passed ? 'Congratulations! Your certificate is now available.' : 'Please review the material and try again.'}`,
+        variant: passed ? "default" : "destructive",
+      });
+      fetchTrainingData(); // Refresh data
+    } catch (error) {
+      console.error("Error updating quiz results:", error);
+      toast({ title: "Quiz Update Error", description: "Could not save quiz results.", variant: "destructive" });
+    } finally {
+      setIsUpdating(false);
+      setIsQuizDialogOpen(false);
+      setSelectedCourseForQuiz(null);
+    }
   };
 
-  const openCertificateDialog = (course: Course) => {
+  const openCertificateDialog = (course: CombinedCourse) => {
     setSelectedCourseForCert(course);
     setIsCertDialogOpen(true);
   };
+  
+  if (authLoading || isLoadingCourses) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-4 text-lg text-muted-foreground">Loading training data...</p>
+      </div>
+    );
+  }
 
-  const availableCourses = courses.filter(c => c.quizStatus !== 'Passed');
-  const completedWithCerts = courses.filter(c => c.quizStatus === 'Passed');
+  if (!user && !authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <CardTitle className="text-xl mb-2">Access Denied</CardTitle>
+        <p className="text-muted-foreground">Please log in to access your training.</p>
+        <Button onClick={() => window.location.href='/login'} className="mt-4">Go to Login</Button>
+      </div>
+    );
+  }
+  
+  if (loadingError) {
+     return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <CardTitle className="text-xl mb-2">Error Loading Training</CardTitle>
+        <p className="text-muted-foreground mb-4">{loadingError}</p>
+        <Button onClick={fetchTrainingData} disabled={isUpdating}>
+            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Try Again
+        </Button>
+      </div>
+    );
+  }
+
+  const availableCourses = courses.filter(c => c.progress?.quizStatus !== 'Passed');
+  const completedWithCerts = courses.filter(c => c.progress?.quizStatus === 'Passed' && c.progress?.certificateDetails);
+
 
   return (
     <div className="space-y-8">
@@ -203,9 +260,13 @@ export default function TrainingPage() {
         {availableCourses.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {availableCourses.map((course) => {
-              const CourseActionIcon = course.contentStatus !== 'Completed' ? ChevronRight : 
-                                       course.quizStatus === 'NotTaken' ? HelpCircle : 
-                                       course.quizStatus === 'Failed' ? XCircle : PlayCircle;
+              const contentStatus = course.progress?.contentStatus || 'NotStarted';
+              const quizStatus = course.progress?.quizStatus || 'NotTaken';
+              const quizScore = course.progress?.quizScore;
+
+              const CourseActionIcon = contentStatus !== 'Completed' ? ChevronRight : 
+                                       quizStatus === 'NotTaken' ? HelpCircle : 
+                                       quizStatus === 'Failed' ? XCircle : PlayCircle;
               return (
               <Card key={course.id} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
                 <CardHeader className="flex-shrink-0">
@@ -226,16 +287,16 @@ export default function TrainingPage() {
                       {course.description}
                     </p>
                     <div className="text-xs text-muted-foreground mb-1">
-                        Content: <Badge variant={course.contentStatus === 'Completed' ? 'default' : 'secondary'} className={course.contentStatus === 'Completed' ? 'bg-green-500/20 text-green-700 border-green-500/30' : '' }>{course.contentStatus}</Badge>
+                        Content: <Badge variant={contentStatus === 'Completed' ? 'default' : 'secondary'} className={contentStatus === 'Completed' ? 'bg-green-500/20 text-green-700 border-green-500/30' : '' }>{contentStatus}</Badge>
                     </div>
                     <div className="text-xs text-muted-foreground mb-3">
-                        Quiz: <Badge variant={course.quizStatus === 'Failed' ? 'destructive' : 'secondary'} >{course.quizStatus} {course.quizScore && `(${course.quizScore}%)`}</Badge>
+                        Quiz: <Badge variant={quizStatus === 'Failed' ? 'destructive' : (quizStatus === 'Passed' ? 'default' : 'secondary')} >{quizStatus} {quizScore !== undefined && `(${quizScore}%)`}</Badge>
                     </div>
                   </div>
-                  <Button onClick={() => handleCourseAction(course.id)} className="w-full mt-2">
-                    <CourseActionIcon className="mr-2 h-4 w-4" />
-                    {course.contentStatus !== 'Completed' ? (course.contentStatus === 'NotStarted' ? 'Start Course' : 'Continue Course') :
-                     course.quizStatus === 'Failed' ? 'Retake Quiz' : 'Take Quiz'}
+                  <Button onClick={() => handleCourseAction(course.id)} className="w-full mt-2" disabled={isUpdating}>
+                    {isUpdating && courses.find(c => c.id === course.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CourseActionIcon className="mr-2 h-4 w-4" />}
+                    {contentStatus !== 'Completed' ? (contentStatus === 'NotStarted' ? 'Start Course' : 'Continue Course') :
+                     quizStatus === 'Failed' ? 'Retake Quiz' : (quizStatus === 'NotTaken' ? 'Take Quiz' : 'Review Quiz')}
                   </Button>
                 </CardContent>
               </Card>
@@ -264,7 +325,7 @@ export default function TrainingPage() {
                     <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint} />
                     <div>
                       <CardTitle className="text-lg">{course.title}</CardTitle>
-                       <Badge variant="default" className="mt-1 bg-green-100 text-green-700 border-green-300">Passed ({course.quizScore}%)</Badge>
+                       <Badge variant="default" className="mt-1 bg-green-100 text-green-700 border-green-300">Passed ({course.progress?.quizScore}%)</Badge>
                         {course.mandatory && (
                           <Badge variant="destructive" className="mt-1 ml-2">Mandatory</Badge>
                         )}
@@ -273,11 +334,11 @@ export default function TrainingPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Certified on: {course.certificateDetails?.expiryDate ? new Date(new Date(course.certificateDetails.expiryDate).setFullYear(new Date(course.certificateDetails.expiryDate).getFullYear() - (course.title.toLowerCase().includes("recurrent") || course.title.toLowerCase().includes("refresher") ? 1 : 2))).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+                    Certified on: {course.progress?.certificateDetails?.issuedDate ? new Date(course.progress.certificateDetails.issuedDate).toLocaleDateString() : 'N/A'}
                   </p>
-                  <p className="text-sm text-muted-foreground">Provider: {course.certificateDetails?.provider}</p>
-                  {course.certificateDetails?.expiryDate && <p className="text-sm text-muted-foreground">Expires: {course.certificateDetails.expiryDate}</p>}
-                  <Button variant="outline" size="sm" className="mt-4 w-full" onClick={() => openCertificateDialog(course)}>
+                  <p className="text-sm text-muted-foreground">Provider: {course.progress?.certificateDetails?.provider}</p>
+                  {course.progress?.certificateDetails?.expiryDate && <p className="text-sm text-muted-foreground">Expires: {new Date(course.progress.certificateDetails.expiryDate).toLocaleDateString()}</p>}
+                  <Button variant="outline" size="sm" className="mt-4 w-full" onClick={() => openCertificateDialog(course)} disabled={isUpdating}>
                     <FileTextIcon className="mr-2 h-4 w-4"/> View Certificate
                   </Button>
                 </CardContent>
@@ -309,11 +370,13 @@ export default function TrainingPage() {
             <p className="text-sm">Click a button below to simulate your quiz result.</p>
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
-             <Button variant="outline" onClick={() => simulateQuiz(selectedCourseForQuiz!.id, false)}>
-              <XCircle className="mr-2 h-4 w-4"/> Simulate Fail (e.g., 60%)
+             <Button variant="outline" onClick={() => selectedCourseForQuiz && simulateQuiz(selectedCourseForQuiz.id, false)} disabled={isUpdating}>
+              {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+              <XCircle className="mr-2 h-4 w-4"/> Simulate Fail
             </Button>
-            <Button onClick={() => simulateQuiz(selectedCourseForQuiz!.id, true)}>
-              <CheckCircle className="mr-2 h-4 w-4"/> Simulate Pass (e.g., 85%)
+            <Button onClick={() => selectedCourseForQuiz && simulateQuiz(selectedCourseForQuiz.id, true)} disabled={isUpdating}>
+              {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+              <CheckCircle className="mr-2 h-4 w-4"/> Simulate Pass
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -333,13 +396,13 @@ export default function TrainingPage() {
                 <Image src="https://placehold.co/500x350.png" alt="Certificate Preview" width={500} height={350} className="rounded-md border" data-ai-hint="official certificate document" />
               </div>
               <div className="space-y-1 text-sm">
-                <p><strong>Issued to:</strong> Alex Crewman (Demo User)</p>
+                <p><strong>Issued to:</strong> {user?.displayName || user?.email || "Demo User"}</p>
                 <p><strong>Training Program:</strong> {selectedCourseForCert?.title}</p>
-                <p><strong>Certificate ID:</strong> {selectedCourseForCert?.certificateDetails?.certificateId}</p>
-                <p><strong>Date Issued:</strong> {selectedCourseForCert?.certificateDetails?.expiryDate ? new Date(new Date(selectedCourseForCert.certificateDetails.expiryDate).setFullYear(new Date(selectedCourseForCert.certificateDetails.expiryDate).getFullYear() - (selectedCourseForCert.title.toLowerCase().includes("recurrent") || selectedCourseForCert.title.toLowerCase().includes("refresher") ? 1 : 2))).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}</p>
-                <p><strong>Issuing Body:</strong> {selectedCourseForCert?.certificateDetails?.provider}</p>
-                {selectedCourseForCert?.certificateDetails?.expiryDate && <p><strong>Valid Until:</strong> {selectedCourseForCert.certificateDetails.expiryDate}</p>}
-                 <p className="font-semibold mt-2">Achieved Score: {selectedCourseForCert?.quizScore}%</p>
+                <p><strong>Certificate ID:</strong> {selectedCourseForCert?.progress?.certificateDetails?.certificateId}</p>
+                <p><strong>Date Issued:</strong> {selectedCourseForCert?.progress?.certificateDetails?.issuedDate ? new Date(selectedCourseForCert.progress.certificateDetails.issuedDate).toLocaleDateString() : 'N/A'}</p>
+                <p><strong>Issuing Body:</strong> {selectedCourseForCert?.progress?.certificateDetails?.provider}</p>
+                {selectedCourseForCert?.progress?.certificateDetails?.expiryDate && <p><strong>Valid Until:</strong> {new Date(selectedCourseForCert.progress.certificateDetails.expiryDate).toLocaleDateString()}</p>}
+                 <p className="font-semibold mt-2">Achieved Score: {selectedCourseForCert?.progress?.quizScore}%</p>
                  {selectedCourseForCert?.mandatory && <p className="font-semibold text-destructive mt-1">This was a mandatory training.</p>}
               </div>
             </div>
@@ -358,3 +421,5 @@ export default function TrainingPage() {
     </div>
   );
 }
+
+    
