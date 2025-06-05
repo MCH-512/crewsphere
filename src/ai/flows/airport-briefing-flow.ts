@@ -26,7 +26,7 @@ const AirportBriefingOutputSchema = z.object({
   briefing: z
     .string()
     .describe(
-      'A comprehensive AI-generated briefing for the specified airport, formatted in Markdown. Includes operational details, weather patterns, NOTAMs, security notes, emojis for visual appeal, visa notes, and other relevant information for crew.'
+      'A comprehensive AI-generated briefing for the specified airport, formatted in Markdown. Includes operational details, weather patterns, NOTAMs, security notes, emojis for visual appeal, visa notes, local currency, and other relevant information for crew.'
     ),
 });
 export type AirportBriefingOutput = z.infer<typeof AirportBriefingOutputSchema>;
@@ -55,6 +55,7 @@ Please provide a briefing that includes the following sections, using Markdown h
     *   **IATA Code:** [IATA]
     *   **Airport Emblem/Symbol (Textual):** [e.g., Suggest a simple textual placeholder like "[Airport Icon]" or a relevant emoji if appropriate]
     *   **Local Time Zone:** [e.g., UTC-5 (Eastern Time), include DST info if applicable and known] 🕒
+    *   **Local Currency:** [e.g., USD ($), EUR (€), JPY (¥) - Include symbol and code if common] 💰
     *   **Airport Elevation:** [Elevation in feet and meters, e.g., 123 ft / 37 m] ⛰️
 
 
