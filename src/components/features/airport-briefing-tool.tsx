@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Sparkles, Search } from "lucide-react";
 import { generateAirportBriefing, type AirportBriefingOutput } from "@/ai/flows/airport-briefing-flow";
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
 
 const FormSchema = z.object({
   airportIdentifier: z.string().min(3, {
@@ -122,9 +123,9 @@ export function AirportBriefingTool() {
           </CardHeader>
           <CardContent>
             <div
-              className="prose prose-sm max-w-none dark:prose-invert text-card-foreground whitespace-pre-wrap font-sans text-sm"
+              className="prose prose-sm max-w-none dark:prose-invert text-card-foreground"
             >
-              {briefing.briefing}
+              <ReactMarkdown>{briefing.briefing}</ReactMarkdown>
             </div>
           </CardContent>
         </Card>
