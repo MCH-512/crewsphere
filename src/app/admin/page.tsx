@@ -113,7 +113,9 @@ export default function AdminConsolePage() {
                   Access, review, and analyze submitted Purser Reports for operational insights and follow-up actions.
                 </p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm"><Eye className="mr-2 h-4 w-4" />View All Reports</Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/admin/purser-reports"><Eye className="mr-2 h-4 w-4" />View All Reports</Link>
+                    </Button>
                     <Button variant="destructive" size="sm"><AlertTriangle className="mr-2 h-4 w-4" />Flagged (2)</Button>
                 </div>
               </CardContent>
