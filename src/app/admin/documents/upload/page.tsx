@@ -32,6 +32,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL, getMetadata } from "firebase/storage";
 import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
+import { Label } from "@/components/ui/label"; // Added Label import
 
 const documentUploadFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters.").max(100),
@@ -228,7 +229,7 @@ export default function DocumentUploadPage() {
               <FormField
                 control={form.control}
                 name="file"
-                render={({ field: { onChange, value, ...rest } }) => (
+                render={({ field: { onChange, value, ...rest } }) => ( // Destructure value to avoid passing it to input
                     <FormItem>
                         <FormLabel>Document File</FormLabel>
                         <FormControl>
