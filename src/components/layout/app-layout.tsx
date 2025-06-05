@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -38,6 +39,7 @@ import {
   Bell,
   Moon,
   Sun,
+  ServerCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +49,7 @@ const navItems = [
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/insights", label: "AI Insights", icon: Brain },
   { href: "/training", label: "Training", icon: GraduationCap },
+  { href: "/admin", label: "Admin Console", icon: ServerCog },
 ];
 
 // Theme toggle functionality (simple example)
@@ -81,6 +84,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/schedule": "Scheduling Calendar",
     "/insights": "AI-Driven Operational Insights",
     "/training": "Training Tracker",
+    "/admin": "Admin Console",
     "/settings": "Settings",
   };
   const currentPageTitle = pageTitles[pathname] || "AirCrew Hub";
