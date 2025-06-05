@@ -48,9 +48,9 @@ const flightDutyCalculatorPrompt = ai.definePrompt({
   prompt: `You are an expert Flight Duty Period calculator. Your task is to calculate duty times based on the provided flight segments and briefing/debriefing times. You also need to perform basic compliance checks against generic rules.
 
 Input Data:
-Flight Segments:
+Flight Segments (0-indexed):
 {{#each flightSegments}}
-- Leg {{add @index 1}}: {{departureAirport}} to {{arrivalAirport}}, Departure: {{departureTimeUTC}}, Arrival: {{arrivalTimeUTC}}
+- Segment {{@index}}: {{departureAirport}} to {{arrivalAirport}}, Departure: {{departureTimeUTC}}, Arrival: {{arrivalTimeUTC}}
 {{/each}}
 Pre-Flight Briefing: {{preFlightBriefingHours}} hours
 Post-Flight Debriefing: {{postFlightDebriefingHours}} hours
@@ -79,11 +79,6 @@ const flightDutyCalculatorFlow = ai.defineFlow(
     outputSchema: FlightDutyOutputSchema,
   },
   async (input: FlightDutyInput) => {
-    // Helper for Handlebars to add 1 to index for display
-    (global as any).Handlebars?.registerHelper('add', function (a: number, b: number) {
-      return a + b;
-    });
-
     const {output} = await flightDutyCalculatorPrompt(input);
     if (!output) {
       throw new Error("Failed to get a response from the AI model for flight duty calculation.");
