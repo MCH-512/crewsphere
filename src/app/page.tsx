@@ -10,21 +10,37 @@ import Image from "next/image";
 import Link from "next/link";
 import { generateDailyBriefing, type DailyBriefingOutput } from "@/ai/flows/daily-briefing-flow";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/auth-context";
 
 
 export default function DashboardPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [dailyBriefing, setDailyBriefing] = React.useState<DailyBriefingOutput | null>(null);
   const [isBriefingLoading, setIsBriefingLoading] = React.useState(true);
   const [briefingError, setBriefingError] = React.useState<string | null>(null);
+  const [userNameForGreeting, setUserNameForGreeting] = React.useState<string>("User");
+
+  React.useEffect(() => {
+    if (user) {
+      const name = user.displayName || (user.email ? user.email.split('@')[0] : "Crew Member");
+      setUserNameForGreeting(name.charAt(0).toUpperCase() + name.slice(1));
+    }
+  }, [user]);
 
   React.useEffect(() => {
     async function fetchBriefing() {
+      if (!user) {
+        setIsBriefingLoading(false);
+        // Potentially set a specific message or state if no user, though route protection should handle this
+        return;
+      }
+      
       setIsBriefingLoading(true);
       setBriefingError(null);
       try {
-        // Using a static name for now, this could be dynamic in a real app
-        const briefingData = await generateDailyBriefing({ userName: "Alex" });
+        const nameForBriefing = user.displayName || user.email || "Crew Member";
+        const briefingData = await generateDailyBriefing({ userName: nameForBriefing });
         setDailyBriefing(briefingData);
       } catch (error) {
         console.error("Failed to load daily briefing:", error);
@@ -39,7 +55,7 @@ export default function DashboardPage() {
       }
     }
     fetchBriefing();
-  }, [toast]);
+  }, [toast, user]);
 
 
   const upcomingDuty = {
@@ -102,7 +118,7 @@ export default function DashboardPage() {
     <div className="grid gap-6 md:gap-8">
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl font-headline">Welcome Back, Alex!</CardTitle>
+          <CardTitle className="text-2xl font-headline">Welcome Back, {userNameForGreeting}!</CardTitle>
           <CardDescription>Your central command for flight operations, documents, and training.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -137,6 +153,12 @@ export default function DashboardPage() {
               className="prose prose-sm max-w-none dark:prose-invert text-foreground"
               dangerouslySetInnerHTML={{ __html: dailyBriefing.briefingMarkdown.replace(/\n/g, '<br />') }}
             />
+          )}
+          {!user && !isBriefingLoading && (
+             <div className="flex items-center space-x-2 text-muted-foreground">
+              <Info className="h-5 w-5" />
+              <span>Log in to receive your personalized daily briefing.</span>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -281,3 +303,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
