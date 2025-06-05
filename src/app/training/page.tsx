@@ -1,14 +1,31 @@
+
+"use client";
+
+import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { CheckCircle, BookOpen, PlayCircle, Award } from "lucide-react";
 import Image from "next/image";
+import type { LucideIcon } from "lucide-react";
 
-const completedTrainings = [
-  { id: "CT001", title: "Basic Safety Procedures", dateCompleted: "2024-03-15", provider: "In-House", certificateId: "CERT-BSP-001", icon: CheckCircle, imageHint: "safety checkmark" },
+interface CompletedTraining {
+  id: string;
+  title: string;
+  dateCompleted: string;
+  provider: string;
+  certificateId: string;
+  icon: LucideIcon;
+  imageHint: string;
+  expiryDate?: string;
+}
+
+const completedTrainings: CompletedTraining[] = [
+  { id: "CT001", title: "Basic Safety Procedures", dateCompleted: "2024-03-15", provider: "In-House", certificateId: "CERT-BSP-001", icon: CheckCircle, imageHint: "safety checkmark", expiryDate: "2026-03-15" },
   { id: "CT002", title: "Customer Service Excellence", dateCompleted: "2024-01-20", provider: "SkyHigh Training Co.", certificateId: "CERT-CSE-002", icon: Award, imageHint: "customer service award" },
-  { id: "CT003", title: "First Aid & CPR Certification", dateCompleted: "2023-11-05", provider: "Red Cross", certificateId: "CERT-FA-CPR-003", icon: CheckCircle, imageHint: "first aid" },
+  { id: "CT003", title: "First Aid & CPR Certification", dateCompleted: "2023-11-05", provider: "Red Cross", certificateId: "CERT-FA-CPR-003", icon: CheckCircle, imageHint: "first aid", expiryDate: "2025-11-05" },
 ];
 
 const recommendedCourses = [
@@ -54,7 +71,38 @@ export default function TrainingPage() {
                   Date Completed: {training.dateCompleted}
                 </p>
                 <p className="text-sm text-muted-foreground">Provider: {training.provider}</p>
-                <Button variant="outline" size="sm" className="mt-4 w-full">View Certificate</Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="mt-4 w-full">View Certificate</Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[650px]">
+                    <DialogHeader>
+                      <DialogTitle>Certificate of Completion</DialogTitle>
+                      <DialogDescription>
+                        This certificate is awarded for the successful completion of the {training.title} training program.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="mx-auto my-4">
+                        <Image src="https://placehold.co/500x350.png" alt="Certificate Preview" width={500} height={350} className="rounded-md border" data-ai-hint="certificate document" />
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        <p><strong>Issued to:</strong> Alex Crewman (Demo User)</p>
+                        <p><strong>Training Program:</strong> {training.title}</p>
+                        <p><strong>Certificate ID:</strong> {training.certificateId}</p>
+                        <p><strong>Date Issued:</strong> {training.dateCompleted}</p>
+                        <p><strong>Issuing Body:</strong> {training.provider}</p>
+                        {training.expiryDate && <p><strong>Valid Until:</strong> {training.expiryDate}</p>}
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button type="button" variant="secondary">Close</Button>
+                      </DialogClose>
+                      <Button type="button" onClick={() => alert('Download functionality not implemented yet.')}>Download PDF</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
           )})}
@@ -109,3 +157,4 @@ export default function TrainingPage() {
     </div>
   );
 }
+
