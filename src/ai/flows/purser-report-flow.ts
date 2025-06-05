@@ -64,41 +64,41 @@ Flight Details:
 
 Report Sections:
 
-1.  **General Flight Summary**:
+1.  **## General Flight Summary**:
     {{{generalFlightSummary}}}
 
 {{#if safetyIncidents}}
-2.  **Safety Incidents/Observations**:
+2.  **## Safety Incidents/Observations**:
     {{{safetyIncidents}}}
 {{/if}}
 
 {{#if securityIncidents}}
-3.  **Security Incidents/Observations**:
+3.  **## Security Incidents/Observations**:
     {{{securityIncidents}}}
 {{/if}}
 
 {{#if medicalIncidents}}
-4.  **Medical Incidents**:
+4.  **## Medical Incidents**:
     {{{medicalIncidents}}}
 {{/if}}
 
 {{#if passengerFeedback}}
-5.  **Passenger Feedback**:
+5.  **## Passenger Feedback**:
     {{{passengerFeedback}}}
 {{/if}}
 
 {{#if cateringNotes}}
-6.  **Catering Notes**:
+6.  **## Catering Notes**:
     {{{cateringNotes}}}
 {{/if}}
 
 {{#if maintenanceIssues}}
-7.  **Maintenance Issues Noted**:
+7.  **## Maintenance Issues Noted**:
     {{{maintenanceIssues}}}
 {{/if}}
 
 {{#if otherObservations}}
-8.  **Other Observations/Information**:
+8.  **## Other Observations/Information**:
     {{{otherObservations}}}
 {{/if}}
 
@@ -124,3 +124,4 @@ const purserReportFlow = ai.defineFlow(
     return output;
   }
 );
+

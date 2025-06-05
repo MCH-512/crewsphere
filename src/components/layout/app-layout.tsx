@@ -44,6 +44,7 @@ import {
   Navigation,
   Calculator,
   FileSignature,
+  ListChecks,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +58,7 @@ const navItems = [
   { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
   { href: "/insights", label: "AI Insights", icon: Brain },
   { href: "/training", label: "Training", icon: GraduationCap },
+  { href: "/quizzes", label: "Quizzes", icon: ListChecks },
   { href: "/admin", label: "Admin Console", icon: ServerCog },
 ];
 
@@ -96,6 +98,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/purser-reports": "Purser Reports",
     "/insights": "AI-Driven Operational Insights",
     "/training": "Training Tracker",
+    "/quizzes": "Quizzes",
     "/admin": "Admin Console",
     "/settings": "Settings",
   };
@@ -208,3 +211,4 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+

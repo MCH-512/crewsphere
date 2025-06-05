@@ -25,7 +25,7 @@ import { Separator } from "@/components/ui/separator";
 
 const purserReportFormSchema = z.object({
   flightNumber: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars"),
-  flightDate: z.string().date("Invalid date format. Use YYYY-MM-DD."),
+  flightDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format. Use YYYY-MM-DD." }),
   departureAirport: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars").toUpperCase(),
   arrivalAirport: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars").toUpperCase(),
   aircraftTypeRegistration: z.string().min(3, "Min 3 chars").max(20, "Max 20 chars"),
@@ -80,7 +80,10 @@ export function PurserReportTool() {
     setIsLoading(true);
     setReportResult(null);
     try {
-      const input: PurserReportInput = data; // Form values match AI flow input
+      const input: PurserReportInput = {
+        ...data,
+        flightDate: new Date(data.flightDate).toISOString().split('T')[0], // Ensure date is in YYYY-MM-DD
+      };
       const result = await generatePurserReport(input);
       setReportResult(result);
       toast({
@@ -235,3 +238,4 @@ export function PurserReportTool() {
     </div>
   );
 }
+
