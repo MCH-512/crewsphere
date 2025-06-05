@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing } from "lucide-react";
+import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing, Plane } from "lucide-react";
 
 export default function AdminConsolePage() {
   return (
@@ -12,7 +12,7 @@ export default function AdminConsolePage() {
           <div>
             <CardTitle className="text-2xl font-headline">Admin Console</CardTitle>
             <CardDescription>
-              Manage application settings, users, documents, training, requests, and system health.
+              Manage application settings, users, documents, training, requests, flights, and system health.
             </CardDescription>
           </div>
         </CardHeader>
@@ -69,6 +69,21 @@ export default function AdminConsolePage() {
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm"><Eye className="mr-2 h-4 w-4" />View All Requests</Button>
                     <Button variant="default" size="sm"><BellRing className="mr-2 h-4 w-4" />Pending (3)</Button>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm">
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <Plane className="h-6 w-6 text-primary" />
+                <CardTitle className="text-lg">Flight Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Manage flight schedules: flight numbers, dates, departure/arrival airports, ETD/ETA.
+                </p>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm">View Schedule</Button>
+                    <Button variant="default" size="sm">Add New Flight</Button>
                 </div>
               </CardContent>
             </Card>
