@@ -53,9 +53,15 @@ export function AirportBriefingTool() {
       });
     } catch (error) {
       console.error("Error generating airport briefing:", error);
+      let userMessage = "Failed to generate airport briefing. Please check the identifier or try again later.";
+      if (error instanceof Error && error.message) {
+        if (error.message.includes("503") || error.message.toLowerCase().includes("service unavailable") || error.message.toLowerCase().includes("overloaded")) {
+          userMessage = "The AI service is currently overloaded or unavailable. Please try again in a few moments.";
+        }
+      }
       toast({
-        title: "Error",
-        description: "Failed to generate airport briefing. Please check the identifier or try again.",
+        title: "Error Generating Briefing",
+        description: userMessage,
         variant: "destructive",
       });
     } finally {
@@ -115,7 +121,7 @@ export function AirportBriefingTool() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div 
+            <div
               className="prose prose-sm max-w-none dark:prose-invert text-card-foreground whitespace-pre-wrap font-sans text-sm"
             >
               {briefing.briefing}
