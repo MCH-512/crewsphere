@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing, Plane, PlusCircle, CheckSquare, Edit3 } from "lucide-react";
+import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing, Plane, PlusCircle, CheckSquare, Edit3, FileSignature, ClipboardCheck, AlertTriangle } from "lucide-react";
 
 export default function AdminConsolePage() {
   return (
@@ -12,7 +12,7 @@ export default function AdminConsolePage() {
           <div>
             <CardTitle className="text-2xl font-headline">Admin Console</CardTitle>
             <CardDescription>
-              Manage application settings, users, documents, training, courses, quizzes, requests, flights, and system health.
+              Manage application settings, users, documents, courses, training, quizzes, user requests, purser reports, flights, and system health.
             </CardDescription>
           </div>
         </CardHeader>
@@ -20,7 +20,7 @@ export default function AdminConsolePage() {
           <p className="text-muted-foreground">
             Welcome to the Admin Console. Administrative features and tools will be available here.
           </p>
-          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <Card className="shadow-sm">
               <CardHeader className="flex flex-row items-center gap-3 pb-2">
                 <Users className="h-6 w-6 text-primary" />
@@ -97,6 +97,21 @@ export default function AdminConsolePage() {
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm"><Eye className="mr-2 h-4 w-4" />View All Requests</Button>
                     <Button variant="default" size="sm"><BellRing className="mr-2 h-4 w-4" />Pending (3)</Button>
+                </div>
+              </CardContent>
+            </Card>
+             <Card className="shadow-sm">
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <ClipboardCheck className="h-6 w-6 text-primary" />
+                <CardTitle className="text-lg">Purser Report Review</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Access, review, and analyze submitted Purser Reports for operational insights and follow-up actions.
+                </p>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm"><Eye className="mr-2 h-4 w-4" />View All Reports</Button>
+                    <Button variant="destructive" size="sm"><AlertTriangle className="mr-2 h-4 w-4" />Flagged (2)</Button>
                 </div>
               </CardContent>
             </Card>
