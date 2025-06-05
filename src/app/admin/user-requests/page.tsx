@@ -6,12 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Edit } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserRequest {
   id: string;
@@ -20,16 +24,22 @@ interface UserRequest {
   requestType: string;
   subject: string;
   details: string;
-  createdAt: Timestamp; // Firestore Timestamp
+  createdAt: Timestamp;
   status: "pending" | "approved" | "rejected" | "in-progress";
 }
 
 export default function AdminUserRequestsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   const [requests, setRequests] = React.useState<UserRequest[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+
+  const [selectedRequest, setSelectedRequest] = React.useState<UserRequest | null>(null);
+  const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
+  const [newStatus, setNewStatus] = React.useState<UserRequest["status"] | "">("");
+  const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
 
   const fetchRequests = React.useCallback(async () => {
     setIsLoading(true);
@@ -53,29 +63,51 @@ export default function AdminUserRequestsPage() {
   React.useEffect(() => {
     if (!authLoading) {
       if (!user || user.role !== 'admin') {
-        router.push('/'); // Redirect non-admins or unauthenticated users
+        router.push('/'); 
       } else {
         fetchRequests();
       }
     }
   }, [user, authLoading, router, fetchRequests]);
 
-  const getStatusBadgeVariant = (status: UserRequest["status"]) => {
-    switch (status) {
-      case "pending":
-        return "secondary";
-      case "approved":
-        return "default"; // Greenish if theme supports
-      case "rejected":
-        return "destructive";
-      case "in-progress":
-        return "outline"; // Bluish if theme supports
-      default:
-        return "secondary";
+  const handleOpenManageDialog = (request: UserRequest) => {
+    setSelectedRequest(request);
+    setNewStatus(request.status); // Pre-fill with current status
+    setIsManageDialogOpen(true);
+  };
+
+  const handleStatusUpdate = async () => {
+    if (!selectedRequest || !newStatus || newStatus === selectedRequest.status) {
+      toast({ title: "No Change", description: "Status is the same or not selected.", variant: "default" });
+      setIsManageDialogOpen(false);
+      return;
+    }
+    setIsUpdatingStatus(true);
+    try {
+      const requestDocRef = doc(db, "requests", selectedRequest.id);
+      await updateDoc(requestDocRef, { status: newStatus });
+      toast({ title: "Status Updated", description: `Request status changed to ${newStatus}.` });
+      fetchRequests(); // Re-fetch to update the table
+      setIsManageDialogOpen(false);
+    } catch (err) {
+      console.error("Error updating status:", err);
+      toast({ title: "Update Failed", description: "Could not update request status.", variant: "destructive" });
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
-  if (authLoading || isLoading) {
+  const getStatusBadgeVariant = (status: UserRequest["status"]) => {
+    switch (status) {
+      case "pending": return "secondary";
+      case "approved": return "default"; 
+      case "rejected": return "destructive";
+      case "in-progress": return "outline";
+      default: return "secondary";
+    }
+  };
+
+  if (authLoading || (isLoading && requests.length === 0)) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -94,7 +126,6 @@ export default function AdminUserRequestsPage() {
       </div>
     );
   }
-
 
   return (
     <div className="space-y-6">
@@ -149,8 +180,9 @@ export default function AdminUserRequestsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="sm">View</Button>
-                        {/* Add more actions like Approve, Reject, etc. later */}
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenManageDialog(request)}>
+                          <Edit className="mr-1 h-4 w-4" /> Manage
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -160,6 +192,56 @@ export default function AdminUserRequestsPage() {
           )}
         </CardContent>
       </Card>
+
+      {selectedRequest && (
+        <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Manage Request: {selectedRequest.subject}</DialogTitle>
+              <DialogDescription>Review details and update the status of this request.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">User: <span className="text-muted-foreground">{selectedRequest.userEmail}</span></p>
+                <p className="text-sm font-medium">Type: <span className="text-muted-foreground">{selectedRequest.requestType}</span></p>
+                <p className="text-sm font-medium">Submitted: <span className="text-muted-foreground">{format(selectedRequest.createdAt.toDate(), "PPpp")}</span></p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">Details:</Label>
+                <p className="text-sm text-muted-foreground p-2 border rounded-md bg-secondary/30 max-h-40 overflow-y-auto">{selectedRequest.details}</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status-select">Update Status</Label>
+                <Select 
+                  value={newStatus || ""}
+                  onValueChange={(value) => setNewStatus(value as UserRequest["status"])}
+                >
+                  <SelectTrigger id="status-select">
+                    <SelectValue placeholder="Select new status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button onClick={handleStatusUpdate} disabled={isUpdatingStatus || !newStatus || newStatus === selectedRequest.status}>
+                {isUpdatingStatus && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
+
+    
