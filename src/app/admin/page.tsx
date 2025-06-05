@@ -4,7 +4,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing, Plane, PlusCircle, CheckSquare, Edit3, FileSignature, ClipboardCheck, AlertTriangle, MessageSquareWarning, Loader2 } from "lucide-react";
+import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing, Plane, PlusCircle, CheckSquare, Edit3, FileSignature, ClipboardCheck, AlertTriangle, MessageSquareWarning, Loader2, FileText as FileTextIcon } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -133,8 +133,8 @@ export default function AdminConsolePage() {
                         <AdminButtonWithTooltip href="/admin/documents/upload" tooltipContent="Upload a new document">
                           <UploadCloud className="mr-2 h-4 w-4" />Upload New
                         </AdminButtonWithTooltip>
-                        <AdminButtonWithTooltip href="/documents" tooltipContent="View all documents" disabled={false}>
-                           <Eye className="mr-2 h-4 w-4" />View All
+                        <AdminButtonWithTooltip href="/admin/documents" tooltipContent="View all documents in admin view" disabled={false}>
+                           <FileTextIcon className="mr-2 h-4 w-4" />View All (Admin)
                         </AdminButtonWithTooltip>
                     </div>
                   </CardContent>
@@ -317,5 +317,4 @@ export default function AdminConsolePage() {
     </div>
   );
 }
-
     

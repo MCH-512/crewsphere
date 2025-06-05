@@ -133,6 +133,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     // Admin Pages
     "/admin": "Admin Console",
     "/admin/users": "User Management",
+    "/admin/documents": "Document Management",
     "/admin/documents/upload": "Upload New Document",
     "/admin/alerts": "All Broadcast Alerts",
     "/admin/alerts/create": "Create New Alert",
@@ -327,5 +328,4 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </>
   );
 }
-
     
