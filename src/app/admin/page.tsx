@@ -74,8 +74,10 @@ export default function AdminConsolePage() {
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">Create, update, and organize training courses, modules, and learning materials.</p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" />Create New Course</Button>
-                    <Button variant="ghost" size="sm"><Eye className="mr-2 h-4 w-4" />View All Courses</Button>
+                    <Button variant="outline" size="sm" disabled><PlusCircle className="mr-2 h-4 w-4" />Create New Course</Button>
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link href="/admin/courses"><Eye className="mr-2 h-4 w-4" />View All Courses</Link>
+                    </Button>
                 </div>
               </CardContent>
             </Card>
@@ -87,8 +89,8 @@ export default function AdminConsolePage() {
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">Assign training to users, track completion, and manage certifications.</p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm">Assign Training</Button>
-                    <Button variant="ghost" size="sm"><BarChart3 className="mr-2 h-4 w-4" />View Progress</Button>
+                    <Button variant="outline" size="sm" disabled>Assign Training</Button>
+                    <Button variant="ghost" size="sm" disabled><BarChart3 className="mr-2 h-4 w-4" />View Progress</Button>
                 </div>
               </CardContent>
             </Card>
@@ -102,8 +104,8 @@ export default function AdminConsolePage() {
                   Create, edit, and manage quizzes, question banks, and review assessment results.
                 </p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" />Create New Quiz</Button>
-                    <Button variant="ghost" size="sm"><Edit3 className="mr-2 h-4 w-4" />Manage Question Banks</Button>
+                    <Button variant="outline" size="sm" disabled><PlusCircle className="mr-2 h-4 w-4" />Create New Quiz</Button>
+                    <Button variant="ghost" size="sm" disabled><Edit3 className="mr-2 h-4 w-4" />Manage Question Banks</Button>
                 </div>
               </CardContent>
             </Card>
@@ -120,7 +122,7 @@ export default function AdminConsolePage() {
                     <Button variant="outline" size="sm" asChild>
                       <Link href="/admin/user-requests"><Eye className="mr-2 h-4 w-4" />View All Requests</Link>
                     </Button>
-                    <Button variant="default" size="sm"><BellRing className="mr-2 h-4 w-4" />Pending (3)</Button>
+                    <Button variant="default" size="sm" disabled><BellRing className="mr-2 h-4 w-4" />Pending (0)</Button>
                 </div>
               </CardContent>
             </Card>
@@ -137,7 +139,7 @@ export default function AdminConsolePage() {
                     <Button variant="outline" size="sm" asChild>
                       <Link href="/admin/purser-reports"><Eye className="mr-2 h-4 w-4" />View All Reports</Link>
                     </Button>
-                    <Button variant="destructive" size="sm"><AlertTriangle className="mr-2 h-4 w-4" />Flagged (2)</Button>
+                    <Button variant="destructive" size="sm" disabled><AlertTriangle className="mr-2 h-4 w-4" />Flagged (0)</Button>
                 </div>
               </CardContent>
             </Card>
@@ -151,8 +153,8 @@ export default function AdminConsolePage() {
                   Manage flight schedules: flight numbers, dates, departure/arrival airports, ETD/ETA.
                 </p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm">View Schedule</Button>
-                    <Button variant="default" size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Add New Flight</Button>
+                    <Button variant="outline" size="sm" disabled>View Schedule</Button>
+                    <Button variant="default" size="sm" disabled><PlusCircle className="mr-2 h-4 w-4"/>Add New Flight</Button>
                 </div>
               </CardContent>
             </Card>
@@ -163,7 +165,7 @@ export default function AdminConsolePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">Configure application-wide settings and integrations.</p>
-                <Button variant="outline" size="sm">Configure Settings</Button>
+                <Button variant="outline" size="sm" disabled>Configure Settings</Button>
               </CardContent>
             </Card>
             <Card className="shadow-sm">
@@ -173,7 +175,7 @@ export default function AdminConsolePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">Review system activity, changes, and important events.</p>
-                 <Button variant="outline" size="sm">View Logs</Button>
+                 <Button variant="outline" size="sm" disabled>View Logs</Button>
               </CardContent>
             </Card>
           </div>
