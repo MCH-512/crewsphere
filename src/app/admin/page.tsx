@@ -1,10 +1,51 @@
 
+"use client";
+
+import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing, Plane, PlusCircle, CheckSquare, Edit3, FileSignature, ClipboardCheck, AlertTriangle, MessageSquareWarning } from "lucide-react";
+import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing, Plane, PlusCircle, CheckSquare, Edit3, FileSignature, ClipboardCheck, AlertTriangle, MessageSquareWarning, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/contexts/auth-context";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getCountFromServer } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminConsolePage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [pendingRequestsCount, setPendingRequestsCount] = React.useState<number | null>(null);
+  const [isLoadingCount, setIsLoadingCount] = React.useState(true);
+
+  const fetchPendingRequestsCount = React.useCallback(async () => {
+    if (!user || user.role !== 'admin') {
+      setIsLoadingCount(false);
+      setPendingRequestsCount(0);
+      return;
+    }
+    setIsLoadingCount(true);
+    try {
+      const requestsCollectionRef = collection(db, "requests");
+      const q = query(requestsCollectionRef, where("status", "==", "pending"));
+      const snapshot = await getCountFromServer(q);
+      setPendingRequestsCount(snapshot.data().count);
+    } catch (error) {
+      console.error("Error fetching pending requests count:", error);
+      toast({
+        title: "Error",
+        description: "Could not fetch pending requests count.",
+        variant: "destructive",
+      });
+      setPendingRequestsCount(0); // Default to 0 on error
+    } finally {
+      setIsLoadingCount(false);
+    }
+  }, [user, toast]);
+
+  React.useEffect(() => {
+    fetchPendingRequestsCount();
+  }, [fetchPendingRequestsCount]);
+
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
@@ -124,7 +165,16 @@ export default function AdminConsolePage() {
                     <Button variant="outline" size="sm" asChild>
                       <Link href="/admin/user-requests"><Eye className="mr-2 h-4 w-4" />View All Requests</Link>
                     </Button>
-                    <Button variant="default" size="sm" disabled><BellRing className="mr-2 h-4 w-4" />Pending (0)</Button>
+                    <Button 
+                      variant={pendingRequestsCount && pendingRequestsCount > 0 ? "destructive" : "outline"} 
+                      size="sm" 
+                      asChild
+                    >
+                      <Link href="/admin/user-requests">
+                        <BellRing className="mr-2 h-4 w-4" />
+                        Pending ({isLoadingCount ? <Loader2 className="h-3 w-3 animate-spin" /> : pendingRequestsCount ?? 0})
+                      </Link>
+                    </Button>
                 </div>
               </CardContent>
             </Card>
