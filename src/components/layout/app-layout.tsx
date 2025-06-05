@@ -42,7 +42,8 @@ import {
   ServerCog,
   SendHorizonal,
   Navigation,
-  Calculator, // Added Calculator icon
+  Calculator,
+  ListChecks, // Added ListChecks icon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -52,9 +53,10 @@ const navItems = [
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/requests", label: "Requests", icon: SendHorizonal },
   { href: "/airport-briefings", label: "Airport Briefings", icon: Navigation },
-  { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator }, // New item
+  { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/insights", label: "AI Insights", icon: Brain },
   { href: "/training", label: "Training", icon: GraduationCap },
+  { href: "/quizzes", label: "Quizzes", icon: ListChecks }, // New Quizzes item
   { href: "/admin", label: "Admin Console", icon: ServerCog },
 ];
 
@@ -90,9 +92,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/schedule": "Scheduling Calendar",
     "/requests": "Submit a Request",
     "/airport-briefings": "Airport Briefings",
-    "/flight-duty-calculator": "Flight Duty Calculator", // New page title
+    "/flight-duty-calculator": "Flight Duty Calculator",
     "/insights": "AI-Driven Operational Insights",
     "/training": "Training Tracker",
+    "/quizzes": "Quizzes", // New page title
     "/admin": "Admin Console",
     "/settings": "Settings",
   };
