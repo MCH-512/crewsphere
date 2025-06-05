@@ -26,7 +26,7 @@ const AirportBriefingOutputSchema = z.object({
   briefing: z
     .string()
     .describe(
-      'A comprehensive AI-generated briefing for the specified airport, formatted in Markdown. Includes operational details, weather patterns, NOTAMs, emojis for visual appeal, visa notes, and other relevant information for crew.'
+      'A comprehensive AI-generated briefing for the specified airport, formatted in Markdown. Includes operational details, weather patterns, NOTAMs, security notes, emojis for visual appeal, visa notes, and other relevant information for crew.'
     ),
 });
 export type AirportBriefingOutput = z.infer<typeof AirportBriefingOutputSchema>;
@@ -72,17 +72,22 @@ Please provide a briefing that includes the following sections, using Markdown h
     *   **General NOTAM Activity:** (Describe if typically many/few, common types. *Do not fetch live NOTAMs.*)
     *   **Long-Standing Advisories:** (Any significant, persistent advisories or common alerts mentioned in general sources.)
 
-5.  **## 🛂 Visa & Immigration Notes**
+5.  **## 🛡️ Security Considerations**
+    *   **General Airport Security Profile:** (Brief overview, e.g., "Standard international security protocols in place.")
+    *   **Known Security Advisories (General):** (Mention any persistent, publicly known security advisories or common concerns based on general knowledge. *Do not fetch live security alerts or highly sensitive information.* Focus on general awareness.)
+    *   **Crew Security Notes:** (Specific advice for crew if widely known and publicly documented, e.g., "Be vigilant in public areas landside," "Standard crew screening procedures apply." Avoid specific operational details that shouldn't be in a general briefing.)
+
+6.  **## 🛂 Visa & Immigration Notes**
     *   **General Entry Requirements:** (Brief note on general passport/visa policies if widely known for the country. e.g., "Schengen Area entry rules apply.")
     *   **Visa Regulations for Tunisian Nationals:** (Provide a general overview of visa requirements or arrangements for Tunisian nationals entering the country of the specified airport. If specific information is not readily available from general knowledge, state "Visa requirements for Tunisian nationals should be verified via official consular websites or the respective embassy.")
     *   **Customs & Quarantine:** (Brief notes on any particularly notable customs or quarantine regulations for arriving crews/passengers if widely known.)
 
-6.  **## 🧑‍✈️ Crew Information**
+7.  **## 🧑‍✈️ Crew Information**
     *   **Ground Transportation:** (Notes on typical options/time to city center/crew hotels if widely known.) 🚕
     *   **Crew Facilities:** (Brief mention if specific crew rooms or amenities are known and publicly documented.) ☕
-    *   **Layover Considerations:** (Brief, practical cultural notes, safety tips, or local customs if relevant and helpful for layovers. Focus on safety and convenience.)
+    *   **Layover Considerations:** (Brief, practical cultural notes, safety tips, or local customs if relevant and helpful for layovers. Focus on safety and convenience. Include any general safety advisories pertinent to crew during layovers if widely known and non-sensitive.)
 
-7.  **## 🆘 Contingency & Emergency**
+8.  **## 🆘 Contingency & Emergency**
     *   **Nearest Suitable Alternates:** (List 1-2 major suitable alternate airports if applicable, especially for hub airports.)
     *   **Airport Emergency Services:** (General note on availability, e.g., "Full ARFF services available Cat 9.") 🚒
 
