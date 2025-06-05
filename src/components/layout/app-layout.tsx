@@ -41,6 +41,7 @@ import {
   Sun,
   ServerCog,
   SendHorizonal,
+  Navigation, // Added Navigation icon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +50,7 @@ const navItems = [
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/requests", label: "Requests", icon: SendHorizonal },
+  { href: "/airport-briefings", label: "Airport Briefings", icon: Navigation }, // New item
   { href: "/insights", label: "AI Insights", icon: Brain },
   { href: "/training", label: "Training", icon: GraduationCap },
   { href: "/admin", label: "Admin Console", icon: ServerCog },
@@ -85,6 +87,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/documents": "Document Library",
     "/schedule": "Scheduling Calendar",
     "/requests": "Submit a Request",
+    "/airport-briefings": "Airport Briefings", // New page title
     "/insights": "AI-Driven Operational Insights",
     "/training": "Training Tracker",
     "/admin": "Admin Console",
