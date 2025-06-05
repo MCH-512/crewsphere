@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ServerCog } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye } from "lucide-react";
 
 export default function AdminConsolePage() {
   return (
@@ -11,7 +12,7 @@ export default function AdminConsolePage() {
           <div>
             <CardTitle className="text-2xl font-headline">Admin Console</CardTitle>
             <CardDescription>
-              Manage application settings, users, and system health.
+              Manage application settings, users, documents, and system health.
             </CardDescription>
           </div>
         </CardHeader>
@@ -19,30 +20,48 @@ export default function AdminConsolePage() {
           <p className="text-muted-foreground">
             Welcome to the Admin Console. Administrative features and tools will be available here.
           </p>
-          {/* Placeholder for future admin components */}
           <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card className="shadow-sm">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <Users className="h-6 w-6 text-primary" />
                 <CardTitle className="text-lg">User Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">View and manage user accounts.</p>
+                <p className="text-sm text-muted-foreground mb-3">View and manage user accounts, roles, and permissions.</p>
+                <Button variant="outline" size="sm">Manage Users</Button>
               </CardContent>
             </Card>
             <Card className="shadow-sm">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <Files className="h-6 w-6 text-primary" />
+                <CardTitle className="text-lg">Document Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-3">Upload, categorize, and manage all shared documents and manuals.</p>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm"><UploadCloud className="mr-2 h-4 w-4" />Upload New</Button>
+                    <Button variant="ghost" size="sm"><Eye className="mr-2 h-4 w-4" />View All</Button>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm">
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <Settings className="h-6 w-6 text-primary" />
                 <CardTitle className="text-lg">System Settings</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">Configure application-wide settings.</p>
+                <p className="text-sm text-muted-foreground mb-3">Configure application-wide settings and integrations.</p>
+                <Button variant="outline" size="sm">Configure Settings</Button>
               </CardContent>
             </Card>
             <Card className="shadow-sm">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <Activity className="h-6 w-6 text-primary" />
                 <CardTitle className="text-lg">Audit Logs</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">Review system activity and logs.</p>
+                <p className="text-sm text-muted-foreground mb-3">Review system activity, changes, and important events.</p>
+                 <Button variant="outline" size="sm">View Logs</Button>
               </CardContent>
             </Card>
           </div>
