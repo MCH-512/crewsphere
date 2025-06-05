@@ -29,7 +29,9 @@ export default function AdminConsolePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">View and manage user accounts, roles, and permissions.</p>
-                <Button variant="outline" size="sm">Manage Users</Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/admin/users">Manage Users</Link>
+                </Button>
               </CardContent>
             </Card>
             <Card className="shadow-sm">
