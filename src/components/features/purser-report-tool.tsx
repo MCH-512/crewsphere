@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, ClipboardList, AlertTriangle } from "lucide-react";
+import { Loader2, Sparkles, ClipboardList, Users } from "lucide-react";
 import { generatePurserReport, type PurserReportOutput, type PurserReportInput } from "@/ai/flows/purser-report-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -28,8 +28,17 @@ const purserReportFormSchema = z.object({
   flightDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format. Use YYYY-MM-DD." }),
   departureAirport: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars").toUpperCase(),
   arrivalAirport: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars").toUpperCase(),
-  aircraftTypeRegistration: z.string().min(3, "Min 3 chars").max(20, "Max 20 chars"),
-  crewMembers: z.string().min(10, "Please list crew members."),
+  aircraftTypeRegistration: z.string().min(3, "Min 3 chars").max(20, "Max 20 chars").describe("e.g., B789 G-XYZC"),
+  
+  // Crew Information
+  captainName: z.string().optional(),
+  firstOfficerName: z.string().optional(),
+  purserName: z.string().min(2, "Purser name is required."),
+  cabinCrewR1: z.string().optional(),
+  cabinCrewL2: z.string().optional(),
+  cabinCrewR2: z.string().optional(),
+  otherCrewMembers: z.string().optional(),
+
   passengerLoad: z.object({
     total: z.coerce.number().int().min(0, "Min 0 passengers"),
     adults: z.coerce.number().int().min(0, "Min 0 adults"),
@@ -63,7 +72,15 @@ export function PurserReportTool() {
       departureAirport: "LHR",
       arrivalAirport: "JFK",
       aircraftTypeRegistration: "B789 G-ABCD",
-      crewMembers: "Purser: J.Smith, CS: A.Lee, C.Davis, FA: M.Jones, K.Patel",
+      
+      captainName: "Capt. A. Smith",
+      firstOfficerName: "FO B. Jones",
+      purserName: "Purser C. Williams",
+      cabinCrewR1: "D. Brown (R1)",
+      cabinCrewL2: "E. Davis (L2)",
+      cabinCrewR2: "F. Miller (R2)",
+      otherCrewMembers: "",
+
       passengerLoad: { total: 200, adults: 180, children: 15, infants: 5 },
       generalFlightSummary: "Flight was on time and smooth. Cabin service completed efficiently.",
       safetyIncidents: "",
@@ -79,10 +96,40 @@ export function PurserReportTool() {
   async function onSubmit(data: PurserReportFormValues) {
     setIsLoading(true);
     setReportResult(null);
+
+    const crewDetailsParts = [
+      data.captainName ? `Captain: ${data.captainName}` : null,
+      data.firstOfficerName ? `First Officer: ${data.firstOfficerName}` : null,
+      `Purser: ${data.purserName}`,
+      data.cabinCrewR1 ? `R1: ${data.cabinCrewR1}` : null,
+      data.cabinCrewL2 ? `L2: ${data.cabinCrewL2}` : null,
+      data.cabinCrewR2 ? `R2: ${data.cabinCrewR2}` : null,
+      data.otherCrewMembers ? `Other Crew: ${data.otherCrewMembers}` : null,
+    ];
+    const crewMembersString = crewDetailsParts.filter(Boolean).join('\n');
+
     try {
       const input: PurserReportInput = {
-        ...data,
-        flightDate: new Date(data.flightDate).toISOString().split('T')[0], // Ensure date is in YYYY-MM-DD
+        flightNumber: data.flightNumber,
+        flightDate: new Date(data.flightDate).toISOString().split('T')[0],
+        departureAirport: data.departureAirport,
+        arrivalAirport: data.arrivalAirport,
+        aircraftTypeRegistration: data.aircraftTypeRegistration,
+        crewMembers: crewMembersString,
+        passengerLoad: {
+          total: Number(data.passengerLoad.total),
+          adults: Number(data.passengerLoad.adults),
+          children: Number(data.passengerLoad.children),
+          infants: Number(data.passengerLoad.infants),
+        },
+        generalFlightSummary: data.generalFlightSummary,
+        safetyIncidents: data.safetyIncidents,
+        securityIncidents: data.securityIncidents,
+        medicalIncidents: data.medicalIncidents,
+        passengerFeedback: data.passengerFeedback,
+        cateringNotes: data.cateringNotes,
+        maintenanceIssues: data.maintenanceIssues,
+        otherObservations: data.otherObservations,
       };
       const result = await generatePurserReport(input);
       setReportResult(result);
@@ -114,6 +161,7 @@ export function PurserReportTool() {
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="text-xl">Flight Information</CardTitle>
+              <CardDescription>Enter the core details of the flight.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -121,20 +169,51 @@ export function PurserReportTool() {
                   <FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input placeholder="e.g., BA245" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="flightDate" render={({ field }) => (
-                  <FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Flight Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                  <FormField control={form.control} name="aircraftTypeRegistration" render={({ field }) => (
-                  <FormItem><FormLabel>Aircraft Type & Registration</FormLabel><FormControl><Input placeholder="e.g., B789 G-ABCD" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Aircraft Type & Registration</FormLabel><FormControl><Input placeholder="e.g., B789 G-ABCD" {...field} /></FormControl><FormDescription>Type and registration (e.g., B787 G-XYZC)</FormDescription><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="departureAirport" render={({ field }) => (
-                  <FormItem><FormLabel>Departure Airport</FormLabel><FormControl><Input placeholder="e.g., LHR" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Departure Airport (From)</FormLabel><FormControl><Input placeholder="e.g., LHR" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="arrivalAirport" render={({ field }) => (
-                  <FormItem><FormLabel>Arrival Airport</FormLabel><FormControl><Input placeholder="e.g., JFK" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Arrival Airport (To)</FormLabel><FormControl><Input placeholder="e.g., JFK" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
               </div>
-               <FormField control={form.control} name="crewMembers" render={({ field }) => (
-                <FormItem><FormLabel>Crew Members (Names & Roles)</FormLabel><FormControl><Textarea placeholder="Purser: J.Smith, CS: A.Lee, FA: M.Jones..." {...field} /></FormControl><FormMessage /></FormItem>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center"><Users className="mr-2 h-5 w-5 text-primary" /> Crew Information</CardTitle>
+              <CardDescription>List the operating crew members for this flight.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <FormField control={form.control} name="captainName" render={({ field }) => (
+                  <FormItem><FormLabel>Captain's Name</FormLabel><FormControl><Input placeholder="e.g., Capt. John Doe" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="firstOfficerName" render={({ field }) => (
+                  <FormItem><FormLabel>First Officer's Name</FormLabel><FormControl><Input placeholder="e.g., FO Jane Smith" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="purserName" render={({ field }) => (
+                  <FormItem><FormLabel>Purser's Name</FormLabel><FormControl><Input placeholder="e.g., Purser Alex Lee" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 <FormField control={form.control} name="cabinCrewR1" render={({ field }) => (
+                  <FormItem><FormLabel>Cabin Crew (R1)</FormLabel><FormControl><Input placeholder="Name (R1)" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="cabinCrewL2" render={({ field }) => (
+                  <FormItem><FormLabel>Cabin Crew (L2)</FormLabel><FormControl><Input placeholder="Name (L2)" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="cabinCrewR2" render={({ field }) => (
+                  <FormItem><FormLabel>Cabin Crew (R2)</FormLabel><FormControl><Input placeholder="Name (R2)" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                )} />
+              </div>
+              <FormField control={form.control} name="otherCrewMembers" render={({ field }) => (
+                <FormItem><FormLabel>Other Crew Members / Notes</FormLabel><FormControl><Textarea placeholder="List any additional crew or specific roles/notes..." {...field} /></FormControl><FormDescription>Optional. E.g., L1: S. King, Additional FA: P. White</FormDescription><FormMessage /></FormItem>
               )} />
             </CardContent>
           </Card>
@@ -142,6 +221,7 @@ export function PurserReportTool() {
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="text-xl">Passenger Load</CardTitle>
+              <CardDescription>Specify the number of passengers by category.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <FormField control={form.control} name="passengerLoad.total" render={({ field }) => (
@@ -161,32 +241,33 @@ export function PurserReportTool() {
 
           <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle className="text-xl">Report Details</CardTitle>
+              <CardTitle className="text-xl">Report Sections</CardTitle>
+              <CardDescription>Provide details for each relevant section of the report.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField control={form.control} name="generalFlightSummary" render={({ field }) => (
-                <FormItem><FormLabel>General Flight Summary</FormLabel><FormControl><Textarea placeholder="Overall flight conduct, punctuality, service notes..." {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>General Flight Summary</FormLabel><FormControl><Textarea placeholder="Overall flight conduct, punctuality, service notes..." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="safetyIncidents" render={({ field }) => (
-                <FormItem><FormLabel>Safety Incidents/Observations</FormLabel><FormControl><Textarea placeholder="Detail any safety-related events or concerns..." {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                <FormItem><FormLabel>Safety Incidents/Observations</FormLabel><FormControl><Textarea placeholder="Detail any safety-related events or concerns..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional. E.g., turbulence, equipment malfunctions affecting safety.</FormDescription><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="securityIncidents" render={({ field }) => (
-                <FormItem><FormLabel>Security Incidents/Observations</FormLabel><FormControl><Textarea placeholder="Detail any security-related events..." {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                <FormItem><FormLabel>Security Incidents/Observations</FormLabel><FormControl><Textarea placeholder="Detail any security-related events..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional. E.g., unruly passengers, security breaches.</FormDescription><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="medicalIncidents" render={({ field }) => (
-                <FormItem><FormLabel>Medical Incidents</FormLabel><FormControl><Textarea placeholder="Describe any medical events and actions taken..." {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                <FormItem><FormLabel>Medical Incidents</FormLabel><FormControl><Textarea placeholder="Describe any medical events and actions taken..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional. E.g., passenger fainted, first aid administered.</FormDescription><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="passengerFeedback" render={({ field }) => (
-                <FormItem><FormLabel>Passenger Feedback (Notable)</FormLabel><FormControl><Textarea placeholder="Summarize significant positive or negative feedback..." {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                <FormItem><FormLabel>Passenger Feedback (Notable)</FormLabel><FormControl><Textarea placeholder="Summarize significant positive or negative feedback..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="cateringNotes" render={({ field }) => (
-                <FormItem><FormLabel>Catering Notes</FormLabel><FormControl><Textarea placeholder="Comments on meal service, quality, quantity, issues..." {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                <FormItem><FormLabel>Catering Notes</FormLabel><FormControl><Textarea placeholder="Comments on meal service, quality, quantity, issues..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="maintenanceIssues" render={({ field }) => (
-                <FormItem><FormLabel>Maintenance Issues Noted</FormLabel><FormControl><Textarea placeholder="Describe any aircraft defects or issues observed..." {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                <FormItem><FormLabel>Maintenance Issues Noted</FormLabel><FormControl><Textarea placeholder="Describe any aircraft defects or issues observed..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional. E.g., broken seat recline, IFE malfunction.</FormDescription><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="otherObservations" render={({ field }) => (
-                <FormItem><FormLabel>Other Observations/Information</FormLabel><FormControl><Textarea placeholder="Any other relevant details not covered above..." {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                <FormItem><FormLabel>Other Observations/Information</FormLabel><FormControl><Textarea placeholder="Any other relevant details not covered above..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional. E.g., ground handling issues, customs/immigration delays.</FormDescription><FormMessage /></FormItem>
               )} />
             </CardContent>
           </Card>
@@ -214,10 +295,11 @@ export function PurserReportTool() {
               <ClipboardList className="mr-2 h-6 w-6 text-primary" />
               AI-Generated Purser Report
             </CardTitle>
+            <CardDescription>Review the report generated by AI. You can copy this text for your official records.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h3 className="font-semibold text-lg mb-2">Full Report:</h3>
+              <h3 className="font-semibold text-lg mb-2">Full Report (Markdown):</h3>
               <div className="prose prose-sm max-w-none dark:prose-invert text-foreground p-4 border rounded-md bg-background">
                 <pre className="whitespace-pre-wrap font-sans text-sm">{reportResult.formattedReport}</pre>
               </div>
@@ -238,4 +320,4 @@ export function PurserReportTool() {
     </div>
   );
 }
-
+    

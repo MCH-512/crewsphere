@@ -17,7 +17,7 @@ const PurserReportInputSchema = z.object({
   departureAirport: z.string().min(3).max(10).describe('Departure airport ICAO/IATA code.'),
   arrivalAirport: z.string().min(3).max(10).describe('Arrival airport ICAO/IATA code.'),
   aircraftTypeRegistration: z.string().min(3).max(20).describe('Aircraft type and registration (e.g., B789 G-XYZC).'),
-  crewMembers: z.string().min(10).describe('List of crew members on board (names and roles).'),
+  crewMembers: z.string().min(10).describe('List of crew members on board (names and roles, typically multi-line).'),
   passengerLoad: z.object({
     total: z.number().int().min(0).describe('Total number of passengers.'),
     adults: z.number().int().min(0).describe('Number of adult passengers.'),
@@ -124,4 +124,4 @@ const purserReportFlow = ai.defineFlow(
     return output;
   }
 );
-
+    
