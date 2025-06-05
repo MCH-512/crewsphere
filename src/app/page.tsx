@@ -12,7 +12,7 @@ import { generateDailyBriefing, type DailyBriefingOutput } from "@/ai/flows/dail
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, limit, getDocs, Timestamp, or } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, getDocs, Timestamp, or, doc, getDoc } from "firebase/firestore";
 import { formatDistanceToNowStrict } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import { AnimatedCard } from "@/components/motion/animated-card";
@@ -98,20 +98,17 @@ export default function DashboardPage() {
       setAlertsLoading(true);
       setAlertsError(null);
       try {
-        // Query for (user-specific alerts OR global alerts) AND limit combined result.
-        // Firestore doesn't support OR queries on different fields directly in a way that allows easy combination with limit before fetching.
-        // So, fetch both and combine/sort/limit in client.
         const userAlertsQuery = query(
           collection(db, "alerts"),
           where("userId", "==", user.uid),
           orderBy("createdAt", "desc"),
-          limit(3) // Limit user-specific alerts
+          limit(3) 
         );
         const globalAlertsQuery = query(
           collection(db, "alerts"),
           where("userId", "==", null), 
           orderBy("createdAt", "desc"),
-          limit(3) // Limit global alerts
+          limit(3) 
         );
         
         const [userAlertsSnapshot, globalAlertsSnapshot] = await Promise.all([
@@ -122,16 +119,15 @@ export default function DashboardPage() {
         const fetchedUserAlerts = userAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alert));
         const fetchedGlobalAlerts = globalAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alert));
         
-        // Combine, remove duplicates (preferring user-specific if IDs clash, though unlikely with unique IDs), sort, and limit
         const combinedAlerts = [...fetchedUserAlerts, ...fetchedGlobalAlerts]
-          .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()) // Sort all combined alerts by date
-          .reduce((acc, current) => { // Remove duplicates by ID
+          .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()) 
+          .reduce((acc, current) => { 
             if (!acc.find(item => item.id === current.id)) {
               acc.push(current);
             }
             return acc;
           }, [] as Alert[])
-          .slice(0, 3); // Take the top 3 overall
+          .slice(0, 3); 
 
         setAlerts(combinedAlerts);
       } catch (err) {
@@ -147,37 +143,66 @@ export default function DashboardPage() {
 
   React.useEffect(() => {
     async function fetchFeaturedTrainings() {
+      if (!user) {
+        setFeaturedTrainingsLoading(false);
+        setFeaturedTrainings([]);
+        return;
+      }
       setFeaturedTrainingsLoading(true);
       setFeaturedTrainingsError(null);
-      try {
-        // Try to get 2 mandatory courses first
-        let q = query(
-          collection(db, "courses"), 
-          where("mandatory", "==", true), 
-          orderBy("title"), 
-          limit(2)
-        );
-        let querySnapshot = await getDocs(q);
-        let fetchedCourses = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FeaturedCourse));
+      
+      const finalFeaturedCourses: FeaturedCourse[] = [];
 
-        if (fetchedCourses.length < 2) {
-          const existingIds = fetchedCourses.map(c => c.id);
-          const needed = 2 - fetchedCourses.length;
-          
-          q = query(
-            collection(db, "courses"), 
-            orderBy("title"), 
-            limit(needed + existingIds.length) 
+      try {
+        // Step 1: Try to get up to 2 mandatory courses not yet passed by the user
+        const mandatoryQuery = query(
+          collection(db, "courses"),
+          where("mandatory", "==", true),
+          orderBy("title"),
+          limit(5) // Fetch a bit more to filter
+        );
+        const mandatorySnapshot = await getDocs(mandatoryQuery);
+        const potentialMandatoryCourses = mandatorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FeaturedCourse));
+
+        for (const course of potentialMandatoryCourses) {
+          if (finalFeaturedCourses.length >= 2) break;
+          const progressDocId = `${user.uid}_${course.id}`;
+          const progressSnap = await getDoc(doc(db, "userTrainingProgress", progressDocId));
+          if (progressSnap.exists() && progressSnap.data().quizStatus === 'Passed') {
+            continue; // Skip if already passed
+          }
+          finalFeaturedCourses.push(course);
+        }
+
+        // Step 2: If still less than 2, try to fill with other (non-mandatory or any) courses not yet passed
+        if (finalFeaturedCourses.length < 2) {
+          const existingIds = finalFeaturedCourses.map(c => c.id);
+          const needed = 2 - finalFeaturedCourses.length;
+
+          // Fetch a pool of general courses
+          const generalQuery = query(
+            collection(db, "courses"),
+            orderBy("category"), // Example: order by category then title
+            orderBy("title"),
+            limit(10) // Fetch a decent pool to pick from
           );
-          querySnapshot = await getDocs(q);
-          const additionalCourses = querySnapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() } as FeaturedCourse))
-            .filter(course => !existingIds.includes(course.id)) 
-            .slice(0, needed);
-          fetchedCourses = [...fetchedCourses, ...additionalCourses];
+          const generalSnapshot = await getDocs(generalQuery);
+          const potentialGeneralCourses = generalSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as FeaturedCourse));
+
+          for (const course of potentialGeneralCourses) {
+            if (finalFeaturedCourses.length >= 2) break;
+            if (existingIds.includes(course.id)) continue; // Already selected (e.g. as mandatory)
+
+            const progressDocId = `${user.uid}_${course.id}`;
+            const progressSnap = await getDoc(doc(db, "userTrainingProgress", progressDocId));
+            if (progressSnap.exists() && progressSnap.data().quizStatus === 'Passed') {
+              continue; // Skip if already passed
+            }
+            finalFeaturedCourses.push(course);
+          }
         }
         
-        setFeaturedTrainings(fetchedCourses.slice(0, 2)); 
+        setFeaturedTrainings(finalFeaturedCourses.slice(0, 2));
       } catch (err) {
         console.error("Error fetching featured trainings:", err);
         setFeaturedTrainingsError("Failed to load featured trainings.");
@@ -186,12 +211,7 @@ export default function DashboardPage() {
         setFeaturedTrainingsLoading(false);
       }
     }
-    if (user) { 
-        fetchFeaturedTrainings();
-    } else {
-        setFeaturedTrainingsLoading(false);
-        setFeaturedTrainings([]); 
-    }
+    fetchFeaturedTrainings();
   }, [user, toast]);
 
 
@@ -471,7 +491,7 @@ export default function DashboardPage() {
                   </div>
                 )}
                 {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.length === 0 && user && (
-                  <p className="text-sm text-muted-foreground">No featured trainings available at this time.</p>
+                  <p className="text-sm text-muted-foreground">No featured trainings available for you at this time.</p>
                 )}
                  {!featuredTrainingsLoading && !featuredTrainingsError && !user && (
                   <p className="text-sm text-muted-foreground">Log in to see featured trainings.</p>
@@ -506,3 +526,6 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+
+    
