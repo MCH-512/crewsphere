@@ -6,21 +6,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Users, Loader2, AlertTriangle, RefreshCw, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface UserDocument {
-  uid: string; // Document ID from Firestore, which is the user's UID
-  email?: string; // Email, might be stored in the document
-  role?: 'admin' | 'purser' | 'crew' | string; // Role
-  displayName?: string; // Display name
-  lastLogin?: Timestamp; // Last login timestamp
-  createdAt?: Timestamp; // Account creation timestamp from Firestore doc
+  uid: string; 
+  email?: string; 
+  role?: 'admin' | 'purser' | 'crew' | string; 
+  displayName?: string; 
+  lastLogin?: Timestamp; 
+  createdAt?: Timestamp; 
 }
+
+const availableRoles: UserDocument['role'][] = ['admin', 'purser', 'crew'];
 
 export default function AdminUsersPage() {
   const { user, loading: authLoading } = useAuth();
@@ -30,12 +35,16 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
+  const [selectedUserForEdit, setSelectedUserForEdit] = React.useState<UserDocument | null>(null);
+  const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = React.useState(false);
+  const [newRole, setNewRole] = React.useState<UserDocument['role'] | "">("");
+  const [isUpdatingRole, setIsUpdatingRole] = React.useState(false);
+
   const fetchUsers = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Assuming 'users' collection where document ID is UID
-      const q = query(collection(db, "users"), orderBy("email", "asc")); // Order by email if available
+      const q = query(collection(db, "users"), orderBy("email", "asc"));
       const querySnapshot = await getDocs(q);
       const fetchedUsers = querySnapshot.docs.map(doc => ({
         uid: doc.id,
@@ -61,12 +70,31 @@ export default function AdminUsersPage() {
     }
   }, [user, authLoading, router, fetchUsers]);
 
-  // Placeholder for future edit role functionality
-  const handleEditRole = (userToEdit: UserDocument) => {
-    toast({
-      title: "Edit Role (Coming Soon)",
-      description: `Functionality to edit role for ${userToEdit.email || userToEdit.uid} will be implemented later.`,
-    });
+  const handleOpenEditRoleDialog = (userToEdit: UserDocument) => {
+    setSelectedUserForEdit(userToEdit);
+    setNewRole(userToEdit.role || ""); // Pre-fill with current role
+    setIsEditRoleDialogOpen(true);
+  };
+
+  const handleRoleUpdate = async () => {
+    if (!selectedUserForEdit || !newRole || newRole === selectedUserForEdit.role) {
+      toast({ title: "No Change", description: "Role is the same or not selected.", variant: "default" });
+      setIsEditRoleDialogOpen(false);
+      return;
+    }
+    setIsUpdatingRole(true);
+    try {
+      const userDocRef = doc(db, "users", selectedUserForEdit.uid);
+      await updateDoc(userDocRef, { role: newRole });
+      toast({ title: "Role Updated", description: `${selectedUserForEdit.email}'s role changed to ${newRole}.` });
+      fetchUsers(); // Re-fetch to update the table
+      setIsEditRoleDialogOpen(false);
+    } catch (err) {
+      console.error("Error updating role:", err);
+      toast({ title: "Update Failed", description: "Could not update user role.", variant: "destructive" });
+    } finally {
+      setIsUpdatingRole(false);
+    }
   };
 
   const getRoleBadgeVariant = (role?: string) => {
@@ -107,7 +135,7 @@ export default function AdminUsersPage() {
               <Users className="mr-3 h-7 w-7 text-primary" />
               User Management
             </CardTitle>
-            <CardDescription>View all registered users and their roles.</CardDescription>
+            <CardDescription>View all registered users and manage their roles.</CardDescription>
           </div>
           <Button variant="outline" onClick={fetchUsers} disabled={isLoading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -153,7 +181,7 @@ export default function AdminUsersPage() {
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{u.uid}</TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEditRole(u)}>
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenEditRoleDialog(u)}>
                           <Edit className="mr-1 h-4 w-4" /> Edit Role
                         </Button>
                       </TableCell>
@@ -165,6 +193,48 @@ export default function AdminUsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {selectedUserForEdit && (
+        <Dialog open={isEditRoleDialogOpen} onOpenChange={setIsEditRoleDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Role for {selectedUserForEdit.email}</DialogTitle>
+              <DialogDescription>
+                Current role: <Badge variant={getRoleBadgeVariant(selectedUserForEdit.role)} className="capitalize text-xs">{selectedUserForEdit.role || 'Not Assigned'}</Badge>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="role-select">New Role</Label>
+                <Select 
+                  value={newRole || ""}
+                  onValueChange={(value) => setNewRole(value as UserDocument['role'])}
+                >
+                  <SelectTrigger id="role-select">
+                    <SelectValue placeholder="Select new role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableRoles.map(role => (
+                       <SelectItem key={role} value={role!} className="capitalize">{role}</SelectItem>
+                    ))}
+                    <SelectItem value=""><em>(Remove Role / Default)</em></SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button onClick={handleRoleUpdate} disabled={isUpdatingRole || !newRole || newRole === selectedUserForEdit.role}>
+                {isUpdatingRole && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Role
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
+
