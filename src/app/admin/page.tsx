@@ -207,8 +207,12 @@ export default function AdminConsolePage() {
                   Manage flight schedules: flight numbers, dates, departure/arrival airports, ETD/ETA.
                 </p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" disabled>View Schedule</Button>
-                    <Button variant="default" size="sm" disabled><PlusCircle className="mr-2 h-4 w-4"/>Add New Flight</Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/admin/flights"><Eye className="mr-2 h-4 w-4" />Manage Flights</Link>
+                    </Button>
+                    <Button variant="default" size="sm" asChild>
+                        <Link href="/admin/flights/create"><PlusCircle className="mr-2 h-4 w-4"/>Add New Flight</Link>
+                    </Button>
                 </div>
               </CardContent>
             </Card>
@@ -238,3 +242,5 @@ export default function AdminConsolePage() {
     </div>
   );
 }
+
+    
