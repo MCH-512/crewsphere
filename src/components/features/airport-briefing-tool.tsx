@@ -56,8 +56,17 @@ export function AirportBriefingTool() {
       console.error("Error generating airport briefing:", error);
       let userMessage = "Failed to generate airport briefing. Please check the identifier or try again later.";
       if (error instanceof Error && error.message) {
-        if (error.message.includes("503") || error.message.toLowerCase().includes("service unavailable") || error.message.toLowerCase().includes("overloaded")) {
+        const lowerErrorMessage = error.message.toLowerCase();
+        if (lowerErrorMessage.includes("503") || lowerErrorMessage.includes("service unavailable") || lowerErrorMessage.includes("overloaded")) {
           userMessage = "The AI service is currently overloaded or unavailable. Please try again in a few moments.";
+        } else if (lowerErrorMessage.includes("quota") || lowerErrorMessage.includes("limit exceeded")) {
+          userMessage = "The AI service quota has been exceeded. Please try again later or contact support.";
+        } else if (lowerErrorMessage.includes("safety") || lowerErrorMessage.includes("blocked") || lowerErrorMessage.includes("candidate") || lowerErrorMessage.includes("finish reason: safety")) {
+          userMessage = "The request was blocked due to safety filters. Please modify your input or try a different request.";
+        } else if (lowerErrorMessage.includes("api key") || lowerErrorMessage.includes("authentication") || lowerErrorMessage.includes("permission denied")) {
+          userMessage = "There is an issue with the AI service configuration or authentication. Please contact support.";
+        } else if (lowerErrorMessage.includes("model not found") || lowerErrorMessage.includes("model is unavailable")) {
+          userMessage = "The AI model for this feature is currently unavailable. Please try again later.";
         }
       }
       toast({
