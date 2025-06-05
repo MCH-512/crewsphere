@@ -3,10 +3,9 @@
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon } from "lucide-react";
 import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
@@ -16,11 +15,11 @@ interface Course {
   id: string;
   title: string;
   description: string;
-  category: string; // e.g., Safety, Aircraft Systems, Regulations, Service from placeholderQuizzes
+  category: string; 
   courseIcon: LucideIcon;
   imageHint: string;
   contentStatus: 'NotStarted' | 'InProgress' | 'Completed';
-  quizId: string; // Maps to an ID from placeholderQuizzes or a conceptual quiz
+  quizId: string; 
   quizTitle: string;
   quizStatus: 'NotTaken' | 'Attempted' | 'Passed' | 'Failed';
   quizScore?: number;
@@ -63,7 +62,7 @@ const initialCourses: Course[] = [
     category: "Regulations",
     courseIcon: BookOpen,
     imageHint: "hazard symbol",
-    contentStatus: 'Completed', // Pre-completed course content for demo
+    contentStatus: 'Completed', 
     quizId: "QZ003",
     quizTitle: "Dangerous Goods Quiz",
     quizStatus: 'NotTaken',
@@ -78,7 +77,7 @@ const initialCourses: Course[] = [
     contentStatus: 'Completed',
     quizId: "QZ004",
     quizTitle: "Service Scenarios Quiz",
-    quizStatus: 'Passed', // Pre-passed quiz for demo
+    quizStatus: 'Passed', 
     quizScore: 92,
     certificateDetails: { provider: "SkyHigh Training Co.", certificateId: "CERT-CSE-004", expiryDate: "2026-07-01" }
   },
@@ -92,9 +91,9 @@ const initialCourses: Course[] = [
     contentStatus: 'Completed',
     quizId: "QZ005",
     quizTitle: "First Aid & CPR Quiz",
-    quizStatus: 'Failed', // Pre-failed quiz for demo
+    quizStatus: 'Failed', 
     quizScore: 65,
-    certificateDetails: { provider: "Red Cross", certificateId: "CERT-FA-CPR-005" } // expiry logic can be added
+    certificateDetails: { provider: "Red Cross", certificateId: "CERT-FA-CPR-005" } 
   },
 ];
 
@@ -324,3 +323,5 @@ export default function TrainingPage() {
     </div>
   );
 }
+
+    
