@@ -52,6 +52,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; // Ensure this path is correct
 import { useToast } from "@/hooks/use-toast";
+import { Breadcrumbs } from "./breadcrumbs"; // Import Breadcrumbs
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -112,20 +113,54 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const pageTitles: { [key: string]: string } = {
     "/": "Dashboard",
     "/documents": "Document Library",
-    "/schedule": "Scheduling Calendar",
+    "/schedule": "My Schedule",
     "/requests": "Submit a Request",
-    "/airport-briefings": "Airport Briefings",
+    "/airport-briefings": "Airport Briefing Generator",
     "/flight-duty-calculator": "Flight Duty Calculator",
-    "/purser-reports": "Purser Reports",
+    "/purser-reports": "Purser Report Generator",
     "/insights": "AI-Driven Operational Insights",
-    "/training": "Training Tracker",
+    "/training": "My Training Hub",
     "/quizzes": "Quizzes",
     "/admin": "Admin Console",
     "/settings": "Settings",
     "/login": "Login",
     "/signup": "Sign Up",
+    "/admin/users": "User Management",
+    "/admin/documents/upload": "Upload New Document",
+    "/admin/alerts": "All Broadcast Alerts",
+    "/admin/alerts/create": "Create New Alert",
+    "/admin/courses": "Courses Management",
+    "/admin/courses/create": "Create New Training Course",
+    "/admin/flights": "Manage Flights",
+    "/admin/flights/create": "Add New Flight",
+    "/admin/purser-reports": "Submitted Purser Reports",
+    "/admin/user-requests": "User Submitted Requests",
   };
-  const currentPageTitle = pageTitles[pathname] || "AirCrew Hub";
+  
+  // Find the most specific match for page titles
+  let currentTitle = "AirCrew Hub"; // Default title
+  let longestMatch = "";
+  for (const path in pageTitles) {
+      // Ensure that '/admin' does not incorrectly match '/admin/users' as more specific
+      // We want an exact match or a match that ends with a '/'
+      if (pathname === path || (pathname.startsWith(path) && path.endsWith('/') && path.length > longestMatch.length) || (pathname.startsWith(path + '/') && path.length > longestMatch.length)) {
+        if (path.length > longestMatch.length) {
+            longestMatch = path;
+            currentTitle = pageTitles[path];
+        }
+      } else if (pathname.startsWith(path) && path.length > longestMatch.length && !pageTitles[pathname]) {
+         // Fallback for dynamic paths if not explicitly defined, use parent
+         longestMatch = path;
+         currentTitle = pageTitles[path];
+      }
+  }
+   // If an exact match for the full pathname exists, prioritize it
+  if (pageTitles[pathname]) {
+    currentTitle = pageTitles[pathname];
+  }
+
+  const currentPageTitle = currentTitle;
+
 
   // Hide sidebar and header for login/signup pages
   if (pathname === "/login" || pathname === "/signup") {
@@ -162,11 +197,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <Link href={item.href} passHref legacyBehavior>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname === item.href}
+                      isActive={pathname === item.href || (pathname.startsWith(item.href) && item.href !== "/")} // Highlight admin for subpages
                       tooltip={{ children: item.label, side: "right", align: "center" }}
                       className={cn(
                         "justify-start",
-                        pathname === item.href && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground"
+                        (pathname === item.href || (pathname.startsWith(item.href) && item.href !== "/")) && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground"
                       )}
                     >
                       <a>
@@ -222,7 +257,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full" aria-label="Open user menu">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User Avatar" data-ai-hint="user avatar" />
                     <AvatarFallback>{user?.email ? user.email.substring(0, 2).toUpperCase() : "U"}</AvatarFallback>
@@ -270,6 +305,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
+          <Breadcrumbs /> {/* Add Breadcrumbs here */}
           {children}
         </main>
       </SidebarInset>
@@ -277,3 +313,4 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+    
