@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, limit, getDocs, Timestamp } from "firebase/firestore";
 import { formatDistanceToNowStrict } from "date-fns";
+import ReactMarkdown from "react-markdown";
 
 interface Alert {
   id: string;
@@ -289,8 +290,9 @@ export default function DashboardPage() {
           {dailyBriefing && !isBriefingLoading && !briefingError && (
             <div
               className="prose prose-sm max-w-none dark:prose-invert text-foreground"
-              dangerouslySetInnerHTML={{ __html: dailyBriefing.briefingMarkdown.replace(/\n/g, '<br />') }}
-            />
+            >
+              <ReactMarkdown>{dailyBriefing.briefingMarkdown}</ReactMarkdown>
+            </div>
           )}
           {!user && !isBriefingLoading && (
              <div className="flex items-center space-x-2 text-muted-foreground">
