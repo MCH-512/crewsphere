@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing, Plane, PlusCircle, CheckSquare, Edit3, FileSignature, ClipboardCheck, AlertTriangle } from "lucide-react";
+import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing, Plane, PlusCircle, CheckSquare, Edit3, FileSignature, ClipboardCheck, AlertTriangle, MessageSquareWarning } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminConsolePage() {
@@ -13,7 +13,7 @@ export default function AdminConsolePage() {
           <div>
             <CardTitle className="text-2xl font-headline">Admin Console</CardTitle>
             <CardDescription>
-              Manage application settings, users, documents, courses, training, quizzes, user requests, purser reports, flights, and system health.
+              Manage application settings, users, documents, courses, training, quizzes, user requests, purser reports, flights, alerts, and system health.
             </CardDescription>
           </div>
         </CardHeader>
@@ -48,6 +48,21 @@ export default function AdminConsolePage() {
                     <Button variant="ghost" size="sm" asChild>
                       <Link href="/documents"><Eye className="mr-2 h-4 w-4" />View All</Link>
                     </Button>
+                </div>
+              </CardContent>
+            </Card>
+             <Card className="shadow-sm">
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <MessageSquareWarning className="h-6 w-6 text-primary" />
+                <CardTitle className="text-lg">Alerts Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-3">Create and manage global or user-specific alerts and notifications.</p>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/admin/alerts/create"><PlusCircle className="mr-2 h-4 w-4" />Create Alert</Link>
+                    </Button>
+                    <Button variant="ghost" size="sm" disabled><Eye className="mr-2 h-4 w-4" />View All</Button>
                 </div>
               </CardContent>
             </Card>
