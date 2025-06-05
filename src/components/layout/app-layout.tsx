@@ -40,6 +40,7 @@ import {
   Moon,
   Sun,
   ServerCog,
+  SendHorizonal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +48,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
+  { href: "/requests", label: "Requests", icon: SendHorizonal },
   { href: "/insights", label: "AI Insights", icon: Brain },
   { href: "/training", label: "Training", icon: GraduationCap },
   { href: "/admin", label: "Admin Console", icon: ServerCog },
@@ -82,6 +84,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/": "Dashboard",
     "/documents": "Document Library",
     "/schedule": "Scheduling Calendar",
+    "/requests": "Submit a Request",
     "/insights": "AI-Driven Operational Insights",
     "/training": "Training Tracker",
     "/admin": "Admin Console",
