@@ -97,7 +97,7 @@ export function AirportBriefingTool() {
                   </div>
                 </FormControl>
                 <FormDescription>
-                  Enter the ICAO or IATA code for the airport. The AI will generate a briefing.
+                  Enter the ICAO or IATA code for the airport. The AI will generate a briefing formatted in Markdown.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -107,7 +107,7 @@ export function AirportBriefingTool() {
       </Form>
 
       {briefing && (
-        <Card className="mt-8 shadow-md bg-secondary/30">
+        <Card className="mt-8 shadow-md bg-card border">
           <CardHeader>
             <CardTitle className="text-xl font-headline flex items-center">
               <Sparkles className="mr-2 h-6 w-6 text-primary" />
@@ -115,8 +115,10 @@ export function AirportBriefingTool() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none dark:prose-invert text-foreground">
-              <pre className="whitespace-pre-wrap font-sans text-sm">{briefing.briefing}</pre>
+            <div 
+              className="prose prose-sm max-w-none dark:prose-invert text-card-foreground whitespace-pre-wrap font-sans text-sm"
+            >
+              {briefing.briefing}
             </div>
           </CardContent>
         </Card>

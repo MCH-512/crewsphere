@@ -26,7 +26,7 @@ const AirportBriefingOutputSchema = z.object({
   briefing: z
     .string()
     .describe(
-      'A comprehensive AI-generated briefing for the specified airport, including operational details, weather patterns, NOTAMs, and other relevant information for crew.'
+      'A comprehensive AI-generated briefing for the specified airport, formatted in Markdown. Includes operational details, weather patterns, NOTAMs, and other relevant information for crew.'
     ),
 });
 export type AirportBriefingOutput = z.infer<typeof AirportBriefingOutputSchema>;
@@ -42,34 +42,55 @@ const airportBriefingPrompt = ai.definePrompt({
   input: {schema: AirportBriefingInputSchema},
   output: {schema: AirportBriefingOutputSchema},
   prompt: `You are an expert aviation intelligence assistant. Your task is to generate a concise yet comprehensive briefing for the airport specified by the user.
+The output MUST be well-structured Markdown.
 
 Airport Identifier: {{{airportIdentifier}}}
 
-Please provide a briefing that includes, but is not limited to:
-1.  **Airport Overview**: Full Name, City, Country, ICAO/IATA codes.
-2.  **Operational Information**:
-    *   Key Runways (length, surface, typical configurations if known).
-    *   Common ATC frequencies (Tower, Ground, ATIS if generally known).
-    *   Known complex procedures or noise abatement rules if significant.
-3.  **Weather Patterns**:
-    *   Typical prevailing winds.
-    *   Seasonal weather considerations (e.g., fog season, snow, thunderstorms).
-    *   Any specific weather phenomena crews should be aware of.
-4.  **NOTAMs & Advisories**:
-    *   Mention if there are typically many NOTAMs or if specific types are common. (You do not need to fetch live NOTAMs, but can describe general patterns).
-    *   Any long-standing advisories or common alerts.
-5.  **Crew Information**:
-    *   Notes on ground transportation from airport to city center/hotels if readily available.
-    *   Brief mention of crew facilities or layover considerations if widely known.
-    *   Any significant cultural notes or local customs for layovers if applicable and brief.
-6.  **Contingency/Emergency**:
-    *   Brief mention of nearest suitable alternate airports if a major hub.
+Please provide a briefing that includes the following sections, using Markdown headings (e.g., ## Section Title) for each:
 
+1.  **## Airport Overview**
+    *   **Full Name:** [Full Name]
+    *   **Location:** [City, Country]
+    *   **ICAO Code:** [ICAO]
+    *   **IATA Code:** [IATA]
+    *   **Local Time Zone:** [e.g., UTC-5 (Eastern Time), include DST info if applicable and known]
+    *   **Airport Elevation:** [Elevation in feet and meters, e.g., 123 ft / 37 m]
+
+
+2.  **## Operational Information**
+    *   **Key Runways:** (List lengths, surfaces, typical configurations if known. Use bullet points: * Runway XX: Length, Surface)
+    *   **ATC Frequencies:** (Common Tower, Ground, ATIS if generally known. Use bullet points: * Tower: XXX.XX MHz)
+    *   **Known Complexities:** (e.g., noise abatement, specific arrival/departure procedures, significant terrain. Use bullet points if multiple.)
+
+3.  **## Weather Patterns**
+    *   **Prevailing Winds:** [General direction and common strength, e.g., Predominantly WSW at 10-15 kts]
+    *   **Seasonal Weather:** (e.g., Fog season (Oct-Mar), common snow (Dec-Feb), typical thunderstorm activity (Jun-Aug). Use bullet points.)
+    *   **Specific Phenomena:** (Any particular weather hazards crews should be aware of, e.g., Microbursts common in summer.)
+
+4.  **## NOTAMs & Advisories (General)**
+    *   **General NOTAM Activity:** (Describe if typically many/few, common types. *Do not fetch live NOTAMs.*)
+    *   **Long-Standing Advisories:** (Any significant, persistent advisories or common alerts mentioned in general sources.)
+
+5.  **## Crew Information**
+    *   **Ground Transportation:** (Notes on typical options/time to city center/crew hotels if widely known.)
+    *   **Crew Facilities:** (Brief mention if specific crew rooms or amenities are known and publicly documented.)
+    *   **Layover Considerations:** (Brief, practical cultural notes, safety tips, or local customs if relevant and helpful for layovers. Focus on safety and convenience.)
+
+6.  **## Contingency & Emergency**
+    *   **Nearest Suitable Alternates:** (List 1-2 major suitable alternate airports if applicable, especially for hub airports.)
+    *   **Airport Emergency Services:** (General note on availability, e.g., "Full ARFF services available Cat 9.")
+
+**Formatting Guidelines:**
+*   Use Markdown headings (e.g., ## Section Title) for each main section listed above.
+*   Use bold text (e.g., **text**) for sub-headings or to emphasize key terms within bullet points.
+*   Use bullet points (e.g., * Item or - Item) for lists.
+*   Ensure the output is a single, coherent Markdown string.
+*   Be concise but thorough.
+
+If the airport identifier is ambiguous or not recognized, please state: "The airport identifier '{{{airportIdentifier}}}' is not recognized or is ambiguous. Please provide a specific ICAO or IATA code."
+Do not invent information if it's not generally known or publicly available. It's better to state that specific information requires consulting official sources for operational use.
 Focus on providing practical and actionable information for flight and cabin crew.
-The briefing should be well-structured and easy to read. Use Markdown for formatting if it helps clarity (e.g., bold headings, bullet points).
-
-If the airport identifier is ambiguous or not recognized, please state that you need a more specific identifier (e.g., ICAO or IATA code) and cannot generate a briefing.
-Do not invent information if it's not generally known or available. It's better to state that specific information (like live NOTAMs or very detailed local procedures) requires consulting official sources.
+The briefing should be well-structured and easy to read.
 `,
 });
 
@@ -87,3 +108,4 @@ const airportBriefingFlow = ai.defineFlow(
     return output;
   }
 );
+
