@@ -173,10 +173,10 @@ export default function DocumentsPage() {
                         <TableCell>{formatDate(doc.lastUpdated)}</TableCell>
                         <TableCell>{doc.size || "N/A"}</TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Button variant="ghost" size="icon" asChild aria-label="View document">
+                          <Button variant="ghost" size="icon" asChild aria-label={`View document: ${doc.title}`}>
                             <a href={doc.downloadURL} target="_blank" rel="noopener noreferrer"><Eye className="h-4 w-4" /></a>
                           </Button>
-                          <Button variant="ghost" size="icon" asChild aria-label="Download document">
+                          <Button variant="ghost" size="icon" asChild aria-label={`Download document: ${doc.title}`}>
                              <a href={doc.downloadURL} download><Download className="h-4 w-4" /></a>
                           </Button>
                         </TableCell>
@@ -193,3 +193,4 @@ export default function DocumentsPage() {
   );
 
     
+

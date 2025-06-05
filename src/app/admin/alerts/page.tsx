@@ -63,20 +63,20 @@ export default function AdminAlertsPage() {
     }
   }, [user, authLoading, router, fetchAlerts]);
 
-  const getLevelBadgeVariant = (level: AlertDocument["level"]) => {
+  const getLevelBadgeVariant = (level: AlertDocument["level"]): "destructive" | "default" | "secondary" | "outline" => {
     switch (level) {
       case "critical": return "destructive";
-      case "warning": return "default"; // Using default for warning (often yellow-ish in themes)
+      case "warning": return "default"; 
       case "info": return "secondary";
       default: return "outline";
     }
   };
   
-  const getLevelBadgeClassName = (level: AlertDocument["level"]) => {
+  const getLevelBadgeAdditionalClasses = (level: AlertDocument["level"]) => {
     switch (level) {
-        case "critical": return "bg-red-500 hover:bg-red-600 text-white";
-        case "warning": return "bg-yellow-500 hover:bg-yellow-600 text-black";
-        case "info": return "bg-blue-500 hover:bg-blue-600 text-white";
+        case "critical": return "bg-red-500 hover:bg-red-600 text-white dark:bg-red-700 dark:hover:bg-red-800 dark:text-red-100";
+        case "warning": return "bg-yellow-400 hover:bg-yellow-500 text-yellow-900 dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:text-yellow-100";
+        case "info": return "bg-blue-500 hover:bg-blue-600 text-white dark:bg-blue-700 dark:hover:bg-blue-800 dark:text-blue-100";
         default: return "";
     }
   }
@@ -153,7 +153,7 @@ export default function AdminAlertsPage() {
                       <TableCell>
                         <Badge 
                             variant={getLevelBadgeVariant(alert.level)}
-                            className={getLevelBadgeClassName(alert.level)}
+                            className={getLevelBadgeAdditionalClasses(alert.level)}
                         >
                           {alert.level.charAt(0).toUpperCase() + alert.level.slice(1)}
                         </Badge>
@@ -162,10 +162,10 @@ export default function AdminAlertsPage() {
                       <TableCell>{alert.iconName || 'N/A'}</TableCell>
                       <TableCell>{format(alert.createdAt.toDate(), "PPp")}</TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => toast({ title: "Edit Alert", description: "Editing functionality coming soon!"})} disabled>
+                        <Button variant="ghost" size="sm" onClick={() => toast({ title: "Edit Alert", description: "Editing functionality coming soon!"})} disabled aria-label={`Edit alert: ${alert.title}`}>
                           <Edit className="mr-1 h-4 w-4" /> Edit
                         </Button>
-                         <Button variant="ghost" size="sm" onClick={() => toast({ title: "Delete Alert", description: "Deletion functionality coming soon!"})} disabled className="text-destructive hover:text-destructive/80">
+                         <Button variant="ghost" size="sm" onClick={() => toast({ title: "Delete Alert", description: "Deletion functionality coming soon!"})} disabled className="text-destructive hover:text-destructive/80" aria-label={`Delete alert: ${alert.title}`}>
                           <Trash2 className="mr-1 h-4 w-4" /> Delete
                         </Button>
                       </TableCell>

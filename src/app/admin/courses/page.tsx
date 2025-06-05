@@ -144,7 +144,7 @@ export default function AdminCoursesPage() {
                       </TableCell>
                       <TableCell>{course.quizTitle || 'N/A'}</TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => toast({ title: "Edit Course", description: "Editing functionality coming soon!"})} disabled>
+                        <Button variant="ghost" size="sm" onClick={() => toast({ title: "Edit Course", description: "Editing functionality coming soon!"})} disabled aria-label={`Edit course: ${course.title}`}>
                           <Edit className="mr-1 h-4 w-4" /> Edit
                         </Button>
                       </TableCell>

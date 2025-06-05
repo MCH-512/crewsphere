@@ -176,7 +176,7 @@ export function FlightDutyCalculatorTool() {
                     onClick={() => remove(index)}
                     disabled={fields.length <= 1}
                     className="mb-1"
-                    aria-label="Remove flight segment"
+                    aria-label={`Remove flight segment ${index + 1}: ${form.getValues(`flightSegments.${index}.departureAirport`)} to ${form.getValues(`flightSegments.${index}.arrivalAirport`)}`}
                   >
                     <XCircle className="h-5 w-5" />
                   </Button>
