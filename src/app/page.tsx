@@ -5,12 +5,25 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2 } from "lucide-react";
+import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { generateDailyBriefing, type DailyBriefingOutput } from "@/ai/flows/daily-briefing-flow";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
+import { db } from "@/lib/firebase";
+import { collection, query, where, orderBy, limit, getDocs, Timestamp } from "firebase/firestore";
+import { formatDistanceToNowStrict } from "date-fns";
+
+interface Alert {
+  id: string;
+  title: string;
+  content: string;
+  level: "critical" | "warning" | "info";
+  createdAt: Timestamp;
+  userId?: string; // For user-specific alerts
+  iconName?: string; // e.g., "Briefcase", "GraduationCap"
+}
 
 
 export default function DashboardPage() {
@@ -20,6 +33,10 @@ export default function DashboardPage() {
   const [isBriefingLoading, setIsBriefingLoading] = React.useState(true);
   const [briefingError, setBriefingError] = React.useState<string | null>(null);
   const [userNameForGreeting, setUserNameForGreeting] = React.useState<string>("User");
+
+  const [alerts, setAlerts] = React.useState<Alert[]>([]);
+  const [alertsLoading, setAlertsLoading] = React.useState(true);
+  const [alertsError, setAlertsError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (user) {
@@ -32,7 +49,6 @@ export default function DashboardPage() {
     async function fetchBriefing() {
       if (!user) {
         setIsBriefingLoading(false);
-        // Potentially set a specific message or state if no user, though route protection should handle this
         return;
       }
       
@@ -57,6 +73,55 @@ export default function DashboardPage() {
     fetchBriefing();
   }, [toast, user]);
 
+  React.useEffect(() => {
+    async function fetchAlerts() {
+      if (!user) {
+        setAlertsLoading(false);
+        return;
+      }
+      setAlertsLoading(true);
+      setAlertsError(null);
+      try {
+        // Query for user-specific alerts
+        const userAlertsQuery = query(
+          collection(db, "alerts"),
+          where("userId", "==", user.uid),
+          orderBy("createdAt", "desc"),
+          limit(3)
+        );
+        // Query for global alerts (where userId is not set)
+        const globalAlertsQuery = query(
+          collection(db, "alerts"),
+          where("userId", "==", null), // Or where("isGlobal", "==", true) if you prefer
+          orderBy("createdAt", "desc"),
+          limit(3)
+        );
+        
+        const [userAlertsSnapshot, globalAlertsSnapshot] = await Promise.all([
+            getDocs(userAlertsQuery),
+            getDocs(globalAlertsQuery)
+        ]);
+
+        const fetchedUserAlerts = userAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alert));
+        const fetchedGlobalAlerts = globalAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alert));
+        
+        // Combine, sort by date, and limit
+        const combinedAlerts = [...fetchedUserAlerts, ...fetchedGlobalAlerts]
+          .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
+          .slice(0, 3); // Ensure we only show a max of 3 combined
+
+        setAlerts(combinedAlerts);
+      } catch (err) {
+        console.error("Error fetching alerts:", err);
+        setAlertsError("Failed to load real-time alerts.");
+        toast({ title: "Alerts Error", description: "Could not load alerts.", variant: "destructive" });
+      } finally {
+        setAlertsLoading(false);
+      }
+    }
+    fetchAlerts();
+  }, [user, toast]);
+
 
   const upcomingDuty = {
     flightNumber: "BA245",
@@ -70,13 +135,6 @@ export default function DashboardPage() {
     gate: "C55 (LHR)",
   };
 
-  const alerts = [
-    { id: 1, title: `Pre-Flight Briefing: ${upcomingDuty.flightNumber}`, content: `Scheduled for ${upcomingDuty.reportingTime} in ${upcomingDuty.reportingLocation}.`, level: "critical", time: "Upcoming", icon: Briefcase },
-    { id: 2, title: "Gate Change: FLT456", content: "Flight BA456 (LHR-CDG) has changed from Gate A12 to A15.", level: "warning", time: "15m ago", icon: AlertTriangle },
-    { id:3, title: "New Company Bulletin: Uniforms", content: "Updated uniform guidelines (BUL-2024-09) available in Documents.", level: "info", time: "1h ago", icon: Info },
-    { id: 4, title: "Training Deadline Approaching", content: "Your SEP Refresher must be completed by Aug 15th.", level: "warning", time: "2w remaining", icon: GraduationCap },
-  ];
-
   const updates = [
     { id: 1, title: "New In-flight Service Standards: Long Haul", content: "Updated service flow for long-haul flights effective August 1st. See DOC-SVC-LH-0724.", date: "July 28, 2024" },
     { id: 2, title: "Security Awareness Bulletin", content: "Reminder: Report any suspicious activity immediately. See SEC-BUL-0724-02.", date: "July 26, 2024" },
@@ -89,7 +147,7 @@ export default function DashboardPage() {
     { id: 3, tip: "Maintain situational awareness at all times, especially during critical phases like boarding, takeoff, sterile flight deck, and landing." },
   ];
 
-  const getAlertStyling = (level: string) => {
+  const getAlertStyling = (level: Alert["level"]) => {
     switch (level) {
       case 'critical':
         return {
@@ -110,6 +168,20 @@ export default function DashboardPage() {
           iconColor: 'text-primary',
           titleColor: 'text-primary',
         };
+    }
+  };
+
+  const getIconForAlert = (alert: Alert): LucideIcon => {
+    if (alert.iconName) {
+        // Simple mapping for now, can be expanded
+        if (alert.iconName.toLowerCase() === "briefcase") return Briefcase;
+        if (alert.iconName.toLowerCase() === "graduationcap") return GraduationCap;
+    }
+    switch (alert.level) {
+        case "critical": return AlertTriangle;
+        case "warning": return AlertTriangle;
+        case "info":
+        default: return Info;
     }
   };
 
@@ -215,21 +287,40 @@ export default function DashboardPage() {
             <BellRing className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {alerts.slice(0,3).map((alert) => {
-                const Icon = alert.icon;
-                const styles = getAlertStyling(alert.level);
-                return (
-                <div key={alert.id} className={`flex items-start space-x-3 p-3 rounded-md border ${styles.border}`}>
-                  <Icon className={`h-5 w-5 mt-1 shrink-0 ${styles.iconColor}`} />
-                  <div>
-                    <p className={`font-semibold ${styles.titleColor}`}>{alert.title}</p>
-                    <p className="text-sm text-muted-foreground">{alert.content}</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">{alert.time}</p>
+            {alertsLoading && (
+              <div className="flex items-center space-x-2 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Loading alerts...</span>
+              </div>
+            )}
+            {alertsError && (
+              <div className="flex items-center space-x-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                <span>{alertsError}</span>
+              </div>
+            )}
+            {!alertsLoading && !alertsError && alerts.length === 0 && (
+              <p className="text-sm text-muted-foreground">No new alerts at this time.</p>
+            )}
+            {!alertsLoading && !alertsError && alerts.length > 0 && (
+              <div className="space-y-3">
+                {alerts.map((alert) => {
+                  const IconComponent = getIconForAlert(alert);
+                  const styles = getAlertStyling(alert.level);
+                  const timeAgo = formatDistanceToNowStrict(alert.createdAt.toDate(), { addSuffix: true });
+                  
+                  return (
+                  <div key={alert.id} className={`flex items-start space-x-3 p-3 rounded-md border ${styles.border}`}>
+                    <IconComponent className={`h-5 w-5 mt-1 shrink-0 ${styles.iconColor}`} />
+                    <div>
+                      <p className={`font-semibold ${styles.titleColor}`}>{alert.title}</p>
+                      <p className="text-sm text-muted-foreground">{alert.content}</p>
+                      <p className="text-xs text-muted-foreground/70 mt-1">{timeAgo}</p>
+                    </div>
                   </div>
-                </div>
-              )})}
-            </div>
+                )})}
+              </div>
+            )}
              <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
                 <Link href="#">View All Alerts <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
@@ -303,5 +394,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
