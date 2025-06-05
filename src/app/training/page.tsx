@@ -271,7 +271,7 @@ export default function TrainingPage() {
               <Card key={course.id} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
                 <CardHeader className="flex-shrink-0">
                   <div className="flex items-start gap-3 mb-2">
-                    <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint} />
+                    <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint || "training"} />
                     <div>
                       <CardTitle className="text-lg">{course.title}</CardTitle>
                       <Badge variant="outline" className="mt-1">{course.category}</Badge>
@@ -322,7 +322,7 @@ export default function TrainingPage() {
               <Card key={course.id} className="shadow-md hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start gap-3 mb-2">
-                    <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint} />
+                    <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint || "certificate"} />
                     <div>
                       <CardTitle className="text-lg">{course.title}</CardTitle>
                        <Badge variant="default" className="mt-1 bg-green-100 text-green-700 border-green-300">Passed ({course.progress?.quizScore}%)</Badge>
