@@ -15,6 +15,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, limit, getDocs, Timestamp, or } from "firebase/firestore";
 import { formatDistanceToNowStrict } from "date-fns";
 import ReactMarkdown from "react-markdown";
+import { AnimatedCard } from "@/components/motion/animated-card";
 
 interface Alert {
   id: string;
@@ -259,232 +260,248 @@ export default function DashboardPage() {
 
   return (
     <div className="grid gap-6 md:gap-8">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl font-headline">Welcome Back, {userNameForGreeting}!</CardTitle>
-          <CardDescription>Your central command for flight operations, documents, and training.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Stay updated with your schedule, important alerts, and manage your professional development.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-md hover:shadow-lg transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-lg font-medium font-headline flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Your AI Daily Briefing
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isBriefingLoading && (
-            <div className="flex items-center space-x-2 text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span>Generating your briefing...</span>
-            </div>
-          )}
-          {briefingError && (
-             <div className="flex items-center space-x-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              <span>{briefingError}</span>
-            </div>
-          )}
-          {dailyBriefing && !isBriefingLoading && !briefingError && (
-            <div
-              className="prose prose-sm max-w-none dark:prose-invert text-foreground"
-            >
-              <ReactMarkdown>{dailyBriefing.briefingMarkdown}</ReactMarkdown>
-            </div>
-          )}
-          {!user && !isBriefingLoading && (
-             <div className="flex items-center space-x-2 text-muted-foreground">
-              <Info className="h-5 w-5" />
-              <span>Log in to receive your personalized daily briefing.</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-        <Card className="md:col-span-2 shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium font-headline">Upcoming Duty</CardTitle>
-            <PlaneTakeoff className="h-6 w-6 text-primary" />
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <p className="text-2xl font-bold text-primary">{upcomingDuty.flightNumber} ({upcomingDuty.route})</p>
-              <p className="text-sm text-muted-foreground">{upcomingDuty.aircraft}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <div><span className="font-semibold">Report:</span> {upcomingDuty.reportingTime}, {upcomingDuty.reportingDate}</div>
-              <div><span className="font-semibold">Location:</span> {upcomingDuty.reportingLocation}</div>
-              <div><span className="font-semibold">ETD:</span> {upcomingDuty.etd} (Gate: {upcomingDuty.gate})</div>
-              <div><span className="font-semibold">ETA:</span> {upcomingDuty.eta}</div>
-            </div>
-            <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
-              <Link href="/schedule">
-                View Full Roster & Details <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-1 shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader>
-                <CardTitle className="font-headline text-lg">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-3">
-                <Button variant="default" className="w-full justify-start" asChild>
-                  <Link href="/purser-reports"><FileText className="mr-2 h-4 w-4"/>Submit Flight Report</Link>
-                </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link href="/schedule"><CalendarClock className="mr-2 h-4 w-4"/>View Full Roster</Link>
-                </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link href="/documents"><BookOpen className="mr-2 h-4 w-4"/>Access Flight Docs</Link>
-                </Button>
-                 <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link href="/requests"><ArrowRight className="mr-2 h-4 w-4"/>Make a Request</Link>
-                </Button>
-            </CardContent>
-        </Card>
-      </div>
-      
-      <Card className="shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium font-headline">Real-Time Alerts</CardTitle>
-            <BellRing className="h-5 w-5 text-muted-foreground" />
+      <AnimatedCard>
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl font-headline">Welcome Back, {userNameForGreeting}!</CardTitle>
+            <CardDescription>Your central command for flight operations, documents, and training.</CardDescription>
           </CardHeader>
           <CardContent>
-            {alertsLoading && (
+            <p className="text-muted-foreground">
+              Stay updated with your schedule, important alerts, and manage your professional development.
+            </p>
+          </CardContent>
+        </Card>
+      </AnimatedCard>
+
+      <AnimatedCard delay={0.1}>
+        <Card className="shadow-md hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-lg font-medium font-headline flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Your AI Daily Briefing
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isBriefingLoading && (
               <div className="flex items-center space-x-2 text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Loading alerts...</span>
+                <span>Generating your briefing...</span>
               </div>
             )}
-            {alertsError && (
-              <div className="flex items-center space-x-2 text-destructive">
+            {briefingError && (
+               <div className="flex items-center space-x-2 text-destructive">
                 <AlertTriangle className="h-5 w-5" />
-                <span>{alertsError}</span>
+                <span>{briefingError}</span>
               </div>
             )}
-            {!alertsLoading && !alertsError && alerts.length === 0 && (
-              <p className="text-sm text-muted-foreground">No new alerts at this time.</p>
-            )}
-            {!alertsLoading && !alertsError && alerts.length > 0 && (
-              <div className="space-y-3">
-                {alerts.map((alert) => {
-                  const IconComponent = getIconForAlert(alert);
-                  const styles = getAlertStyling(alert.level);
-                  const timeAgo = formatDistanceToNowStrict(alert.createdAt.toDate(), { addSuffix: true });
-                  
-                  return (
-                  <div key={alert.id} className={`flex items-start space-x-3 p-3 rounded-md border ${styles.border}`}>
-                    <IconComponent className={`h-5 w-5 mt-1 shrink-0 ${styles.iconColor}`} />
-                    <div>
-                      <p className={`font-semibold ${styles.titleColor}`}>{alert.title}</p>
-                      <p className="text-sm text-muted-foreground">{alert.content}</p>
-                      <p className="text-xs text-muted-foreground/70 mt-1">{timeAgo}</p>
-                    </div>
-                  </div>
-                )})}
+            {dailyBriefing && !isBriefingLoading && !briefingError && (
+              <div
+                className="prose prose-sm max-w-none dark:prose-invert text-foreground"
+              >
+                <ReactMarkdown>{dailyBriefing.briefingMarkdown}</ReactMarkdown>
               </div>
             )}
-             <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
-                <Link href="/my-alerts">View All Alerts <ArrowRight className="ml-2 h-4 w-4" /></Link>
-            </Button>
+            {!user && !isBriefingLoading && (
+               <div className="flex items-center space-x-2 text-muted-foreground">
+                <Info className="h-5 w-5" />
+                <span>Log in to receive your personalized daily briefing.</span>
+              </div>
+            )}
           </CardContent>
         </Card>
-      
-      <Card className="shadow-md hover:shadow-lg transition-shadow">
-        <CardHeader>
-            <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-green-600"/>Safety & Best Practice Tips</CardTitle>
-            <CardDescription>Key reminders for maintaining safety and excellence.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-            {safetyTips.slice(0,2).map((tip) => (
-                <div key={tip.id} className="flex items-start gap-3 p-3 border-l-4 border-green-500 bg-green-500/10 rounded-r-md">
-                    <ShieldCheck className="h-5 w-5 text-green-600 mt-0.5 shrink-0"/>
-                    <p className="text-sm text-green-700 dark:text-green-300">{tip.tip}</p>
-                </div>
-            ))}
-             <Button variant="link" className="p-0 h-auto text-sm" asChild>
-              <Link href="/documents?category=safety">More Safety Information</Link>
-            </Button>
-        </CardContent>
-      </Card>
+      </AnimatedCard>
 
-      <div className="grid gap-6 md:grid-cols-3">
-         <Card className="md:col-span-2 shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle className="font-headline">Key Updates & Announcements</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {updates.map((update) => (
-              <div key={update.id} className="pb-3 border-b last:border-b-0">
-                <h3 className="font-semibold">{update.title}</h3>
-                <p className="text-sm text-muted-foreground">{update.content}</p>
-                <p className="text-xs text-muted-foreground/80 mt-1">{update.date}</p>
-              </div>
-            ))}
-             <Button variant="link" className="p-0 h-auto text-sm" asChild>
-                <Link href="#">Read more updates</Link>
-             </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-md hover:shadow-lg transition-shadow md:col-span-1">
-            <CardHeader>
-                <CardTitle className="font-headline">Featured Training</CardTitle>
-                <CardDescription>Mandatory & recommended courses.</CardDescription>
+      <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+        <AnimatedCard delay={0.2} className="md:col-span-2">
+          <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-lg font-medium font-headline">Upcoming Duty</CardTitle>
+              <PlaneTakeoff className="h-6 w-6 text-primary" />
             </CardHeader>
-            <CardContent className="space-y-4">
-              {featuredTrainingsLoading && (
+            <CardContent className="space-y-3">
+              <div>
+                <p className="text-2xl font-bold text-primary">{upcomingDuty.flightNumber} ({upcomingDuty.route})</p>
+                <p className="text-sm text-muted-foreground">{upcomingDuty.aircraft}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <div><span className="font-semibold">Report:</span> {upcomingDuty.reportingTime}, {upcomingDuty.reportingDate}</div>
+                <div><span className="font-semibold">Location:</span> {upcomingDuty.reportingLocation}</div>
+                <div><span className="font-semibold">ETD:</span> {upcomingDuty.etd} (Gate: {upcomingDuty.gate})</div>
+                <div><span className="font-semibold">ETA:</span> {upcomingDuty.eta}</div>
+              </div>
+              <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
+                <Link href="/schedule">
+                  View Full Roster & Details <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </AnimatedCard>
+
+        <AnimatedCard delay={0.25} className="md:col-span-1">
+          <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader>
+                  <CardTitle className="font-headline text-lg">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 gap-3">
+                  <Button variant="default" className="w-full justify-start" asChild>
+                    <Link href="/purser-reports"><FileText className="mr-2 h-4 w-4"/>Submit Flight Report</Link>
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link href="/schedule"><CalendarClock className="mr-2 h-4 w-4"/>View Full Roster</Link>
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link href="/documents"><BookOpen className="mr-2 h-4 w-4"/>Access Flight Docs</Link>
+                  </Button>
+                   <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link href="/requests"><ArrowRight className="mr-2 h-4 w-4"/>Make a Request</Link>
+                  </Button>
+              </CardContent>
+          </Card>
+        </AnimatedCard>
+      </div>
+      
+      <AnimatedCard delay={0.3}>
+        <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-lg font-medium font-headline">Real-Time Alerts</CardTitle>
+              <BellRing className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {alertsLoading && (
                 <div className="flex items-center space-x-2 text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Loading featured trainings...</span>
+                  <span>Loading alerts...</span>
                 </div>
               )}
-              {featuredTrainingsError && (
+              {alertsError && (
                 <div className="flex items-center space-x-2 text-destructive">
                   <AlertTriangle className="h-5 w-5" />
-                  <span>{featuredTrainingsError}</span>
+                  <span>{alertsError}</span>
                 </div>
               )}
-              {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.length === 0 && user && (
-                <p className="text-sm text-muted-foreground">No featured trainings available at this time.</p>
+              {!alertsLoading && !alertsError && alerts.length === 0 && (
+                <p className="text-sm text-muted-foreground">No new alerts at this time.</p>
               )}
-               {!featuredTrainingsLoading && !featuredTrainingsError && !user && (
-                <p className="text-sm text-muted-foreground">Log in to see featured trainings.</p>
+              {!alertsLoading && !alertsError && alerts.length > 0 && (
+                <div className="space-y-3">
+                  {alerts.map((alert) => {
+                    const IconComponent = getIconForAlert(alert);
+                    const styles = getAlertStyling(alert.level);
+                    const timeAgo = formatDistanceToNowStrict(alert.createdAt.toDate(), { addSuffix: true });
+                    
+                    return (
+                    <div key={alert.id} className={`flex items-start space-x-3 p-3 rounded-md border ${styles.border}`}>
+                      <IconComponent className={`h-5 w-5 mt-1 shrink-0 ${styles.iconColor}`} />
+                      <div>
+                        <p className={`font-semibold ${styles.titleColor}`}>{alert.title}</p>
+                        <p className="text-sm text-muted-foreground">{alert.content}</p>
+                        <p className="text-xs text-muted-foreground/70 mt-1">{timeAgo}</p>
+                      </div>
+                    </div>
+                  )})}
+                </div>
               )}
-              {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.map((course) => (
-                <div key={course.id} className="flex items-center gap-4 p-3 border rounded-lg bg-card">
-                  <Image 
-                    src={`https://placehold.co/100x100.png`} 
-                    alt={course.title} 
-                    width={60} 
-                    height={60} 
-                    className="rounded-md" 
-                    data-ai-hint={course.imageHint || "training material"} 
-                  />
-                  <div>
-                    <h3 className="font-semibold text-sm">{course.title}</h3>
-                    <p className="text-xs text-muted-foreground truncate w-40" title={course.description}>{course.description}</p>
-                    {course.mandatory ? (
-                        <Badge variant="destructive" className="mt-1 text-xs">Mandatory</Badge>
-                    ) : (
-                        <Badge variant="outline" className="mt-1 text-xs">Recommended</Badge>
-                    )}
-                    <br/>
-                    <Button size="sm" className="mt-2 text-xs" asChild><Link href="/training">Go to Training</Link></Button>
+               <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
+                  <Link href="/my-alerts">View All Alerts <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+            </CardContent>
+          </Card>
+      </AnimatedCard>
+      
+      <AnimatedCard delay={0.35}>
+        <Card className="shadow-md hover:shadow-lg transition-shadow">
+          <CardHeader>
+              <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-green-600"/>Safety & Best Practice Tips</CardTitle>
+              <CardDescription>Key reminders for maintaining safety and excellence.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+              {safetyTips.slice(0,2).map((tip) => (
+                  <div key={tip.id} className="flex items-start gap-3 p-3 border-l-4 border-green-500 bg-green-500/10 rounded-r-md">
+                      <ShieldCheck className="h-5 w-5 text-green-600 mt-0.5 shrink-0"/>
+                      <p className="text-sm text-green-700 dark:text-green-300">{tip.tip}</p>
                   </div>
+              ))}
+               <Button variant="link" className="p-0 h-auto text-sm" asChild>
+                <Link href="/documents?category=safety">More Safety Information</Link>
+              </Button>
+          </CardContent>
+        </Card>
+      </AnimatedCard>
+
+      <div className="grid gap-6 md:grid-cols-3">
+         <AnimatedCard delay={0.4} className="md:col-span-2">
+           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="font-headline">Key Updates & Announcements</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {updates.map((update) => (
+                <div key={update.id} className="pb-3 border-b last:border-b-0">
+                  <h3 className="font-semibold">{update.title}</h3>
+                  <p className="text-sm text-muted-foreground">{update.content}</p>
+                  <p className="text-xs text-muted-foreground/80 mt-1">{update.date}</p>
                 </div>
               ))}
+               <Button variant="link" className="p-0 h-auto text-sm" asChild>
+                  <Link href="#">Read more updates</Link>
+               </Button>
             </CardContent>
-        </Card>
+          </Card>
+        </AnimatedCard>
+
+        <AnimatedCard delay={0.45} className="md:col-span-1">
+          <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader>
+                  <CardTitle className="font-headline">Featured Training</CardTitle>
+                  <CardDescription>Mandatory & recommended courses.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {featuredTrainingsLoading && (
+                  <div className="flex items-center space-x-2 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Loading featured trainings...</span>
+                  </div>
+                )}
+                {featuredTrainingsError && (
+                  <div className="flex items-center space-x-2 text-destructive">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span>{featuredTrainingsError}</span>
+                  </div>
+                )}
+                {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.length === 0 && user && (
+                  <p className="text-sm text-muted-foreground">No featured trainings available at this time.</p>
+                )}
+                 {!featuredTrainingsLoading && !featuredTrainingsError && !user && (
+                  <p className="text-sm text-muted-foreground">Log in to see featured trainings.</p>
+                )}
+                {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.map((course) => (
+                  <div key={course.id} className="flex items-center gap-4 p-3 border rounded-lg bg-card">
+                    <Image 
+                      src={`https://placehold.co/100x100.png`} 
+                      alt={course.title} 
+                      width={60} 
+                      height={60} 
+                      className="rounded-md" 
+                      data-ai-hint={course.imageHint || "training material"} 
+                    />
+                    <div>
+                      <h3 className="font-semibold text-sm">{course.title}</h3>
+                      <p className="text-xs text-muted-foreground truncate w-40" title={course.description}>{course.description}</p>
+                      {course.mandatory ? (
+                          <Badge variant="destructive" className="mt-1 text-xs">Mandatory</Badge>
+                      ) : (
+                          <Badge variant="outline" className="mt-1 text-xs">Recommended</Badge>
+                      )}
+                      <br/>
+                      <Button size="sm" className="mt-2 text-xs" asChild><Link href="/training">Go to Training</Link></Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+          </Card>
+        </AnimatedCard>
       </div>
     </div>
   );

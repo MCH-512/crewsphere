@@ -19,6 +19,7 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { AnimatedCard } from "@/components/motion/animated-card";
 
 interface Document {
   id: string;
@@ -102,90 +103,92 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-lg">
-        <CardHeader className="flex flex-row justify-between items-start">
-          <div>
-            <CardTitle className="text-2xl font-headline">Document Library</CardTitle>
-            <CardDescription>Access all essential manuals, procedures, policies, and training materials.</CardDescription>
-          </div>
-           <Button variant="outline" onClick={fetchDocuments} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <Input placeholder="Search documents... (coming soon)" className="max-w-xs" disabled={isLoading} />
-            <Select defaultValue="all" disabled={isLoading}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(cat => (
-                  <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button disabled={isLoading}>Search</Button>
-          </div>
-
-          {isLoading && (
-            <div className="flex items-center justify-center py-10">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              <p className="ml-3 text-muted-foreground">Loading documents...</p>
+      <AnimatedCard>
+        <Card className="shadow-lg">
+          <CardHeader className="flex flex-row justify-between items-start">
+            <div>
+              <CardTitle className="text-2xl font-headline">Document Library</CardTitle>
+              <CardDescription>Access all essential manuals, procedures, policies, and training materials.</CardDescription>
             </div>
-          )}
-
-          {error && !isLoading && (
-            <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2 justify-center">
-              <AlertTriangle className="h-5 w-5" /> {error}
-            </div>
-          )}
-
-          {!isLoading && !error && documents.length === 0 && (
-            <p className="text-muted-foreground text-center py-10">No documents found. Admins can upload documents via the Admin Console.</p>
-          )}
-
-          {!isLoading && !error && documents.length > 0 && (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[60px]">Icon</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Version</TableHead>
-                    <TableHead>Last Updated</TableHead>
-                    <TableHead>Size</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {documents.map((doc) => (
-                    <TableRow key={doc.id}>
-                      <TableCell>{getIconForDocument(doc)}</TableCell>
-                      <TableCell className="font-medium">{doc.title}</TableCell>
-                      <TableCell><Badge variant="outline">{doc.category}</Badge></TableCell>
-                      <TableCell>{doc.version || "N/A"}</TableCell>
-                      <TableCell>{formatDate(doc.lastUpdated)}</TableCell>
-                      <TableCell>{doc.size || "N/A"}</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="icon" asChild aria-label="View document">
-                          <a href={doc.downloadURL} target="_blank" rel="noopener noreferrer"><Eye className="h-4 w-4" /></a>
-                        </Button>
-                        <Button variant="ghost" size="icon" asChild aria-label="Download document">
-                           <a href={doc.downloadURL} download><Download className="h-4 w-4" /></a>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+             <Button variant="outline" onClick={fetchDocuments} disabled={isLoading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <Input placeholder="Search documents... (coming soon)" className="max-w-xs" disabled={isLoading} />
+              <Select defaultValue="all" disabled={isLoading}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
                   ))}
-                </TableBody>
-              </Table>
+                </SelectContent>
+              </Select>
+              <Button disabled={isLoading}>Search</Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            {isLoading && (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="ml-3 text-muted-foreground">Loading documents...</p>
+              </div>
+            )}
+
+            {error && !isLoading && (
+              <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2 justify-center">
+                <AlertTriangle className="h-5 w-5" /> {error}
+              </div>
+            )}
+
+            {!isLoading && !error && documents.length === 0 && (
+              <p className="text-muted-foreground text-center py-10">No documents found. Admins can upload documents via the Admin Console.</p>
+            )}
+
+            {!isLoading && !error && documents.length > 0 && (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[60px]">Icon</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Version</TableHead>
+                      <TableHead>Last Updated</TableHead>
+                      <TableHead>Size</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {documents.map((doc) => (
+                      <TableRow key={doc.id}>
+                        <TableCell>{getIconForDocument(doc)}</TableCell>
+                        <TableCell className="font-medium">{doc.title}</TableCell>
+                        <TableCell><Badge variant="outline">{doc.category}</Badge></TableCell>
+                        <TableCell>{doc.version || "N/A"}</TableCell>
+                        <TableCell>{formatDate(doc.lastUpdated)}</TableCell>
+                        <TableCell>{doc.size || "N/A"}</TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button variant="ghost" size="icon" asChild aria-label="View document">
+                            <a href={doc.downloadURL} target="_blank" rel="noopener noreferrer"><Eye className="h-4 w-4" /></a>
+                          </Button>
+                          <Button variant="ghost" size="icon" asChild aria-label="Download document">
+                             <a href={doc.downloadURL} download><Download className="h-4 w-4" /></a>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </AnimatedCard>
     </div>
   );
 
