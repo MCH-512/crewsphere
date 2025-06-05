@@ -50,7 +50,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuth } from "@/contexts/auth-context"; // Ensure this path is correct
 import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
@@ -64,7 +64,7 @@ const navItems = [
   { href: "/insights", label: "AI Insights", icon: Brain },
   { href: "/training", label: "Training", icon: GraduationCap },
   { href: "/quizzes", label: "Quizzes", icon: ListChecks },
-  { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true }, // Example for role-based access later
+  { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];
 
 // Theme toggle functionality (simple example)
@@ -92,7 +92,6 @@ const useTheme = () => {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const { isMobile } = useSidebar();
   const { theme, toggleTheme } = useTheme();
   const { user, loading, logout } = useAuth();
@@ -103,7 +102,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     try {
       await logout();
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
-      // router.push("/login") is handled by AuthProvider or logout function itself
+      // router.push("/login") is handled by AuthProvider
     } catch (error) {
       console.error("Logout failed:", error);
       toast({ title: "Logout Failed", description: "Could not log you out. Please try again.", variant: "destructive" });
@@ -133,7 +132,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
   
-  if (loading) {
+  if (loading && !user) { // Show loader only if genuinely loading auth state, not if user is already available
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -155,9 +154,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarContent className="p-2">
           <SidebarMenu>
             {navItems.map((item) => {
-              // Basic RBAC placeholder: hide admin console if not admin (won't work fully without roles from DB)
-              if (item.adminOnly /* && user?.role !== 'admin' */) { 
-                // return null; // Enable this once roles are properly implemented
+              if (item.adminOnly && user?.role !== 'admin') { 
+                return null; 
               }
               return (
                 <SidebarMenuItem key={item.href}>
@@ -237,6 +235,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <DropdownMenuLabel>
                       <p className="text-sm font-medium leading-none">{user.displayName || "User"}</p>
                       <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                      {user.role && <p className="text-xs leading-none text-muted-foreground capitalize">Role: {user.role}</p>}
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
@@ -277,3 +276,4 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+

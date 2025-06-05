@@ -2,10 +2,15 @@
 "use client";
 
 import * as React from "react";
-import type { User } from "firebase/auth";
+import type { User as FirebaseUser } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { usePathname, useRouter } from "next/navigation";
+
+// Define a new User type that can include a role
+export interface User extends FirebaseUser {
+  role?: 'admin' | 'purser' | 'crew'; // Define possible roles
+}
 
 interface AuthContextType {
   user: User | null;
@@ -30,7 +35,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(
       auth,
       (currentUser) => {
-        setUser(currentUser);
+        if (currentUser) {
+          // TEMPORARY: Hardcode role for demonstration.
+          // In a real app, you would fetch this role from Firestore or a custom claim.
+          const userWithRole: User = {
+            ...currentUser,
+            email: currentUser.email || '', // Ensure email is always a string
+            // All other FirebaseUser properties are spread
+            // Defaulting to 'crew' if you want a non-admin default for testing
+            // To test admin, set to 'admin' after logging in with any user.
+            // role: 'crew', 
+            role: 'admin', // Hardcoding to 'admin' for now to show the Admin Console link
+          };
+          setUser(userWithRole);
+        } else {
+          setUser(null);
+        }
         setLoading(false);
       },
       (err) => {
@@ -60,7 +80,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await firebaseSignOut(auth);
       setUser(null); // Explicitly set user to null on logout
-      // The useEffect above will handle redirecting to /login after user becomes null
     } catch (err) {
       if (err instanceof Error) {
         setError(err);
@@ -73,21 +92,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = { user, loading, error, logout };
 
-  // Do not render children until loading is complete and redirection logic has had a chance to run
-  // This prevents brief flashes of protected content or login page when already authenticated.
   if (loading) {
-    // You might want a more sophisticated loading screen here
     return null; 
   }
   
-  // If not loading and trying to access a protected route without a user,
-  // or a public route with a user, the redirection will be in progress.
-  // Render children only if conditions are met (user for protected, no user for public).
   const pathIsPublic = PUBLIC_PATHS.includes(pathname);
   if ((!user && !pathIsPublic) || (user && pathIsPublic)) {
-    // Redirection is happening or should be happening, show a loader or null
-    // to prevent rendering the wrong page content briefly.
-    return null; // Or a global loader
+    return null; 
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
