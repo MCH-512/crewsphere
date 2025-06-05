@@ -3,8 +3,9 @@
 
 import * as React from "react";
 import type { User as FirebaseUser } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase"; // Import db
 import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore"; // Import Firestore functions
 import { usePathname, useRouter } from "next/navigation";
 
 // Define a new User type that can include a role
@@ -34,20 +35,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
-      (currentUser) => {
+      async (currentUser) => { // Make this async
         if (currentUser) {
-          // TEMPORARY: Hardcode role for demonstration.
-          // In a real app, you would fetch this role from Firestore or a custom claim.
-          const userWithRole: User = {
-            ...currentUser,
-            email: currentUser.email || '', // Ensure email is always a string
-            // All other FirebaseUser properties are spread
-            // Defaulting to 'crew' if you want a non-admin default for testing
-            // To test admin, set to 'admin' after logging in with any user.
-            // role: 'crew', 
-            role: 'admin', // Hardcoding to 'admin' for now to show the Admin Console link
-          };
-          setUser(userWithRole);
+          try {
+            // Fetch user role from Firestore
+            const userDocRef = doc(db, "users", currentUser.uid);
+            const userDocSnap = await getDoc(userDocRef);
+
+            let userRole: User['role'] = undefined; // Default to no specific role
+
+            if (userDocSnap.exists()) {
+              const userData = userDocSnap.data();
+              if (userData.role && ['admin', 'purser', 'crew'].includes(userData.role)) {
+                userRole = userData.role as User['role'];
+              }
+            }
+            
+            const userWithRole: User = {
+              ...currentUser,
+              email: currentUser.email || '', 
+              role: userRole,
+            };
+            setUser(userWithRole);
+
+          } catch (firestoreError) {
+            console.error("Error fetching user role from Firestore:", firestoreError);
+            setError(firestoreError instanceof Error ? firestoreError : new Error("Error fetching role"));
+            // Set user without role if Firestore fetch fails
+            const userWithoutRole: User = {
+              ...currentUser,
+              email: currentUser.email || '',
+            };
+            setUser(userWithoutRole);
+          }
         } else {
           setUser(null);
         }
@@ -62,15 +82,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   React.useEffect(() => {
-    if (loading) return; // Don't do anything while loading
+    if (loading) return; 
 
     const pathIsPublic = PUBLIC_PATHS.includes(pathname);
 
     if (!user && !pathIsPublic) {
-      // If user is not logged in and trying to access a protected page, redirect to login
       router.push('/login');
     } else if (user && pathIsPublic) {
-      // If user is logged in and trying to access a public page (login/signup), redirect to dashboard
       router.push('/');
     }
   }, [user, loading, pathname, router]);
@@ -79,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await firebaseSignOut(auth);
-      setUser(null); // Explicitly set user to null on logout
+      setUser(null); 
     } catch (err) {
       if (err instanceof Error) {
         setError(err);
@@ -97,8 +115,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
   
   const pathIsPublic = PUBLIC_PATHS.includes(pathname);
-  if ((!user && !pathIsPublic) || (user && pathIsPublic)) {
-    return null; 
+  // This check ensures we don't render children prematurely during redirection logic
+  if (!pathIsPublic && !user && !loading) {
+     return null; // Or a loading spinner specifically for redirection
+  }
+  if (pathIsPublic && user && !loading) {
+    return null; // Or a loading spinner specifically for redirection
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
