@@ -26,7 +26,7 @@ const AirportBriefingOutputSchema = z.object({
   briefing: z
     .string()
     .describe(
-      'A comprehensive AI-generated briefing for the specified airport, formatted in Markdown. Includes operational details, weather patterns, NOTAMs, emojis for visual appeal, and other relevant information for crew.'
+      'A comprehensive AI-generated briefing for the specified airport, formatted in Markdown. Includes operational details, weather patterns, NOTAMs, emojis for visual appeal, visa notes, and other relevant information for crew.'
     ),
 });
 export type AirportBriefingOutput = z.infer<typeof AirportBriefingOutputSchema>;
@@ -72,16 +72,21 @@ Please provide a briefing that includes the following sections, using Markdown h
     *   **General NOTAM Activity:** (Describe if typically many/few, common types. *Do not fetch live NOTAMs.*)
     *   **Long-Standing Advisories:** (Any significant, persistent advisories or common alerts mentioned in general sources.)
 
-5.  **## 🧑‍✈️ Crew Information**
+5.  **## 🛂 Visa & Immigration Notes**
+    *   **General Entry Requirements:** (Brief note on general passport/visa policies if widely known for the country. e.g., "Schengen Area entry rules apply.")
+    *   **Visa Regulations for Tunisian Nationals:** (Provide a general overview of visa requirements or arrangements for Tunisian nationals entering the country of the specified airport. If specific information is not readily available from general knowledge, state "Visa requirements for Tunisian nationals should be verified via official consular websites or the respective embassy.")
+    *   **Customs & Quarantine:** (Brief notes on any particularly notable customs or quarantine regulations for arriving crews/passengers if widely known.)
+
+6.  **## 🧑‍✈️ Crew Information**
     *   **Ground Transportation:** (Notes on typical options/time to city center/crew hotels if widely known.) 🚕
     *   **Crew Facilities:** (Brief mention if specific crew rooms or amenities are known and publicly documented.) ☕
     *   **Layover Considerations:** (Brief, practical cultural notes, safety tips, or local customs if relevant and helpful for layovers. Focus on safety and convenience.)
 
-6.  **## 🆘 Contingency & Emergency**
+7.  **## 🆘 Contingency & Emergency**
     *   **Nearest Suitable Alternates:** (List 1-2 major suitable alternate airports if applicable, especially for hub airports.)
     *   **Airport Emergency Services:** (General note on availability, e.g., "Full ARFF services available Cat 9.") 🚒
 
-**Formatting Guidelines:**
+Formatting Guidelines:
 *   Use Markdown headings (e.g., ## Section Title) for each main section listed above.
 *   Use bold text (e.g., **text**) for sub-headings or to emphasize key terms within bullet points.
 *   Use bullet points (e.g., * Item or - Item) for lists.
