@@ -1,12 +1,47 @@
 
+"use client";
+
+import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle } from "lucide-react";
+import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { generateDailyBriefing, type DailyBriefingOutput } from "@/ai/flows/daily-briefing-flow";
+import { useToast } from "@/hooks/use-toast";
+
 
 export default function DashboardPage() {
+  const { toast } = useToast();
+  const [dailyBriefing, setDailyBriefing] = React.useState<DailyBriefingOutput | null>(null);
+  const [isBriefingLoading, setIsBriefingLoading] = React.useState(true);
+  const [briefingError, setBriefingError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    async function fetchBriefing() {
+      setIsBriefingLoading(true);
+      setBriefingError(null);
+      try {
+        // Using a static name for now, this could be dynamic in a real app
+        const briefingData = await generateDailyBriefing({ userName: "Alex" });
+        setDailyBriefing(briefingData);
+      } catch (error) {
+        console.error("Failed to load daily briefing:", error);
+        setBriefingError("Could not load your daily AI briefing. Please try again later.");
+        toast({
+          title: "AI Briefing Error",
+          description: "Could not load your daily AI briefing at this time.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsBriefingLoading(false);
+      }
+    }
+    fetchBriefing();
+  }, [toast]);
+
+
   const upcomingDuty = {
     flightNumber: "BA245",
     route: "LHR - JFK",
@@ -22,7 +57,7 @@ export default function DashboardPage() {
   const alerts = [
     { id: 1, title: `Pre-Flight Briefing: ${upcomingDuty.flightNumber}`, content: `Scheduled for ${upcomingDuty.reportingTime} in ${upcomingDuty.reportingLocation}.`, level: "critical", time: "Upcoming", icon: Briefcase },
     { id: 2, title: "Gate Change: FLT456", content: "Flight BA456 (LHR-CDG) has changed from Gate A12 to A15.", level: "warning", time: "15m ago", icon: AlertTriangle },
-    { id: 3, title: "New Company Bulletin: Uniforms", content: "Updated uniform guidelines (BUL-2024-09) available in Documents.", level: "info", time: "1h ago", icon: Info },
+    { id:3, title: "New Company Bulletin: Uniforms", content: "Updated uniform guidelines (BUL-2024-09) available in Documents.", level: "info", time: "1h ago", icon: Info },
     { id: 4, title: "Training Deadline Approaching", content: "Your SEP Refresher must be completed by Aug 15th.", level: "warning", time: "2w remaining", icon: GraduationCap },
   ];
 
@@ -74,6 +109,35 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">
             Stay updated with your schedule, important alerts, and manage your professional development.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-md hover:shadow-lg transition-shadow">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-lg font-medium font-headline flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Your AI Daily Briefing
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isBriefingLoading && (
+            <div className="flex items-center space-x-2 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Generating your briefing...</span>
+            </div>
+          )}
+          {briefingError && (
+             <div className="flex items-center space-x-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              <span>{briefingError}</span>
+            </div>
+          )}
+          {dailyBriefing && !isBriefingLoading && !briefingError && (
+            <div
+              className="prose prose-sm max-w-none dark:prose-invert text-foreground"
+              dangerouslySetInnerHTML={{ __html: dailyBriefing.briefingMarkdown.replace(/\n/g, '<br />') }}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -144,8 +208,8 @@ export default function DashboardPage() {
                 </div>
               )})}
             </div>
-             <Button variant="outline" size="sm" className="mt-4 w-full">
-              View All Alerts <ArrowRight className="ml-2 h-4 w-4" />
+             <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
+                <Link href="#">View All Alerts <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
           </CardContent>
         </Card>
@@ -181,7 +245,9 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground/80 mt-1">{update.date}</p>
               </div>
             ))}
-             <Button variant="link" className="p-0 h-auto text-sm">Read more updates</Button>
+             <Button variant="link" className="p-0 h-auto text-sm" asChild>
+                <Link href="#">Read more updates</Link>
+             </Button>
           </CardContent>
         </Card>
 
