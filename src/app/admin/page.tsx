@@ -74,7 +74,9 @@ export default function AdminConsolePage() {
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-3">Create, update, and organize training courses, modules, and learning materials.</p>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" disabled><PlusCircle className="mr-2 h-4 w-4" />Create New Course</Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/admin/courses/create"><PlusCircle className="mr-2 h-4 w-4" />Create New Course</Link>
+                    </Button>
                     <Button variant="ghost" size="sm" asChild>
                         <Link href="/admin/courses"><Eye className="mr-2 h-4 w-4" />View All Courses</Link>
                     </Button>
