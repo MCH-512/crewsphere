@@ -103,7 +103,9 @@ export default function AdminConsolePage() {
                     <Button variant="outline" size="sm" asChild>
                       <Link href="/admin/alerts/create"><PlusCircle className="mr-2 h-4 w-4" />Create Alert</Link>
                     </Button>
-                    <Button variant="ghost" size="sm" disabled><Eye className="mr-2 h-4 w-4" />View All</Button>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href="/admin/alerts"><Eye className="mr-2 h-4 w-4" />View All</Link>
+                    </Button>
                 </div>
               </CardContent>
             </Card>
