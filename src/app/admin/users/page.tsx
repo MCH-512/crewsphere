@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; 
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogPrimitiveDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -46,7 +46,7 @@ const manageUserFormSchema = z.object({
   confirmPassword: z.string().optional(),
   displayName: z.string().min(2, "Display name must be at least 2 characters.").max(50),
   fullName: z.string().min(2, "Full name must be at least 2 characters.").max(100),
-  employeeId: z.string().min(1, "Employee ID is required.").max(50).optional(),
+  employeeId: z.string().max(50).optional(), // Allow empty string for optional, superRefine handles create requirement
   joiningDate: z.string().optional(), 
   role: z.string().optional(), 
 })
@@ -189,7 +189,7 @@ export default function AdminUsersPage() {
           joiningDate: data.joiningDate || null,
           role: (data.role === NO_ROLE_SENTINEL ? "" : data.role) as SpecificRole || "",
           createdAt: serverTimestamp(),
-          lastLogin: serverTimestamp(),
+          lastLogin: serverTimestamp(), // Initialize lastLogin
         });
 
         toast({ title: "User Created", description: `User ${data.email} created successfully.` });
@@ -200,16 +200,25 @@ export default function AdminUsersPage() {
         toast({ title: "Creation Failed", description: err.message || "Could not create user.", variant: "destructive" });
       }
     } else {
-      if (!currentUserToManage) return;
+      if (!currentUserToManage) {
+        toast({ title: "Error", description: "No user selected for editing.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
       try {
         const userDocRef = doc(db, "users", currentUserToManage.uid);
         const updates: Partial<UserDocument> = {
             displayName: data.displayName,
             fullName: data.fullName,
-            employeeId: data.employeeId,
+            employeeId: data.employeeId || null, // Store empty as null
             joiningDate: data.joiningDate || null,
             role: (data.role === NO_ROLE_SENTINEL ? "" : data.role) as SpecificRole || undefined 
         };
+        
+        // Logic for updating Firebase Auth displayName if admin is editing their own profile
+        if (auth.currentUser && currentUserToManage.uid === auth.currentUser.uid && data.displayName !== auth.currentUser.displayName) {
+            await updateProfile(auth.currentUser, { displayName: data.displayName });
+        }
         
         await updateDoc(userDocRef, updates);
         toast({ title: "User Updated", description: `${currentUserToManage.email}'s information updated.` });
@@ -235,9 +244,10 @@ export default function AdminUsersPage() {
     }
   };
   
-  const formatDateDisplay = (dateString?: string) => {
+  const formatDateDisplay = (dateString?: string | null) => {
     if (!dateString) return "N/A";
     try {
+        // Assuming dateString is "YYYY-MM-DD" or can be parsed by new Date()
         return format(new Date(dateString), "MMM d, yyyy");
     } catch (e) {
         return dateString; 
@@ -349,6 +359,11 @@ export default function AdminUsersPage() {
                 <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${currentUserToManage?.displayName || currentUserToManage?.email}`}</DialogTitle>
                 <DialogPrimitiveDescription>
                   {isCreateMode ? "Fill in the details for the new user." : "Modify the user's information below."}
+                   {currentUserToManage && !isCreateMode && currentUserToManage.role === 'admin' && (
+                    <span className={cn(badgeVariants({ variant: 'destructive' }), "ml-2 capitalize")}>
+                      Admin User
+                    </span>
+                  )}
                 </DialogPrimitiveDescription>
               </DialogHeader>
               <div className="py-4 space-y-4 max-h-[70vh] overflow-y-auto pr-2">
@@ -417,6 +432,7 @@ export default function AdminUsersPage() {
                       <FormControl>
                         <Input placeholder="e.g., John D." {...field} />
                       </FormControl>
+                      <FormDescription>This name will be shown publicly.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -430,6 +446,7 @@ export default function AdminUsersPage() {
                       <FormControl>
                         <Input placeholder="e.g., EMP12345" {...field} />
                       </FormControl>
+                      <FormDescription>Unique identifier for the employee.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -470,7 +487,7 @@ export default function AdminUsersPage() {
                             <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
                             </SelectContent>
                         </Select>
-                        <FormDescription>Optional. Assign a role or leave as default for standard crew permissions.</FormDescription>
+                        <FormDescription>Assign a system role or leave as default for standard crew permissions.</FormDescription>
                         <FormMessage />
                         </FormItem>
                     )}
@@ -492,5 +509,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-
-    
