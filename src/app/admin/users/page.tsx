@@ -1,12 +1,12 @@
 
 "use client";
 
-import * as React from "react";
+import *a React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; 
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogPrimitiveDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -22,13 +22,14 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { badgeVariants, type VariantProps } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { FormDescription } from "@/components/ui/form";
 
 type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'other';
 
 interface UserDocument {
   uid: string;
   email?: string;
-  role?: SpecificRole;
+  role?: SpecificRole | null; // Allow null for role
   displayName?: string;
   fullName?: string;
   employeeId?: string;
@@ -47,7 +48,7 @@ const manageUserFormSchema = z.object({
   displayName: z.string().min(2, "Display name must be at least 2 characters.").max(50),
   fullName: z.string().min(2, "Full name must be at least 2 characters.").max(100),
   employeeId: z.string().max(50).optional(),
-  joiningDate: z.string().optional(), 
+  joiningDate: z.string().optional().refine(val => val === "" || !val || !isNaN(Date.parse(val)), { message: "Invalid date format."}), 
   role: z.string().optional(), 
 })
 .refine((data) => {
@@ -61,8 +62,6 @@ const manageUserFormSchema = z.object({
   path: ["confirmPassword"],
 })
 .superRefine((data, ctx) => {
-    // This superRefine is for creation mode. employeeId and fullName are required for new users.
-    // We can infer creation mode if password is provided, as password is only for new users.
     if (data.password) { 
         if (!data.email || data.email.trim() === "") {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is required for new users.", path: ["email"]});
@@ -72,6 +71,9 @@ const manageUserFormSchema = z.object({
         }
         if (!data.fullName || data.fullName.trim() === "") {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Full name is required for new users.", path: ["fullName"]});
+        }
+         if (!data.displayName || data.displayName.trim() === "") {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Display name is required for new users.", path: ["displayName"]});
         }
     }
 });
@@ -146,7 +148,7 @@ export default function AdminUsersPage() {
         fullName: "",
         employeeId: "",
         joiningDate: new Date().toISOString().split('T')[0], 
-        role: "" 
+        role: "" // Default to no role selected, which maps to NO_ROLE_SENTINEL in Select
     });
     setIsManageUserDialogOpen(true);
   };
@@ -160,7 +162,7 @@ export default function AdminUsersPage() {
         fullName: userToEdit.fullName || "",
         employeeId: userToEdit.employeeId || "",
         joiningDate: userToEdit.joiningDate || "",
-        role: userToEdit.role || "",
+        role: userToEdit.role || "", // Maps to NO_ROLE_SENTINEL in Select if role is null/undefined/""
         password: "", 
         confirmPassword: "",
     });
@@ -170,8 +172,8 @@ export default function AdminUsersPage() {
   const handleFormSubmit = async (data: ManageUserFormValues) => {
     setIsSubmitting(true);
     if (isCreateMode) {
-      if (!data.email || !data.password || !data.employeeId || !data.fullName) {
-        toast({ title: "Missing Fields", description: "Email, password, Employee ID, and Full Name are required for new users.", variant: "destructive"});
+      if (!data.email || !data.password || !data.employeeId || !data.fullName || !data.displayName) {
+        toast({ title: "Missing Fields", description: "Email, password, Display Name, Employee ID, and Full Name are required for new users.", variant: "destructive"});
         setIsSubmitting(false);
         return;
       }
@@ -189,7 +191,7 @@ export default function AdminUsersPage() {
           fullName: data.fullName,
           employeeId: data.employeeId,
           joiningDate: data.joiningDate || null,
-          role: (data.role === NO_ROLE_SENTINEL ? "" : data.role) as SpecificRole || "",
+          role: data.role === "" ? null : data.role as SpecificRole,
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
         });
@@ -201,7 +203,7 @@ export default function AdminUsersPage() {
         console.error("Error creating user:", err);
         toast({ title: "Creation Failed", description: err.message || "Could not create user.", variant: "destructive" });
       }
-    } else {
+    } else { // Edit mode
       if (!currentUserToManage) {
         toast({ title: "Error", description: "No user selected for editing.", variant: "destructive" });
         setIsSubmitting(false);
@@ -212,14 +214,15 @@ export default function AdminUsersPage() {
         const updates: Partial<UserDocument> = {
             displayName: data.displayName,
             fullName: data.fullName,
-            employeeId: data.employeeId || undefined, // Store empty as undefined or null
-            joiningDate: data.joiningDate || undefined,
-            role: (data.role === NO_ROLE_SENTINEL ? undefined : data.role) as SpecificRole | undefined
+            employeeId: data.employeeId, 
+            joiningDate: data.joiningDate, 
+            role: data.role === "" ? null : data.role as SpecificRole,
         };
         
-        // Logic for updating Firebase Auth displayName if admin is editing their own profile
-        if (auth.currentUser && currentUserToManage.uid === auth.currentUser.uid && data.displayName !== auth.currentUser.displayName) {
-            await updateProfile(auth.currentUser, { displayName: data.displayName });
+        if (user && user.uid === currentUserToManage.uid && data.displayName && data.displayName !== user.displayName) {
+            if (auth.currentUser) { // Ensure auth.currentUser is not null
+                 await updateProfile(auth.currentUser, { displayName: data.displayName });
+            }
         }
         
         await updateDoc(userDocRef, updates);
@@ -234,7 +237,7 @@ export default function AdminUsersPage() {
     setIsSubmitting(false);
   };
 
-  const getRoleBadgeVariant = (role?: string): VariantProps<typeof badgeVariants>["variant"] => {
+  const getRoleBadgeVariant = (role?: SpecificRole | null): VariantProps<typeof badgeVariants>["variant"] => {
     switch (role) {
       case "admin": return "destructive";
       case "purser": return "default";
@@ -247,7 +250,7 @@ export default function AdminUsersPage() {
   };
   
   const formatDateDisplay = (dateString?: string | null) => {
-    if (!dateString) return "N/A";
+    if (!dateString || dateString === "") return "N/A";
     try {
         return format(new Date(dateString), "MMM d, yyyy");
     } catch (e) {
@@ -411,7 +414,7 @@ export default function AdminUsersPage() {
                     />
                   </>
                 )}
-                <FormField
+                 <FormField
                   control={form.control}
                   name="fullName"
                   render={({ field }) => (
@@ -420,6 +423,7 @@ export default function AdminUsersPage() {
                       <FormControl>
                         <Input placeholder="e.g., Johnathan Doe" {...field} />
                       </FormControl>
+                       <FormDescription>The user's full legal name.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -429,11 +433,11 @@ export default function AdminUsersPage() {
                   name="displayName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Display Name*</FormLabel>
+                      <FormLabel>Display Name{isCreateMode ? "*" : ""}</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., John D." {...field} />
                       </FormControl>
-                      <FormDescription>This name will be shown publicly.</FormDescription>
+                      <FormDescription>This name will be shown publicly and in greetings.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -461,7 +465,7 @@ export default function AdminUsersPage() {
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
-                      <FormDescription>Optional. When the user joined.</FormDescription>
+                      <FormDescription>Optional. When the user joined the company.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -474,7 +478,7 @@ export default function AdminUsersPage() {
                         <FormLabel>Role</FormLabel>
                         <Select
                             onValueChange={(value) => field.onChange(value === NO_ROLE_SENTINEL ? "" : value)}
-                            value={field.value === "" || field.value === undefined ? NO_ROLE_SENTINEL : field.value}
+                            value={field.value === "" || field.value === null || field.value === undefined ? NO_ROLE_SENTINEL : field.value}
                         >
                             <FormControl>
                             <SelectTrigger>
@@ -482,8 +486,8 @@ export default function AdminUsersPage() {
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                            {availableRoles.map(role => (
-                                <SelectItem key={role} value={role} className="capitalize">{role}</SelectItem>
+                            {availableRoles.map(roleValue => (
+                                <SelectItem key={roleValue} value={roleValue} className="capitalize">{roleValue}</SelectItem>
                             ))}
                             <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
                             </SelectContent>
@@ -510,4 +514,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-
