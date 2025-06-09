@@ -96,18 +96,19 @@ export default function SchedulePage() {
       const allFlightsSnapshot = await getDocs(allFlightsQuery);
       const allFlights = allFlightsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Flight));
       
+      // Ensure assignedFlightsData is used for filtering
       const assignedFlightIds = assignedFlightsData.map(a => a.flightId);
       const filteredAvailable = allFlights.filter(f => !assignedFlightIds.includes(f.id) && new Date(f.scheduledDepartureDateTimeUTC) > new Date());
       setAvailableFlightsData(filteredAvailable);
 
     } catch (err) {
       console.error("Error fetching available flights:", err);
-      setError("Failed to load available flights.");
+      setError("Failed to load available flights."); // This might overwrite assigned flights error if not careful
       toast({ title: "Error", description: "Could not load available flights.", variant: "destructive" });
     } finally {
       setIsLoadingAvailable(false);
     }
-  }, [user, toast, assignedFlightsData]); // Re-fetch available flights if assigned flights change
+  }, [user, toast, assignedFlightsData]);
 
 
   React.useEffect(() => {
@@ -116,11 +117,13 @@ export default function SchedulePage() {
     }
   }, [user, fetchAssignedFlights]);
 
+  // This useEffect ensures available flights are fetched/refreshed when assignedFlightsData changes
+  // or when the user logs in.
   React.useEffect(() => {
-    if (user && !isLoadingAssigned) { // Fetch available only after assigned are loaded to ensure correct filtering
+    if (user) {
       fetchAvailableFlights();
     }
-  }, [user, isLoadingAssigned, fetchAvailableFlights]);
+  }, [user, assignedFlightsData, fetchAvailableFlights]); // Directly depend on assignedFlightsData
 
 
   const handleAssignFlight = async (flightId: string) => {
@@ -133,10 +136,10 @@ export default function SchedulePage() {
       await addDoc(collection(db, "userFlightAssignments"), {
         userId: user.uid,
         flightId: flightId,
-        assignedAt: serverTimestamp(), // Changed to serverTimestamp
+        assignedAt: serverTimestamp(),
       });
       toast({ title: "Flight Assigned!", description: "The flight has been added to your schedule.", action: <CheckCircle className="text-green-500"/> });
-      await fetchAssignedFlights(); 
+      await fetchAssignedFlights(); // This will update assignedFlightsData, triggering the useEffect above to refresh available flights
     } catch (err) {
       console.error("Error assigning flight:", err); 
       toast({ title: "Assignment Failed", description: "Could not assign flight. Please try again.", variant: "destructive"});
