@@ -1,36 +1,69 @@
-
 "use client";
 
-import * as React from "react";
+import *a React from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc } from "firebase/firestore";
+import { db, auth as firebaseAuth } from "@/lib/firebase"; // Renamed auth to firebaseAuth to avoid conflict
+import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc } from "firebase/firestore";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Users, Loader2, AlertTriangle, RefreshCw, Edit } from "lucide-react";
+import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { VariantProps } from "class-variance-authority";
+import { badgeVariants, type VariantProps } from "@/components/ui/badge";
 
 type SpecificRole = 'admin' | 'purser' | 'crew';
 
 interface UserDocument {
   uid: string;
   email?: string;
-  role?: SpecificRole; // Changed from 'admin' | 'purser' | 'crew' | string;
+  role?: SpecificRole;
   displayName?: string;
   lastLogin?: Timestamp;
   createdAt?: Timestamp;
 }
 
 const availableRoles: SpecificRole[] = ['admin', 'purser', 'crew'];
-const NO_ROLE_SENTINEL = "_NONE_"; // Sentinel value for "no role" option
+const NO_ROLE_SENTINEL = "_NONE_";
+
+const manageUserFormSchema = z.object({
+  email: z.string().email({ message: "Invalid email address." }).optional(),
+  password: z.string().min(6, "Password must be at least 6 characters.").optional(),
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters.").optional(),
+  displayName: z.string().min(2, "Display name must be at least 2 characters.").max(50),
+  role: z.string().optional(), // Will be SpecificRole or ""
+})
+.refine((data) => {
+  // If password is provided, confirmPassword must match
+  if (data.password && data.password !== data.confirmPassword) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+})
+.refine((data) => {
+    // If creating (signified by presence of password), email is required
+    if (data.password && !data.email) {
+        return false;
+    }
+    return true;
+}, {
+    message: "Email is required for new user.",
+    path: ["email"]
+});
+
+type ManageUserFormValues = z.infer<typeof manageUserFormSchema>;
 
 export default function AdminUsersPage() {
   const { user, loading: authLoading } = useAuth();
@@ -40,10 +73,21 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  const [selectedUserForEdit, setSelectedUserForEdit] = React.useState<UserDocument | null>(null);
-  const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = React.useState(false);
-  const [newRole, setNewRole] = React.useState<SpecificRole | "">(""); // "" represents no role or default
-  const [isUpdatingRole, setIsUpdatingRole] = React.useState(false);
+  const [isManageUserDialogOpen, setIsManageUserDialogOpen] = React.useState(false);
+  const [isCreateMode, setIsCreateMode] = React.useState(false);
+  const [currentUserToManage, setCurrentUserToManage] = React.useState<UserDocument | null>(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const form = useForm<ManageUserFormValues>({
+    resolver: zodResolver(manageUserFormSchema),
+    defaultValues: {
+        email: "",
+        password: "",
+        confirmPassword: "",
+        displayName: "",
+        role: "",
+    }
+  });
 
   const fetchUsers = React.useCallback(async () => {
     setIsLoading(true);
@@ -75,36 +119,90 @@ export default function AdminUsersPage() {
     }
   }, [user, authLoading, router, fetchUsers]);
 
-  const handleOpenEditRoleDialog = (userToEdit: UserDocument) => {
-    setSelectedUserForEdit(userToEdit);
-    setNewRole(userToEdit.role || ""); // Pre-fill with current role, or "" if no role
-    setIsEditRoleDialogOpen(true);
+  const handleOpenCreateUserDialog = () => {
+    setIsCreateMode(true);
+    setCurrentUserToManage(null);
+    form.reset({ // Reset form for creation
+        email: "",
+        password: "",
+        confirmPassword: "",
+        displayName: "",
+        role: "" 
+    });
+    setIsManageUserDialogOpen(true);
   };
 
-  const handleRoleUpdate = async () => {
-    if (!selectedUserForEdit) return;
-    // Allow newRole to be "" (empty string) to signify removal of specific role
-    if (newRole === (selectedUserForEdit.role || "")) {
-      toast({ title: "No Change", description: "Role is the same.", variant: "default" });
-      setIsEditRoleDialogOpen(false);
-      return;
-    }
+  const handleOpenEditUserDialog = (userToEdit: UserDocument) => {
+    setIsCreateMode(false);
+    setCurrentUserToManage(userToEdit);
+    form.reset({ // Populate form for editing
+        email: userToEdit.email || "",
+        displayName: userToEdit.displayName || "",
+        role: userToEdit.role || "",
+        password: "", // Clear password fields for edit mode
+        confirmPassword: "",
+    });
+    setIsManageUserDialogOpen(true);
+  };
 
-    setIsUpdatingRole(true);
-    try {
-      const userDocRef = doc(db, "users", selectedUserForEdit.uid);
-      // If newRole is "", Firestore will store an empty string.
-      // AuthProvider interprets an empty string role as undefined (no specific role).
-      await updateDoc(userDocRef, { role: newRole });
-      toast({ title: "Role Updated", description: `${selectedUserForEdit.email}'s role changed to ${newRole || 'Default/None'}.` });
-      fetchUsers(); // Re-fetch to update the table
-      setIsEditRoleDialogOpen(false);
-    } catch (err) {
-      console.error("Error updating role:", err);
-      toast({ title: "Update Failed", description: "Could not update user role.", variant: "destructive" });
-    } finally {
-      setIsUpdatingRole(false);
+  const handleFormSubmit = async (data: ManageUserFormValues) => {
+    setIsSubmitting(true);
+    if (isCreateMode) {
+      // Create User
+      if (!data.email || !data.password) {
+        toast({ title: "Missing Fields", description: "Email and password are required for new users.", variant: "destructive"});
+        setIsSubmitting(false);
+        return;
+      }
+      try {
+        const userCredential = await createUserWithEmailAndPassword(firebaseAuth, data.email, data.password);
+        const newUser = userCredential.user;
+        
+        await updateProfile(newUser, { displayName: data.displayName });
+
+        const userDocRef = doc(db, "users", newUser.uid);
+        await setDoc(userDocRef, {
+          uid: newUser.uid,
+          email: data.email,
+          displayName: data.displayName,
+          role: data.role === NO_ROLE_SENTINEL ? "" : (data.role || ""), // Store empty string for no role
+          createdAt: serverTimestamp(),
+          lastLogin: serverTimestamp(),
+        });
+
+        toast({ title: "User Created", description: `User ${data.email} created successfully.` });
+        fetchUsers();
+        setIsManageUserDialogOpen(false);
+      } catch (err: any) {
+        console.error("Error creating user:", err);
+        toast({ title: "Creation Failed", description: err.message || "Could not create user.", variant: "destructive" });
+      }
+    } else {
+      // Edit User
+      if (!currentUserToManage) return;
+      try {
+        const userDocRef = doc(db, "users", currentUserToManage.uid);
+        const updates: Partial<UserDocument> = {
+            displayName: data.displayName,
+            role: data.role === NO_ROLE_SENTINEL ? "" : (data.role as SpecificRole | undefined || undefined) // Handle empty string or undefined
+        };
+        
+        // Update Firestore
+        await updateDoc(userDocRef, updates);
+
+        // Note: Updating another user's Firebase Auth displayName directly by an admin client-side is not straightforward
+        // The displayName in Firestore is the primary source of truth here for other users.
+        // The AuthProvider will pick up current user's display name on their login/refresh.
+
+        toast({ title: "User Updated", description: `${currentUserToManage.email}'s information updated.` });
+        fetchUsers();
+        setIsManageUserDialogOpen(false);
+      } catch (err: any) {
+        console.error("Error updating user:", err);
+        toast({ title: "Update Failed", description: err.message || "Could not update user.", variant: "destructive" });
+      }
     }
+    setIsSubmitting(false);
   };
 
   const getRoleBadgeVariant = (role?: string): VariantProps<typeof badgeVariants>["variant"] => {
@@ -139,18 +237,23 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-row justify-between items-start">
+        <CardHeader className="flex flex-row justify-between items-center">
           <div>
             <CardTitle className="text-2xl font-headline flex items-center">
               <Users className="mr-3 h-7 w-7 text-primary" />
               User Management
             </CardTitle>
-            <CardDescription>View all registered users and manage their roles.</CardDescription>
+            <CardDescription>View, create, and manage user accounts and their roles.</CardDescription>
           </div>
-          <Button variant="outline" onClick={fetchUsers} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh Users
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={fetchUsers} disabled={isLoading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh Users
+            </Button>
+            <Button onClick={handleOpenCreateUserDialog}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Create New User
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {error && (
@@ -191,8 +294,8 @@ export default function AdminUsersPage() {
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{u.uid}</TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleOpenEditRoleDialog(u)}>
-                          <Edit className="mr-1 h-4 w-4" /> Edit Role
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenEditUserDialog(u)}>
+                          <Edit className="mr-1 h-4 w-4" /> Edit User
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -204,48 +307,113 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
 
-      {selectedUserForEdit && (
-        <Dialog open={isEditRoleDialogOpen} onOpenChange={setIsEditRoleDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Edit Role for {selectedUserForEdit.email}</DialogTitle>
-              <DialogDescription>
-                Current role: <span className={cn(badgeVariants({ variant: getRoleBadgeVariant(selectedUserForEdit.role) }), "capitalize")}>{selectedUserForEdit.role || 'Not Assigned'}</span>
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="role-select">New Role</Label>
-                <Select
-                  value={newRole} // newRole can be "", which is fine for Select value prop
-                  onValueChange={(value) => {
-                    setNewRole(value === NO_ROLE_SENTINEL ? "" : value as SpecificRole);
-                  }}
-                >
-                  <SelectTrigger id="role-select">
-                    <SelectValue placeholder="Select new role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableRoles.map(role => (
-                       <SelectItem key={role} value={role} className="capitalize">{role}</SelectItem>
-                    ))}
-                    <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
-                  </SelectContent>
-                </Select>
+      <Dialog open={isManageUserDialogOpen} onOpenChange={setIsManageUserDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleFormSubmit)}>
+              <DialogHeader>
+                <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${currentUserToManage?.email}`}</DialogTitle>
+                <DialogDescription>
+                  {isCreateMode ? "Fill in the details for the new user." : "Modify the user's information below."}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 space-y-4">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="user@example.com" {...field} disabled={!isCreateMode} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {isCreateMode && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="Min. 6 characters" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirm Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="Re-enter password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+                <FormField
+                  control={form.control}
+                  name="displayName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Display Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Role</FormLabel>
+                        <Select 
+                            onValueChange={(value) => field.onChange(value === NO_ROLE_SENTINEL ? "" : value)} 
+                            value={field.value === "" ? NO_ROLE_SENTINEL : field.value}
+                        >
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a role" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {availableRoles.map(role => (
+                                <SelectItem key={role} value={role} className="capitalize">{role}</SelectItem>
+                            ))}
+                            <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                 />
               </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
-              <Button onClick={handleRoleUpdate} disabled={isUpdatingRole || newRole === (selectedUserForEdit.role || "")}>
-                {isUpdatingRole && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Role
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isCreateMode ? "Create User" : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
