@@ -191,21 +191,20 @@ export default function TrainingPage() {
     const progressDocRef = doc(db, "userTrainingProgress", progressDocId);
     const score = passed ? Math.floor(Math.random() * 21) + 80 : Math.floor(Math.random() * 40) + 40; 
 
-    const certRuleDocRef = doc(db, "certificateRules", course.id); // Assuming cert rule ID is same as course ID for simplicity, or needs to be fetched
+    // let expiryDurationDays = 365; // Default
+    // This logic was problematic as course.id is not certRuleId
+    // This should be fetched from course.certificateRuleId if it exists.
     let expiryDurationDays = 365; // Default
-    try {
-        const certRuleSnap = await getDoc(doc(db, "certificateRules", course.id + "_cert_rule")); // Example: Fetch based on course ID
-        // A better way would be to have certificateRuleId on the course document.
-        // For now, let's assume course.certificateRuleId exists or use a default.
-        const courseDocRef = doc(db, "courses", course.id);
-        const courseSnap = await getDoc(courseDocRef);
-        if (courseSnap.exists() && courseSnap.data().certificateRuleId) {
+    const courseDocRef = doc(db, "courses", course.id);
+    const courseSnap = await getDoc(courseDocRef);
+    if (courseSnap.exists() && courseSnap.data().certificateRuleId) {
+        try {
             const ruleSnap = await getDoc(doc(db, "certificateRules", courseSnap.data().certificateRuleId));
             if (ruleSnap.exists()) {
                  expiryDurationDays = ruleSnap.data().expiryDurationDays || 365;
             }
-        }
-    } catch (e) { console.error("Could not fetch cert rule, using default expiry", e); }
+        } catch (e) { console.error("Could not fetch cert rule, using default expiry", e); }
+    }
 
 
     const newProgressData: Partial<UserProgressData> = {
@@ -347,10 +346,10 @@ export default function TrainingPage() {
                     )}
 
                     <div className="text-xs text-muted-foreground mb-1">
-                        Content: <Badge variant={contentStatus === 'Completed' ? 'default' : 'secondary'} className={contentStatus === 'Completed' ? 'bg-green-500/20 text-green-700 border-green-500/30' : '' }>{contentStatus}</Badge>
+                        Content: <Badge variant={contentStatus === 'Completed' ? 'success' : 'secondary'} >{contentStatus}</Badge>
                     </div>
                     <div className="text-xs text-muted-foreground mb-3">
-                        Quiz: <Badge variant={quizStatus === 'Failed' ? 'destructive' : (quizStatus === 'Passed' ? 'default' : 'secondary')} >{quizStatus} {quizScore !== undefined && `(${quizScore}%)`}</Badge>
+                        Quiz: <Badge variant={quizStatus === 'Failed' ? 'destructive' : (quizStatus === 'Passed' ? 'success' : 'secondary')} >{quizStatus} {quizScore !== undefined && `(${quizScore}%)`}</Badge>
                     </div>
                   </div>
                   <Button onClick={() => handleCourseAction(course.id)} className="w-full mt-2" disabled={isUpdating}>
@@ -385,7 +384,7 @@ export default function TrainingPage() {
                     <Image src={`https://placehold.co/60x60.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint || "certificate"} />
                     <div>
                       <CardTitle className="text-lg">{course.title}</CardTitle>
-                       <Badge variant="default" className="mt-1 bg-green-100 text-green-700 border-green-300">Passed ({course.progress?.quizScore}%)</Badge>
+                       <Badge variant="success" className="mt-1">Passed ({course.progress?.quizScore}%)</Badge>
                         {course.mandatory && (
                           <Badge variant="destructive" className="mt-1 ml-2">Mandatory</Badge>
                         )}

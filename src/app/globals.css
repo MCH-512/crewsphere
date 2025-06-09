@@ -25,6 +25,9 @@ body {
     --accent-foreground: 0 0% 100%; /* White */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
+    --success: 145 63% 90%; /* Light green background for success */
+    --success-foreground: 145 75% 30%; /* Dark green text for success */
+    --success-border: 145 60% 70%; /* Medium green border for success (if needed, or use border-transparent with bg) */
     --border: 207 40% 85%;
     --input: 207 40% 90%;
     --ring: 207 51% 40%; /* Adjusted ring to match new primary */
@@ -64,6 +67,9 @@ body {
     --accent-foreground: 210 20% 10%;
     --destructive: 0 60% 50%;
     --destructive-foreground: 0 0% 100%;
+    --success: 145 63% 20%; /* Darker green background for success in dark mode */
+    --success-foreground: 145 60% 80%; /* Lighter green text for success in dark mode */
+    --success-border: 145 60% 40%; /* Medium green border for success in dark mode */
     --border: 210 20% 30%;
     --input: 210 20% 28%;
     --ring: 207 51% 60%;
