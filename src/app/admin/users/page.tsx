@@ -4,7 +4,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge, badgeVariants } from "@/components/ui/badge"; // Import badgeVariants
+import { badgeVariants } from "@/components/ui/badge"; // Ensure badgeVariants is imported
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -98,7 +98,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  const getRoleBadgeVariant = (role?: string) => {
+  const getRoleBadgeVariant = (role?: string): VariantProps<typeof badgeVariants>["variant"] => {
     switch (role) {
       case "admin": return "destructive";
       case "purser": return "default";
@@ -176,9 +176,9 @@ export default function AdminUsersPage() {
                       <TableCell className="font-medium">{u.email || 'N/A'}</TableCell>
                       <TableCell>{u.displayName || 'N/A'}</TableCell>
                       <TableCell>
-                        <Badge variant={getRoleBadgeVariant(u.role)} className="capitalize">
+                        <span className={cn(badgeVariants({ variant: getRoleBadgeVariant(u.role) }), "capitalize")}>
                           {u.role || 'Not Assigned'}
-                        </Badge>
+                        </span>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{u.uid}</TableCell>
                       <TableCell className="text-right space-x-2">
@@ -201,7 +201,7 @@ export default function AdminUsersPage() {
             <DialogHeader>
               <DialogTitle>Edit Role for {selectedUserForEdit.email}</DialogTitle>
               <DialogDescription>
-                Current role: <span className={cn(badgeVariants({ variant: getRoleBadgeVariant(selectedUserForEdit.role) }), "capitalize text-xs")}>{selectedUserForEdit.role || 'Not Assigned'}</span>
+                Current role: <span className={cn(badgeVariants({ variant: getRoleBadgeVariant(selectedUserForEdit.role) }), "capitalize")}>{selectedUserForEdit.role || 'Not Assigned'}</span>
               </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-4">
@@ -238,4 +238,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-
