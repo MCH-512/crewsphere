@@ -109,6 +109,7 @@ const courseFormSchema = z.object({
   referenceBody: z.string().optional(),
   description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
   duration: z.string().min(1, "Duration is required (e.g., 60 minutes, 2 hours)."),
+  mandatory: z.boolean().default(false),
   associatedFile: z.custom<FileList>().optional(),
   imageHint: z.string().max(50).optional().describe("Keywords for course image (e.g., emergency exit)"),
   existingFileUrl: z.string().optional(), 
@@ -141,6 +142,7 @@ const defaultValues: Partial<CourseFormValues> = {
   questions: [{ text: "", questionType: "mcq", options: [{ text: "", isCorrect: false }, { text: "", isCorrect: false }], weight: 1}],
   courseType: "Initial Training",
   referenceBody: "",
+  mandatory: false,
 };
 
 export default function EditComprehensiveCoursePage() {
@@ -222,6 +224,7 @@ export default function EditComprehensiveCoursePage() {
             referenceBody: courseData.referenceBody || "",
             description: courseData.description || "",
             duration: courseData.duration || "60 minutes",
+            mandatory: courseData.mandatory || false,
             imageHint: courseData.imageHint || "",
             existingFileUrl: courseData.fileURL || "",
             modules: courseData.modules || [defaultModuleValue],
@@ -309,7 +312,7 @@ export default function EditComprehensiveCoursePage() {
       const courseDocRef = doc(db, "courses", courseId);
       batch.update(courseDocRef, {
         title: data.title, category: data.category, courseType: data.courseType, referenceBody: data.referenceBody || null, description: data.description,
-        duration: data.duration, fileURL: fileDownloadURL, imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
+        duration: data.duration, mandatory: data.mandatory, fileURL: fileDownloadURL, imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
         modules: data.modules || [],
         updatedAt: serverTimestamp(),
       });
@@ -420,6 +423,26 @@ export default function EditComprehensiveCoursePage() {
               <FormField control={form.control} name="description" render={({ field }) => (
                 <FormItem><FormLabel>Description*</FormLabel><FormControl><Textarea placeholder="Detailed overview of the course..." className="min-h-[120px]" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
+              <FormField
+                control={form.control}
+                name="mandatory"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Is this course mandatory?</FormLabel>
+                      <FormDescription>
+                        Indicates if completion is required for personnel.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
               <FormField control={form.control} name="associatedFile" render={({ field: { onChange, value, ...rest }}) => (
                 <FormItem>
                   <FormLabel className="flex items-center"><UploadCloud className="mr-2 h-5 w-5" />Associated Material (Optional)</FormLabel>
@@ -589,6 +612,7 @@ export default function EditComprehensiveCoursePage() {
                     <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
                         <li>Course Title: {watchedFormValues.title || "Not set"}</li>
                         <li>Category: {watchedFormValues.category || "Not set"}</li>
+                        <li>Mandatory: {watchedFormValues.mandatory ? "Yes" : "No"}</li>
                         <li>Modules: {watchedFormValues.modules?.length || 0}</li>
                         <li>Main Quiz Questions: {watchedFormValues.questions?.length || 0}</li>
                         <li>Passing Score: {watchedFormValues.passingThreshold}%</li>
@@ -628,4 +652,6 @@ export default function EditComprehensiveCoursePage() {
     </div>
   );
 }
+    
+
     
