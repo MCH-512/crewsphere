@@ -32,6 +32,8 @@ interface CrewUser {
   name: string;
 }
 
+const PLACEHOLDER_NONE_VALUE = "_NONE_"; // Sentinel value for no selection
+
 const purserReportFormSchema = z.object({
   flightNumber: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars"),
   flightDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format. Use YYYY-MM-DD." }),
@@ -41,7 +43,7 @@ const purserReportFormSchema = z.object({
   
   captainName: z.string().optional(),
   firstOfficerName: z.string().optional(),
-  purserName: z.string().nonempty({ message: "Supervising crew (Purser/Instructor) name is required."}),
+  purserName: z.string().nonempty({ message: "Supervising crew (Purser/Instructor) selection is required."}),
   cabinCrewR1: z.string().optional(),
   cabinCrewL2: z.string().optional(),
   cabinCrewR2: z.string().optional(),
@@ -287,14 +289,18 @@ export function PurserReportTool() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Captain's Name</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingPilots}>
+                      <Select 
+                        onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
+                        value={field.value === "" ? PLACEHOLDER_NONE_VALUE : field.value} 
+                        disabled={isLoadingPilots}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={isLoadingPilots ? "Loading pilots..." : "Select Captain"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Not Assigned / Other</SelectItem>
+                          <SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>
                           {pilotsList.map((pilot) => (
                             <SelectItem key={pilot.uid} value={pilot.name}>
                               {pilot.name}
@@ -313,14 +319,18 @@ export function PurserReportTool() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>First Officer's Name</FormLabel>
-                       <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingPilots}>
+                       <Select 
+                        onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
+                        value={field.value === "" ? PLACEHOLDER_NONE_VALUE : field.value} 
+                        disabled={isLoadingPilots}
+                       >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={isLoadingPilots ? "Loading pilots..." : "Select First Officer"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                           <SelectItem value="">Not Assigned / Other</SelectItem>
+                           <SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>
                           {pilotsList.map((pilot) => (
                             <SelectItem key={pilot.uid} value={pilot.name}>
                               {pilot.name}
@@ -339,14 +349,18 @@ export function PurserReportTool() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Supervising Crew (Purser/Instructor)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingSupervisingCrew}>
+                      <Select 
+                        onValueChange={field.onChange} // For required field, direct change is fine
+                        value={field.value} // For required field, value is direct
+                        disabled={isLoadingSupervisingCrew}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={isLoadingSupervisingCrew ? "Loading crew..." : "Select Purser or Instructor"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Not Assigned / Other</SelectItem>
+                          {/* No "Not Assigned" for required field */}
                           {supervisingCrewList.map((crew) => (
                             <SelectItem key={crew.uid} value={crew.name}>
                               {crew.name}
@@ -363,14 +377,18 @@ export function PurserReportTool() {
                  <FormField control={form.control} name="cabinCrewR1" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cabin Crew (R1)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingCabinCrew}>
+                    <Select 
+                        onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
+                        value={field.value === "" ? PLACEHOLDER_NONE_VALUE : field.value} 
+                        disabled={isLoadingCabinCrew}
+                    >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={isLoadingCabinCrew ? "Loading crew..." : "Select R1"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Not Assigned / Other</SelectItem>
+                          <SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>
                           {cabinCrewList.map((crew) => (
                             <SelectItem key={crew.uid} value={crew.name}>
                               {crew.name}
@@ -384,14 +402,18 @@ export function PurserReportTool() {
                 <FormField control={form.control} name="cabinCrewL2" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cabin Crew (L2)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingCabinCrew}>
+                    <Select 
+                        onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
+                        value={field.value === "" ? PLACEHOLDER_NONE_VALUE : field.value} 
+                        disabled={isLoadingCabinCrew}
+                    >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={isLoadingCabinCrew ? "Loading crew..." : "Select L2"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Not Assigned / Other</SelectItem>
+                          <SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>
                           {cabinCrewList.map((crew) => (
                             <SelectItem key={crew.uid} value={crew.name}>
                               {crew.name}
@@ -405,14 +427,18 @@ export function PurserReportTool() {
                 <FormField control={form.control} name="cabinCrewR2" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cabin Crew (R2)</FormLabel>
-                     <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingCabinCrew}>
+                     <Select 
+                        onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
+                        value={field.value === "" ? PLACEHOLDER_NONE_VALUE : field.value} 
+                        disabled={isLoadingCabinCrew}
+                     >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={isLoadingCabinCrew ? "Loading crew..." : "Select R2"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Not Assigned / Other</SelectItem>
+                          <SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>
                           {cabinCrewList.map((crew) => (
                             <SelectItem key={crew.uid} value={crew.name}>
                               {crew.name}
