@@ -129,7 +129,7 @@ export default function AdminConsolePage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-3">Upload, categorize, and manage all shared documents and manuals.</p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <AdminButtonWithTooltip href="/admin/documents/upload" tooltipContent="Upload a new document">
                           <UploadCloud className="mr-2 h-4 w-4" />Upload New
                         </AdminButtonWithTooltip>
@@ -148,7 +148,7 @@ export default function AdminConsolePage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-3">Create and manage global or user-specific alerts and notifications.</p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <AdminButtonWithTooltip href="/admin/alerts/create" tooltipContent="Create a new alert">
                           <PlusCircle className="mr-2 h-4 w-4" />Create Alert
                         </AdminButtonWithTooltip>
@@ -167,7 +167,7 @@ export default function AdminConsolePage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-3">Create, update, and organize training courses, modules, and learning materials.</p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <AdminButtonWithTooltip href="/admin/courses/create" tooltipContent="Create a new course">
                           <PlusCircle className="mr-2 h-4 w-4" />Create New Course
                         </AdminButtonWithTooltip>
@@ -186,7 +186,7 @@ export default function AdminConsolePage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-3">Assign training to users, track completion, and manage certifications.</p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon. Use 'Courses Management' for now.">Assign Training</AdminButtonWithTooltip>
                         <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon." >
                             <BarChart3 className="mr-2 h-4 w-4" />View Progress
@@ -205,7 +205,7 @@ export default function AdminConsolePage() {
                     <p className="text-sm text-muted-foreground mb-3">
                       Create, edit, and manage quizzes, question banks, and review assessment results.
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <AdminButtonWithTooltip href="/admin/courses/create" tooltipContent="Define quiz details when creating a course.">
                             <PlusCircle className="mr-2 h-4 w-4" />Create New Quiz
                         </AdminButtonWithTooltip>
@@ -226,7 +226,7 @@ export default function AdminConsolePage() {
                     <p className="text-sm text-muted-foreground mb-3">
                       Review, manage, and respond to user-submitted requests (e.g., leave, schedule changes).
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <AdminButtonWithTooltip href="/admin/user-requests" tooltipContent="View all user requests">
                             <Eye className="mr-2 h-4 w-4" />View All Requests
                         </AdminButtonWithTooltip>
@@ -254,7 +254,7 @@ export default function AdminConsolePage() {
                     <p className="text-sm text-muted-foreground mb-3">
                       Access, review, and analyze submitted Purser Reports for operational insights and follow-up actions.
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <AdminButtonWithTooltip href="/admin/purser-reports" tooltipContent="View all purser reports">
                             <Eye className="mr-2 h-4 w-4" />View All Reports
                         </AdminButtonWithTooltip>
@@ -275,7 +275,7 @@ export default function AdminConsolePage() {
                     <p className="text-sm text-muted-foreground mb-3">
                       Manage flight schedules: flight numbers, dates, departure/arrival airports, ETD/ETA.
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <AdminButtonWithTooltip href="/admin/flights" tooltipContent="Manage flight schedules">
                             <Eye className="mr-2 h-4 w-4" />Manage Flights
                         </AdminButtonWithTooltip>
