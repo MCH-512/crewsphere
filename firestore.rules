@@ -58,6 +58,28 @@ service cloud.firestore {
         allow read, update, delete: if isAdmin();
     }
 
+    // User Flight Assignments collection
+    match /userFlightAssignments/{assignmentId} {
+        // User can create their own assignments
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        // User can read their own assignments
+        allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+        // User can delete their own assignments (to remove from schedule)
+        allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+        // Admins can manage all assignments
+        allow read, update, delete: if isAdmin();
+    }
+    
+    // User Activities collection
+    match /userActivities/{activityId} {
+        // User can create their own activities
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        // User can read, update, and delete their own activities
+        allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+        // Admins can read all user activities (e.g., for reporting or overview)
+        allow read: if isAdmin();
+    }
+
     // Course-related collections
     match /courses/{courseId} {
       allow read; // All users can read course information
@@ -97,25 +119,6 @@ service cloud.firestore {
       // Admins can read any user's progress
       allow read: if isAdmin();
       // Admins generally shouldn't directly write to user progress unless for specific corrections (can be added if needed)
-    }
-
-    // User Flight Assignments collection
-    match /userFlightAssignments/{assignmentId} {
-      // User can create their own assignment
-      // Ensure the userId in the document being created matches the authenticated user's ID
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      
-      // User can read their own assignments
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      
-      // User can delete their own assignments (e.g., for unassigning functionality)
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
-      
-      // Users should not be able to update assignments directly for now.
-      // allow update: if false; // Or more specific rules if needed
-
-      // Admins can perform all operations on any assignment
-      allow read, write: if isAdmin();
     }
 
     // Default deny all other paths
