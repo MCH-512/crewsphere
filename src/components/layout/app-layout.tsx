@@ -18,6 +18,7 @@ import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
+  SidebarProvider, // Added SidebarProvider import
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -51,8 +52,8 @@ import {
   LogIn,
   UserPlus,
   Loader2,
-  Library, // Changed from BookOpen for Courses
-  Award,   // For Certificates
+  Library, 
+  Award,   
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -79,7 +80,6 @@ const navItems = [
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];
 
-// Theme toggle functionality
 const useTheme = () => {
   const [theme, setTheme] = React.useState("light");
   React.useEffect(() => {
@@ -104,11 +104,9 @@ const useTheme = () => {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { isMobile } = useSidebar();
   const { theme, toggleTheme } = useTheme();
   const { user, loading, logout } = useAuth();
   const { toast } = useToast();
-
 
   const handleLogout = async () => {
     try {
@@ -120,7 +118,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Extended pageTitles for admin sub-pages
   const pageTitles: { [key: string]: string } = {
     "/": "Dashboard",
     "/documents": "Document Library",
@@ -138,7 +135,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/settings": "Settings",
     "/login": "Login",
     "/signup": "Sign Up",
-    // Admin Pages
     "/admin": "Admin Console",
     "/admin/users": "User Management",
     "/admin/documents": "Document Management",
@@ -157,7 +153,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   let currentTitle = "AirCrew Hub"; 
   let longestMatch = "";
 
-  // Improved title matching for nested routes
   for (const path in pageTitles) {
     if (pathname === path) {
       if (path.length > longestMatch.length) {
@@ -165,24 +160,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         currentTitle = pageTitles[path];
       }
     } else if (pathname.startsWith(path + '/') && path !== '/') {
-      // Check if path is a prefix of current pathname
       if (path.length > longestMatch.length) {
         longestMatch = path;
-        currentTitle = pageTitles[path]; // Set title to parent, breadcrumbs will show child
+        currentTitle = pageTitles[path]; 
       }
     }
   }
-   // Final check if exact match was found after prefix matching
   if (pageTitles[pathname]) {
     currentTitle = pageTitles[pathname];
   }
 
-
   const currentPageTitle = currentTitle;
 
-
   if (pathname === "/login" || pathname === "/signup") {
-    return <>{children}</>;
+    return <>{children}</>; // Render children directly for login/signup pages
   }
   
   if (loading && !user) { 
@@ -193,6 +184,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // For all other pages, wrap with SidebarProvider and the main layout
+  return (
+    <SidebarProvider defaultOpen>
+      <LayoutWithSidebar currentPageTitle={currentPageTitle} user={user} handleLogout={handleLogout} theme={theme} toggleTheme={toggleTheme}>
+        {children}
+      </LayoutWithSidebar>
+    </SidebarProvider>
+  );
+}
+
+// Helper component to use hooks from SidebarProvider
+function LayoutWithSidebar({ children, currentPageTitle, user, handleLogout, theme, toggleTheme }: { children: React.ReactNode; currentPageTitle: string; user: any; handleLogout: () => void; theme: string; toggleTheme: () => void; }) {
+  const { isMobile } = useSidebar(); // Hook can be used here as it's inside SidebarProvider
+  const pathname = usePathname();
 
   return (
     <>
@@ -214,7 +219,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               if (item.adminOnly && user?.role !== 'admin') { 
                 return null; 
               }
-              // Improved active state detection for nested admin routes
               const isActive = item.href && (pathname === item.href || 
                                (item.href !== "/" && pathname.startsWith(item.href + '/')) ||
                                (item.href === "/admin" && pathname.startsWith("/admin/")));
@@ -271,7 +275,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
           {isMobile && <SidebarTrigger aria-label="Toggle sidebar" />}
           <div className="flex-1">
-             {/* Breadcrumbs are now rendered before the children */}
           </div>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>
@@ -333,11 +336,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
           <Breadcrumbs /> 
-          <h1 className="text-2xl font-bold text-foreground mb-6 sr-only">{currentPageTitle}</h1> {/* Title for screen readers and context, visually covered by header or breadcrumbs */}
+          <h1 className="text-2xl font-bold text-foreground mb-6 sr-only">{currentPageTitle}</h1>
           {children}
         </main>
       </SidebarInset>
     </>
   );
 }
-    
