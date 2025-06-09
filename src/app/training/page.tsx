@@ -156,7 +156,7 @@ export default function TrainingPage() {
     setIsUpdating(true);
     const progressDocId = `${user.uid}_${course.id}`;
     const progressDocRef = doc(db, "userTrainingProgress", progressDocId);
-    const score = passed ? Math.floor(Math.random() * 21) + 80 : Math.floor(Math.random() * 40) + 40;
+    const score = passed ? Math.floor(Math.random() * 21) + 80 : Math.floor(Math.random() * 40) + 40; // Pass: 80-100, Fail: 40-79
 
     const newProgressData: Partial<UserProgressData> = {
       userId: user.uid,
@@ -168,6 +168,7 @@ export default function TrainingPage() {
 
     if (passed) {
       const issuedDate = new Date().toISOString();
+      // Simple expiry logic: 1 year for recurrent/refresher, 2 years otherwise
       const expiryYears = course.title.toLowerCase().includes("recurrent") || course.title.toLowerCase().includes("refresher") ? 1 : 2;
       const expiryDate = new Date(new Date().setFullYear(new Date().getFullYear() + expiryYears)).toISOString();
       
