@@ -27,9 +27,9 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, getDocs, query, where } from "firebase/firestore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface PilotUser {
+interface CrewUser {
   uid: string;
-  name: string; // displayName or fullName
+  name: string;
 }
 
 const purserReportFormSchema = z.object({
@@ -70,8 +70,10 @@ export function PurserReportTool() {
   const [reportResult, setReportResult] = React.useState<PurserReportOutput | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  const [pilotsList, setPilotsList] = React.useState<PilotUser[]>([]);
+  const [pilotsList, setPilotsList] = React.useState<CrewUser[]>([]);
   const [isLoadingPilots, setIsLoadingPilots] = React.useState(true);
+  const [pursersList, setPursersList] = React.useState<CrewUser[]>([]);
+  const [isLoadingPursers, setIsLoadingPursers] = React.useState(true);
 
   const defaultDate = () => new Date().toISOString().split('T')[0];
 
@@ -86,7 +88,7 @@ export function PurserReportTool() {
       
       captainName: "", 
       firstOfficerName: "",
-      purserName: "Purser C. Williams",
+      purserName: "", // Will be selected from dropdown
       cabinCrewR1: "D. Brown (R1)",
       cabinCrewL2: "E. Davis (L2)",
       cabinCrewR2: "F. Miller (R2)",
@@ -105,33 +107,34 @@ export function PurserReportTool() {
   });
 
   React.useEffect(() => {
-    const fetchPilots = async () => {
-      setIsLoadingPilots(true);
+    const fetchCrew = async (role: string, setList: React.Dispatch<React.SetStateAction<CrewUser[]>>, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => {
+      setLoading(true);
       try {
         const usersCollectionRef = collection(db, "users");
-        const q = query(usersCollectionRef, where("role", "==", "pilote"));
+        const q = query(usersCollectionRef, where("role", "==", role), where("accountStatus", "==", "active"));
         const querySnapshot = await getDocs(q);
-        const fetchedPilots: PilotUser[] = [];
+        const fetchedCrew: CrewUser[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          fetchedPilots.push({
+          fetchedCrew.push({
             uid: doc.id,
-            name: data.fullName || data.displayName || "Unnamed Pilot",
+            name: data.fullName || data.displayName || `Unnamed ${role}`,
           });
         });
-        setPilotsList(fetchedPilots);
+        setList(fetchedCrew);
       } catch (error) {
-        console.error("Error fetching pilots:", error);
+        console.error(`Error fetching ${role}s:`, error);
         toast({
           title: "Error",
-          description: "Could not load pilots list for selection.",
+          description: `Could not load ${role}s list for selection.`,
           variant: "destructive",
         });
       } finally {
-        setIsLoadingPilots(false);
+        setLoading(false);
       }
     };
-    fetchPilots();
+    fetchCrew("pilote", setPilotsList, setIsLoadingPilots);
+    fetchCrew("purser", setPursersList, setIsLoadingPursers);
   }, [toast]);
 
   async function onSubmit(data: PurserReportFormValues) {
@@ -150,7 +153,7 @@ export function PurserReportTool() {
     const crewDetailsParts = [
       data.captainName ? `Captain: ${data.captainName}` : null,
       data.firstOfficerName ? `First Officer: ${data.firstOfficerName}` : null,
-      `Purser: ${data.purserName}`,
+      data.purserName ? `Purser: ${data.purserName}` : null,
       data.cabinCrewR1 ? `R1: ${data.cabinCrewR1}` : null,
       data.cabinCrewL2 ? `L2: ${data.cabinCrewL2}` : null,
       data.cabinCrewR2 ? `R2: ${data.cabinCrewR2}` : null,
@@ -267,7 +270,7 @@ export function PurserReportTool() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Captain's Name</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingPilots}>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingPilots}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={isLoadingPilots ? "Loading pilots..." : "Select Captain"} />
@@ -293,7 +296,7 @@ export function PurserReportTool() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>First Officer's Name</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingPilots}>
+                       <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingPilots}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={isLoadingPilots ? "Loading pilots..." : "Select First Officer"} />
@@ -313,9 +316,31 @@ export function PurserReportTool() {
                     </FormItem>
                   )}
                 />
-                <FormField control={form.control} name="purserName" render={({ field }) => (
-                  <FormItem><FormLabel>Purser's Name</FormLabel><FormControl><Input placeholder="e.g., Purser Alex Lee" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
+                <FormField 
+                  control={form.control} 
+                  name="purserName" 
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Purser's Name</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingPursers}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={isLoadingPursers ? "Loading pursers..." : "Select Purser"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {pursersList.length === 0 && !isLoadingPursers && <SelectItem value="" disabled>No pursers found</SelectItem>}
+                          {pursersList.map((purser) => (
+                            <SelectItem key={purser.uid} value={purser.name}>
+                              {purser.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} 
+                />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                  <FormField control={form.control} name="cabinCrewR1" render={({ field }) => (
