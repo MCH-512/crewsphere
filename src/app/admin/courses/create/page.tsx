@@ -26,7 +26,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpenCheck, Loader2, AlertTriangle, CheckCircle, PlusCircle, Trash2, Edit3, UploadCloud, Eye, Award, FileText as FileTextIcon } from "lucide-react";
+import { BookOpenCheck, Loader2, AlertTriangle, CheckCircle, PlusCircle, Trash2, Edit3, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, CheckSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
@@ -66,7 +66,7 @@ const courseTypes = [
   "Commercial Training", 
   "Other Training"
 ];
-const questionTypes = ["mcq", "tf", "short"]; // Multiple Choice, True/False, Short Answer
+const questionTypes = ["mcq", "tf", "short"]; 
 
 const referenceBodyOptions = [
   "Operation Manual",
@@ -78,6 +78,14 @@ const referenceBodyOptions = [
   "Other",
 ];
 
+const moduleSchema = z.object({
+  moduleCode: z.string().optional(),
+  moduleTitle: z.string().min(3, "Module title is required and must be at least 3 characters."),
+  moduleObjectives: z.string().min(10, "Module objectives are required and must be at least 10 characters."),
+  durationMinutes: z.coerce.number().int().min(1, "Duration must be at least 1 minute."),
+  linkedQuizId: z.string().optional(),
+});
+
 const mcqOptionSchema = z.object({
   text: z.string().min(1, "Option text cannot be empty."),
   isCorrect: z.boolean().default(false),
@@ -86,9 +94,9 @@ const mcqOptionSchema = z.object({
 const questionSchema = z.object({
   text: z.string().min(5, "Question text must be at least 5 characters."),
   questionType: z.enum(["mcq", "tf", "short"], { required_error: "Please select a question type." }),
-  options: z.array(mcqOptionSchema).optional(), // For MCQ
-  correctAnswerBoolean: z.boolean().optional(), // For True/False
-  correctAnswerText: z.string().optional(), // For Short Answer
+  options: z.array(mcqOptionSchema).optional(), 
+  correctAnswerBoolean: z.boolean().optional(), 
+  correctAnswerText: z.string().optional(), 
   weight: z.coerce.number().min(1, "Weight must be at least 1.").default(1),
 });
 
@@ -102,21 +110,32 @@ const courseFormSchema = z.object({
   duration: z.string().min(1, "Duration is required (e.g., 60 minutes, 2 hours)."),
   associatedFile: z.custom<FileList>().optional(),
   imageHint: z.string().max(50).optional().describe("Keywords for course image (e.g., emergency exit)"),
+  
+  // Course Modules
+  modules: z.array(moduleSchema).optional(),
 
   // Quiz Details
   quizTitle: z.string().min(5, "Quiz Title must be at least 5 characters.").max(100),
   questions: z.array(questionSchema).min(1, "At least one question is required for the quiz."),
   randomizeQuestions: z.boolean().default(false),
-  randomizeAnswers: z.boolean().default(false), // Primarily for MCQs
+  randomizeAnswers: z.boolean().default(false), 
 
   // Certification Rules
   passingThreshold: z.coerce.number().min(0).max(100, "Threshold must be between 0 and 100.").default(80),
-  certificateExpiryDays: z.coerce.number().int().min(0, "Expiry days must be 0 or more (0 for no expiry).").default(365), // 0 for no expiry
+  certificateExpiryDays: z.coerce.number().int().min(0, "Expiry days must be 0 or more (0 for no expiry).").default(365), 
   certificateLogoUrl: z.string().url("Must be a valid URL or leave empty.").optional().or(z.literal("")),
   certificateSignature: z.string().min(2, "Signature text/URL is required.").default("Express Airline Training Department"),
 });
 
 type CourseFormValues = z.infer<typeof courseFormSchema>;
+
+const defaultModuleValue: z.infer<typeof moduleSchema> = {
+  moduleCode: "",
+  moduleTitle: "",
+  moduleObjectives: "",
+  durationMinutes: 30,
+  linkedQuizId: "",
+};
 
 const defaultQuestionValue: z.infer<typeof questionSchema> = {
   text: "",
@@ -133,6 +152,7 @@ const defaultValues: Partial<CourseFormValues> = {
   description: "",
   duration: "60 minutes",
   imageHint: "",
+  modules: [defaultModuleValue],
   quizTitle: "",
   questions: [defaultQuestionValue],
   randomizeQuestions: false,
@@ -155,6 +175,11 @@ export default function CreateComprehensiveCoursePage() {
     resolver: zodResolver(courseFormSchema),
     defaultValues,
     mode: "onBlur",
+  });
+
+  const { fields: moduleFields, append: appendModule, remove: removeModule } = useFieldArray({
+    control: form.control,
+    name: "modules",
   });
 
   const { fields: questionFields, append: appendQuestion, remove: removeQuestion } = useFieldArray({
@@ -238,6 +263,7 @@ export default function CreateComprehensiveCoursePage() {
         duration: data.duration,
         fileURL: fileDownloadURL,
         imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
+        modules: data.modules || [],
         published: false, 
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -326,7 +352,7 @@ export default function CreateComprehensiveCoursePage() {
             Create Comprehensive Training Course
           </CardTitle>
           <CardDescription>
-            Define all aspects of your new training course, including quiz and certification, in one place.
+            Define all aspects of your new training course, including modules, quiz, and certification.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -375,10 +401,49 @@ export default function CreateComprehensiveCoursePage() {
               )} />
             </CardContent>
           </Card>
+          
+          {/* Section 1.5: Course Modules */}
+          <Card className="shadow-lg">
+            <CardHeader>
+                <CardTitle className="text-xl font-semibold flex items-center"><LayoutList className="mr-2 h-5 w-5 text-primary" /> Course Modules</CardTitle>
+                <CardDescription>Define the individual modules or sections of this course.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {moduleFields.map((moduleItem, index) => (
+                <Card key={moduleItem.id} className="p-4 space-y-4 border-dashed">
+                  <div className="flex justify-between items-center">
+                    <FormLabel className="text-md font-medium">Module {index + 1}</FormLabel>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => moduleFields.length > 1 ? removeModule(index) : toast({title: "Cannot Remove", description:"Course must have at least one module.", variant:"destructive"})} className="text-destructive hover:text-destructive/80">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <FormField control={form.control} name={`modules.${index}.moduleTitle`} render={({ field }) => (
+                    <FormItem><FormLabel>Module Title*</FormLabel><FormControl><Input placeholder="e.g., Introduction to CRM Principles" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name={`modules.${index}.moduleObjectives`} render={({ field }) => (
+                    <FormItem><FormLabel>Module Objectives*</FormLabel><FormControl><Textarea placeholder="List key learning objectives for this module..." className="min-h-[80px]" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField control={form.control} name={`modules.${index}.moduleCode`} render={({ field }) => (
+                      <FormItem><FormLabel>Module Code</FormLabel><FormControl><Input placeholder="e.g., CRM-001" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name={`modules.${index}.durationMinutes`} render={({ field }) => (
+                      <FormItem><FormLabel>Duration (minutes)*</FormLabel><FormControl><Input type="number" placeholder="30" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name={`modules.${index}.linkedQuizId`} render={({ field }) => (
+                      <FormItem><FormLabel>Linked Quiz ID</FormLabel><FormControl><Input placeholder="e.g., QUIZ-CRM-001" {...field} /></FormControl><FormDescription>Optional external ID</FormDescription><FormMessage /></FormItem>
+                    )} />
+                  </div>
+                </Card>
+              ))}
+              <Button type="button" variant="outline" onClick={() => appendModule(defaultModuleValue)}><PlusCircle className="mr-2 h-4 w-4" />Add Module</Button>
+            </CardContent>
+          </Card>
+
 
           {/* Section 2: Quiz Builder */}
           <Card className="shadow-lg">
-            <CardHeader><CardTitle className="text-xl font-semibold">2. Quiz Builder</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><CheckSquare className="mr-2 h-5 w-5 text-primary" /> Main Course Quiz Builder</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <FormField control={form.control} name="quizTitle" render={({ field }) => (
                 <FormItem><FormLabel>Quiz Title*</FormLabel><FormControl><Input placeholder="e.g., Final Assessment for Advanced First Aid" {...field} /></FormControl><FormMessage /></FormItem>
@@ -462,7 +527,7 @@ export default function CreateComprehensiveCoursePage() {
 
           {/* Section 3: Certification Rules */}
           <Card className="shadow-lg">
-            <CardHeader><CardTitle className="text-xl font-semibold">3. Certification Rules</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><Award className="mr-2 h-5 w-5 text-primary" /> Certification Rules</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField control={form.control} name="passingThreshold" render={({ field }) => (
@@ -483,14 +548,15 @@ export default function CreateComprehensiveCoursePage() {
           
           {/* Section 4: Summary & Preview */}
           <Card className="shadow-lg">
-            <CardHeader><CardTitle className="text-xl font-semibold">4. Summary & Certificate Preview</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><Eye className="mr-2 h-5 w-5 text-primary" /> Summary & Certificate Preview</CardTitle></CardHeader>
             <CardContent className="space-y-6">
                 <div>
                     <h3 className="text-lg font-medium mb-2">Dynamic Summary:</h3>
                     <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
                         <li>Course Title: {watchedFormValues.title || "Not set"}</li>
                         <li>Category: {watchedFormValues.category || "Not set"}</li>
-                        <li>Quiz Questions: {watchedFormValues.questions?.length || 0}</li>
+                        <li>Modules: {watchedFormValues.modules?.length || 0}</li>
+                        <li>Main Quiz Questions: {watchedFormValues.questions?.length || 0}</li>
                         <li>Passing Score: {watchedFormValues.passingThreshold}%</li>
                         <li>Certificate Valid For: {watchedFormValues.certificateExpiryDays === 0 ? "No Expiry" : `${watchedFormValues.certificateExpiryDays} days`}</li>
                     </ul>
@@ -528,5 +594,4 @@ export default function CreateComprehensiveCoursePage() {
     </div>
   );
 }
-
     
