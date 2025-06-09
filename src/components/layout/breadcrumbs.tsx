@@ -96,6 +96,8 @@ export function Breadcrumbs() {
             label = "Edit Course";
           } else if (pathname.includes("/admin/courses/create") && isLast) {
             label = "Create Course";
+          } else if (pathname.includes("/admin/flights/create") && isLast) {
+            label = "Add New Flight";
           }
 
 

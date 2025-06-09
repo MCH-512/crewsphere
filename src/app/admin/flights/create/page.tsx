@@ -159,6 +159,7 @@ export default function CreateFlightPage() {
                       <FormControl>
                         <Input placeholder="e.g., Boeing 787-9, Airbus A320neo" {...field} />
                       </FormControl>
+                      <FormDescription>You can include registration if desired, e.g., "Boeing 787-9 (G-ABCD)".</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
