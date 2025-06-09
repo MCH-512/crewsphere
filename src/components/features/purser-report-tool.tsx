@@ -84,8 +84,8 @@ export function PurserReportTool() {
       arrivalAirport: "JFK",
       aircraftTypeRegistration: "B789 G-ABCD",
       
-      captainName: "", // Default to empty for Select
-      firstOfficerName: "FO B. Jones",
+      captainName: "", 
+      firstOfficerName: "",
       purserName: "Purser C. Williams",
       cabinCrewR1: "D. Brown (R1)",
       cabinCrewL2: "E. Davis (L2)",
@@ -124,7 +124,7 @@ export function PurserReportTool() {
         console.error("Error fetching pilots:", error);
         toast({
           title: "Error",
-          description: "Could not load pilots list for captain selection.",
+          description: "Could not load pilots list for selection.",
           variant: "destructive",
         });
       } finally {
@@ -287,9 +287,32 @@ export function PurserReportTool() {
                     </FormItem>
                   )}
                 />
-                <FormField control={form.control} name="firstOfficerName" render={({ field }) => (
-                  <FormItem><FormLabel>First Officer's Name</FormLabel><FormControl><Input placeholder="e.g., FO Jane Smith" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
-                )} />
+                <FormField
+                  control={form.control}
+                  name="firstOfficerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Officer's Name</FormLabel>
+                       <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingPilots}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={isLoadingPilots ? "Loading pilots..." : "Select First Officer"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {pilotsList.length === 0 && !isLoadingPilots && <SelectItem value="" disabled>No pilots found</SelectItem>}
+                          {pilotsList.map((pilot) => (
+                            <SelectItem key={pilot.uid} value={pilot.name}>
+                              {pilot.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>Optional. Select from available pilots.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField control={form.control} name="purserName" render={({ field }) => (
                   <FormItem><FormLabel>Purser's Name</FormLabel><FormControl><Input placeholder="e.g., Purser Alex Lee" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
@@ -416,3 +439,4 @@ export function PurserReportTool() {
     </div>
   );
 }
+
