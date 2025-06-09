@@ -41,7 +41,7 @@ const purserReportFormSchema = z.object({
   
   captainName: z.string().optional(),
   firstOfficerName: z.string().optional(),
-  purserName: z.string().min(2, "Purser name is required."),
+  purserName: z.string().min(2, "Supervising crew (Purser/Instructor) name is required."),
   cabinCrewR1: z.string().optional(),
   cabinCrewL2: z.string().optional(),
   cabinCrewR2: z.string().optional(),
@@ -70,10 +70,12 @@ export function PurserReportTool() {
   const [reportResult, setReportResult] = React.useState<PurserReportOutput | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  
   const [pilotsList, setPilotsList] = React.useState<CrewUser[]>([]);
   const [isLoadingPilots, setIsLoadingPilots] = React.useState(true);
-  const [pursersList, setPursersList] = React.useState<CrewUser[]>([]);
-  const [isLoadingPursers, setIsLoadingPursers] = React.useState(true);
+  
+  const [supervisingCrewList, setSupervisingCrewList] = React.useState<CrewUser[]>([]);
+  const [isLoadingSupervisingCrew, setIsLoadingSupervisingCrew] = React.useState(true);
 
   const defaultDate = () => new Date().toISOString().split('T')[0];
 
@@ -88,7 +90,7 @@ export function PurserReportTool() {
       
       captainName: "", 
       firstOfficerName: "",
-      purserName: "", // Will be selected from dropdown
+      purserName: "", 
       cabinCrewR1: "D. Brown (R1)",
       cabinCrewL2: "E. Davis (L2)",
       cabinCrewR2: "F. Miller (R2)",
@@ -107,26 +109,37 @@ export function PurserReportTool() {
   });
 
   React.useEffect(() => {
-    const fetchCrew = async (role: string, setList: React.Dispatch<React.SetStateAction<CrewUser[]>>, setLoading: React.Dispatch<React.SetStateAction<boolean>>) => {
+    const fetchCrew = async (
+      roles: string | string[], 
+      setList: React.Dispatch<React.SetStateAction<CrewUser[]>>, 
+      setLoading: React.Dispatch<React.SetStateAction<boolean>>
+    ) => {
       setLoading(true);
       try {
         const usersCollectionRef = collection(db, "users");
-        const q = query(usersCollectionRef, where("role", "==", role), where("accountStatus", "==", "active"));
+        let q;
+        if (Array.isArray(roles)) {
+          q = query(usersCollectionRef, where("role", "in", roles), where("accountStatus", "==", "active"));
+        } else {
+          q = query(usersCollectionRef, where("role", "==", roles), where("accountStatus", "==", "active"));
+        }
+        
         const querySnapshot = await getDocs(q);
         const fetchedCrew: CrewUser[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           fetchedCrew.push({
             uid: doc.id,
-            name: data.fullName || data.displayName || `Unnamed ${role}`,
+            name: data.fullName || data.displayName || `Unnamed ${Array.isArray(roles) ? roles.join('/') : roles}`,
           });
         });
-        setList(fetchedCrew);
+        setList(fetchedCrew.sort((a, b) => a.name.localeCompare(b.name)));
       } catch (error) {
-        console.error(`Error fetching ${role}s:`, error);
+        console.error(`Error fetching crew for role(s) ${JSON.stringify(roles)}:`, error);
+        const roleName = Array.isArray(roles) ? roles.join('/') : roles;
         toast({
           title: "Error",
-          description: `Could not load ${role}s list for selection.`,
+          description: `Could not load ${roleName} list for selection.`,
           variant: "destructive",
         });
       } finally {
@@ -134,7 +147,7 @@ export function PurserReportTool() {
       }
     };
     fetchCrew("pilote", setPilotsList, setIsLoadingPilots);
-    fetchCrew("purser", setPursersList, setIsLoadingPursers);
+    fetchCrew(["purser", "instructor"], setSupervisingCrewList, setIsLoadingSupervisingCrew);
   }, [toast]);
 
   async function onSubmit(data: PurserReportFormValues) {
@@ -150,10 +163,17 @@ export function PurserReportTool() {
     setIsLoading(true);
     setReportResult(null);
 
+    // Determine the "role" for the selected supervising crew member for the AI prompt
+    // This is a simplification; in a real scenario, you might want to store the actual role selected.
+    let purserOrInstructorRole = "Purser"; // Default to Purser
+    const selectedSupervisingCrewMember = supervisingCrewList.find(c => c.name === data.purserName);
+    // To determine the actual role, we would need to fetch the user document again or store role with name.
+    // For now, we'll just use the name provided. The AI prompt is generic enough.
+
     const crewDetailsParts = [
       data.captainName ? `Captain: ${data.captainName}` : null,
       data.firstOfficerName ? `First Officer: ${data.firstOfficerName}` : null,
-      data.purserName ? `Purser: ${data.purserName}` : null,
+      data.purserName ? `Supervising Crew: ${data.purserName}` : null, // Changed label for clarity if instructor
       data.cabinCrewR1 ? `R1: ${data.cabinCrewR1}` : null,
       data.cabinCrewL2 ? `L2: ${data.cabinCrewL2}` : null,
       data.cabinCrewR2 ? `R2: ${data.cabinCrewR2}` : null,
@@ -277,7 +297,7 @@ export function PurserReportTool() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {pilotsList.length === 0 && !isLoadingPilots && <SelectItem value="" disabled>No pilots found</SelectItem>}
+                          {pilotsList.length === 0 && !isLoadingPilots && <SelectItem value="" disabled>No active pilots found</SelectItem>}
                           {pilotsList.map((pilot) => (
                             <SelectItem key={pilot.uid} value={pilot.name}>
                               {pilot.name}
@@ -303,7 +323,7 @@ export function PurserReportTool() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {pilotsList.length === 0 && !isLoadingPilots && <SelectItem value="" disabled>No pilots found</SelectItem>}
+                           {pilotsList.length === 0 && !isLoadingPilots && <SelectItem value="" disabled>No active pilots found</SelectItem>}
                           {pilotsList.map((pilot) => (
                             <SelectItem key={pilot.uid} value={pilot.name}>
                               {pilot.name}
@@ -321,18 +341,18 @@ export function PurserReportTool() {
                   name="purserName" 
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Purser's Name</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingPursers}>
+                      <FormLabel>Supervising Crew (Purser/Instructor)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingSupervisingCrew}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder={isLoadingPursers ? "Loading pursers..." : "Select Purser"} />
+                            <SelectValue placeholder={isLoadingSupervisingCrew ? "Loading crew..." : "Select Purser or Instructor"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {pursersList.length === 0 && !isLoadingPursers && <SelectItem value="" disabled>No pursers found</SelectItem>}
-                          {pursersList.map((purser) => (
-                            <SelectItem key={purser.uid} value={purser.name}>
-                              {purser.name}
+                          {supervisingCrewList.length === 0 && !isLoadingSupervisingCrew && <SelectItem value="" disabled>No active pursers/instructors found</SelectItem>}
+                          {supervisingCrewList.map((crew) => (
+                            <SelectItem key={crew.uid} value={crew.name}>
+                              {crew.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
