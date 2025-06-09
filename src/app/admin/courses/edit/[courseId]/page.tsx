@@ -48,7 +48,13 @@ const courseCategories = [
   "CRM (Crew Resource Management)",
 ];
 
-const courseTypes = ["E-learning", "Présentiel", "Blended"];
+const courseTypes = [
+  "Initial Training", 
+  "Recurrent Training", 
+  "Specialized Training", 
+  "Commercial Training", 
+  "Other Training"
+];
 const questionTypes = ["mcq", "tf", "short"];
 
 const mcqOptionSchema = z.object({
@@ -91,6 +97,7 @@ type CourseFormValues = z.infer<typeof courseFormSchema>;
 
 const defaultValues: Partial<CourseFormValues> = {
   questions: [{ text: "", questionType: "mcq", options: [{ text: "", isCorrect: false }, { text: "", isCorrect: false }], weight: 1}],
+  courseType: "Initial Training",
 };
 
 export default function EditComprehensiveCoursePage() {
@@ -163,7 +170,7 @@ export default function EditComprehensiveCoursePage() {
           form.reset({
             title: courseData.title || "",
             category: courseData.category || "",
-            courseType: courseData.courseType || "E-learning",
+            courseType: courseData.courseType || "Initial Training",
             description: courseData.description || "",
             duration: courseData.duration || "60 minutes",
             imageHint: courseData.imageHint || "",

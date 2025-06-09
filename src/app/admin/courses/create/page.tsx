@@ -48,7 +48,13 @@ const courseCategories = [
   "CRM (Crew Resource Management)",
 ];
 
-const courseTypes = ["E-learning", "Présentiel", "Blended"];
+const courseTypes = [
+  "Initial Training", 
+  "Recurrent Training", 
+  "Specialized Training", 
+  "Commercial Training", 
+  "Other Training"
+];
 const questionTypes = ["mcq", "tf", "short"]; // Multiple Choice, True/False, Short Answer
 
 const mcqOptionSchema = z.object({
@@ -100,7 +106,7 @@ const defaultQuestionValue: z.infer<typeof questionSchema> = {
 const defaultValues: Partial<CourseFormValues> = {
   title: "",
   category: "",
-  courseType: "E-learning",
+  courseType: "Initial Training",
   description: "",
   duration: "60 minutes",
   imageHint: "",
