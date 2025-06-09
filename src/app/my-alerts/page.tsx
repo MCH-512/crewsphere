@@ -4,6 +4,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, Timestamp, getDocs, or } from "firebase/firestore";
@@ -39,7 +40,6 @@ export default function MyAlertsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Query for user-specific alerts OR global alerts
       const alertsQuery = query(
         collection(db, "alerts"),
         or(
@@ -68,33 +68,19 @@ export default function MyAlertsPage() {
         if (user) {
             fetchAlerts();
         } else {
-            // Redirect to login if not authenticated and not loading
             router.push('/login');
         }
     }
   }, [user, authLoading, router, fetchAlerts]);
 
-  const getAlertStyling = (level: Alert["level"]) => {
+  const getAlertVariant = (level: Alert["level"]): "default" | "destructive" => {
     switch (level) {
       case 'critical':
-        return {
-          border: 'border-destructive/50 bg-destructive/10',
-          iconColor: 'text-destructive',
-          titleColor: 'text-destructive',
-        };
+        return 'destructive';
       case 'warning':
-        return {
-          border: 'border-yellow-500/50 bg-yellow-500/10',
-          iconColor: 'text-yellow-600 dark:text-yellow-400',
-          titleColor: 'text-yellow-700 dark:text-yellow-300',
-        };
       case 'info':
       default:
-        return {
-          border: 'border-blue-500/50 bg-blue-500/10',
-          iconColor: 'text-primary',
-          titleColor: 'text-primary',
-        };
+        return 'default';
     }
   };
 
@@ -103,12 +89,10 @@ export default function MyAlertsPage() {
         const lowerIconName = alert.iconName.toLowerCase();
         if (lowerIconName === "briefcase") return Briefcase;
         if (lowerIconName === "graduationcap") return GraduationCap;
-        // Add more specific icon mappings here if needed
     }
-    // Default icons based on level
     switch (alert.level) {
         case "critical": return AlertTriangle;
-        case "warning": return AlertTriangle; // Could be Info for warnings too
+        case "warning": return AlertTriangle; 
         case "info":
         default: return Info;
     }
@@ -125,7 +109,6 @@ export default function MyAlertsPage() {
   }
   
   if (!user && !authLoading) {
-     // This state should ideally be handled by the AuthProvider redirect
      return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
@@ -154,9 +137,11 @@ export default function MyAlertsPage() {
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" /> {error}
-            </div>
+             <ShadAlert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-5 w-5" />
+              <ShadAlertTitle>Error</ShadAlertTitle>
+              <ShadAlertDescription>{error}</ShadAlertDescription>
+            </ShadAlert>
           )}
           {isLoading && (
              <div className="flex items-center justify-center py-8">
@@ -171,23 +156,20 @@ export default function MyAlertsPage() {
             <div className="space-y-4">
               {alerts.map((alert) => {
                   const IconComponent = getIconForAlert(alert);
-                  const styles = getAlertStyling(alert.level);
                   const timeAgo = formatDistanceToNowStrict(alert.createdAt.toDate(), { addSuffix: true });
                   
                   return (
-                  <div key={alert.id} className={`flex items-start space-x-4 p-4 rounded-lg border ${styles.border} shadow-sm`}>
-                    <IconComponent className={`h-6 w-6 mt-1 shrink-0 ${styles.iconColor}`} />
-                    <div className="flex-grow">
-                      <div className="flex justify-between items-center">
-                        <p className={`font-semibold text-base ${styles.titleColor}`}>{alert.title}</p>
+                  <ShadAlert key={alert.id} variant={getAlertVariant(alert.level)} className="shadow-sm">
+                    <IconComponent className="h-5 w-5" /> {/* Icon provided by ShadAlert styling */}
+                    <div className="flex justify-between items-center mb-1">
+                        <ShadAlertTitle>{alert.title}</ShadAlertTitle>
                         <p className="text-xs text-muted-foreground/80">{timeAgo}</p>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">{alert.content}</p>
-                      {alert.userId === user?.uid && (
-                        <span className="text-xs font-medium text-primary mt-1 block">(Personal Alert)</span>
-                      )}
                     </div>
-                  </div>
+                    <ShadAlertDescription>{alert.content}</ShadAlertDescription>
+                    {alert.userId === user?.uid && (
+                        <p className="text-xs font-medium text-primary mt-1">(Personal Alert)</p>
+                    )}
+                  </ShadAlert>
                 )})}
             </div>
           )}

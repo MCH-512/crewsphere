@@ -21,7 +21,8 @@ import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle } from "luci
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { badgeVariants, type VariantProps } from "@/components/ui/badge"; 
-import { format } from "date-fns";
+import { format } from "date-fns"; 
+import { type VariantProps as CvaVariantProps } from "class-variance-authority";
 
 
 type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'other';
@@ -253,7 +254,7 @@ export default function AdminUsersPage() {
     setIsSubmitting(false);
   };
 
-  const getRoleBadgeVariant = (role?: SpecificRole | null): VariantProps<typeof badgeVariants>["variant"] => {
+  const getRoleBadgeVariant = (role?: SpecificRole | null): CvaVariantProps<typeof badgeVariants>["variant"] => {
     switch (role) {
       case "admin": return "destructive";
       case "purser": return "default"; 

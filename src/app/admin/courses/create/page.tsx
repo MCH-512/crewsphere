@@ -110,7 +110,7 @@ const defaultValues: Partial<CourseFormValues> = {
   randomizeAnswers: false,
   passingThreshold: 80,
   certificateExpiryDays: 365,
-  certificateLogoUrl: "https://placehold.co/150x50.png", // Placeholder logo
+  certificateLogoUrl: "https://placehold.co/150x50.png", 
   certificateSignature: "Express Airline Training Department",
 };
 
@@ -149,7 +149,7 @@ export default function CreateComprehensiveCoursePage() {
 
   const handleRemoveMcqOption = (questionIndex: number, optionIndex: number) => {
     const currentOptions = form.getValues(`questions.${questionIndex}.options`) || [];
-    if (currentOptions.length > 2) { // Keep at least two options
+    if (currentOptions.length > 2) { 
       const newOptions = currentOptions.filter((_, idx) => idx !== optionIndex);
       form.setValue(`questions.${questionIndex}.options`, newOptions);
     } else {
@@ -190,16 +190,15 @@ export default function CreateComprehensiveCoursePage() {
           }
         );
       });
-      if (!fileDownloadURL) { // Check if upload failed silently
+      if (!fileDownloadURL) { 
          setIsSubmitting(false);
-         return; // Upload error was already toasted
+         return; 
       }
     }
 
     try {
       const batch = writeBatch(db);
 
-      // 1. Create Course document
       const courseRef = doc(collection(db, "courses"));
       batch.set(courseRef, {
         title: data.title,
@@ -209,14 +208,12 @@ export default function CreateComprehensiveCoursePage() {
         duration: data.duration,
         fileURL: fileDownloadURL,
         imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
-        published: false, // Default to not published
+        published: false, 
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         createdBy: user.uid,
-        // Will link quizId and certificateRuleId later
       });
 
-      // 2. Create Quiz document
       const quizRef = doc(collection(db, "quizzes"));
       batch.set(quizRef, {
         courseId: courseRef.id,
@@ -225,9 +222,8 @@ export default function CreateComprehensiveCoursePage() {
         randomizeAnswers: data.randomizeAnswers,
         createdAt: serverTimestamp(),
       });
-      batch.update(courseRef, { quizId: quizRef.id }); // Link quiz to course
+      batch.update(courseRef, { quizId: quizRef.id }); 
 
-      // 3. Create Question documents
       data.questions.forEach(q => {
         const questionRef = doc(collection(db, "questions"));
         const questionData: any = {
@@ -246,7 +242,6 @@ export default function CreateComprehensiveCoursePage() {
         batch.set(questionRef, questionData);
       });
 
-      // 4. Create CertificateRule document
       const certRuleRef = doc(collection(db, "certificateRules"));
       batch.set(certRuleRef, {
         courseId: courseRef.id,
@@ -256,7 +251,7 @@ export default function CreateComprehensiveCoursePage() {
         signatureTextOrURL: data.certificateSignature,
         createdAt: serverTimestamp(),
       });
-      batch.update(courseRef, { certificateRuleId: certRuleRef.id }); // Link rule to course
+      batch.update(courseRef, { certificateRuleId: certRuleRef.id }); 
 
       await batch.commit();
 
@@ -265,8 +260,8 @@ export default function CreateComprehensiveCoursePage() {
         description: `Course "${data.title}" with its quiz and certification rules has been saved.`,
         action: <CheckCircle className="text-green-500" />,
       });
-      form.reset(defaultValues); // Reset form to defaults
-      if (fileInputRef.current) fileInputRef.current.value = ""; // Reset file input
+      form.reset(defaultValues); 
+      if (fileInputRef.current) fileInputRef.current.value = ""; 
       router.push('/admin/courses');
     } catch (error) {
       console.error("Error creating course structure in Firestore:", error);
@@ -378,7 +373,6 @@ export default function CreateComprehensiveCoursePage() {
                       <FormItem><FormLabel>Question Type*</FormLabel>
                         <Select onValueChange={(value) => {
                             field.onChange(value);
-                            // Reset options/answers when type changes
                             form.setValue(`questions.${index}.options`, value === 'mcq' ? [{text: "", isCorrect: false},{text: "", isCorrect: false}] : undefined);
                             form.setValue(`questions.${index}.correctAnswerBoolean`, value === 'tf' ? false : undefined);
                             form.setValue(`questions.${index}.correctAnswerText`, value === 'short' ? "" : undefined);
@@ -392,14 +386,13 @@ export default function CreateComprehensiveCoursePage() {
                     )} />
                   </div>
 
-                  {/* Conditional fields based on questionType */}
                   {form.watch(`questions.${index}.questionType`) === 'mcq' && (
                     <div className="space-y-3">
                       <FormLabel>MCQ Options* (Select correct answer/s)</FormLabel>
                       {form.watch(`questions.${index}.options`)?.map((optionItem, optionIndex) => (
                         <div key={optionIndex} className="flex items-center gap-2 p-2 border rounded-md">
                           <FormField control={form.control} name={`questions.${index}.options.${optionIndex}.isCorrect`} render={({ field }) => (
-                            <FormItem className="flex items-center"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="mr-2" /></FormControl></FormItem>
+                            <FormItem className="flex items-center"><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="mr-2 data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-muted" /></FormControl></FormItem>
                           )} />
                           <FormField control={form.control} name={`questions.${index}.options.${optionIndex}.text`} render={({ field }) => (
                             <FormItem className="flex-grow"><FormControl><Input placeholder={`Option ${optionIndex + 1}`} {...field} /></FormControl><FormMessage /></FormItem>
@@ -470,7 +463,7 @@ export default function CreateComprehensiveCoursePage() {
                 <div className="mt-6">
                     <h3 className="text-lg font-medium mb-2">Certificate Preview (Simplified):</h3>
                     <div className="border-2 border-dashed border-primary p-6 rounded-lg bg-secondary/30 aspect-[8.5/5.5] max-w-md mx-auto flex flex-col items-center justify-around" data-ai-hint="certificate award">
-                        <Image src={watchedFormValues.certificateLogoUrl || "https://placehold.co/150x50.png?text=Airline+Logo"} alt="Airline Logo" width={120} height={40} className="mb-4" data-ai-hint={watchedFormValues.imageHint || "company logo"}/>
+                        <Image src={watchedFormValues.certificateLogoUrl || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4" data-ai-hint={watchedFormValues.imageHint || "company logo"}/>
                         <h4 className="text-2xl font-bold text-center text-primary">Certificate of Completion</h4>
                         <p className="text-sm text-center my-2">This certifies that</p>
                         <p className="text-xl font-semibold text-center">[User Name Placeholder]</p>

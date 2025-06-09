@@ -74,7 +74,7 @@ const courseFormSchema = z.object({
   duration: z.string().min(1, "Duration is required (e.g., 60 minutes, 2 hours)."),
   associatedFile: z.custom<FileList>().optional(),
   imageHint: z.string().max(50).optional().describe("Keywords for course image (e.g., emergency exit)"),
-  existingFileUrl: z.string().optional(), // To store the URL of the current file
+  existingFileUrl: z.string().optional(), 
 
   quizTitle: z.string().min(5, "Quiz Title must be at least 5 characters.").max(100),
   questions: z.array(questionSchema).min(1, "At least one question is required for the quiz."),
@@ -89,7 +89,6 @@ const courseFormSchema = z.object({
 
 type CourseFormValues = z.infer<typeof courseFormSchema>;
 
-// Default empty values are fine here, loading will populate them
 const defaultValues: Partial<CourseFormValues> = {
   questions: [{ text: "", questionType: "mcq", options: [{ text: "", isCorrect: false }, { text: "", isCorrect: false }], weight: 1}],
 };
@@ -220,7 +219,6 @@ export default function EditComprehensiveCoursePage() {
     const fileToUpload = data.associatedFile?.[0];
 
     if (fileToUpload) {
-      // If there was an old file, delete it from storage (optional, consider versions or backups)
       if (data.existingFileUrl) {
         try {
             const oldFileRef = storageRef(storage, data.existingFileUrl);
@@ -262,14 +260,12 @@ export default function EditComprehensiveCoursePage() {
         title: data.quizTitle, randomizeQuestions: data.randomizeQuestions, randomizeAnswers: data.randomizeAnswers,
       });
 
-      // Delete old questions for this quiz
       const oldQuestionsQuery = query(collection(db, "questions"), where("quizId", "==", initialQuizId));
       const oldQuestionsSnap = await getDocs(oldQuestionsQuery);
       oldQuestionsSnap.forEach(d => batch.delete(d.ref));
 
-      // Add new/updated questions
       data.questions.forEach(q => {
-        const questionRef = doc(collection(db, "questions")); // New ID for each question to ensure clean state
+        const questionRef = doc(collection(db, "questions")); 
         const questionData: any = {
           quizId: initialQuizId, text: q.text, questionType: q.questionType, weight: q.weight,
         };
@@ -499,7 +495,7 @@ export default function EditComprehensiveCoursePage() {
                 <div className="mt-6">
                     <h3 className="text-lg font-medium mb-2">Certificate Preview (Simplified):</h3>
                     <div className="border-2 border-dashed border-primary p-6 rounded-lg bg-secondary/30 aspect-[8.5/5.5] max-w-md mx-auto flex flex-col items-center justify-around" data-ai-hint="certificate award">
-                        <Image src={watchedFormValues.certificateLogoUrl || "https://placehold.co/150x50.png?text=Airline+Logo"} alt="Airline Logo" width={120} height={40} className="mb-4" data-ai-hint={watchedFormValues.imageHint || "company logo"}/>
+                        <Image src={watchedFormValues.certificateLogoUrl || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4" data-ai-hint={watchedFormValues.imageHint || "company logo"}/>
                         <h4 className="text-2xl font-bold text-center text-primary">Certificate of Completion</h4>
                         <p className="text-sm text-center my-2">This certifies that</p>
                         <p className="text-xl font-semibold text-center">[User Name Placeholder]</p>

@@ -14,7 +14,7 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, Timestamp, orderBy } from "firebase/firestore";
 
 interface CourseData {
-  id: string; // Firestore document ID
+  id: string; 
   title: string;
   description: string;
   category: string;
@@ -22,7 +22,6 @@ interface CourseData {
   quizId: string;
   quizTitle: string;
   mandatory: boolean;
-  // courseIcon can be mapped from category or be a default
 }
 
 interface UserProgressData {
@@ -34,14 +33,14 @@ interface UserProgressData {
   certificateDetails?: {
     provider: string;
     certificateId: string;
-    issuedDate: string; // ISO String
-    expiryDate?: string; // ISO String
+    issuedDate: string; 
+    expiryDate?: string; 
   };
   lastUpdated: Timestamp;
 }
 
 interface CombinedCourse extends CourseData {
-  progress?: UserProgressData; // User's progress for this course
+  progress?: UserProgressData; 
 }
 
 export default function TrainingPage() {
@@ -81,13 +80,12 @@ export default function TrainingPage() {
         if (progressDocSnap.exists()) {
           userProgress = progressDocSnap.data() as UserProgressData;
         } else {
-          // Default progress if none exists (will be created on first action)
            userProgress = {
             userId: user.uid,
             courseId: courseData.id,
             contentStatus: 'NotStarted',
             quizStatus: 'NotTaken',
-            lastUpdated: Timestamp.now() // Placeholder, will be updated
+            lastUpdated: Timestamp.now() 
           };
         }
         combinedCoursesWithProgress.push({ ...courseData, progress: userProgress });
@@ -106,7 +104,7 @@ export default function TrainingPage() {
     if (!authLoading && user) {
       fetchTrainingData();
     } else if (!authLoading && !user) {
-      setIsLoadingCourses(false); // Not logged in, no data to fetch
+      setIsLoadingCourses(false); 
     }
   }, [authLoading, user, fetchTrainingData]);
 
@@ -128,14 +126,13 @@ export default function TrainingPage() {
           contentStatus: 'Completed',
           lastUpdated: Timestamp.now(),
         };
-        // If progress doc doesn't exist or contentStatus is not set, initialize other fields
         if(!course.progress || !course.progress.quizStatus){
             newProgressData.quizStatus = 'NotTaken';
         }
 
         await setDoc(progressDocRef, newProgressData, { merge: true });
         toast({ title: "Course Content Viewed", description: `You have completed the material for "${course.title}". You can now take the quiz.` });
-        fetchTrainingData(); // Refresh data
+        fetchTrainingData(); 
       } else {
         setSelectedCourseForQuiz(course);
         setIsQuizDialogOpen(true);
@@ -156,7 +153,7 @@ export default function TrainingPage() {
     setIsUpdating(true);
     const progressDocId = `${user.uid}_${course.id}`;
     const progressDocRef = doc(db, "userTrainingProgress", progressDocId);
-    const score = passed ? Math.floor(Math.random() * 21) + 80 : Math.floor(Math.random() * 40) + 40; // Pass: 80-100, Fail: 40-79
+    const score = passed ? Math.floor(Math.random() * 21) + 80 : Math.floor(Math.random() * 40) + 40; 
 
     const newProgressData: Partial<UserProgressData> = {
       userId: user.uid,
@@ -168,7 +165,6 @@ export default function TrainingPage() {
 
     if (passed) {
       const issuedDate = new Date().toISOString();
-      // Simple expiry logic: 1 year for recurrent/refresher, 2 years otherwise
       const expiryYears = course.title.toLowerCase().includes("recurrent") || course.title.toLowerCase().includes("refresher") ? 1 : 2;
       const expiryDate = new Date(new Date().setFullYear(new Date().getFullYear() + expiryYears)).toISOString();
       
@@ -187,7 +183,7 @@ export default function TrainingPage() {
         description: `You scored ${score}% on "${course.quizTitle}". ${passed ? 'Congratulations! Your certificate is now available.' : 'Please review the material and try again.'}`,
         variant: passed ? "default" : "destructive",
       });
-      fetchTrainingData(); // Refresh data
+      fetchTrainingData(); 
     } catch (error) {
       console.error("Error updating quiz results:", error);
       toast({ title: "Quiz Update Error", description: "Could not save quiz results.", variant: "destructive" });
@@ -272,7 +268,7 @@ export default function TrainingPage() {
               <Card key={course.id} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
                 <CardHeader className="flex-shrink-0">
                   <div className="flex items-start gap-3 mb-2">
-                    <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint || "training"} />
+                    <Image src={`https://placehold.co/60x60.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint || "training"} />
                     <div>
                       <CardTitle className="text-lg">{course.title}</CardTitle>
                       <Badge variant="outline" className="mt-1">{course.category}</Badge>
@@ -323,7 +319,7 @@ export default function TrainingPage() {
               <Card key={course.id} className="shadow-md hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start gap-3 mb-2">
-                    <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint || "certificate"} />
+                    <Image src={`https://placehold.co/60x60.png`} alt={course.title} width={60} height={60} className="rounded-lg" data-ai-hint={course.imageHint || "certificate"} />
                     <div>
                       <CardTitle className="text-lg">{course.title}</CardTitle>
                        <Badge variant="default" className="mt-1 bg-green-100 text-green-700 border-green-300">Passed ({course.progress?.quizScore}%)</Badge>
@@ -355,7 +351,6 @@ export default function TrainingPage() {
         )}
       </section>
 
-      {/* Quiz Simulation Dialog */}
       <Dialog open={isQuizDialogOpen} onOpenChange={setIsQuizDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -383,7 +378,6 @@ export default function TrainingPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Certificate Viewing Dialog */}
       <Dialog open={isCertDialogOpen} onOpenChange={setIsCertDialogOpen}>
           <DialogContent className="sm:max-w-[650px]">
             <DialogHeader>
@@ -394,7 +388,7 @@ export default function TrainingPage() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="mx-auto my-4">
-                <Image src="https://placehold.co/500x350.png" alt="Certificate Preview" width={500} height={350} className="rounded-md border" data-ai-hint="official certificate document" />
+                <Image src="https://placehold.co/500x350.png" alt="Certificate Preview" width={500} height={350} className="rounded-md border" data-ai-hint="official certificate document award"/>
               </div>
               <div className="space-y-1 text-sm">
                 <p><strong>Issued to:</strong> {user?.displayName || user?.email || "Demo User"}</p>
@@ -422,5 +416,3 @@ export default function TrainingPage() {
     </div>
   );
 }
-
-    

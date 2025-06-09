@@ -5,6 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
 import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -154,12 +155,11 @@ export default function DashboardPage() {
       const finalFeaturedCourses: FeaturedCourse[] = [];
 
       try {
-        // Step 1: Try to get up to 2 mandatory courses not yet passed by the user
         const mandatoryQuery = query(
           collection(db, "courses"),
           where("mandatory", "==", true),
           orderBy("title"),
-          limit(5) // Fetch a bit more to filter
+          limit(5) 
         );
         const mandatorySnapshot = await getDocs(mandatoryQuery);
         const potentialMandatoryCourses = mandatorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FeaturedCourse));
@@ -169,34 +169,30 @@ export default function DashboardPage() {
           const progressDocId = `${user.uid}_${course.id}`;
           const progressSnap = await getDoc(doc(db, "userTrainingProgress", progressDocId));
           if (progressSnap.exists() && progressSnap.data().quizStatus === 'Passed') {
-            continue; // Skip if already passed
+            continue; 
           }
           finalFeaturedCourses.push(course);
         }
 
-        // Step 2: If still less than 2, try to fill with other (non-mandatory or any) courses not yet passed
         if (finalFeaturedCourses.length < 2) {
           const existingIds = finalFeaturedCourses.map(c => c.id);
-          const needed = 2 - finalFeaturedCourses.length;
-
-          // Fetch a pool of general courses
           const generalQuery = query(
             collection(db, "courses"),
-            orderBy("category"), // Example: order by category then title
+            orderBy("category"), 
             orderBy("title"),
-            limit(10) // Fetch a decent pool to pick from
+            limit(10) 
           );
           const generalSnapshot = await getDocs(generalQuery);
           const potentialGeneralCourses = generalSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as FeaturedCourse));
 
           for (const course of potentialGeneralCourses) {
             if (finalFeaturedCourses.length >= 2) break;
-            if (existingIds.includes(course.id)) continue; // Already selected (e.g. as mandatory)
+            if (existingIds.includes(course.id)) continue; 
 
             const progressDocId = `${user.uid}_${course.id}`;
             const progressSnap = await getDoc(doc(db, "userTrainingProgress", progressDocId));
             if (progressSnap.exists() && progressSnap.data().quizStatus === 'Passed') {
-              continue; // Skip if already passed
+              continue; 
             }
             finalFeaturedCourses.push(course);
           }
@@ -239,27 +235,14 @@ export default function DashboardPage() {
     { id: 3, tip: "Maintain situational awareness at all times, especially during critical phases like boarding, takeoff, sterile flight deck, and landing." },
   ];
 
-  const getAlertStyling = (level: Alert["level"]) => {
+  const getAlertVariant = (level: Alert["level"]): "default" | "destructive" => {
     switch (level) {
       case 'critical':
-        return {
-          border: 'border-destructive/50 bg-destructive/10',
-          iconColor: 'text-destructive',
-          titleColor: 'text-destructive',
-        };
+        return 'destructive';
       case 'warning':
-        return {
-          border: 'border-yellow-500/50 bg-yellow-500/10',
-          iconColor: 'text-yellow-600 dark:text-yellow-400',
-          titleColor: 'text-yellow-700 dark:text-yellow-300',
-        };
       case 'info':
       default:
-        return {
-          border: 'border-blue-500/50 bg-blue-500/10',
-          iconColor: 'text-primary',
-          titleColor: 'text-primary',
-        };
+        return 'default';
     }
   };
 
@@ -396,10 +379,11 @@ export default function DashboardPage() {
                 </div>
               )}
               {alertsError && (
-                <div className="flex items-center space-x-2 text-destructive">
-                  <AlertTriangle className="h-5 w-5" />
-                  <span>{alertsError}</span>
-                </div>
+                <ShadAlert variant="destructive" className="mb-4">
+                    <AlertTriangle className="h-5 w-5" />
+                    <ShadAlertTitle>Error</ShadAlertTitle>
+                    <ShadAlertDescription>{alertsError}</ShadAlertDescription>
+                </ShadAlert>
               )}
               {!alertsLoading && !alertsError && alerts.length === 0 && (
                 <p className="text-sm text-muted-foreground">No new alerts at this time.</p>
@@ -408,24 +392,23 @@ export default function DashboardPage() {
                 <div className="space-y-3">
                   {alerts.map((alert) => {
                     const IconComponent = getIconForAlert(alert);
-                    const styles = getAlertStyling(alert.level);
                     const timeAgo = formatDistanceToNowStrict(alert.createdAt.toDate(), { addSuffix: true });
                     
                     return (
-                    <div key={alert.id} className={`flex items-start space-x-3 p-3 rounded-md border ${styles.border}`}>
-                      <IconComponent className={`h-5 w-5 mt-1 shrink-0 ${styles.iconColor}`} />
-                      <div>
-                        <p className={`font-semibold ${styles.titleColor}`}>{alert.title}</p>
-                        <p className="text-sm text-muted-foreground">{alert.content}</p>
-                        <p className="text-xs text-muted-foreground/70 mt-1">{timeAgo}</p>
-                      </div>
-                    </div>
+                    <ShadAlert key={alert.id} variant={getAlertVariant(alert.level)} className="shadow-sm">
+                      <IconComponent className="h-5 w-5" />
+                       <div className="flex justify-between items-center mb-1">
+                        <ShadAlertTitle>{alert.title}</ShadAlertTitle>
+                        <p className="text-xs text-muted-foreground/70">{timeAgo}</p>
+                       </div>
+                      <ShadAlertDescription>{alert.content}</ShadAlertDescription>
+                    </ShadAlert>
                   )})}
                 </div>
               )}
                <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
                   <Link href="/my-alerts">View All Alerts <ArrowRight className="ml-2 h-4 w-4" /></Link>
-              </Button>
+               </Button>
             </CardContent>
           </Card>
       </AnimatedCard>
@@ -499,7 +482,7 @@ export default function DashboardPage() {
                 {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.map((course) => (
                   <div key={course.id} className="flex items-center gap-4 p-3 border rounded-lg bg-card">
                     <Image 
-                      src={`https://placehold.co/100x100.png`} 
+                      src={`https://placehold.co/60x60.png`} 
                       alt={course.title} 
                       width={60} 
                       height={60} 
@@ -526,6 +509,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-
-    

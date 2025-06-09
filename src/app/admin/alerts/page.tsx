@@ -66,21 +66,11 @@ export default function AdminAlertsPage() {
   const getLevelBadgeVariant = (level: AlertDocument["level"]): "destructive" | "default" | "secondary" | "outline" => {
     switch (level) {
       case "critical": return "destructive";
-      case "warning": return "default"; 
-      case "info": return "secondary";
+      case "warning": return "default"; // ShadCN 'default' variant often yellow-ish or primary. Theme dependent.
+      case "info": return "secondary"; // ShadCN 'secondary' variant.
       default: return "outline";
     }
   };
-  
-  const getLevelBadgeAdditionalClasses = (level: AlertDocument["level"]) => {
-    switch (level) {
-        case "critical": return "bg-red-500 hover:bg-red-600 text-white dark:bg-red-700 dark:hover:bg-red-800 dark:text-red-100";
-        case "warning": return "bg-yellow-400 hover:bg-yellow-500 text-yellow-900 dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:text-yellow-100";
-        case "info": return "bg-blue-500 hover:bg-blue-600 text-white dark:bg-blue-700 dark:hover:bg-blue-800 dark:text-blue-100";
-        default: return "";
-    }
-  }
-
 
   if (authLoading || (isLoading && alerts.length === 0 && !user)) {
     return (
@@ -153,7 +143,6 @@ export default function AdminAlertsPage() {
                       <TableCell>
                         <Badge 
                             variant={getLevelBadgeVariant(alert.level)}
-                            className={getLevelBadgeAdditionalClasses(alert.level)}
                         >
                           {alert.level.charAt(0).toUpperCase() + alert.level.slice(1)}
                         </Badge>

@@ -14,10 +14,10 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 
 interface CourseForQuiz {
-  id: string; // Firestore document ID from courses collection
-  title: string; // Course title (used as quiz context)
-  description: string; // Course description (can be adapted for quiz)
-  category: string; // Course category
+  id: string; 
+  title: string; 
+  description: string; 
+  category: string; 
   imageHint: string;
   quizId: string;
   quizTitle: string;
@@ -90,18 +90,18 @@ export default function QuizzesPage() {
             statusLabel = userProgress.contentStatus === 'NotStarted' ? "Course Not Started" : "Course In Progress";
             actionLabel = "Complete Course First";
             ActionIcon = BookOpen;
-            actionLink = "/training"; // Link to general training page
-            actionDisabled = false; // Make it a link, not a disabled button
-        } else { // Content is Completed
+            actionLink = "/training"; 
+            actionDisabled = false; 
+        } else { 
             if (userProgress.quizStatus === 'Passed') {
                 statusLabel = `Passed (Score: ${userProgress.quizScore}%)`;
-                actionLabel = "Review Quiz"; // Or "View Certificate"
+                actionLabel = "Review Quiz"; 
                 ActionIcon = CheckCircle;
             } else if (userProgress.quizStatus === 'Failed') {
                 statusLabel = `Failed (Score: ${userProgress.quizScore}%)`;
                 actionLabel = "Retake Quiz";
                 ActionIcon = PlayCircle;
-            } else { // NotTaken or Attempted
+            } else { 
                 statusLabel = "Ready for Quiz";
                 actionLabel = "Start Quiz";
                 ActionIcon = Zap;
@@ -136,7 +136,6 @@ export default function QuizzesPage() {
 
   const handleQuizAction = (quizTitle: string, link?: string) => {
     if (link) {
-        // Using window.location.href for simplicity, Next.js router.push can also be used
         window.location.href = link;
         return;
     }
@@ -222,12 +221,12 @@ export default function QuizzesPage() {
               <CardHeader className="flex-shrink-0">
                 <div className="flex items-start gap-4">
                     <Image
-                        src={`https://placehold.co/100x100.png`}
+                        src={`https://placehold.co/70x70.png`}
                         alt={quiz.quizTitle}
                         width={70}
                         height={70}
                         className="rounded-lg"
-                        data-ai-hint={quiz.imageHint || "quiz icon"}
+                        data-ai-hint={quiz.imageHint || "quiz assessment"}
                     />
                     <div>
                         <CardTitle className="text-lg mb-1">{quiz.quizTitle}</CardTitle>
@@ -284,4 +283,3 @@ export default function QuizzesPage() {
     </div>
   );
 }
-    

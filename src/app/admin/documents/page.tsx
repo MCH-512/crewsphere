@@ -90,9 +90,9 @@ export default function AdminDocumentsPage() {
 
   const getIconForFileType = (fileType?: string) => {
     if (!fileType) return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
-    if (fileType.includes("pdf")) return <FileTextIcon className="h-5 w-5 text-red-600" />;
-    if (fileType.includes("word") || fileType.includes("document")) return <FileTextIcon className="h-5 w-5 text-blue-600" />;
-    if (fileType.includes("excel") || fileType.includes("sheet")) return <FileTextIcon className="h-5 w-5 text-green-600" />; // Placeholder, needs specific icon if available
+    if (fileType.includes("pdf") || fileType.includes("word") || fileType.includes("document") || fileType.includes("excel") || fileType.includes("sheet")) {
+      return <FileTextIcon className="h-5 w-5 text-primary" />;
+    }
     return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
   };
 
