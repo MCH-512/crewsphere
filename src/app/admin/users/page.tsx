@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; 
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogPrimitiveDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -46,7 +46,7 @@ const manageUserFormSchema = z.object({
   confirmPassword: z.string().optional(),
   displayName: z.string().min(2, "Display name must be at least 2 characters.").max(50),
   fullName: z.string().min(2, "Full name must be at least 2 characters.").max(100),
-  employeeId: z.string().max(50).optional(), // Allow empty string for optional, superRefine handles create requirement
+  employeeId: z.string().max(50).optional(),
   joiningDate: z.string().optional(), 
   role: z.string().optional(), 
 })
@@ -61,6 +61,8 @@ const manageUserFormSchema = z.object({
   path: ["confirmPassword"],
 })
 .superRefine((data, ctx) => {
+    // This superRefine is for creation mode. employeeId and fullName are required for new users.
+    // We can infer creation mode if password is provided, as password is only for new users.
     if (data.password) { 
         if (!data.email || data.email.trim() === "") {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is required for new users.", path: ["email"]});
@@ -189,7 +191,7 @@ export default function AdminUsersPage() {
           joiningDate: data.joiningDate || null,
           role: (data.role === NO_ROLE_SENTINEL ? "" : data.role) as SpecificRole || "",
           createdAt: serverTimestamp(),
-          lastLogin: serverTimestamp(), // Initialize lastLogin
+          lastLogin: serverTimestamp(),
         });
 
         toast({ title: "User Created", description: `User ${data.email} created successfully.` });
@@ -210,9 +212,9 @@ export default function AdminUsersPage() {
         const updates: Partial<UserDocument> = {
             displayName: data.displayName,
             fullName: data.fullName,
-            employeeId: data.employeeId || null, // Store empty as null
-            joiningDate: data.joiningDate || null,
-            role: (data.role === NO_ROLE_SENTINEL ? "" : data.role) as SpecificRole || undefined 
+            employeeId: data.employeeId || undefined, // Store empty as undefined or null
+            joiningDate: data.joiningDate || undefined,
+            role: (data.role === NO_ROLE_SENTINEL ? undefined : data.role) as SpecificRole | undefined
         };
         
         // Logic for updating Firebase Auth displayName if admin is editing their own profile
@@ -247,7 +249,6 @@ export default function AdminUsersPage() {
   const formatDateDisplay = (dateString?: string | null) => {
     if (!dateString) return "N/A";
     try {
-        // Assuming dateString is "YYYY-MM-DD" or can be parsed by new Date()
         return format(new Date(dateString), "MMM d, yyyy");
     } catch (e) {
         return dateString; 
@@ -509,3 +510,4 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+
