@@ -1,7 +1,7 @@
 
 "use client";
 
-import *a React from "react";
+import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -32,7 +32,7 @@ interface UserDocument {
   displayName?: string;
   fullName?: string;
   employeeId?: string;
-  joiningDate?: string; // Store as YYYY-MM-DD string
+  joiningDate?: string; 
   lastLogin?: Timestamp;
   createdAt?: Timestamp;
 }
@@ -47,7 +47,7 @@ const manageUserFormSchema = z.object({
   displayName: z.string().min(2, "Display name must be at least 2 characters.").max(50),
   fullName: z.string().min(2, "Full name must be at least 2 characters.").max(100),
   employeeId: z.string().min(1, "Employee ID is required.").max(50).optional(),
-  joiningDate: z.string().optional(), // YYYY-MM-DD string from date input
+  joiningDate: z.string().optional(), 
   role: z.string().optional(), 
 })
 .refine((data) => {
@@ -61,8 +61,7 @@ const manageUserFormSchema = z.object({
   path: ["confirmPassword"],
 })
 .superRefine((data, ctx) => {
-    // In create mode (signified by presence of password), email, employeeId and fullName are required
-    if (data.password) { // Assuming password presence means create mode
+    if (data.password) { 
         if (!data.email || data.email.trim() === "") {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is required for new users.", path: ["email"]});
         }
@@ -144,7 +143,7 @@ export default function AdminUsersPage() {
         displayName: "",
         fullName: "",
         employeeId: "",
-        joiningDate: new Date().toISOString().split('T')[0], // Default to today
+        joiningDate: new Date().toISOString().split('T')[0], 
         role: "" 
     });
     setIsManageUserDialogOpen(true);
@@ -169,7 +168,6 @@ export default function AdminUsersPage() {
   const handleFormSubmit = async (data: ManageUserFormValues) => {
     setIsSubmitting(true);
     if (isCreateMode) {
-      // Validation should catch this, but as a safeguard:
       if (!data.email || !data.password || !data.employeeId || !data.fullName) {
         toast({ title: "Missing Fields", description: "Email, password, Employee ID, and Full Name are required for new users.", variant: "destructive"});
         setIsSubmitting(false);
@@ -202,7 +200,6 @@ export default function AdminUsersPage() {
         toast({ title: "Creation Failed", description: err.message || "Could not create user.", variant: "destructive" });
       }
     } else {
-      // Edit User
       if (!currentUserToManage) return;
       try {
         const userDocRef = doc(db, "users", currentUserToManage.uid);
@@ -215,9 +212,6 @@ export default function AdminUsersPage() {
         };
         
         await updateDoc(userDocRef, updates);
-        // Note: Firebase Auth displayName for *another* user cannot be updated directly by admin client-side.
-        // It's typically updated by the user themselves or server-side via Admin SDK.
-        // AuthProvider will pick up displayName from Firestore on next login if it's used as source of truth.
         toast({ title: "User Updated", description: `${currentUserToManage.email}'s information updated.` });
         fetchUsers();
         setIsManageUserDialogOpen(false);
@@ -234,8 +228,8 @@ export default function AdminUsersPage() {
       case "admin": return "destructive";
       case "purser": return "default";
       case "cabin crew": return "secondary";
-      case "instructor": return "default"; // Example, adjust as needed
-      case "pilote": return "default";     // Example, adjust as needed
+      case "instructor": return "default"; 
+      case "pilote": return "default";    
       case "other": return "outline";
       default: return "outline";
     }
@@ -246,7 +240,7 @@ export default function AdminUsersPage() {
     try {
         return format(new Date(dateString), "MMM d, yyyy");
     } catch (e) {
-        return dateString; // Fallback if parsing fails
+        return dateString; 
     }
   };
 
@@ -476,7 +470,7 @@ export default function AdminUsersPage() {
                             <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
                             </SelectContent>
                         </Select>
-                        <FormDescription>Optional. Assign a role or leave as default.</FormDescription>
+                        <FormDescription>Optional. Assign a role or leave as default for standard crew permissions.</FormDescription>
                         <FormMessage />
                         </FormItem>
                     )}
