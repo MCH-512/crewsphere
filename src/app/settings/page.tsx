@@ -8,22 +8,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { User, Bell, Shield, Palette, Loader2 } from "lucide-react";
+import { User, Bell, Shield, Palette, Loader2, InfoSquare, CalendarDays } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { updateProfile } from "firebase/auth";
+import { updateProfile as updateAuthProfile } from "firebase/auth"; // Renamed to avoid conflict
 import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { format } from "date-fns";
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  
   const [displayName, setDisplayName] = React.useState("");
+  const [fullName, setFullName] = React.useState("");
+  // employeeId and joiningDate are displayed from context, not directly editable by user here.
+  // If they were to be editable, they'd need their own state and handling.
+
   const [isUpdatingProfile, setIsUpdatingProfile] = React.useState(false);
 
   React.useEffect(() => {
-    if (user?.displayName) {
-      setDisplayName(user.displayName);
+    if (user) {
+      setDisplayName(user.displayName || "");
+      setFullName(user.fullName || "");
+      // employeeId and joiningDate will be read directly from user object for display
     }
   }, [user]);
 
@@ -36,21 +44,31 @@ export default function SettingsPage() {
       toast({ title: "Validation Error", description: "Display name must be at least 2 characters.", variant: "destructive" });
       return;
     }
+    if (fullName.trim().length < 2) {
+      toast({ title: "Validation Error", description: "Full name must be at least 2 characters.", variant: "destructive" });
+      return;
+    }
 
     setIsUpdatingProfile(true);
     try {
-      // Update Firebase Auth display name
-      await updateProfile(auth.currentUser, { displayName: displayName.trim() });
+      const updatesForFirestore: { displayName: string; fullName: string; [key: string]: any } = {
+        displayName: displayName.trim(),
+        fullName: fullName.trim(),
+      };
 
-      // Update Firestore display name
+      // Update Firebase Auth display name if it changed
+      if (displayName.trim() !== auth.currentUser.displayName) {
+        await updateAuthProfile(auth.currentUser, { displayName: displayName.trim() });
+      }
+
+      // Update Firestore document
       const userDocRef = doc(db, "users", user.uid);
-      await updateDoc(userDocRef, { displayName: displayName.trim() });
+      await updateDoc(userDocRef, updatesForFirestore);
 
-      toast({ title: "Profile Updated", description: "Your display name has been successfully updated." });
-      // The AuthContext will automatically pick up the change from onAuthStateChanged for the Firebase Auth object.
-      // To immediately reflect in the UI if not relying solely on AuthContext's refresh cycle for 'user.displayName':
-      // You might need to manually update the local user object in AuthContext or trigger a re-fetch.
-      // For simplicity, we'll rely on AuthContext's existing behavior.
+      toast({ title: "Profile Updated", description: "Your profile information has been successfully updated." });
+      // AuthContext should pick up displayName change from Firebase Auth.
+      // For fullName, AuthContext might need a refresh or a manual update if not re-fetching on every auth change.
+      // However, our AuthProvider now fetches full Firestore doc, so it should update on next state change.
     } catch (error: any) {
       console.error("Error updating profile:", error);
       toast({ title: "Update Failed", description: error.message || "Could not update your profile.", variant: "destructive" });
@@ -58,6 +76,20 @@ export default function SettingsPage() {
       setIsUpdatingProfile(false);
     }
   };
+  
+  const formatDateDisplay = (dateString?: string | null) => {
+    if (!dateString) return "N/A";
+    try {
+      // Assuming dateString is YYYY-MM-DD or a full ISO string
+      const dateObj = new Date(dateString);
+      // Check if date is valid. getTime() returns NaN for invalid dates.
+      if (isNaN(dateObj.getTime())) return "Invalid Date";
+      return format(dateObj, "PPP"); // e.g., Jul 28, 2024
+    } catch (e) {
+      return dateString; // Fallback to original string if formatting fails
+    }
+  };
+
 
   if (authLoading) {
     return (
@@ -68,9 +100,10 @@ export default function SettingsPage() {
   }
 
   if (!user) {
-    // This case should ideally be handled by AuthProvider redirecting to login
     return <p>Please log in to view settings.</p>;
   }
+
+  const isProfileChanged = displayName !== (user.displayName || "") || fullName !== (user.fullName || "");
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
@@ -89,26 +122,53 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="displayName">Display Name</Label>
               <Input 
-                id="fullName" 
+                id="displayName" 
                 value={displayName} 
                 onChange={(e) => setDisplayName(e.target.value)} 
                 disabled={isUpdatingProfile}
               />
+               <p className="text-xs text-muted-foreground mt-1">This name is shown publicly (e.g., in greetings).</p>
             </div>
             <div>
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input 
+                id="fullName" 
+                value={fullName} 
+                onChange={(e) => setFullName(e.target.value)} 
+                disabled={isUpdatingProfile}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Your full legal name.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div>
               <Label htmlFor="email">Email Address</Label>
               <Input id="email" type="email" value={user.email || ""} disabled />
               <p className="text-xs text-muted-foreground mt-1">Email address cannot be changed here.</p>
             </div>
+            <div>
+              <Label htmlFor="role">Role</Label>
+              <Input id="role" value={user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "Not Assigned"} disabled className="capitalize"/>
+              <p className="text-xs text-muted-foreground mt-1">Your assigned system role.</p>
+            </div>
           </div>
-          <div>
-            <Label htmlFor="employeeId">Employee ID</Label>
-            <Input id="employeeId" value={user.uid.substring(0,10).toUpperCase()} disabled /> 
-            <p className="text-xs text-muted-foreground mt-1">Your unique identifier (UID snippet shown).</p>
-          </div>
-          <Button onClick={handleProfileUpdate} disabled={isUpdatingProfile || displayName === (user.displayName || "")}>
+           <Separator />
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <Label htmlFor="employeeId" className="flex items-center gap-1"><InfoSquare className="w-3.5 h-3.5 text-muted-foreground"/> Employee ID</Label>
+                <Input id="employeeId" value={user.employeeId || "N/A"} disabled />
+                <p className="text-xs text-muted-foreground mt-1">Your unique company identifier.</p>
+            </div>
+            <div>
+                <Label htmlFor="joiningDate" className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5 text-muted-foreground"/> Joining Date</Label>
+                <Input id="joiningDate" value={formatDateDisplay(user.joiningDate)} disabled />
+                <p className="text-xs text-muted-foreground mt-1">The date you joined the company.</p>
+            </div>
+           </div>
+
+          <Button onClick={handleProfileUpdate} disabled={isUpdatingProfile || !isProfileChanged}>
             {isUpdatingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Update Profile
           </Button>
