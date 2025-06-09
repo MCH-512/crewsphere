@@ -4,7 +4,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BookOpen, BarChart3, ClipboardList, BellRing, Plane, PlusCircle, CheckSquare, Edit3, FileSignature, ClipboardCheck, AlertTriangle, MessageSquareWarning, Loader2, FileText as FileTextIcon } from "lucide-react";
+import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BarChart3, ClipboardList, BellRing, Plane, PlusCircle, CheckSquare, Edit3, FileSignature, ClipboardCheck, AlertTriangle, MessageSquareWarning, Loader2, FileText as FileTextIcon, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -98,7 +98,7 @@ export default function AdminConsolePage() {
             <div>
               <CardTitle className="text-2xl font-headline">Admin Console</CardTitle>
               <CardDescription>
-                Manage application settings, users, documents, courses, training, quizzes, user requests, purser reports, flights, alerts, and system health.
+                Manage application settings, users, documents, learning content, user requests, purser reports, flights, alerts, and system health.
               </CardDescription>
             </div>
           </CardHeader>
@@ -115,9 +115,11 @@ export default function AdminConsolePage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-3">View and manage user accounts, roles, and permissions.</p>
-                    <AdminButtonWithTooltip href="/admin/users" tooltipContent="Manage user accounts">
-                      Manage Users
-                    </AdminButtonWithTooltip>
+                    <div className="flex flex-wrap gap-2">
+                        <AdminButtonWithTooltip href="/admin/users" tooltipContent="Manage user accounts">
+                         <Users className="mr-2 h-4 w-4" /> Manage Users
+                        </AdminButtonWithTooltip>
+                    </div>
                   </CardContent>
                 </Card>
               </AnimatedCard>
@@ -159,64 +161,54 @@ export default function AdminConsolePage() {
                   </CardContent>
                 </Card>
               </AnimatedCard>
+              
               <AnimatedCard delay={0.25}>
                 <Card className="shadow-sm h-full">
                   <CardHeader className="flex flex-row items-center gap-3 pb-2">
-                    <BookOpen className="h-6 w-6 text-primary" />
-                    <CardTitle className="text-lg">Courses Management</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-3">Create, update, and organize training courses, modules, and learning materials.</p>
-                    <div className="flex flex-wrap gap-2">
-                        <AdminButtonWithTooltip href="/admin/courses/create" tooltipContent="Create a new course">
-                          <PlusCircle className="mr-2 h-4 w-4" />Create New Course
-                        </AdminButtonWithTooltip>
-                        <AdminButtonWithTooltip href="/admin/courses" tooltipContent="View all courses">
-                            <Eye className="mr-2 h-4 w-4" />View All Courses
-                        </AdminButtonWithTooltip>
-                    </div>
-                  </CardContent>
-                </Card>
-              </AnimatedCard>
-              <AnimatedCard delay={0.3}>
-                <Card className="shadow-sm h-full">
-                  <CardHeader className="flex flex-row items-center gap-3 pb-2">
                     <GraduationCap className="h-6 w-6 text-primary" />
-                    <CardTitle className="text-lg">Training Management</CardTitle>
+                    <CardTitle className="text-lg">Learning & Assessment Hub</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground mb-3">Assign training to users, track completion, and manage certifications.</p>
-                    <div className="flex flex-wrap gap-2">
-                        <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon. Use 'Courses Management' for now.">Assign Training</AdminButtonWithTooltip>
-                        <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon." >
-                            <BarChart3 className="mr-2 h-4 w-4" />View Progress
-                        </AdminButtonWithTooltip>
+                    <p className="text-sm text-muted-foreground mb-3">Manage courses, training assignments, quizzes, and track user progress.</p>
+                    
+                    <div className="space-y-3">
+                        <div>
+                            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-1.5">Courses</h4>
+                            <div className="flex flex-wrap gap-2">
+                                <AdminButtonWithTooltip href="/admin/courses/create" tooltipContent="Create a new course">
+                                  <BookOpen className="mr-2 h-4 w-4" />Create New Course
+                                </AdminButtonWithTooltip>
+                                <AdminButtonWithTooltip href="/admin/courses" tooltipContent="View all courses">
+                                    <Eye className="mr-2 h-4 w-4" />View All Courses
+                                </AdminButtonWithTooltip>
+                            </div>
+                        </div>
+                         <div>
+                            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-1.5">Training Assignments</h4>
+                            <div className="flex flex-wrap gap-2">
+                                <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon. Use 'Courses Management' for now.">Assign Training</AdminButtonWithTooltip>
+                                <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon." >
+                                    <BarChart3 className="mr-2 h-4 w-4" />View Progress
+                                </AdminButtonWithTooltip>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-1.5">Quizzes</h4>
+                            <div className="flex flex-wrap gap-2">
+                                <AdminButtonWithTooltip href="/admin/courses/create" tooltipContent="Define quiz details when creating a course.">
+                                    <PlusCircle className="mr-2 h-4 w-4" />Create New Quiz
+                                </AdminButtonWithTooltip>
+                                <AdminButtonWithTooltip href="/admin/quizzes" tooltipContent="View all defined quizzes. Question bank management coming soon.">
+                                    <Edit3 className="mr-2 h-4 w-4" />View All Quizzes
+                                </AdminButtonWithTooltip>
+                            </div>
+                        </div>
                     </div>
                   </CardContent>
                 </Card>
               </AnimatedCard>
-              <AnimatedCard delay={0.35}>
-                 <Card className="shadow-sm h-full">
-                  <CardHeader className="flex flex-row items-center gap-3 pb-2">
-                    <CheckSquare className="h-6 w-6 text-primary" />
-                    <CardTitle className="text-lg">Quizzes Management</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Create, edit, and manage quizzes, question banks, and review assessment results.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        <AdminButtonWithTooltip href="/admin/courses/create" tooltipContent="Define quiz details when creating a course.">
-                            <PlusCircle className="mr-2 h-4 w-4" />Create New Quiz
-                        </AdminButtonWithTooltip>
-                        <AdminButtonWithTooltip href="/admin/quizzes" tooltipContent="View all defined quizzes. Question bank management coming soon.">
-                            <Edit3 className="mr-2 h-4 w-4" />View All Quizzes
-                        </AdminButtonWithTooltip>
-                    </div>
-                  </CardContent>
-                </Card>
-              </AnimatedCard>
-              <AnimatedCard delay={0.4}>
+
+              <AnimatedCard delay={0.3}>
                  <Card className="shadow-sm h-full">
                   <CardHeader className="flex flex-row items-center gap-3 pb-2">
                     <ClipboardList className="h-6 w-6 text-primary" />
@@ -244,7 +236,7 @@ export default function AdminConsolePage() {
                   </CardContent>
                 </Card>
               </AnimatedCard>
-              <AnimatedCard delay={0.45}>
+              <AnimatedCard delay={0.35}>
                  <Card className="shadow-sm h-full">
                   <CardHeader className="flex flex-row items-center gap-3 pb-2">
                     <ClipboardCheck className="h-6 w-6 text-primary" />
@@ -265,7 +257,7 @@ export default function AdminConsolePage() {
                   </CardContent>
                 </Card>
               </AnimatedCard>
-              <AnimatedCard delay={0.5}>
+              <AnimatedCard delay={0.4}>
                 <Card className="shadow-sm h-full">
                   <CardHeader className="flex flex-row items-center gap-3 pb-2">
                     <Plane className="h-6 w-6 text-primary" />
@@ -286,7 +278,7 @@ export default function AdminConsolePage() {
                   </CardContent>
                 </Card>
               </AnimatedCard>
-              <AnimatedCard delay={0.55}>
+              <AnimatedCard delay={0.45}>
                 <Card className="shadow-sm h-full">
                   <CardHeader className="flex flex-row items-center gap-3 pb-2">
                     <Settings className="h-6 w-6 text-primary" />
@@ -294,11 +286,13 @@ export default function AdminConsolePage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-3">Configure application-wide settings and integrations.</p>
-                    <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon">Configure Settings</AdminButtonWithTooltip>
+                    <div className="flex flex-wrap gap-2">
+                        <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon">Configure Settings</AdminButtonWithTooltip>
+                    </div>
                   </CardContent>
                 </Card>
               </AnimatedCard>
-              <AnimatedCard delay={0.6}>
+              <AnimatedCard delay={0.5}>
                 <Card className="shadow-sm h-full">
                   <CardHeader className="flex flex-row items-center gap-3 pb-2">
                     <Activity className="h-6 w-6 text-primary" />
@@ -306,7 +300,9 @@ export default function AdminConsolePage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-3">Review system activity, changes, and important events.</p>
-                     <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon">View Logs</AdminButtonWithTooltip>
+                     <div className="flex flex-wrap gap-2">
+                        <AdminButtonWithTooltip disabled tooltipContent="Feature coming soon">View Logs</AdminButtonWithTooltip>
+                     </div>
                   </CardContent>
                 </Card>
               </AnimatedCard>
