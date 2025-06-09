@@ -48,6 +48,15 @@ const courseCategories = [
   "Aircraft Type Rating",
   "Fatigue Risk Management System (FRMS)",
   "Flight Time Limitations (FTL)",
+  "Civil Aviation Security (AVSEC)",
+  "Etiquette and Personal Development",
+  "Cabin Crew Instructor Training",
+  "Cabin Senior (Purser) Training",
+  "Brand & Grooming",
+  "Onboard Service",
+  "Premium Service & Customer Relationship",
+  "Drills Briefing",
+  "General Knowledge",
 ];
 
 const courseTypes = [
@@ -504,7 +513,7 @@ export default function EditComprehensiveCoursePage() {
                 <div className="mt-6">
                     <h3 className="text-lg font-medium mb-2">Certificate Preview (Simplified):</h3>
                     <div className="border-2 border-dashed border-primary p-6 rounded-lg bg-secondary/30 aspect-[8.5/5.5] max-w-md mx-auto flex flex-col items-center justify-around" data-ai-hint="certificate award">
-                        <Image src={watchedFormValues.certificateLogoUrl || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4" data-ai-hint={watchedFormValues.imageHint || "company logo"}/>
+                        <Image src={watchedFormValues.certificateLogoUrl || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4" data-ai-hint="company logo"/>
                         <h4 className="text-2xl font-bold text-center text-primary">Certificate of Completion</h4>
                         <p className="text-sm text-center my-2">This certifies that</p>
                         <p className="text-xl font-semibold text-center">[User Name Placeholder]</p>
