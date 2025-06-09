@@ -4,7 +4,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { badgeVariants } from "@/components/ui/badge"; // Ensure badgeVariants is imported
+import { badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,18 +15,22 @@ import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc } from "
 import { useRouter } from "next/navigation";
 import { Users, Loader2, AlertTriangle, RefreshCw, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils"; // Ensure cn is imported
+import { cn } from "@/lib/utils";
+import type { VariantProps } from "class-variance-authority";
+
+type SpecificRole = 'admin' | 'purser' | 'crew';
 
 interface UserDocument {
-  uid: string; 
-  email?: string; 
-  role?: 'admin' | 'purser' | 'crew' | string; 
-  displayName?: string; 
-  lastLogin?: Timestamp; 
-  createdAt?: Timestamp; 
+  uid: string;
+  email?: string;
+  role?: SpecificRole; // Changed from 'admin' | 'purser' | 'crew' | string;
+  displayName?: string;
+  lastLogin?: Timestamp;
+  createdAt?: Timestamp;
 }
 
-const availableRoles: UserDocument['role'][] = ['admin', 'purser', 'crew'];
+const availableRoles: SpecificRole[] = ['admin', 'purser', 'crew'];
+const NO_ROLE_SENTINEL = "_NONE_"; // Sentinel value for "no role" option
 
 export default function AdminUsersPage() {
   const { user, loading: authLoading } = useAuth();
@@ -38,7 +42,7 @@ export default function AdminUsersPage() {
 
   const [selectedUserForEdit, setSelectedUserForEdit] = React.useState<UserDocument | null>(null);
   const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = React.useState(false);
-  const [newRole, setNewRole] = React.useState<UserDocument['role'] | "">("");
+  const [newRole, setNewRole] = React.useState<SpecificRole | "">(""); // "" represents no role or default
   const [isUpdatingRole, setIsUpdatingRole] = React.useState(false);
 
   const fetchUsers = React.useCallback(async () => {
@@ -64,7 +68,7 @@ export default function AdminUsersPage() {
   React.useEffect(() => {
     if (!authLoading) {
       if (!user || user.role !== 'admin') {
-        router.push('/'); 
+        router.push('/');
       } else {
         fetchUsers();
       }
@@ -73,21 +77,26 @@ export default function AdminUsersPage() {
 
   const handleOpenEditRoleDialog = (userToEdit: UserDocument) => {
     setSelectedUserForEdit(userToEdit);
-    setNewRole(userToEdit.role || ""); // Pre-fill with current role
+    setNewRole(userToEdit.role || ""); // Pre-fill with current role, or "" if no role
     setIsEditRoleDialogOpen(true);
   };
 
   const handleRoleUpdate = async () => {
-    if (!selectedUserForEdit || !newRole || newRole === selectedUserForEdit.role) {
-      toast({ title: "No Change", description: "Role is the same or not selected.", variant: "default" });
+    if (!selectedUserForEdit) return;
+    // Allow newRole to be "" (empty string) to signify removal of specific role
+    if (newRole === (selectedUserForEdit.role || "")) {
+      toast({ title: "No Change", description: "Role is the same.", variant: "default" });
       setIsEditRoleDialogOpen(false);
       return;
     }
+
     setIsUpdatingRole(true);
     try {
       const userDocRef = doc(db, "users", selectedUserForEdit.uid);
+      // If newRole is "", Firestore will store an empty string.
+      // AuthProvider interprets an empty string role as undefined (no specific role).
       await updateDoc(userDocRef, { role: newRole });
-      toast({ title: "Role Updated", description: `${selectedUserForEdit.email}'s role changed to ${newRole}.` });
+      toast({ title: "Role Updated", description: `${selectedUserForEdit.email}'s role changed to ${newRole || 'Default/None'}.` });
       fetchUsers(); // Re-fetch to update the table
       setIsEditRoleDialogOpen(false);
     } catch (err) {
@@ -115,7 +124,7 @@ export default function AdminUsersPage() {
       </div>
     );
   }
-  
+
   if (!user || user.role !== 'admin') {
      return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
@@ -207,18 +216,20 @@ export default function AdminUsersPage() {
             <div className="py-4 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="role-select">New Role</Label>
-                <Select 
-                  value={newRole || ""}
-                  onValueChange={(value) => setNewRole(value as UserDocument['role'])}
+                <Select
+                  value={newRole} // newRole can be "", which is fine for Select value prop
+                  onValueChange={(value) => {
+                    setNewRole(value === NO_ROLE_SENTINEL ? "" : value as SpecificRole);
+                  }}
                 >
                   <SelectTrigger id="role-select">
                     <SelectValue placeholder="Select new role" />
                   </SelectTrigger>
                   <SelectContent>
                     {availableRoles.map(role => (
-                       <SelectItem key={role} value={role!} className="capitalize">{role}</SelectItem>
+                       <SelectItem key={role} value={role} className="capitalize">{role}</SelectItem>
                     ))}
-                    <SelectItem value=""><em>(Remove Role / Default)</em></SelectItem>
+                    <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -227,7 +238,7 @@ export default function AdminUsersPage() {
               <DialogClose asChild>
                 <Button variant="outline">Cancel</Button>
               </DialogClose>
-              <Button onClick={handleRoleUpdate} disabled={isUpdatingRole || !newRole || newRole === selectedUserForEdit.role}>
+              <Button onClick={handleRoleUpdate} disabled={isUpdatingRole || newRole === (selectedUserForEdit.role || "")}>
                 {isUpdatingRole && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Role
               </Button>
