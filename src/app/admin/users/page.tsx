@@ -1,6 +1,6 @@
 "use client";
 
-import *a React from "react";
+import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -127,7 +127,7 @@ export default function AdminUsersPage() {
         password: "",
         confirmPassword: "",
         displayName: "",
-        role: "" 
+        role: ""
     });
     setIsManageUserDialogOpen(true);
   };
@@ -184,7 +184,7 @@ export default function AdminUsersPage() {
         const userDocRef = doc(db, "users", currentUserToManage.uid);
         const updates: Partial<UserDocument> = {
             displayName: data.displayName,
-            role: data.role === NO_ROLE_SENTINEL ? "" : (data.role as SpecificRole | undefined || undefined) // Handle empty string or undefined
+            role: data.role === NO_ROLE_SENTINEL ? undefined : (data.role as SpecificRole | undefined || undefined) // Handle empty string or undefined
         };
         
         // Update Firestore
@@ -380,9 +380,9 @@ export default function AdminUsersPage() {
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Role</FormLabel>
-                        <Select 
-                            onValueChange={(value) => field.onChange(value === NO_ROLE_SENTINEL ? "" : value)} 
-                            value={field.value === "" ? NO_ROLE_SENTINEL : field.value}
+                        <Select
+                            onValueChange={(value) => field.onChange(value === NO_ROLE_SENTINEL ? "" : value)}
+                            value={field.value === "" ? NO_ROLE_SENTINEL : (field.value || NO_ROLE_SENTINEL)}
                         >
                             <FormControl>
                             <SelectTrigger>
