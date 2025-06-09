@@ -13,13 +13,6 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, doc, getDoc, Timestamp } from "firebase/firestore";
 
-interface ModuleData {
-  moduleCode?: string;
-  moduleTitle: string;
-  moduleObjectives: string;
-  durationMinutes: number;
-}
-
 interface CourseData {
   id: string; 
   title: string;
@@ -27,11 +20,12 @@ interface CourseData {
   category: string;
   imageHint: string;
   quizId: string;
-  quizTitle: string; 
+  quizTitle?: string; // Made optional, will ensure it's fetched if needed
   mandatory: boolean;
-  modules?: ModuleData[];
+  modules?: { moduleTitle: string; durationMinutes: number }[];
   duration?: string; 
   fileURL?: string; 
+  certificateRuleId?: string; // Added to fetch certificate rules
 }
 
 interface UserProgressData {
@@ -45,6 +39,8 @@ interface UserProgressData {
     certificateId: string;
     issuedDate: string; 
     expiryDate?: string; 
+    logoURL?: string;
+    signatureTextOrURL?: string;
   };
   lastUpdated: Timestamp;
 }
@@ -75,8 +71,7 @@ export default function CertificatesPage() {
       const progressQuery = query(
         collection(db, "userTrainingProgress"), 
         where("userId", "==", user.uid),
-        where("quizStatus", "==", "Passed"),
-        // We cannot directly query for existence of certificateDetails, so we filter client-side later
+        where("quizStatus", "==", "Passed")
       );
       const progressSnapshot = await getDocs(progressQuery);
       
@@ -84,33 +79,60 @@ export default function CertificatesPage() {
 
       for (const progressDoc of progressSnapshot.docs) {
         const progressData = progressDoc.data() as UserProgressData;
-        if (!progressData.certificateDetails) continue; // Skip if no certificate details
+        
+        if (!progressData.certificateDetails || !progressData.certificateDetails.certificateId) {
+          continue; 
+        }
 
         const courseDocRef = doc(db, "courses", progressData.courseId);
         const courseDocSnap = await getDoc(courseDocRef);
 
         if (courseDocSnap.exists()) {
-          const courseData = courseDocSnap.data() as Omit<CourseData, 'id'>;
-           if (!courseData.quizTitle && courseData.quizId) {
-                const quizDocRef = doc(db, "quizzes", courseData.quizId);
+          const courseDataFromDb = courseDocSnap.data() as Omit<CourseData, 'id' | 'quizTitle'>;
+          let currentQuizTitle = courseDataFromDb.quizTitle; 
+           if (!currentQuizTitle && courseDataFromDb.quizId) { 
+                const quizDocRef = doc(db, "quizzes", courseDataFromDb.quizId);
                 const quizSnap = await getDoc(quizDocRef);
                 if (quizSnap.exists()) {
-                    courseData.quizTitle = quizSnap.data()?.title || "Course Quiz";
+                    currentQuizTitle = quizSnap.data()?.title || "Course Quiz";
                 } else {
-                    courseData.quizTitle = "Course Quiz";
+                    currentQuizTitle = "Course Quiz"; 
                 }
-            } else if (!courseData.quizTitle) {
-                courseData.quizTitle = "Course Quiz"; // Fallback
+            } else if (!currentQuizTitle) {
+                currentQuizTitle = "Course Quiz"; 
             }
+            
+            let finalProgressData = { ...progressData };
+            // Ensure certificateDetails exists before trying to augment it
+            if (finalProgressData.certificateDetails) {
+                if (courseDataFromDb.certificateRuleId) {
+                    const certRuleRef = doc(db, "certificateRules", courseDataFromDb.certificateRuleId);
+                    try {
+                        const certRuleSnap = await getDoc(certRuleRef);
+                        if (certRuleSnap.exists()) {
+                            finalProgressData.certificateDetails.logoURL = certRuleSnap.data()?.logoURL || "https://placehold.co/150x50.png";
+                            finalProgressData.certificateDetails.signatureTextOrURL = certRuleSnap.data()?.signatureTextOrURL || "Express Airline Training Department";
+                            // Provider might also come from here if design changes
+                        }
+                    } catch (e) { console.error("Error fetching cert rule for certificate display", e); }
+                }
+                // Fallbacks if not set from certRule
+                finalProgressData.certificateDetails.logoURL = finalProgressData.certificateDetails.logoURL || "https://placehold.co/150x50.png";
+                finalProgressData.certificateDetails.signatureTextOrURL = finalProgressData.certificateDetails.signatureTextOrURL || "Express Airline Training Department";
+            }
+
 
           fetchedCertifiedCourses.push({ 
             id: courseDocSnap.id,
-            ...courseData, 
-            progress: progressData 
+            ...courseDataFromDb,
+            quizTitle: currentQuizTitle, 
+            progress: finalProgressData 
           });
         }
       }
-      setCertifiedCourses(fetchedCertifiedCourses.sort((a,b) => new Date(b.progress.certificateDetails!.issuedDate).getTime() - new Date(a.progress.certificateDetails!.issuedDate).getTime()));
+      setCertifiedCourses(fetchedCertifiedCourses.sort((a,b) => 
+        new Date(b.progress.certificateDetails!.issuedDate).getTime() - new Date(a.progress.certificateDetails!.issuedDate).getTime()
+      ));
     } catch (err) {
       console.error("Error fetching certificates:", err);
       setLoadingError("Failed to load your certificates. Please try again.");
@@ -213,7 +235,7 @@ export default function CertificatesPage() {
             ))}
           </div>
         ) : (
-           <Card className="text-muted-foreground p-6 text-center">
+           <Card className="text-muted-foreground p-6 text-center shadow-md">
             <Award className="mx-auto h-12 w-12 text-primary mb-4" />
             <p className="font-semibold">No certificates earned yet.</p>
             <p className="text-sm">Complete courses and pass their quizzes to earn certificates. Check the "Training Hub" or "Course Library".</p>
@@ -232,17 +254,23 @@ export default function CertificatesPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="mx-auto my-4">
-                  <Image src="https://placehold.co/500x350.png" alt="Certificate Preview" width={500} height={350} className="rounded-md border" data-ai-hint="official certificate document award"/>
+                  <Image src={selectedCourseForCert.progress?.certificateDetails?.logoURL || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4 mx-auto" data-ai-hint="company logo airline"/>
+                   <div className="border-2 border-dashed border-primary p-6 rounded-lg bg-secondary/30 aspect-[8.5/5.5] w-full max-w-md flex flex-col items-center justify-around text-center" data-ai-hint="certificate award">
+                        <h4 className="text-2xl font-bold text-primary">Certificate of Completion</h4>
+                        <p className="text-sm my-2">This certifies that</p>
+                        <p className="text-xl font-semibold">{user?.displayName || user?.email || "Crew Member"}</p>
+                        <p className="text-sm my-2">has successfully completed the course</p>
+                        <p className="text-lg font-medium">&quot;{selectedCourseForCert?.title}&quot;</p>
+                        <p className="text-xs mt-3">Date of Completion: {selectedCourseForCert?.progress?.certificateDetails?.issuedDate ? new Date(selectedCourseForCert.progress.certificateDetails.issuedDate).toLocaleDateString() : 'N/A'}</p>
+                        <p className="text-xs mt-1">Certificate ID: {selectedCourseForCert?.progress?.certificateDetails?.certificateId}</p>
+                         {selectedCourseForCert?.progress?.certificateDetails?.expiryDate && <p className="text-xs mt-1">Valid Until: {new Date(selectedCourseForCert.progress.certificateDetails.expiryDate).toLocaleDateString()}</p>}
+                        <p className="text-xs mt-3">Issued by: {selectedCourseForCert?.progress?.certificateDetails?.provider}</p>
+                        <p className="text-xs mt-3">Signature: {selectedCourseForCert?.progress?.certificateDetails?.signatureTextOrURL || "Express Airline Training Department"}</p>
+                    </div>
                 </div>
-                <div className="space-y-1 text-sm">
-                  <p><strong>Issued to:</strong> {user?.displayName || user?.email || "Demo User"}</p>
-                  <p><strong>Training Program:</strong> {selectedCourseForCert?.title}</p>
-                  <p><strong>Certificate ID:</strong> {selectedCourseForCert?.progress?.certificateDetails?.certificateId}</p>
-                  <p><strong>Date Issued:</strong> {selectedCourseForCert?.progress?.certificateDetails?.issuedDate ? new Date(selectedCourseForCert.progress.certificateDetails.issuedDate).toLocaleDateString() : 'N/A'}</p>
-                  <p><strong>Issuing Body:</strong> {selectedCourseForCert?.progress?.certificateDetails?.provider}</p>
-                  {selectedCourseForCert?.progress?.certificateDetails?.expiryDate && <p><strong>Valid Until:</strong> {new Date(selectedCourseForCert.progress.certificateDetails.expiryDate).toLocaleDateString()}</p>}
-                   <p className="font-semibold mt-2">Achieved Score: {selectedCourseForCert?.progress?.quizScore}%</p>
-                   {selectedCourseForCert?.mandatory && <p className="font-semibold text-destructive mt-1">This was a mandatory training.</p>}
+                <div className="space-y-1 text-sm mt-4">
+                   <p className="font-semibold text-center">Achieved Score: {selectedCourseForCert?.progress?.quizScore}%</p>
+                   {selectedCourseForCert?.mandatory && <p className="font-semibold text-destructive text-center mt-1">This was a mandatory training.</p>}
                 </div>
               </div>
               <DialogFooter>

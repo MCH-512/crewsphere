@@ -19,8 +19,8 @@ interface CourseForQuiz {
   description: string; 
   category: string; 
   imageHint: string;
-  quizId: string; // ID of the quiz document in 'quizzes' collection
-  quizTitle: string; // Title of the quiz itself
+  quizId: string; 
+  quizTitle: string; 
   mandatory: boolean;
 }
 
@@ -55,37 +55,33 @@ export default function QuizzesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Query courses that have a quizId, indicating they have an associated quiz
+      // Fetch all courses that have a quizId
       const coursesQuery = query(collection(db, "courses"), where("quizId", "!=", null), orderBy("title"));
       const coursesSnapshot = await getDocs(coursesQuery);
       
-      const fetchedCoursesWithQuiz: CourseForQuiz[] = [];
-      for (const courseDoc of coursesSnapshot.docs) {
-        const courseData = courseDoc.data();
-        if (courseData.quizId) { // Ensure quizId exists
-            let currentQuizTitle = "Course Quiz"; // Default
-            const quizSnap = await getDoc(doc(db, "quizzes", courseData.quizId));
-            if(quizSnap.exists()) {
-                currentQuizTitle = quizSnap.data()?.title || "Course Quiz";
-            }
-
-            fetchedCoursesWithQuiz.push({
-                id: courseDoc.id,
-                title: courseData.title,
-                description: courseData.description,
-                category: courseData.category,
-                imageHint: courseData.imageHint,
-                quizId: courseData.quizId,
-                quizTitle: currentQuizTitle,
-                mandatory: courseData.mandatory || false,
-            } as CourseForQuiz);
-        }
-      }
-
-
       const combinedQuizItems: CombinedQuizItem[] = [];
 
-      for (const course of fetchedCoursesWithQuiz) {
+      for (const courseDoc of coursesSnapshot.docs) {
+        const courseData = courseDoc.data();
+        if (!courseData.quizId) continue;
+
+        let currentQuizTitle = "Course Quiz";
+        const quizSnap = await getDoc(doc(db, "quizzes", courseData.quizId));
+        if(quizSnap.exists()) {
+            currentQuizTitle = quizSnap.data()?.title || "Course Quiz";
+        }
+
+        const course: CourseForQuiz = {
+            id: courseDoc.id,
+            title: courseData.title,
+            description: courseData.description,
+            category: courseData.category,
+            imageHint: courseData.imageHint,
+            quizId: courseData.quizId,
+            quizTitle: currentQuizTitle,
+            mandatory: courseData.mandatory || false,
+        };
+
         const progressDocId = `${user.uid}_${course.id}`;
         const progressDocRef = doc(db, "userTrainingProgress", progressDocId);
         const progressSnap = await getDoc(progressDocRef);
@@ -103,49 +99,56 @@ export default function QuizzesPage() {
           };
         }
 
-        let statusLabel = "Not Started";
-        let actionLabel = "Start Quiz";
-        let ActionIcon: React.ElementType = PlayCircle;
-        let actionDisabled = false;
-        let actionLink: string | undefined = undefined;
+        // Only add quiz to this page if content is completed OR quiz has been attempted/failed (but not yet passed)
+        // Or if it's passed, we can show a link to review via certificates.
+        if (userProgress.contentStatus === 'Completed' || 
+            userProgress.quizStatus === 'Attempted' || 
+            userProgress.quizStatus === 'Failed' ||
+            userProgress.quizStatus === 'Passed' // Include passed to show "Review" option
+        ) {
+            let statusLabel = "Not Started";
+            let actionLabel = "Start Quiz";
+            let ActionIcon: React.ElementType = PlayCircle;
+            let actionDisabled = false;
+            let actionLink: string | undefined = undefined;
 
-
-        if (userProgress.contentStatus !== 'Completed') {
-            statusLabel = userProgress.contentStatus === 'NotStarted' ? "Course Not Started" : "Course In Progress";
-            actionLabel = "Complete Course First";
-            ActionIcon = BookOpen;
-            actionLink = "/training"; // Link to general training page
-            actionDisabled = false; // Button becomes a link to training
-        } else { 
-            if (userProgress.quizStatus === 'Passed') {
-                statusLabel = `Passed (Score: ${userProgress.quizScore}%)`;
-                actionLabel = "Review Quiz"; 
-                ActionIcon = CheckCircle;
-                actionDisabled = true; // Placeholder for review, which isn't implemented
-            } else if (userProgress.quizStatus === 'Failed') {
-                statusLabel = `Failed (Score: ${userProgress.quizScore}%)`;
-                actionLabel = "Retake Quiz";
-                ActionIcon = PlayCircle;
-                // Link to /training to simulate retake via course action
-                actionLink = `/training`;
-            } else { // NotTaken or Attempted but not Passed/Failed (e.g. if interrupted)
-                statusLabel = "Ready for Quiz";
-                actionLabel = "Start Quiz";
-                ActionIcon = Zap;
-                // Link to /training to simulate start via course action
-                actionLink = `/training`; 
+            if (userProgress.contentStatus !== 'Completed') {
+                // This case should ideally be filtered out before this point if we only show quizzes for completed content
+                // But as a fallback:
+                statusLabel = userProgress.contentStatus === 'NotStarted' ? "Course Not Started" : "Course In Progress";
+                actionLabel = "Complete Course First";
+                ActionIcon = BookOpen;
+                actionLink = "/training"; 
+            } else { 
+                if (userProgress.quizStatus === 'Passed') {
+                    statusLabel = `Passed (Score: ${userProgress.quizScore}%)`;
+                    actionLabel = "Review (Via Certificates)"; 
+                    ActionIcon = CheckCircle;
+                    actionDisabled = false; 
+                    actionLink = "/certificates"; // Link to certificates to review the achieved certificate
+                } else if (userProgress.quizStatus === 'Failed') {
+                    statusLabel = `Failed (Score: ${userProgress.quizScore}%)`;
+                    actionLabel = "Retake Quiz";
+                    ActionIcon = PlayCircle;
+                    actionLink = `/training`; // User retakes via the training page flow
+                } else { // NotTaken or Attempted but not Passed/Failed
+                    statusLabel = "Ready for Quiz";
+                    actionLabel = "Start Quiz";
+                    ActionIcon = Zap;
+                    actionLink = `/training`; // User starts quiz via the training page flow
+                }
             }
+            
+            combinedQuizItems.push({
+              ...course,
+              userProgress,
+              statusLabel,
+              actionLabel,
+              ActionIcon,
+              actionDisabled, // actionDisabled being false means it's a link or an active button
+              actionLink, 
+            });
         }
-        
-        combinedQuizItems.push({
-          ...course,
-          userProgress,
-          statusLabel,
-          actionLabel,
-          ActionIcon,
-          actionDisabled,
-          actionLink, 
-        });
       }
       setQuizzes(combinedQuizItems);
     } catch (err) {
@@ -165,14 +168,14 @@ export default function QuizzesPage() {
 
   const handleQuizAction = (quizItem: CombinedQuizItem) => {
     if (quizItem.actionLink) {
-        // If it's a link (e.g., "Complete Course First" or "Retake/Start Quiz" via training page)
+        // If it's a link (e.g., "Complete Course First" or "Retake/Start Quiz" via training page or "Review via Certificates")
         window.location.href = quizItem.actionLink; 
         return;
     }
-    // For actions that don't navigate (like "Review Quiz" which is disabled or future actual quiz taking)
+    // This part should ideally not be reached if actionLink covers all scenarios
     toast({
       title: `Quiz Action: ${quizItem.quizTitle}`,
-      description: "This quiz interaction is currently simulated or linked through the Training Hub. Full quiz-taking or review functionality within this page is coming soon!",
+      description: "This quiz interaction is currently simulated or linked through other pages. Full quiz-taking or review functionality within this page is coming soon!",
     });
   };
 
@@ -217,15 +220,15 @@ export default function QuizzesPage() {
         <CardHeader className="flex flex-row items-start gap-4">
           <ListChecks className="h-8 w-8 text-primary mt-1" />
           <div>
-            <CardTitle className="text-2xl font-headline">Quizzes</CardTitle>
+            <CardTitle className="text-2xl font-headline">My Quizzes</CardTitle>
             <CardDescription>
-              Test your knowledge and stay sharp with our interactive quizzes. Select a quiz below to get started.
+              Access quizzes for courses where you've completed the content, or retake quizzes you haven't passed.
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            Regularly completing quizzes helps reinforce critical knowledge and procedures. Course content must be completed before taking a quiz.
+            Test your knowledge and stay sharp. Complete course content via the Training Hub or Course Library to unlock quizzes.
           </p>
         </CardContent>
       </Card>
@@ -233,8 +236,8 @@ export default function QuizzesPage() {
       {quizzes.length === 0 && !isLoading && (
          <Card className="text-muted-foreground p-6 text-center shadow-md">
             <ListChecks className="mx-auto h-12 w-12 text-primary mb-4" />
-            <p className="font-semibold">No quizzes available at the moment.</p>
-            <p className="text-sm">Please check back later, or ensure courses are added and content is completed via the Training Hub.</p>
+            <p className="font-semibold">No quizzes currently available for you.</p>
+            <p className="text-sm">Complete course content in the <Link href="/training" className="text-primary hover:underline">Training Hub</Link> or <Link href="/courses" className="text-primary hover:underline">Course Library</Link> to access quizzes. If you've passed a quiz, find your certificate on the <Link href="/certificates" className="text-primary hover:underline">My Certificates</Link> page.</p>
           </Card>
       )}
 
@@ -301,7 +304,7 @@ export default function QuizzesPage() {
               <li>Stay current with evolving standards and regulations.</li>
               <li>Prepare for formal assessments and evaluations.</li>
             </ul>
-            <p className="font-semibold">Complete course content via the Training Hub to unlock quizzes. New quizzes are added regularly!</p>
+            <p className="font-semibold">Complete course content via the Training Hub or Course Library to unlock quizzes. New quizzes are added regularly!</p>
         </CardContent>
       </Card>
     </div>

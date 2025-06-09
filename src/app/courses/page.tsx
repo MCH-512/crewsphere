@@ -34,6 +34,7 @@ interface CourseData {
   modules?: ModuleData[];
   duration?: string; 
   fileURL?: string; 
+  certificateRuleId?: string; // Ensure this is part of CourseData
 }
 
 interface UserProgressData {
@@ -47,6 +48,8 @@ interface UserProgressData {
     certificateId: string;
     issuedDate: string; 
     expiryDate?: string; 
+    logoURL?: string;
+    signatureTextOrURL?: string;
   };
   lastUpdated: Timestamp;
 }
@@ -103,19 +106,20 @@ export default function CoursesLibraryPage() {
           };
         }
         
-        if (!courseData.quizTitle && courseData.quizId) {
+        let currentQuizTitle = courseData.quizTitle;
+        if (!currentQuizTitle && courseData.quizId) {
             const quizDocRef = doc(db, "quizzes", courseData.quizId);
             const quizSnap = await getDoc(quizDocRef);
             if (quizSnap.exists()) {
-                courseData.quizTitle = quizSnap.data()?.title || "Course Quiz";
+                currentQuizTitle = quizSnap.data()?.title || "Course Quiz";
             } else {
-                courseData.quizTitle = "Course Quiz";
+                currentQuizTitle = "Course Quiz";
             }
-        } else if (!courseData.quizTitle) {
-            courseData.quizTitle = "Course Quiz"; 
+        } else if (!currentQuizTitle) {
+            currentQuizTitle = "Course Quiz"; 
         }
 
-        combinedCoursesWithProgress.push({ ...courseData, progress: userProgress });
+        combinedCoursesWithProgress.push({ ...courseData, quizTitle: currentQuizTitle, progress: userProgress });
       }
       setAllCourses(combinedCoursesWithProgress);
     } catch (err) {
@@ -140,8 +144,27 @@ export default function CoursesLibraryPage() {
     const course = allCourses.find(c => c.id === courseId);
     if (!course) return;
 
-    if (course.progress?.quizStatus === 'Passed') {
-        setSelectedCourseForCert(course);
+    if (course.progress?.quizStatus === 'Passed' && course.progress?.certificateDetails) {
+        let finalProgressData = { ...course.progress }; // Clone to modify for dialog
+        
+        if (finalProgressData.certificateDetails && course.certificateRuleId) {
+            const certRuleRef = doc(db, "certificateRules", course.certificateRuleId);
+            try {
+                const certRuleSnap = await getDoc(certRuleRef);
+                if (certRuleSnap.exists()) {
+                    finalProgressData.certificateDetails.logoURL = certRuleSnap.data()?.logoURL || "https://placehold.co/150x50.png";
+                    finalProgressData.certificateDetails.signatureTextOrURL = certRuleSnap.data()?.signatureTextOrURL || "Express Airline Training Department";
+                }
+            } catch (e) { console.error("Error fetching cert rule details for dialog", e); }
+        }
+         // Fallbacks if not set from certRule or ruleId missing
+        if(finalProgressData.certificateDetails){
+            finalProgressData.certificateDetails.logoURL = finalProgressData.certificateDetails.logoURL || "https://placehold.co/150x50.png";
+            finalProgressData.certificateDetails.signatureTextOrURL = finalProgressData.certificateDetails.signatureTextOrURL || "Express Airline Training Department";
+        }
+
+
+        setSelectedCourseForCert({...course, progress: finalProgressData }); // Use the augmented progress data
         setIsCertDialogOpen(true);
     } else if (course.progress?.contentStatus !== 'Completed') {
         setSelectedCourseForContent(course);
@@ -193,16 +216,22 @@ export default function CoursesLibraryPage() {
     const score = passed ? Math.floor(Math.random() * 21) + 80 : Math.floor(Math.random() * 40) + 40; 
 
     let expiryDurationDays = 365; 
-    const courseDocRef = doc(db, "courses", course.id);
-    const courseSnap = await getDoc(courseDocRef);
-    if (courseSnap.exists() && courseSnap.data().certificateRuleId) {
+    let logoURL, signatureTextOrURL, provider;
+
+    if (course.certificateRuleId) {
         try {
-            const ruleSnap = await getDoc(doc(db, "certificateRules", courseSnap.data().certificateRuleId));
+            const ruleSnap = await getDoc(doc(db, "certificateRules", course.certificateRuleId));
             if (ruleSnap.exists()) {
-                 expiryDurationDays = ruleSnap.data().expiryDurationDays || 365;
+                 const ruleData = ruleSnap.data();
+                 expiryDurationDays = ruleData.expiryDurationDays === 0 ? 0 : (ruleData.expiryDurationDays || 365);
+                 logoURL = ruleData.logoURL;
+                 signatureTextOrURL = ruleData.signatureTextOrURL;
+                 provider = ruleData.provider || "AirCrew Hub Training Dept.";
             }
         } catch (e) { console.error("Could not fetch cert rule, using default expiry", e); }
     }
+    provider = provider || "AirCrew Hub Training Dept.";
+
 
     const newProgressData: Partial<UserProgressData> = {
       userId: user.uid,
@@ -219,10 +248,12 @@ export default function CoursesLibraryPage() {
         expiryDate = new Date(new Date().setDate(new Date().getDate() + expiryDurationDays)).toISOString();
       }
       newProgressData.certificateDetails = {
-        provider: "AirCrew Hub Training Dept.",
+        provider: provider,
         certificateId: `ACH-CERT-${course.id.substring(0,5)}-${new Date().getFullYear()}`,
         issuedDate: issuedDate,
-        expiryDate: expiryDate,
+        expiryDate: expiryDate, // This can be undefined if expiryDurationDays is 0
+        logoURL: logoURL,
+        signatureTextOrURL: signatureTextOrURL,
       };
     }
 
@@ -230,7 +261,7 @@ export default function CoursesLibraryPage() {
       await setDoc(progressDocRef, newProgressData, { merge: true });
       toast({
         title: `Quiz ${passed ? 'Passed' : 'Failed'}`,
-        description: `You scored ${score}% on "${course.quizTitle}". ${passed ? 'Congratulations! Your certificate is now available.' : 'Please review the material and try again.'}`,
+        description: `You scored ${score}% on "${course.quizTitle}". ${passed ? 'Congratulations! Your certificate is now available on the "My Certificates" page.' : 'Please review the material and try again.'}`,
         variant: passed ? "default" : "destructive",
       });
       fetchAllCoursesAndProgress(); 
@@ -357,7 +388,7 @@ export default function CoursesLibraryPage() {
             )})}
           </div>
         ) : (
-          <Card className="text-muted-foreground p-6 text-center">
+          <Card className="text-muted-foreground p-6 text-center shadow-md">
             <Library className="mx-auto h-12 w-12 text-primary mb-4" />
             <p className="font-semibold">No courses found in the library.</p>
             <p className="text-sm">Please check back later, or contact an administrator if you believe this is an error.</p>
@@ -455,17 +486,23 @@ export default function CoursesLibraryPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="mx-auto my-4">
-                  <Image src="https://placehold.co/500x350.png" alt="Certificate Preview" width={500} height={350} className="rounded-md border" data-ai-hint="official certificate document award"/>
+                  <Image src={selectedCourseForCert.progress?.certificateDetails?.logoURL || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4 mx-auto" data-ai-hint="company logo airline"/>
+                  <div className="border-2 border-dashed border-primary p-6 rounded-lg bg-secondary/30 aspect-[8.5/5.5] w-full max-w-md flex flex-col items-center justify-around text-center" data-ai-hint="certificate award">
+                        <h4 className="text-2xl font-bold text-primary">Certificate of Completion</h4>
+                        <p className="text-sm my-2">This certifies that</p>
+                        <p className="text-xl font-semibold">{user?.displayName || user?.email || "Crew Member"}</p>
+                        <p className="text-sm my-2">has successfully completed the course</p>
+                        <p className="text-lg font-medium">&quot;{selectedCourseForCert?.title}&quot;</p>
+                        <p className="text-xs mt-3">Date of Completion: {selectedCourseForCert?.progress?.certificateDetails?.issuedDate ? new Date(selectedCourseForCert.progress.certificateDetails.issuedDate).toLocaleDateString() : 'N/A'}</p>
+                        <p className="text-xs mt-1">Certificate ID: {selectedCourseForCert?.progress?.certificateDetails?.certificateId}</p>
+                         {selectedCourseForCert?.progress?.certificateDetails?.expiryDate && <p className="text-xs mt-1">Valid Until: {new Date(selectedCourseForCert.progress.certificateDetails.expiryDate).toLocaleDateString()}</p>}
+                        <p className="text-xs mt-3">Issued by: {selectedCourseForCert?.progress?.certificateDetails?.provider}</p>
+                        <p className="text-xs mt-3">Signature: {selectedCourseForCert?.progress?.certificateDetails?.signatureTextOrURL || "Express Airline Training Department"}</p>
+                    </div>
                 </div>
-                <div className="space-y-1 text-sm">
-                  <p><strong>Issued to:</strong> {user?.displayName || user?.email || "Demo User"}</p>
-                  <p><strong>Training Program:</strong> {selectedCourseForCert?.title}</p>
-                  <p><strong>Certificate ID:</strong> {selectedCourseForCert?.progress?.certificateDetails?.certificateId}</p>
-                  <p><strong>Date Issued:</strong> {selectedCourseForCert?.progress?.certificateDetails?.issuedDate ? new Date(selectedCourseForCert.progress.certificateDetails.issuedDate).toLocaleDateString() : 'N/A'}</p>
-                  <p><strong>Issuing Body:</strong> {selectedCourseForCert?.progress?.certificateDetails?.provider}</p>
-                  {selectedCourseForCert?.progress?.certificateDetails?.expiryDate && <p><strong>Valid Until:</strong> {new Date(selectedCourseForCert.progress.certificateDetails.expiryDate).toLocaleDateString()}</p>}
-                   <p className="font-semibold mt-2">Achieved Score: {selectedCourseForCert?.progress?.quizScore}%</p>
-                   {selectedCourseForCert?.mandatory && <p className="font-semibold text-destructive mt-1">This was a mandatory training.</p>}
+                <div className="space-y-1 text-sm mt-4">
+                   <p className="font-semibold text-center">Achieved Score: {selectedCourseForCert?.progress?.quizScore}%</p>
+                   {selectedCourseForCert?.mandatory && <p className="font-semibold text-destructive text-center mt-1">This was a mandatory training.</p>}
                 </div>
               </div>
               <DialogFooter>
@@ -480,3 +517,4 @@ export default function CoursesLibraryPage() {
     </div>
   );
 }
+
