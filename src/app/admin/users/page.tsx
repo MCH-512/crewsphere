@@ -1,35 +1,35 @@
 
 "use client";
 
-import *a React from "react";
+import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; 
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"; 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogPrimitiveDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
-import { db, auth as firebaseAuth } from "@/lib/firebase";
+import { db, auth as firebaseAuth } from "@/lib/firebase"; // Renamed auth to firebaseAuth to avoid conflict with useAuth hook
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { badgeVariants, type VariantProps } from "@/components/ui/badge";
+import { badgeVariants, type VariantProps } from "@/components/ui/badge"; // Assuming badgeVariants and VariantProps are needed for styling the span
 import { format } from "date-fns";
-import { FormDescription } from "@/components/ui/form";
+
 
 type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'other';
 
 interface UserDocument {
   uid: string;
   email?: string;
-  role?: SpecificRole | null; // Allow null for role
+  role?: SpecificRole | null; 
   displayName?: string;
   fullName?: string;
   employeeId?: string;
@@ -43,15 +43,16 @@ const NO_ROLE_SENTINEL = "_NONE_";
 
 const manageUserFormSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(6, "Password must be at least 6 characters.").optional(),
-  confirmPassword: z.string().optional(),
+  password: z.string().optional(), // Optional for edit, required for create via superRefine
+  confirmPassword: z.string().optional(), // Optional for edit
   displayName: z.string().min(2, "Display name must be at least 2 characters.").max(50),
   fullName: z.string().min(2, "Full name must be at least 2 characters.").max(100),
-  employeeId: z.string().max(50).optional(),
+  employeeId: z.string().max(50).optional(), // Optional field, can be empty
   joiningDate: z.string().optional().refine(val => val === "" || !val || !isNaN(Date.parse(val)), { message: "Invalid date format."}), 
   role: z.string().optional(), 
 })
 .refine((data) => {
+  // Password confirmation only if password is provided (i.e., for new user creation)
   if (data.password) {
     if (!data.confirmPassword) return false; 
     return data.password === data.confirmPassword;
@@ -62,6 +63,7 @@ const manageUserFormSchema = z.object({
   path: ["confirmPassword"],
 })
 .superRefine((data, ctx) => {
+    // These fields are only strictly required if a password is provided (which implies creation mode)
     if (data.password) { 
         if (!data.email || data.email.trim() === "") {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is required for new users.", path: ["email"]});
@@ -147,8 +149,8 @@ export default function AdminUsersPage() {
         displayName: "",
         fullName: "",
         employeeId: "",
-        joiningDate: new Date().toISOString().split('T')[0], 
-        role: "" // Default to no role selected, which maps to NO_ROLE_SENTINEL in Select
+        joiningDate: new Date().toISOString().split('T')[0], // Default to today for new user
+        role: "" // Default to no role selected (will map to NO_ROLE_SENTINEL)
     });
     setIsManageUserDialogOpen(true);
   };
@@ -161,9 +163,9 @@ export default function AdminUsersPage() {
         displayName: userToEdit.displayName || "",
         fullName: userToEdit.fullName || "",
         employeeId: userToEdit.employeeId || "",
-        joiningDate: userToEdit.joiningDate || "",
-        role: userToEdit.role || "", // Maps to NO_ROLE_SENTINEL in Select if role is null/undefined/""
-        password: "", 
+        joiningDate: userToEdit.joiningDate ? new Date(userToEdit.joiningDate).toISOString().split('T')[0] : "",
+        role: userToEdit.role || "", // Maps to NO_ROLE_SENTINEL if role is null/undefined/""
+        password: "", // Password fields are not pre-filled for editing
         confirmPassword: "",
     });
     setIsManageUserDialogOpen(true);
@@ -190,10 +192,10 @@ export default function AdminUsersPage() {
           displayName: data.displayName,
           fullName: data.fullName,
           employeeId: data.employeeId,
-          joiningDate: data.joiningDate || null,
-          role: data.role === "" ? null : data.role as SpecificRole,
+          joiningDate: data.joiningDate || null, // Store as null if empty
+          role: (data.role === NO_ROLE_SENTINEL || data.role === "") ? null : data.role as SpecificRole,
           createdAt: serverTimestamp(),
-          lastLogin: serverTimestamp(),
+          lastLogin: serverTimestamp(), // Or maybe just createdAt for new users
         });
 
         toast({ title: "User Created", description: `User ${data.email} created successfully.` });
@@ -214,15 +216,15 @@ export default function AdminUsersPage() {
         const updates: Partial<UserDocument> = {
             displayName: data.displayName,
             fullName: data.fullName,
-            employeeId: data.employeeId, 
-            joiningDate: data.joiningDate, 
-            role: data.role === "" ? null : data.role as SpecificRole,
+            employeeId: data.employeeId || "", // Save empty string if cleared
+            joiningDate: data.joiningDate || "", // Save empty string if cleared
+            role: (data.role === NO_ROLE_SENTINEL || data.role === "") ? null : data.role as SpecificRole,
         };
         
-        if (user && user.uid === currentUserToManage.uid && data.displayName && data.displayName !== user.displayName) {
-            if (auth.currentUser) { // Ensure auth.currentUser is not null
-                 await updateProfile(auth.currentUser, { displayName: data.displayName });
-            }
+        // Update Firebase Auth display name if admin is editing their own profile
+        // and the display name has actually changed.
+        if (firebaseAuth.currentUser && currentUserToManage.uid === firebaseAuth.currentUser.uid && data.displayName && data.displayName !== firebaseAuth.currentUser.displayName) {
+            await updateProfile(firebaseAuth.currentUser, { displayName: data.displayName });
         }
         
         await updateDoc(userDocRef, updates);
@@ -240,21 +242,22 @@ export default function AdminUsersPage() {
   const getRoleBadgeVariant = (role?: SpecificRole | null): VariantProps<typeof badgeVariants>["variant"] => {
     switch (role) {
       case "admin": return "destructive";
-      case "purser": return "default";
+      case "purser": return "default"; // Example: default variant for purser
       case "cabin crew": return "secondary";
-      case "instructor": return "default"; 
-      case "pilote": return "default";    
+      case "instructor": return "default"; // Example: some other variant or specific class
+      case "pilote": return "default";    // Example: some other variant or specific class
       case "other": return "outline";
       default: return "outline";
     }
   };
   
   const formatDateDisplay = (dateString?: string | null) => {
-    if (!dateString || dateString === "") return "N/A";
+    if (!dateString || dateString === "") return "N/A"; // Handle empty string as N/A
     try {
-        return format(new Date(dateString), "MMM d, yyyy");
+        // Assuming dateString is "YYYY-MM-DD" from the input type="date"
+        return format(new Date(dateString + "T00:00:00"), "MMM d, yyyy"); // Add time to avoid timezone issues with parseISO
     } catch (e) {
-        return dateString; 
+        return dateString; // Fallback if formatting fails
     }
   };
 
@@ -363,9 +366,9 @@ export default function AdminUsersPage() {
                 <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${currentUserToManage?.displayName || currentUserToManage?.email}`}</DialogTitle>
                 <DialogPrimitiveDescription>
                   {isCreateMode ? "Fill in the details for the new user." : "Modify the user's information below."}
-                   {currentUserToManage && !isCreateMode && currentUserToManage.role === 'admin' && (
-                    <span className={cn(badgeVariants({ variant: 'destructive' }), "ml-2 capitalize")}>
-                      Admin User
+                  {currentUserToManage && !isCreateMode && (
+                    <span className={cn(badgeVariants({ variant: getRoleBadgeVariant(currentUserToManage.role) }), "ml-2 capitalize")}>
+                      Role: {currentUserToManage.role || 'Not Assigned'}
                     </span>
                   )}
                 </DialogPrimitiveDescription>
@@ -376,7 +379,7 @@ export default function AdminUsersPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email*</FormLabel>
+                      <FormLabel>Email{isCreateMode ? "*" : ""}</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="user@example.com" {...field} disabled={!isCreateMode} />
                       </FormControl>
@@ -451,7 +454,7 @@ export default function AdminUsersPage() {
                       <FormControl>
                         <Input placeholder="e.g., EMP12345" {...field} />
                       </FormControl>
-                      <FormDescription>Unique identifier for the employee.</FormDescription>
+                      <FormDescription>Unique company identifier for the employee.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -478,7 +481,10 @@ export default function AdminUsersPage() {
                         <FormLabel>Role</FormLabel>
                         <Select
                             onValueChange={(value) => field.onChange(value === NO_ROLE_SENTINEL ? "" : value)}
-                            value={field.value === "" || field.value === null || field.value === undefined ? NO_ROLE_SENTINEL : field.value}
+                            // Ensure field.value is never null or undefined for Select's value prop.
+                            // If role is null in Firestore, it becomes "" in form defaultValues.
+                            // If "" is selected (via NO_ROLE_SENTINEL), it remains "".
+                            value={field.value || NO_ROLE_SENTINEL} 
                         >
                             <FormControl>
                             <SelectTrigger>
@@ -492,7 +498,7 @@ export default function AdminUsersPage() {
                             <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
                             </SelectContent>
                         </Select>
-                        <FormDescription>Assign a system role or leave as default for standard crew permissions.</FormDescription>
+                        <FormDescription>Assign a system role or leave as default for standard user permissions.</FormDescription>
                         <FormMessage />
                         </FormItem>
                     )}
@@ -514,3 +520,4 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+
