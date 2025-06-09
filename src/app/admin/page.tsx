@@ -1,11 +1,10 @@
-
 "use client";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Settings, Activity, Files, UploadCloud, Eye, GraduationCap, BarChart3, ClipboardList, BellRing, Plane, PlusCircle, CheckSquare, Edit3, FileSignature, ClipboardCheck, AlertTriangle, MessageSquareWarning, Loader2, FileText as FileTextIcon, BookOpen } from "lucide-react";
+import { ServerCog, Users, Activity, Files, GraduationCap, ClipboardList, Plane, Settings, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -60,13 +59,13 @@ export default function AdminConsolePage() {
     { 
       icon: Files, 
       title: "Document Management", 
-      description: "Upload, categorize, and manage all shared documents and manuals. Upload option is available from the management page.", 
+      description: "Upload, categorize, and manage all shared documents. Upload option is available from the management page.", 
       buttonText: "Manage Documents", 
       href: "/admin/documents",
       delay: 0.15
     },
     { 
-      icon: MessageSquareWarning, 
+      icon: ServerCog, // Changed from MessageSquareWarning
       title: "Alerts Management", 
       description: "Create and manage global or user-specific alerts. Creation option is available from the management page.", 
       buttonText: "Manage Alerts", 
@@ -76,9 +75,9 @@ export default function AdminConsolePage() {
     { 
       icon: GraduationCap, 
       title: "Learning & Assessment Hub", 
-      description: "Manage courses, quizzes, training assignments, and track user progress. Create, view, and edit courses and their associated quizzes.", 
-      buttonText: "Go to Learning Hub", 
-      href: "/admin/courses", // This page allows viewing and creating courses (which include quizzes)
+      description: "Manage courses (including their modules, quizzes, and certification rules), training assignments, and track user progress.", 
+      buttonText: "Manage Courses", 
+      href: "/admin/courses", 
       delay: 0.25
     },
     { 
@@ -91,7 +90,7 @@ export default function AdminConsolePage() {
       delay: 0.3
     },
     { 
-      icon: ClipboardCheck, 
+      icon: Files, // Changed from ClipboardCheck for consistency
       title: "Purser Report Review", 
       description: "Access, review, and analyze submitted Purser Reports for operational insights and follow-up actions.", 
       buttonText: "Manage Reports", 

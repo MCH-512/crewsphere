@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -8,19 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, doc, getDoc } from "firebase/firestore"; // Added doc, getDoc
+import { collection, getDocs, query, orderBy, doc, getDoc } from "firebase/firestore"; 
 import { useRouter } from "next/navigation";
-import { CheckSquare, Loader2, AlertTriangle, RefreshCw, Edit3, PlusCircle, BookOpen } from "lucide-react"; // Added PlusCircle, BookOpen
+import { CheckSquare, Loader2, AlertTriangle, RefreshCw, Edit3, PlusCircle, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 
 interface Quiz {
-  id: string; // Quiz document ID
+  id: string; 
   title: string;
   courseId: string;
   randomizeQuestions?: boolean;
   randomizeAnswers?: boolean;
-  // Fields to fetch from linked course
   courseTitle?: string;
   courseCategory?: string;
 }
@@ -52,7 +50,6 @@ export default function AdminQuizzesPage() {
           ...quizData,
         };
 
-        // Fetch linked course title and category
         if (quizData.courseId) {
           const courseDocRef = doc(db, "courses", quizData.courseId);
           const courseDocSnap = await getDoc(courseDocRef);
@@ -116,9 +113,9 @@ export default function AdminQuizzesPage() {
           <div>
             <CardTitle className="text-2xl font-headline flex items-center">
               <CheckSquare className="mr-3 h-7 w-7 text-primary" />
-              Quizzes Management
+              Quizzes Overview
             </CardTitle>
-            <CardDescription>View all quizzes defined in the system. Manage questions and settings from the course creation/editing page.</CardDescription>
+            <CardDescription>View all quizzes. Quizzes are created and managed within their respective courses.</CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={fetchQuizzes} disabled={isLoading}>
@@ -127,7 +124,7 @@ export default function AdminQuizzesPage() {
             </Button>
              <Button asChild>
                 <Link href="/admin/courses/create">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Create New Quiz (via Course)
+                  <PlusCircle className="mr-2 h-4 w-4" /> Create New Course
                 </Link>
             </Button>
           </div>
@@ -178,12 +175,13 @@ export default function AdminQuizzesPage() {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => toast({ title: "Manage Questions", description: "Manage questions via the course edit page."})} 
+                          asChild
                           aria-label={`Manage questions for quiz: ${quiz.title}`}
                         >
-                          <Edit3 className="mr-1 h-4 w-4" /> Manage Questions
+                          <Link href={`/admin/courses/edit/${quiz.courseId}`}>
+                            <Edit3 className="mr-1 h-4 w-4" /> Manage in Course
+                          </Link>
                         </Button>
-                        {/* Future: Link to edit quiz directly if becomes separate from course edit */}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -192,7 +190,7 @@ export default function AdminQuizzesPage() {
             </div>
           )}
            <CardDescription className="mt-4 text-xs">
-            Quizzes are created and their questions are managed within the course creation/editing interface.
+            To create a new quiz or manage questions, please go to the course creation or editing page.
           </CardDescription>
         </CardContent>
       </Card>
