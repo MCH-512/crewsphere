@@ -51,7 +51,8 @@ import {
   LogIn,
   UserPlus,
   Loader2,
-  BookOpen, // Added BookOpen for consistency if needed
+  Library, // Changed from BookOpen for Courses
+  Award,   // For Certificates
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -60,16 +61,21 @@ import { Breadcrumbs } from "./breadcrumbs";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/documents", label: "Documents", icon: FileText },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/requests", label: "Requests", icon: SendHorizonal },
+  { href: "/documents", label: "Documents", icon: FileText },
   { href: "/my-alerts", label: "My Alerts", icon: Bell },
+  { type: "separator", key: "sep1" },
+  { href: "/training", label: "Training Hub", icon: GraduationCap },
+  { href: "/courses", label: "Course Library", icon: Library },
+  { href: "/quizzes", label: "My Quizzes", icon: ListChecks },
+  { href: "/certificates", label: "My Certificates", icon: Award },
+  { type: "separator", key: "sep2" },
   { href: "/airport-briefings", label: "Airport Briefings", icon: Navigation },
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
   { href: "/insights", label: "AI Insights", icon: Brain },
-  { href: "/training", label: "Training", icon: GraduationCap },
-  { href: "/quizzes", label: "Quizzes", icon: ListChecks }, // User-facing quizzes page
+  { type: "separator", key: "sep3", adminOnly: true },
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];
 
@@ -125,8 +131,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/flight-duty-calculator": "Flight Duty Calculator",
     "/purser-reports": "Purser Report Generator",
     "/insights": "AI-Driven Operational Insights",
-    "/training": "My Training Hub",
-    "/quizzes": "Quizzes", // User-facing quizzes page
+    "/training": "Training Hub",
+    "/courses": "Course Library",
+    "/quizzes": "My Quizzes", 
+    "/certificates": "My Certificates",
     "/settings": "Settings",
     "/login": "Login",
     "/signup": "Sign Up",
@@ -138,12 +146,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/admin/alerts": "All Broadcast Alerts",
     "/admin/alerts/create": "Create New Alert",
     "/admin/courses": "Courses Management",
-    "/admin/courses/create": "Create New Training Course", // Also used for "Create New Quiz"
+    "/admin/courses/create": "Create New Training Course",
     "/admin/flights": "Manage Flights",
     "/admin/flights/create": "Add New Flight",
     "/admin/purser-reports": "Submitted Purser Reports",
     "/admin/user-requests": "User Submitted Requests",
-    "/admin/quizzes": "Quizzes Overview", // New admin page for quizzes
+    "/admin/quizzes": "Quizzes Overview", 
   };
   
   let currentTitle = "AirCrew Hub"; 
@@ -199,20 +207,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarContent className="p-2">
           <SidebarMenu>
             {navItems.map((item) => {
+              if (item.type === "separator") {
+                if (item.adminOnly && user?.role !== 'admin') return null;
+                return <Separator key={item.key} className="my-2" />;
+              }
               if (item.adminOnly && user?.role !== 'admin') { 
                 return null; 
               }
               // Improved active state detection for nested admin routes
-              const isActive = pathname === item.href || 
+              const isActive = item.href && (pathname === item.href || 
                                (item.href !== "/" && pathname.startsWith(item.href + '/')) ||
-                               (item.href === "/admin" && pathname.startsWith("/admin/"));
+                               (item.href === "/admin" && pathname.startsWith("/admin/")));
 
               return (
                 <SidebarMenuItem key={item.href}>
-                  <Link href={item.href} passHref legacyBehavior>
+                  <Link href={item.href!} passHref legacyBehavior>
                     <SidebarMenuButton
                       asChild
-                      isActive={isActive}
+                      isActive={!!isActive}
                       tooltip={{ children: item.label, side: "right", align: "center" }}
                       className={cn(
                         "justify-start",

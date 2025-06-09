@@ -6,14 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2, List, Library } from "lucide-react";
+import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2, Library, List } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, Timestamp, orderBy } from "firebase/firestore";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import Link from "next/link";
 
 interface ModuleData {
   moduleCode?: string;
@@ -56,22 +55,23 @@ interface CombinedCourse extends CourseData {
   progress?: UserProgressData; 
 }
 
-export default function TrainingPage() {
+export default function CoursesLibraryPage() {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   
-  const [courses, setCourses] = React.useState<CombinedCourse[]>([]);
+  const [allCourses, setAllCourses] = React.useState<CombinedCourse[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = React.useState(true);
   const [loadingError, setLoadingError] = React.useState<string | null>(null);
 
-  const [selectedCourseForQuiz, setSelectedCourseForQuiz] = React.useState<CombinedCourse | null>(null);
-  // SelectedCourseForCert is no longer needed here, handled by /certificates page
   const [selectedCourseForContent, setSelectedCourseForContent] = React.useState<CombinedCourse | null>(null);
-  const [isQuizDialogOpen, setIsQuizDialogOpen] = React.useState(false);
+  const [selectedCourseForQuiz, setSelectedCourseForQuiz] = React.useState<CombinedCourse | null>(null);
+  const [selectedCourseForCert, setSelectedCourseForCert] = React.useState<CombinedCourse | null>(null);
   const [isContentDialogOpen, setIsContentDialogOpen] = React.useState(false);
+  const [isQuizDialogOpen, setIsQuizDialogOpen] = React.useState(false);
+  const [isCertDialogOpen, setIsCertDialogOpen] = React.useState(false);
   const [isUpdating, setIsUpdating] = React.useState(false);
 
-  const fetchTrainingData = React.useCallback(async () => {
+  const fetchAllCoursesAndProgress = React.useCallback(async () => {
     if (!user) {
       setIsLoadingCourses(false);
       return;
@@ -117,16 +117,11 @@ export default function TrainingPage() {
 
         combinedCoursesWithProgress.push({ ...courseData, progress: userProgress });
       }
-      // Filter courses for this page: show only those not yet passed, or mandatory and not passed
-      const relevantCourses = combinedCoursesWithProgress.filter(c => 
-        c.progress?.quizStatus !== 'Passed' || (c.mandatory && c.progress?.quizStatus !== 'Passed')
-      );
-      setCourses(relevantCourses);
-
+      setAllCourses(combinedCoursesWithProgress);
     } catch (err) {
-      console.error("Error fetching training data:", err);
-      setLoadingError("Failed to load training data. Please try again.");
-      toast({ title: "Loading Error", description: "Could not fetch training data.", variant: "destructive" });
+      console.error("Error fetching courses data:", err);
+      setLoadingError("Failed to load courses. Please try again.");
+      toast({ title: "Loading Error", description: "Could not fetch courses.", variant: "destructive" });
     } finally {
       setIsLoadingCourses(false);
     }
@@ -134,26 +129,24 @@ export default function TrainingPage() {
 
   React.useEffect(() => {
     if (!authLoading && user) {
-      fetchTrainingData();
+      fetchAllCoursesAndProgress();
     } else if (!authLoading && !user) {
       setIsLoadingCourses(false); 
     }
-  }, [authLoading, user, fetchTrainingData]);
-
+  }, [authLoading, user, fetchAllCoursesAndProgress]);
 
   const handleCourseAction = async (courseId: string) => {
     if (!user) return;
-    const course = courses.find(c => c.id === courseId);
+    const course = allCourses.find(c => c.id === courseId);
     if (!course) return;
 
-    if (course.progress?.contentStatus !== 'Completed') {
+    if (course.progress?.quizStatus === 'Passed') {
+        setSelectedCourseForCert(course);
+        setIsCertDialogOpen(true);
+    } else if (course.progress?.contentStatus !== 'Completed') {
         setSelectedCourseForContent(course);
         setIsContentDialogOpen(true);
     } else {
-      // If content is completed, and quiz is not passed, open quiz dialog
-      // If quiz is passed, this course shouldn't be in the "available/in-progress" list anymore
-      // unless it's mandatory and failed, or some other specific logic for this page.
-      // For now, assume if it's here and content is completed, it's ready for quiz.
       setSelectedCourseForQuiz(course);
       setIsQuizDialogOpen(true);
     }
@@ -178,7 +171,7 @@ export default function TrainingPage() {
         }
         await setDoc(progressDocRef, newProgressData, { merge: true });
         toast({ title: "Course Content Viewed", description: `You have completed the material for "${selectedCourseForContent.title}". You can now take the quiz.` });
-        fetchTrainingData(); 
+        fetchAllCoursesAndProgress(); 
         setIsContentDialogOpen(false);
         setSelectedCourseForContent(null);
     } catch (error) {
@@ -189,10 +182,9 @@ export default function TrainingPage() {
     }
   }
 
-
   const simulateQuiz = async (courseId: string, passed: boolean) => {
     if (!user) return;
-    const course = courses.find(c => c.id === courseId);
+    const course = allCourses.find(c => c.id === courseId);
     if (!course) return;
     
     setIsUpdating(true);
@@ -226,7 +218,6 @@ export default function TrainingPage() {
       if (expiryDurationDays > 0) {
         expiryDate = new Date(new Date().setDate(new Date().getDate() + expiryDurationDays)).toISOString();
       }
-      
       newProgressData.certificateDetails = {
         provider: "AirCrew Hub Training Dept.",
         certificateId: `ACH-CERT-${course.id.substring(0,5)}-${new Date().getFullYear()}`,
@@ -239,10 +230,10 @@ export default function TrainingPage() {
       await setDoc(progressDocRef, newProgressData, { merge: true });
       toast({
         title: `Quiz ${passed ? 'Passed' : 'Failed'}`,
-        description: `You scored ${score}% on "${course.quizTitle}". ${passed ? 'Congratulations! Your certificate is now available on the "My Certificates" page.' : 'Please review the material and try again.'}`,
+        description: `You scored ${score}% on "${course.quizTitle}". ${passed ? 'Congratulations! Your certificate is now available.' : 'Please review the material and try again.'}`,
         variant: passed ? "default" : "destructive",
       });
-      fetchTrainingData(); 
+      fetchAllCoursesAndProgress(); 
     } catch (error) {
       console.error("Error updating quiz results:", error);
       toast({ title: "Quiz Update Error", description: "Could not save quiz results.", variant: "destructive" });
@@ -257,7 +248,7 @@ export default function TrainingPage() {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-lg text-muted-foreground">Loading training data...</p>
+        <p className="ml-4 text-lg text-muted-foreground">Loading course library...</p>
       </div>
     );
   }
@@ -267,7 +258,7 @@ export default function TrainingPage() {
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
         <CardTitle className="text-xl mb-2">Access Denied</CardTitle>
-        <p className="text-muted-foreground">Please log in to access your training.</p>
+        <p className="text-muted-foreground">Please log in to access the course library.</p>
         <Button onClick={() => window.location.href='/login'} className="mt-4">Go to Login</Button>
       </div>
     );
@@ -277,9 +268,9 @@ export default function TrainingPage() {
      return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <CardTitle className="text-xl mb-2">Error Loading Training</CardTitle>
+        <CardTitle className="text-xl mb-2">Error Loading Courses</CardTitle>
         <p className="text-muted-foreground mb-4">{loadingError}</p>
-        <Button onClick={fetchTrainingData} disabled={isUpdating}>
+        <Button onClick={fetchAllCoursesAndProgress} disabled={isUpdating}>
             {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Try Again
         </Button>
@@ -291,29 +282,38 @@ export default function TrainingPage() {
     <div className="space-y-8">
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl font-headline">My Training Hub</CardTitle>
-          <CardDescription>Complete courses, pass quizzes, and earn certificates to enhance your skills. Mandatory trainings are marked.</CardDescription>
+          <CardTitle className="text-2xl font-headline flex items-center">
+            <Library className="mr-3 h-7 w-7 text-primary" />
+            Course Library
+          </CardTitle>
+          <CardDescription>Browse all available training courses. Start a new course or continue your progress.</CardDescription>
         </CardHeader>
         <CardContent>
-           <p className="text-muted-foreground">This is your central place for ongoing and required training. Browse all available courses in the <Link href="/courses" className="text-primary hover:underline">Course Library</Link>.</p>
+           <p className="text-muted-foreground">Expand your knowledge and skills with our comprehensive course catalog.</p>
         </CardContent>
       </Card>
 
       <section>
-        <h2 className="text-xl font-semibold mb-4 font-headline flex items-center">
-          <BookOpen className="mr-2 h-6 w-6 text-primary" />
-          My Active & Required Training
-        </h2>
-        {courses.length > 0 ? (
+        {allCourses.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {courses.map((course) => {
+            {allCourses.map((course) => {
               const contentStatus = course.progress?.contentStatus || 'NotStarted';
               const quizStatus = course.progress?.quizStatus || 'NotTaken';
               const quizScore = course.progress?.quizScore;
 
-              const CourseActionIcon = contentStatus !== 'Completed' ? ChevronRight : 
-                                       quizStatus === 'NotTaken' ? HelpCircle : 
-                                       quizStatus === 'Failed' ? XCircle : PlayCircle;
+              let actionLabel = "View Course";
+              let ActionIcon = BookOpen;
+              if (quizStatus === 'Passed') {
+                actionLabel = "View Certificate";
+                ActionIcon = Award;
+              } else if (contentStatus !== 'Completed') {
+                actionLabel = contentStatus === 'NotStarted' ? 'Start Course' : 'Continue Course';
+                ActionIcon = ChevronRight;
+              } else {
+                actionLabel = quizStatus === 'Failed' ? 'Retake Quiz' : 'Take Quiz';
+                ActionIcon = quizStatus === 'Failed' ? XCircle : PlayCircle;
+              }
+
               return (
               <Card key={course.id} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
                 <CardHeader className="flex-shrink-0">
@@ -349,9 +349,8 @@ export default function TrainingPage() {
                     </div>
                   </div>
                   <Button onClick={() => handleCourseAction(course.id)} className="w-full mt-2" disabled={isUpdating}>
-                    {isUpdating && courses.find(c => c.id === course.id && (c.id === selectedCourseForContent?.id || c.id === selectedCourseForQuiz?.id)) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CourseActionIcon className="mr-2 h-4 w-4" />}
-                    {contentStatus !== 'Completed' ? (contentStatus === 'NotStarted' ? 'Start Course' : 'Continue Course') :
-                     quizStatus === 'Failed' ? 'Retake Quiz' : (quizStatus === 'NotTaken' ? 'Take Quiz' : 'Review Quiz')}
+                    {isUpdating && course.id === (selectedCourseForContent?.id || selectedCourseForQuiz?.id || selectedCourseForCert?.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ActionIcon className="mr-2 h-4 w-4" />}
+                    {actionLabel}
                   </Button>
                 </CardContent>
               </Card>
@@ -359,13 +358,12 @@ export default function TrainingPage() {
           </div>
         ) : (
           <Card className="text-muted-foreground p-6 text-center">
-            <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
-            <p className="font-semibold">No active or required trainings at the moment!</p>
-            <p className="text-sm">Explore the <Link href="/courses" className="text-primary hover:underline">Course Library</Link> to find new trainings or check your <Link href="/certificates" className="text-primary hover:underline">Certificates</Link>.</p>
+            <Library className="mx-auto h-12 w-12 text-primary mb-4" />
+            <p className="font-semibold">No courses found in the library.</p>
+            <p className="text-sm">Please check back later, or contact an administrator if you believe this is an error.</p>
           </Card>
         )}
       </section>
-
 
       {selectedCourseForContent && (
         <Dialog open={isContentDialogOpen} onOpenChange={setIsContentDialogOpen}>
@@ -419,7 +417,6 @@ export default function TrainingPage() {
         </Dialog>
       )}
 
-
       <Dialog open={isQuizDialogOpen} onOpenChange={setIsQuizDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -447,14 +444,39 @@ export default function TrainingPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Removed Certificate Dialog from here, it's on /certificates and /courses pages */}
-
-      <div className="text-center mt-8">
-         <Button variant="outline" asChild>
-            <Link href="/courses"><Library className="mr-2 h-4 w-4" /> Browse Full Course Library</Link>
-        </Button>
-      </div>
+      {selectedCourseForCert && (
+        <Dialog open={isCertDialogOpen} onOpenChange={setIsCertDialogOpen}>
+            <DialogContent className="sm:max-w-[650px]">
+              <DialogHeader>
+                <DialogTitle>Certificate of Completion</DialogTitle>
+                <DialogDescription>
+                  This certificate is awarded for the successful completion of the {selectedCourseForCert?.title} program.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="mx-auto my-4">
+                  <Image src="https://placehold.co/500x350.png" alt="Certificate Preview" width={500} height={350} className="rounded-md border" data-ai-hint="official certificate document award"/>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <p><strong>Issued to:</strong> {user?.displayName || user?.email || "Demo User"}</p>
+                  <p><strong>Training Program:</strong> {selectedCourseForCert?.title}</p>
+                  <p><strong>Certificate ID:</strong> {selectedCourseForCert?.progress?.certificateDetails?.certificateId}</p>
+                  <p><strong>Date Issued:</strong> {selectedCourseForCert?.progress?.certificateDetails?.issuedDate ? new Date(selectedCourseForCert.progress.certificateDetails.issuedDate).toLocaleDateString() : 'N/A'}</p>
+                  <p><strong>Issuing Body:</strong> {selectedCourseForCert?.progress?.certificateDetails?.provider}</p>
+                  {selectedCourseForCert?.progress?.certificateDetails?.expiryDate && <p><strong>Valid Until:</strong> {new Date(selectedCourseForCert.progress.certificateDetails.expiryDate).toLocaleDateString()}</p>}
+                   <p className="font-semibold mt-2">Achieved Score: {selectedCourseForCert?.progress?.quizScore}%</p>
+                   {selectedCourseForCert?.mandatory && <p className="font-semibold text-destructive mt-1">This was a mandatory training.</p>}
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">Close</Button>
+                </DialogClose>
+                <Button type="button" onClick={() => {toast({title: "Feature Not Implemented", description: "PDF download is not available in this demo."});} }>Download PDF</Button>
+              </DialogFooter>
+            </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
-
