@@ -4,93 +4,72 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isUser(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    function getUserData(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data;
-    }
-
+    // Helper function to check if a user is an admin
     function isAdmin() {
-      // Ensure user document exists and role is 'admin'
-      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData(request.auth.uid).role == 'admin';
+      // Check if the user is authenticated and their user document has role 'admin'
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // users collection
+    // Helper function to check if the user is the owner of the document
+    // (typically used when the document ID is the user's UID or the document has a userId field)
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Users collection
+    // Users can read all profiles (e.g., for display names)
+    // Users can create their own user document (on signup)
+    // Users can update their own profile, Admins can update any profile
+    // Only Admins can delete user documents
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if (isUser(userId) && !(request.resource.data.role == 'admin')) || isAdmin(); // User can create own doc (no admin role), admin can create any
-      allow update: if 
-        (isAdmin() && 
-          request.resource.data.uid == resource.data.uid && // uid cannot change
-          request.resource.data.email == resource.data.email && // email cannot change (via Firestore)
-          request.resource.data.createdAt == resource.data.createdAt // createdAt cannot change
-          // Admin can change: displayName, fullName, employeeId, joiningDate, role, lastLogin
-        ) || 
-        (isUser(userId) &&
-          request.resource.data.uid == resource.data.uid && // uid cannot change
-          request.resource.data.email == resource.data.email && // email cannot change
-          request.resource.data.role == resource.data.role && // role cannot be changed by user
-          request.resource.data.createdAt == resource.data.createdAt // createdAt cannot change
-          // User can change: displayName, fullName, employeeId, joiningDate, lastLogin
-        );
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
 
-    // documents collection
-    match /documents/{documentId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
+    // Generic rule for collections primarily managed by Admins
+    // Authenticated users can read, Admins can write (create, update, delete)
+    match /{collectionName}/{docId}
+      where collectionName in ['courses', 'quizzes', 'questions', 'certificateRules', 'documents', 'alerts', 'flights'] {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
 
-    // alerts collection
-    match /alerts/{alertId} {
-      // Users can read global alerts (userId == null) or their own specific alerts
-      allow read: if isAuthenticated() && (resource.data.userId == null || resource.data.userId == request.auth.uid);
-      allow create, update, delete: if isAdmin(); // Only admins can manage alerts
-    }
-
-    // courses collection
-    match /courses/{courseId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    // userTrainingProgress collection
+    // User specific training progress
+    // progressId is typically structured as `${userId}_${courseId}`
+    // Users can read and write their own progress. Admins can read any progress.
     match /userTrainingProgress/{progressId} {
-      // Progress ID is typically userId_courseId
-      // User can read/write their own progress. Admin can read all, potentially write (e.g., manual completion).
-      allow read: if isUser(progressId.split('_')[0]) || isAdmin();
-      allow create, update: if isUser(progressId.split('_')[0]) || isAdmin(); // User updates own, admin might override/fix
-      allow delete: if isAdmin(); // Generally, progress shouldn't be deleted by users
+      allow read: if request.auth != null && (isOwner(progressId.split('_')[0]) || isAdmin());
+      allow write: if request.auth != null && isOwner(progressId.split('_')[0]);
     }
 
-    // requests collection (e.g., leave requests, schedule changes)
+    // User requests
+    // Users can create requests for themselves.
+    // Users can read their own requests. Admins can read all requests.
+    // Only Admins can update (e.g., status) or delete requests.
     match /requests/{requestId} {
-      allow read: if isUser(resource.data.userId) || isAdmin(); // User can read their own, admin can read all
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid; // User can create their own
-      allow update: if isAdmin(); // Only admin can update status (approved, rejected, etc.)
+      allow create: if request.auth != null && isOwner(request.resource.data.userId);
+      allow read: if request.auth != null && (isOwner(resource.data.userId) || isAdmin());
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
-    // purserReports collection
+    // Purser Reports
+    // Users can create their own reports.
+    // Users can read their own reports. Admins can read all reports.
+    // Only Admins can update or delete reports.
     match /purserReports/{reportId} {
-      allow read: if isUser(resource.data.userId) || isAdmin();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid; // User can create their own
-      allow update, delete: if isAdmin(); // Admin can manage/archive
+      allow create: if request.auth != null && isOwner(request.resource.data.userId);
+      allow read: if request.auth != null && (isOwner(resource.data.userId) || isAdmin());
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
-    // flights collection
-    match /flights/{flightId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
+    // Default deny for any other paths not explicitly matched.
+    // This is a security best practice.
+    match /{document=**} {
+      allow read, write: if false;
     }
-
   }
 }
