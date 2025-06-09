@@ -99,6 +99,25 @@ service cloud.firestore {
       // Admins generally shouldn't directly write to user progress unless for specific corrections (can be added if needed)
     }
 
+    // User Flight Assignments collection
+    match /userFlightAssignments/{assignmentId} {
+      // User can create their own assignment
+      // Ensure the userId in the document being created matches the authenticated user's ID
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // User can read their own assignments
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // User can delete their own assignments (e.g., for unassigning functionality)
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Users should not be able to update assignments directly for now.
+      // allow update: if false; // Or more specific rules if needed
+
+      // Admins can perform all operations on any assignment
+      allow read, write: if isAdmin();
+    }
+
     // Default deny all other paths
     match /{document=**} {
       allow read, write: if false;
