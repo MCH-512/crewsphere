@@ -1,7 +1,7 @@
 
 "use client";
 
-import * as React from "react";
+import *a React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogPrimitiveDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"; // Renamed to avoid conflict
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogPrimitiveDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
@@ -21,48 +21,58 @@ import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle } from "luci
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { badgeVariants, type VariantProps } from "@/components/ui/badge";
+import { format } from "date-fns";
 
-type SpecificRole = 'admin' | 'purser' | 'crew';
+type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'other';
 
 interface UserDocument {
   uid: string;
   email?: string;
   role?: SpecificRole;
   displayName?: string;
+  fullName?: string;
+  employeeId?: string;
+  joiningDate?: string; // Store as YYYY-MM-DD string
   lastLogin?: Timestamp;
   createdAt?: Timestamp;
 }
 
-const availableRoles: SpecificRole[] = ['admin', 'purser', 'crew'];
-const NO_ROLE_SENTINEL = "_NONE_"; // Sentinel value for "no role" or default
+const availableRoles: SpecificRole[] = ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'other'];
+const NO_ROLE_SENTINEL = "_NONE_"; 
 
 const manageUserFormSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }).optional(),
+  email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(6, "Password must be at least 6 characters.").optional(),
-  confirmPassword: z.string().optional(), // Optional, validation handled by refine
+  confirmPassword: z.string().optional(),
   displayName: z.string().min(2, "Display name must be at least 2 characters.").max(50),
+  fullName: z.string().min(2, "Full name must be at least 2 characters.").max(100),
+  employeeId: z.string().min(1, "Employee ID is required.").max(50).optional(),
+  joiningDate: z.string().optional(), // YYYY-MM-DD string from date input
   role: z.string().optional(), 
 })
 .refine((data) => {
-  // If password is provided, confirmPassword is required and must match
   if (data.password) {
-    if (!data.confirmPassword) return false; // Confirm password is required if password is set
+    if (!data.confirmPassword) return false; 
     return data.password === data.confirmPassword;
   }
-  return true; // No password provided, so no need to check confirmPassword
+  return true; 
 }, {
   message: "Passwords don't match or confirmation is missing.",
   path: ["confirmPassword"],
 })
-.refine((data) => {
-    // If creating (signified by presence of password), email is required
-    if (data.password && (!data.email || data.email.trim() === "")) {
-        return false;
+.superRefine((data, ctx) => {
+    // In create mode (signified by presence of password), email, employeeId and fullName are required
+    if (data.password) { // Assuming password presence means create mode
+        if (!data.email || data.email.trim() === "") {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is required for new users.", path: ["email"]});
+        }
+        if (!data.employeeId || data.employeeId.trim() === "") {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Employee ID is required for new users.", path: ["employeeId"]});
+        }
+        if (!data.fullName || data.fullName.trim() === "") {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Full name is required for new users.", path: ["fullName"]});
+        }
     }
-    return true;
-}, {
-    message: "Email is required when setting a password for a new user.",
-    path: ["email"]
 });
 
 type ManageUserFormValues = z.infer<typeof manageUserFormSchema>;
@@ -87,7 +97,10 @@ export default function AdminUsersPage() {
         password: "",
         confirmPassword: "",
         displayName: "",
-        role: "", // Default to empty string, which will map to NO_ROLE_SENTINEL in Select
+        fullName: "",
+        employeeId: "",
+        joiningDate: "",
+        role: "", 
     }
   });
 
@@ -129,6 +142,9 @@ export default function AdminUsersPage() {
         password: "",
         confirmPassword: "",
         displayName: "",
+        fullName: "",
+        employeeId: "",
+        joiningDate: new Date().toISOString().split('T')[0], // Default to today
         role: "" 
     });
     setIsManageUserDialogOpen(true);
@@ -140,6 +156,9 @@ export default function AdminUsersPage() {
     form.reset({ 
         email: userToEdit.email || "",
         displayName: userToEdit.displayName || "",
+        fullName: userToEdit.fullName || "",
+        employeeId: userToEdit.employeeId || "",
+        joiningDate: userToEdit.joiningDate || "",
         role: userToEdit.role || "",
         password: "", 
         confirmPassword: "",
@@ -150,8 +169,9 @@ export default function AdminUsersPage() {
   const handleFormSubmit = async (data: ManageUserFormValues) => {
     setIsSubmitting(true);
     if (isCreateMode) {
-      if (!data.email || !data.password) {
-        toast({ title: "Missing Fields", description: "Email and password are required for new users.", variant: "destructive"});
+      // Validation should catch this, but as a safeguard:
+      if (!data.email || !data.password || !data.employeeId || !data.fullName) {
+        toast({ title: "Missing Fields", description: "Email, password, Employee ID, and Full Name are required for new users.", variant: "destructive"});
         setIsSubmitting(false);
         return;
       }
@@ -166,7 +186,10 @@ export default function AdminUsersPage() {
           uid: newUser.uid,
           email: data.email,
           displayName: data.displayName,
-          role: data.role as SpecificRole || "", // Ensure role is SpecificRole or empty
+          fullName: data.fullName,
+          employeeId: data.employeeId,
+          joiningDate: data.joiningDate || null,
+          role: (data.role === NO_ROLE_SENTINEL ? "" : data.role) as SpecificRole || "",
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
         });
@@ -185,10 +208,16 @@ export default function AdminUsersPage() {
         const userDocRef = doc(db, "users", currentUserToManage.uid);
         const updates: Partial<UserDocument> = {
             displayName: data.displayName,
-            role: data.role as SpecificRole || undefined 
+            fullName: data.fullName,
+            employeeId: data.employeeId,
+            joiningDate: data.joiningDate || null,
+            role: (data.role === NO_ROLE_SENTINEL ? "" : data.role) as SpecificRole || undefined 
         };
         
         await updateDoc(userDocRef, updates);
+        // Note: Firebase Auth displayName for *another* user cannot be updated directly by admin client-side.
+        // It's typically updated by the user themselves or server-side via Admin SDK.
+        // AuthProvider will pick up displayName from Firestore on next login if it's used as source of truth.
         toast({ title: "User Updated", description: `${currentUserToManage.email}'s information updated.` });
         fetchUsers();
         setIsManageUserDialogOpen(false);
@@ -204,8 +233,20 @@ export default function AdminUsersPage() {
     switch (role) {
       case "admin": return "destructive";
       case "purser": return "default";
-      case "crew": return "secondary";
+      case "cabin crew": return "secondary";
+      case "instructor": return "default"; // Example, adjust as needed
+      case "pilote": return "default";     // Example, adjust as needed
+      case "other": return "outline";
       default: return "outline";
+    }
+  };
+  
+  const formatDateDisplay = (dateString?: string) => {
+    if (!dateString) return "N/A";
+    try {
+        return format(new Date(dateString), "MMM d, yyyy");
+    } catch (e) {
+        return dateString; // Fallback if parsing fails
     }
   };
 
@@ -271,9 +312,11 @@ export default function AdminUsersPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Email</TableHead>
+                    <TableHead>Full Name</TableHead>
                     <TableHead>Display Name</TableHead>
+                    <TableHead>Employee ID</TableHead>
+                    <TableHead>Joining Date</TableHead>
                     <TableHead>Role</TableHead>
-                    <TableHead>UID</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -281,13 +324,15 @@ export default function AdminUsersPage() {
                   {usersList.map((u) => (
                     <TableRow key={u.uid}>
                       <TableCell className="font-medium">{u.email || 'N/A'}</TableCell>
+                      <TableCell>{u.fullName || 'N/A'}</TableCell>
                       <TableCell>{u.displayName || 'N/A'}</TableCell>
+                      <TableCell>{u.employeeId || 'N/A'}</TableCell>
+                      <TableCell>{formatDateDisplay(u.joiningDate)}</TableCell>
                       <TableCell>
                         <span className={cn(badgeVariants({ variant: getRoleBadgeVariant(u.role) }), "capitalize")}>
                           {u.role || 'Not Assigned'}
                         </span>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{u.uid}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" onClick={() => handleOpenEditUserDialog(u)}>
                           <Edit className="mr-1 h-4 w-4" /> Edit User
@@ -303,22 +348,22 @@ export default function AdminUsersPage() {
       </Card>
 
       <Dialog open={isManageUserDialogOpen} onOpenChange={setIsManageUserDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)}>
               <DialogHeader>
-                <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${currentUserToManage?.email || currentUserToManage?.displayName}`}</DialogTitle>
+                <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${currentUserToManage?.displayName || currentUserToManage?.email}`}</DialogTitle>
                 <DialogPrimitiveDescription>
                   {isCreateMode ? "Fill in the details for the new user." : "Modify the user's information below."}
                 </DialogPrimitiveDescription>
               </DialogHeader>
-              <div className="py-4 space-y-4">
+              <div className="py-4 space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Email*</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="user@example.com" {...field} disabled={!isCreateMode} />
                       </FormControl>
@@ -333,7 +378,7 @@ export default function AdminUsersPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>Password*</FormLabel>
                           <FormControl>
                             <Input type="password" placeholder="Min. 6 characters" {...field} />
                           </FormControl>
@@ -346,7 +391,7 @@ export default function AdminUsersPage() {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Confirm Password</FormLabel>
+                          <FormLabel>Confirm Password*</FormLabel>
                           <FormControl>
                             <Input type="password" placeholder="Re-enter password" {...field} />
                           </FormControl>
@@ -358,13 +403,53 @@ export default function AdminUsersPage() {
                 )}
                 <FormField
                   control={form.control}
+                  name="fullName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name{isCreateMode ? "*" : ""}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Johnathan Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="displayName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Display Name</FormLabel>
+                      <FormLabel>Display Name*</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., John Doe" {...field} />
+                        <Input placeholder="e.g., John D." {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="employeeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Employee ID{isCreateMode ? "*" : ""}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., EMP12345" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="joiningDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Joining Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormDescription>Optional. When the user joined.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -377,7 +462,7 @@ export default function AdminUsersPage() {
                         <FormLabel>Role</FormLabel>
                         <Select
                             onValueChange={(value) => field.onChange(value === NO_ROLE_SENTINEL ? "" : value)}
-                            value={field.value === "" ? NO_ROLE_SENTINEL : (field.value || NO_ROLE_SENTINEL)}
+                            value={field.value === "" || field.value === undefined ? NO_ROLE_SENTINEL : field.value}
                         >
                             <FormControl>
                             <SelectTrigger>
@@ -391,7 +476,7 @@ export default function AdminUsersPage() {
                             <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
                             </SelectContent>
                         </Select>
-                        <FormDescription>Optional. Assign a role or leave as default (no specific role).</FormDescription>
+                        <FormDescription>Optional. Assign a role or leave as default.</FormDescription>
                         <FormMessage />
                         </FormItem>
                     )}
@@ -413,3 +498,5 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+
+    
