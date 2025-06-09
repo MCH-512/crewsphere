@@ -12,20 +12,22 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogPrimitiveDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch"; // Added Switch
 import { useAuth } from "@/contexts/auth-context";
 import { db, auth as firebaseAuth } from "@/lib/firebase"; 
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle } from "lucide-react";
+import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff } from "lucide-react"; // Added Power, PowerOff
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { badgeVariants, type VariantProps } from "@/components/ui/badge"; 
+import { badgeVariants, type VariantProps as BadgeCvaVariantProps } from "@/components/ui/badge"; // Corrected import alias
 import { format } from "date-fns"; 
 import { type VariantProps as CvaVariantProps } from "class-variance-authority";
 
 
 type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'other';
+type AccountStatus = 'active' | 'inactive';
 
 interface UserDocument {
   uid: string;
@@ -34,9 +36,10 @@ interface UserDocument {
   displayName?: string;
   fullName?: string;
   employeeId?: string;
-  joiningDate?: string | null; // Can be YYYY-MM-DD string, null, or empty string
+  joiningDate?: string | null; 
   lastLogin?: Timestamp;
   createdAt?: Timestamp;
+  accountStatus?: AccountStatus; // Added accountStatus
 }
 
 const availableRoles: SpecificRole[] = ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'other'];
@@ -51,6 +54,7 @@ const manageUserFormSchema = z.object({
   employeeId: z.string().max(50).optional(), 
   joiningDate: z.string().optional().refine(val => val === "" || !val || !isNaN(new Date(val).getTime()), { message: "Invalid date format. Please use YYYY-MM-DD or leave empty."}), 
   role: z.string().optional(), 
+  accountStatus: z.boolean().default(true), // Added accountStatus, true for active
 })
 .refine((data) => {
   if (data.password) {
@@ -105,6 +109,7 @@ export default function AdminUsersPage() {
         employeeId: "",
         joiningDate: "",
         role: "", 
+        accountStatus: true, // Default to active
     }
   });
 
@@ -149,7 +154,8 @@ export default function AdminUsersPage() {
         fullName: "",
         employeeId: "",
         joiningDate: new Date().toISOString().split('T')[0], 
-        role: "" 
+        role: "",
+        accountStatus: true, // Default to active
     });
     setIsManageUserDialogOpen(true);
   };
@@ -162,7 +168,6 @@ export default function AdminUsersPage() {
     if (userToEdit.joiningDate) {
         try {
             const dateObj = new Date(userToEdit.joiningDate);
-            // Check if date is valid. getTime() returns NaN for invalid dates.
             if (!isNaN(dateObj.getTime())) { 
                 formJoiningDate = dateObj.toISOString().split('T')[0];
             } else {
@@ -180,6 +185,7 @@ export default function AdminUsersPage() {
         employeeId: userToEdit.employeeId || "",
         joiningDate: formJoiningDate,
         role: userToEdit.role || "", 
+        accountStatus: userToEdit.accountStatus === 'active' || userToEdit.accountStatus === undefined, // Default to active if undefined
         password: "", 
         confirmPassword: "",
     });
@@ -188,7 +194,14 @@ export default function AdminUsersPage() {
 
   const handleFormSubmit = async (data: ManageUserFormValues) => {
     setIsSubmitting(true);
-    const joiningDateToSave = data.joiningDate ? data.joiningDate : null; // Save as null if empty
+    const joiningDateToSave = data.joiningDate ? data.joiningDate : null; 
+    const statusToSave: AccountStatus = data.accountStatus ? 'active' : 'inactive';
+
+    // Note: Actually disabling a Firebase Auth user (auth.currentUser.disabled = true)
+    // requires Admin SDK privileges (typically via a Cloud Function).
+    // This implementation only sets an application-level status in Firestore.
+    // A Cloud Function could listen to changes on this 'accountStatus' field
+    // to then enable/disable the Firebase Auth user.
 
     if (isCreateMode) {
       if (!data.email || !data.password || !data.employeeId || !data.fullName || !data.displayName) {
@@ -211,11 +224,12 @@ export default function AdminUsersPage() {
           employeeId: data.employeeId,
           joiningDate: joiningDateToSave, 
           role: (data.role === NO_ROLE_SENTINEL || data.role === "") ? null : data.role as SpecificRole,
+          accountStatus: statusToSave,
           createdAt: serverTimestamp(),
-          lastLogin: serverTimestamp(),
+          lastLogin: serverTimestamp(), // Set initial lastLogin for new users
         });
 
-        toast({ title: "User Created", description: `User ${data.email} created successfully.` });
+        toast({ title: "User Created", description: `User ${data.email} created successfully with status: ${statusToSave}.` });
         fetchUsers();
         setIsManageUserDialogOpen(false);
       } catch (err: any) {
@@ -236,6 +250,7 @@ export default function AdminUsersPage() {
             employeeId: data.employeeId || "", 
             joiningDate: joiningDateToSave, 
             role: (data.role === NO_ROLE_SENTINEL || data.role === "") ? null : data.role as SpecificRole,
+            accountStatus: statusToSave,
         };
         
         if (firebaseAuth.currentUser && currentUserToManage.uid === firebaseAuth.currentUser.uid && data.displayName && data.displayName !== firebaseAuth.currentUser.displayName) {
@@ -243,7 +258,7 @@ export default function AdminUsersPage() {
         }
         
         await updateDoc(userDocRef, updates);
-        toast({ title: "User Updated", description: `${currentUserToManage.email}'s information updated.` });
+        toast({ title: "User Updated", description: `${currentUserToManage.email}'s information updated. Status: ${statusToSave}.` });
         fetchUsers();
         setIsManageUserDialogOpen(false);
       } catch (err: any) {
@@ -254,7 +269,7 @@ export default function AdminUsersPage() {
     setIsSubmitting(false);
   };
 
-  const getRoleBadgeVariant = (role?: SpecificRole | null): CvaVariantProps<typeof badgeVariants>["variant"] => {
+  const getRoleBadgeVariant = (role?: SpecificRole | null): BadgeCvaVariantProps["variant"] => {
     switch (role) {
       case "admin": return "destructive";
       case "purser": return "default"; 
@@ -263,6 +278,14 @@ export default function AdminUsersPage() {
       case "pilote": return "default";    
       case "other": return "outline";
       default: return "outline";
+    }
+  };
+
+  const getStatusBadgeVariant = (status?: AccountStatus | null): BadgeCvaVariantProps["variant"] => {
+    switch (status) {
+        case "active": return "success";
+        case "inactive": return "destructive";
+        default: return "outline";
     }
   };
   
@@ -306,7 +329,7 @@ export default function AdminUsersPage() {
               <Users className="mr-3 h-7 w-7 text-primary" />
               User Management
             </CardTitle>
-            <CardDescription>View, create, and manage user accounts and their roles.</CardDescription>
+            <CardDescription>View, create, and manage user accounts, their roles, and status.</CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={fetchUsers} disabled={isLoading}>
@@ -340,10 +363,10 @@ export default function AdminUsersPage() {
                   <TableRow>
                     <TableHead>Email</TableHead>
                     <TableHead>Full Name</TableHead>
-                    <TableHead>Display Name</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Employee ID</TableHead>
                     <TableHead>Joining Date</TableHead>
-                    <TableHead>Role</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -352,14 +375,18 @@ export default function AdminUsersPage() {
                     <TableRow key={u.uid}>
                       <TableCell className="font-medium">{u.email || 'N/A'}</TableCell>
                       <TableCell>{u.fullName || 'N/A'}</TableCell>
-                      <TableCell>{u.displayName || 'N/A'}</TableCell>
-                      <TableCell>{u.employeeId || 'N/A'}</TableCell>
-                      <TableCell>{formatDateDisplay(u.joiningDate)}</TableCell>
                       <TableCell>
                         <span className={cn(badgeVariants({ variant: getRoleBadgeVariant(u.role) }), "capitalize")}>
                           {u.role || 'Not Assigned'}
                         </span>
                       </TableCell>
+                      <TableCell>
+                        <span className={cn(badgeVariants({ variant: getStatusBadgeVariant(u.accountStatus) }), "capitalize")}>
+                          {u.accountStatus || 'Unknown'}
+                        </span>
+                      </TableCell>
+                      <TableCell>{u.employeeId || 'N/A'}</TableCell>
+                      <TableCell>{formatDateDisplay(u.joiningDate)}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" onClick={() => handleOpenEditUserDialog(u)}>
                           <Edit className="mr-1 h-4 w-4" /> Edit User
@@ -382,11 +409,6 @@ export default function AdminUsersPage() {
                 <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${currentUserToManage?.displayName || currentUserToManage?.email}`}</DialogTitle>
                 <DialogPrimitiveDescription>
                   {isCreateMode ? "Fill in the details for the new user." : "Modify the user's information below."}
-                  {currentUserToManage && !isCreateMode && (
-                    <span className={cn(badgeVariants({ variant: getRoleBadgeVariant(currentUserToManage.role) }), "ml-2 capitalize")}>
-                      Role: {currentUserToManage.role || 'Not Assigned'}
-                    </span>
-                  )}
                 </DialogPrimitiveDescription>
               </DialogHeader>
               <div className="py-4 space-y-4 max-h-[70vh] overflow-y-auto pr-2">
@@ -516,6 +538,30 @@ export default function AdminUsersPage() {
                         </FormItem>
                     )}
                  />
+                <FormField
+                  control={form.control}
+                  name="accountStatus"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col rounded-lg border p-3 shadow-sm">
+                      <FormLabel>Account Status</FormLabel>
+                      <div className="flex items-center space-x-2">
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            aria-label="Account status toggle"
+                          />
+                        </FormControl>
+                        {field.value ? <Power className="h-5 w-5 text-green-500" /> : <PowerOff className="h-5 w-5 text-destructive" />}
+                        <span className={cn("font-medium", field.value ? "text-green-600" : "text-destructive")}>
+                          {field.value ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                      <UiFormDescription>Controls if the user account is active or inactive in the application.</UiFormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
               <DialogFooter>
                 <DialogClose asChild>
@@ -533,3 +579,4 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+
