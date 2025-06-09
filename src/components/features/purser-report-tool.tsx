@@ -24,7 +24,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, query, where } from "firebase/firestore";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface PilotUser {
+  uid: string;
+  name: string; // displayName or fullName
+}
 
 const purserReportFormSchema = z.object({
   flightNumber: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars"),
@@ -64,6 +70,8 @@ export function PurserReportTool() {
   const [reportResult, setReportResult] = React.useState<PurserReportOutput | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const [pilotsList, setPilotsList] = React.useState<PilotUser[]>([]);
+  const [isLoadingPilots, setIsLoadingPilots] = React.useState(true);
 
   const defaultDate = () => new Date().toISOString().split('T')[0];
 
@@ -76,7 +84,7 @@ export function PurserReportTool() {
       arrivalAirport: "JFK",
       aircraftTypeRegistration: "B789 G-ABCD",
       
-      captainName: "Capt. A. Smith",
+      captainName: "", // Default to empty for Select
       firstOfficerName: "FO B. Jones",
       purserName: "Purser C. Williams",
       cabinCrewR1: "D. Brown (R1)",
@@ -95,6 +103,36 @@ export function PurserReportTool() {
       otherObservations: "",
     },
   });
+
+  React.useEffect(() => {
+    const fetchPilots = async () => {
+      setIsLoadingPilots(true);
+      try {
+        const usersCollectionRef = collection(db, "users");
+        const q = query(usersCollectionRef, where("role", "==", "pilote"));
+        const querySnapshot = await getDocs(q);
+        const fetchedPilots: PilotUser[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          fetchedPilots.push({
+            uid: doc.id,
+            name: data.fullName || data.displayName || "Unnamed Pilot",
+          });
+        });
+        setPilotsList(fetchedPilots);
+      } catch (error) {
+        console.error("Error fetching pilots:", error);
+        toast({
+          title: "Error",
+          description: "Could not load pilots list for captain selection.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingPilots(false);
+      }
+    };
+    fetchPilots();
+  }, [toast]);
 
   async function onSubmit(data: PurserReportFormValues) {
     if (!user) {
@@ -151,10 +189,9 @@ export function PurserReportTool() {
         description: "Report is ready for review below. Now saving to database...",
       });
 
-      // Save to Firestore
       await addDoc(collection(db, "purserReports"), {
-        reportInput: aiInput, // Save the structured input given to AI
-        reportOutput: generatedReport, // Save the AI's output
+        reportInput: aiInput,
+        reportOutput: generatedReport,
         userId: user.uid,
         userEmail: user.email,
         createdAt: serverTimestamp(),
@@ -165,16 +202,14 @@ export function PurserReportTool() {
         title: "Purser Report Saved",
         description: "Your report has been successfully generated and saved to the database.",
       });
-      // Optionally reset form: form.reset(); but typically users might want to review the data they entered.
 
     } catch (error) {
       console.error("Error in Purser Report process:", error);
       let errorMessage = "An error occurred during the Purser Report process. Please try again.";
       if (error instanceof Error) {
-        // Check if it's an AI generation error or Firestore saving error
-        if (reportResult) { // Error likely happened during Firestore save
+        if (reportResult) { 
             errorMessage = `AI report generated, but failed to save to database: ${error.message}`;
-        } else { // Error likely happened during AI generation
+        } else { 
             errorMessage = `Failed to generate AI Purser Report: ${error.message}`;
         }
       }
@@ -226,9 +261,32 @@ export function PurserReportTool() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <FormField control={form.control} name="captainName" render={({ field }) => (
-                  <FormItem><FormLabel>Captain's Name</FormLabel><FormControl><Input placeholder="e.g., Capt. John Doe" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
-                )} />
+                <FormField
+                  control={form.control}
+                  name="captainName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Captain's Name</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingPilots}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={isLoadingPilots ? "Loading pilots..." : "Select Captain"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {pilotsList.length === 0 && !isLoadingPilots && <SelectItem value="" disabled>No pilots found</SelectItem>}
+                          {pilotsList.map((pilot) => (
+                            <SelectItem key={pilot.uid} value={pilot.name}>
+                              {pilot.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>Optional. Select from available pilots.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField control={form.control} name="firstOfficerName" render={({ field }) => (
                   <FormItem><FormLabel>First Officer's Name</FormLabel><FormControl><Input placeholder="e.g., FO Jane Smith" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
                 )} />
@@ -358,8 +416,3 @@ export function PurserReportTool() {
     </div>
   );
 }
-    
-
-    
-
-    
