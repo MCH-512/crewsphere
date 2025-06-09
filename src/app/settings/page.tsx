@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { User, Bell, Shield, Palette, Loader2, InfoSquare, CalendarDays } from "lucide-react";
+import { User, Bell, Shield, Palette, Loader2, Info, CalendarDays } from "lucide-react"; // Changed InfoSquare to Info
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { updateProfile as updateAuthProfile } from "firebase/auth"; // Renamed to avoid conflict
@@ -157,7 +157,7 @@ export default function SettingsPage() {
            <Separator />
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <Label htmlFor="employeeId" className="flex items-center gap-1"><InfoSquare className="w-3.5 h-3.5 text-muted-foreground"/> Employee ID</Label>
+                <Label htmlFor="employeeId" className="flex items-center gap-1"><Info className="w-3.5 h-3.5 text-muted-foreground"/> Employee ID</Label>
                 <Input id="employeeId" value={user.employeeId || "N/A"} disabled />
                 <p className="text-xs text-muted-foreground mt-1">Your unique company identifier.</p>
             </div>
