@@ -37,15 +37,17 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 const courseCategories = [
-  "Safety & Emergency",
-  "Regulatory & Compliance",
-  "Customer Service Excellence",
-  "Technical Operations",
-  "General Aviation Knowledge",
-  "Health & Wellbeing",
-  "Security Procedures",
-  "Formation Initiale",
-  "CRM (Crew Resource Management)",
+  "General Information",
+  "Safety Equipment",
+  "Standard Operating Procedures (SOPs)",
+  "Emergency Procedures",
+  "First Aid",
+  "Dangerous Goods (DG)",
+  "Safety Management System (SMS)",
+  "Crew Resource Management (CRM)",
+  "Aircraft Type Rating",
+  "Fatigue Risk Management System (FRMS)",
+  "Flight Time Limitations (FTL)",
 ];
 
 const courseTypes = [
