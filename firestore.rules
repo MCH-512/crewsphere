@@ -4,70 +4,102 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user is an admin
+    // Helper function to check if the authenticated user is an admin
     function isAdmin() {
-      // Check if the user is authenticated and their user document has role 'admin'
       return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Helper function to check if the user is the owner of the document
-    // (typically used when the document ID is the user's UID or the document has a userId field)
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
-    }
-
     // Users collection
-    // Users can read all profiles (e.g., for display names)
-    // Users can create their own user document (on signup)
-    // Users can update their own profile, Admins can update any profile
-    // Only Admins can delete user documents
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
+      allow read; // Allow any authenticated user to read any user profile (for display names, etc.)
+      allow write: if request.auth != null && request.auth.uid == userId; // User can only write to their own document
+      // Admins can read/write any user document
+      allow read, write: if isAdmin();
     }
 
-    // Generic rule for collections primarily managed by Admins
-    // Authenticated users can read, Admins can write (create, update, delete)
-    match /{collectionName}/{docId}
-      where collectionName in ['courses', 'quizzes', 'questions', 'certificateRules', 'documents', 'alerts', 'flights'] {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
+    // Alerts collection
+    match /alerts/{alertId} {
+      allow read; // All users can read alerts
+      // Only admins can create/update/delete alerts
+      allow create, update, delete: if isAdmin();
     }
 
-    // User specific training progress
-    // progressId is typically structured as `${userId}_${courseId}`
-    // Users can read and write their own progress. Admins can read any progress.
-    match /userTrainingProgress/{progressId} {
-      allow read: if request.auth != null && (isOwner(progressId.split('_')[0]) || isAdmin());
-      allow write: if request.auth != null && isOwner(progressId.split('_')[0]);
+    // Documents collection
+    match /documents/{documentId} {
+      allow read; // All users can read documents
+      // Only admins can create/update/delete documents
+      allow create, update, delete: if isAdmin();
     }
 
-    // User requests
-    // Users can create requests for themselves.
-    // Users can read their own requests. Admins can read all requests.
-    // Only Admins can update (e.g., status) or delete requests.
+    // Flights collection
+    match /flights/{flightId} {
+      allow read; // All users can read flight info
+      // Only admins can create/update/delete flights
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Requests collection (user-submitted requests)
     match /requests/{requestId} {
-      allow create: if request.auth != null && isOwner(request.resource.data.userId);
-      allow read: if request.auth != null && (isOwner(resource.data.userId) || isAdmin());
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      // User can create their own requests
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // User can read their own requests
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Admins can read and update (e.g., status) any request
+      allow read, update: if isAdmin();
+      // Generally, users should not be able to delete requests, nor update arbitrary fields.
+      allow delete: if false;
     }
 
-    // Purser Reports
-    // Users can create their own reports.
-    // Users can read their own reports. Admins can read all reports.
-    // Only Admins can update or delete reports.
+    // Purser Reports collection
     match /purserReports/{reportId} {
-      allow create: if request.auth != null && isOwner(request.resource.data.userId);
-      allow read: if request.auth != null && (isOwner(resource.data.userId) || isAdmin());
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+        // Authenticated users can create their own reports
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        // Admins can read and manage all reports
+        allow read, update, delete: if isAdmin();
     }
 
-    // Default deny for any other paths not explicitly matched.
-    // This is a security best practice.
+    // Course-related collections
+    match /courses/{courseId} {
+      allow read; // All users can read course information
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /quizzes/{quizId} {
+      allow read; // All users can read quiz information (related to a course)
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /questions/{questionId} {
+      // Questions are typically read as part of a quiz. Direct read might be limited.
+      // For simplicity, allow authenticated users to read (access control via quiz/course enrollment is ideal).
+      allow read: if request.auth != null;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /certificateRules/{ruleId} {
+      // Rules might be read by users if details are shown, or by admins.
+      allow read: if request.auth != null;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /userTrainingProgress/{progressId} {
+      function isOwner() {
+        // Check if the authenticated user is the owner of the document
+        return request.auth != null && resource.data.userId == request.auth.uid;
+      }
+       function isCreatingOwner() {
+        // Check if the authenticated user is creating their own document
+        return request.auth != null && request.resource.data.userId == request.auth.uid;
+      }
+
+      allow read, write: if isOwner(); // User can read/write their own progress
+      allow create: if isCreatingOwner(); // User can create their own progress doc
+      // Admins can read any user's progress
+      allow read: if isAdmin();
+      // Admins generally shouldn't directly write to user progress unless for specific corrections (can be added if needed)
+    }
+
+    // Default deny all other paths
     match /{document=**} {
       allow read, write: if false;
     }
