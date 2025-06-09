@@ -4,7 +4,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Badge, badgeVariants } from "@/components/ui/badge"; // Import badgeVariants
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +15,7 @@ import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc } from "
 import { useRouter } from "next/navigation";
 import { Users, Loader2, AlertTriangle, RefreshCw, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils"; // Ensure cn is imported
 
 interface UserDocument {
   uid: string; 
@@ -200,7 +201,7 @@ export default function AdminUsersPage() {
             <DialogHeader>
               <DialogTitle>Edit Role for {selectedUserForEdit.email}</DialogTitle>
               <DialogDescription>
-                Current role: <Badge variant={getRoleBadgeVariant(selectedUserForEdit.role)} className="capitalize text-xs">{selectedUserForEdit.role || 'Not Assigned'}</Badge>
+                Current role: <span className={cn(badgeVariants({ variant: getRoleBadgeVariant(selectedUserForEdit.role) }), "capitalize text-xs")}>{selectedUserForEdit.role || 'Not Assigned'}</span>
               </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-4">
