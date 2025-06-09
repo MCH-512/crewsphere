@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -6,12 +5,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2 } from "lucide-react";
+import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2, List } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, Timestamp, orderBy } from "firebase/firestore";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+interface ModuleData {
+  moduleCode?: string;
+  moduleTitle: string;
+  moduleObjectives: string;
+  durationMinutes: number;
+  linkedQuizId?: string;
+}
 
 interface CourseData {
   id: string; 
@@ -20,8 +28,11 @@ interface CourseData {
   category: string;
   imageHint: string;
   quizId: string;
-  quizTitle: string;
+  quizTitle: string; // Assuming quizTitle is directly on course doc or fetched separately
   mandatory: boolean;
+  modules?: ModuleData[];
+  duration?: string; // Estimated duration of the whole course
+  fileURL?: string; // Associated material URL
 }
 
 interface UserProgressData {
@@ -53,8 +64,10 @@ export default function TrainingPage() {
 
   const [selectedCourseForQuiz, setSelectedCourseForQuiz] = React.useState<CombinedCourse | null>(null);
   const [selectedCourseForCert, setSelectedCourseForCert] = React.useState<CombinedCourse | null>(null);
+  const [selectedCourseForContent, setSelectedCourseForContent] = React.useState<CombinedCourse | null>(null);
   const [isQuizDialogOpen, setIsQuizDialogOpen] = React.useState(false);
   const [isCertDialogOpen, setIsCertDialogOpen] = React.useState(false);
+  const [isContentDialogOpen, setIsContentDialogOpen] = React.useState(false);
   const [isUpdating, setIsUpdating] = React.useState(false);
 
   const fetchTrainingData = React.useCallback(async () => {
@@ -88,6 +101,20 @@ export default function TrainingPage() {
             lastUpdated: Timestamp.now() 
           };
         }
+        // Ensure quizTitle is populated if not directly on courseData
+        if (!courseData.quizTitle && courseData.quizId) {
+            const quizDocRef = doc(db, "quizzes", courseData.quizId);
+            const quizSnap = await getDoc(quizDocRef);
+            if (quizSnap.exists()) {
+                courseData.quizTitle = quizSnap.data()?.title || "Course Quiz";
+            } else {
+                courseData.quizTitle = "Course Quiz";
+            }
+        } else if (!courseData.quizTitle) {
+            courseData.quizTitle = "Course Quiz"; // Fallback
+        }
+
+
         combinedCoursesWithProgress.push({ ...courseData, progress: userProgress });
       }
       setCourses(combinedCoursesWithProgress);
@@ -114,36 +141,45 @@ export default function TrainingPage() {
     const course = courses.find(c => c.id === courseId);
     if (!course) return;
 
+    if (course.progress?.contentStatus !== 'Completed') {
+        setSelectedCourseForContent(course);
+        setIsContentDialogOpen(true);
+    } else {
+      setSelectedCourseForQuiz(course);
+      setIsQuizDialogOpen(true);
+    }
+  };
+
+  const markContentCompleted = async () => {
+    if(!user || !selectedCourseForContent) return;
+    
     setIsUpdating(true);
-    const progressDocId = `${user.uid}_${course.id}`;
+    const progressDocId = `${user.uid}_${selectedCourseForContent.id}`;
     const progressDocRef = doc(db, "userTrainingProgress", progressDocId);
 
     try {
-      if (course.progress?.contentStatus !== 'Completed') {
         const newProgressData: Partial<UserProgressData> = {
-          userId: user.uid,
-          courseId: course.id,
-          contentStatus: 'Completed',
-          lastUpdated: Timestamp.now(),
+            userId: user.uid,
+            courseId: selectedCourseForContent.id,
+            contentStatus: 'Completed',
+            lastUpdated: Timestamp.now(),
         };
-        if(!course.progress || !course.progress.quizStatus){
+        if(!selectedCourseForContent.progress || !selectedCourseForContent.progress.quizStatus){
             newProgressData.quizStatus = 'NotTaken';
         }
-
         await setDoc(progressDocRef, newProgressData, { merge: true });
-        toast({ title: "Course Content Viewed", description: `You have completed the material for "${course.title}". You can now take the quiz.` });
+        toast({ title: "Course Content Viewed", description: `You have completed the material for "${selectedCourseForContent.title}". You can now take the quiz.` });
         fetchTrainingData(); 
-      } else {
-        setSelectedCourseForQuiz(course);
-        setIsQuizDialogOpen(true);
-      }
+        setIsContentDialogOpen(false);
+        setSelectedCourseForContent(null);
     } catch (error) {
       console.error("Error updating course progress:", error);
       toast({ title: "Update Error", description: "Could not update course progress.", variant: "destructive" });
     } finally {
       setIsUpdating(false);
     }
-  };
+  }
+
 
   const simulateQuiz = async (courseId: string, passed: boolean) => {
     if (!user) return;
@@ -155,6 +191,23 @@ export default function TrainingPage() {
     const progressDocRef = doc(db, "userTrainingProgress", progressDocId);
     const score = passed ? Math.floor(Math.random() * 21) + 80 : Math.floor(Math.random() * 40) + 40; 
 
+    const certRuleDocRef = doc(db, "certificateRules", course.id); // Assuming cert rule ID is same as course ID for simplicity, or needs to be fetched
+    let expiryDurationDays = 365; // Default
+    try {
+        const certRuleSnap = await getDoc(doc(db, "certificateRules", course.id + "_cert_rule")); // Example: Fetch based on course ID
+        // A better way would be to have certificateRuleId on the course document.
+        // For now, let's assume course.certificateRuleId exists or use a default.
+        const courseDocRef = doc(db, "courses", course.id);
+        const courseSnap = await getDoc(courseDocRef);
+        if (courseSnap.exists() && courseSnap.data().certificateRuleId) {
+            const ruleSnap = await getDoc(doc(db, "certificateRules", courseSnap.data().certificateRuleId));
+            if (ruleSnap.exists()) {
+                 expiryDurationDays = ruleSnap.data().expiryDurationDays || 365;
+            }
+        }
+    } catch (e) { console.error("Could not fetch cert rule, using default expiry", e); }
+
+
     const newProgressData: Partial<UserProgressData> = {
       userId: user.uid,
       courseId: course.id,
@@ -165,12 +218,14 @@ export default function TrainingPage() {
 
     if (passed) {
       const issuedDate = new Date().toISOString();
-      const expiryYears = course.title.toLowerCase().includes("recurrent") || course.title.toLowerCase().includes("refresher") ? 1 : 2;
-      const expiryDate = new Date(new Date().setFullYear(new Date().getFullYear() + expiryYears)).toISOString();
+      let expiryDate: string | undefined = undefined;
+      if (expiryDurationDays > 0) {
+        expiryDate = new Date(new Date().setDate(new Date().getDate() + expiryDurationDays)).toISOString();
+      }
       
       newProgressData.certificateDetails = {
-        provider: "In-House Certification Body",
-        certificateId: `CERT-${course.id}-${new Date().getFullYear()}`,
+        provider: "AirCrew Hub Training Dept.",
+        certificateId: `ACH-CERT-${course.id.substring(0,5)}-${new Date().getFullYear()}`,
         issuedDate: issuedDate,
         expiryDate: expiryDate,
       };
@@ -280,9 +335,17 @@ export default function TrainingPage() {
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-3 h-16 overflow-hidden">
+                    <p className="text-sm text-muted-foreground mb-1 h-12 overflow-hidden" title={course.description}>
                       {course.description}
                     </p>
+                    {course.duration && <p className="text-xs text-muted-foreground mb-3">Est. Duration: {course.duration}</p>}
+                    
+                    {(course.modules && course.modules.length > 0) && (
+                      <div className="mb-3">
+                        <p className="text-xs font-medium text-muted-foreground">Modules: {course.modules.length}</p>
+                      </div>
+                    )}
+
                     <div className="text-xs text-muted-foreground mb-1">
                         Content: <Badge variant={contentStatus === 'Completed' ? 'default' : 'secondary'} className={contentStatus === 'Completed' ? 'bg-green-500/20 text-green-700 border-green-500/30' : '' }>{contentStatus}</Badge>
                     </div>
@@ -350,6 +413,59 @@ export default function TrainingPage() {
           </Card>
         )}
       </section>
+
+      {selectedCourseForContent && (
+        <Dialog open={isContentDialogOpen} onOpenChange={setIsContentDialogOpen}>
+            <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[90vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle>{selectedCourseForContent.title}</DialogTitle>
+                    <DialogDescription>
+                        Category: {selectedCourseForContent.category} | Duration: {selectedCourseForContent.duration || 'N/A'}
+                        {selectedCourseForContent.mandatory && <Badge variant="destructive" className="ml-2">Mandatory</Badge>}
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="flex-grow pr-6 -mr-6">
+                    <div className="py-4 space-y-4">
+                        <p className="text-sm text-muted-foreground">{selectedCourseForContent.description}</p>
+                        
+                        {selectedCourseForContent.fileURL && (
+                            <Button asChild variant="outline">
+                                <a href={selectedCourseForContent.fileURL} target="_blank" rel="noopener noreferrer">
+                                    <FileTextIcon className="mr-2 h-4 w-4"/> View Associated Material
+                                </a>
+                            </Button>
+                        )}
+
+                        {selectedCourseForContent.modules && selectedCourseForContent.modules.length > 0 && (
+                            <div className="mt-4">
+                                <h3 className="font-semibold mb-2 flex items-center"><List className="mr-2 h-5 w-5 text-primary"/>Course Modules:</h3>
+                                <div className="space-y-3">
+                                {selectedCourseForContent.modules.map((module, index) => (
+                                    <Card key={index} className="p-3 bg-secondary/50">
+                                        <CardTitle className="text-md font-medium">{module.moduleTitle} {module.moduleCode && `(${module.moduleCode})`}</CardTitle>
+                                        <CardDescription className="text-xs">Duration: {module.durationMinutes} mins</CardDescription>
+                                        <p className="text-sm mt-1 text-muted-foreground whitespace-pre-line">{module.moduleObjectives}</p>
+                                    </Card>
+                                ))}
+                                </div>
+                            </div>
+                        )}
+                         {!selectedCourseForContent.modules && (!selectedCourseForContent.fileURL || selectedCourseForContent.fileURL === "") &&(
+                            <p className="text-sm italic text-muted-foreground">No specific modules or downloadable content. Review the description above.</p>
+                         )}
+                    </div>
+                </ScrollArea>
+                <DialogFooter className="mt-auto pt-4 border-t">
+                    <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
+                    <Button onClick={markContentCompleted} disabled={isUpdating}>
+                        {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        Mark Content as Completed
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+      )}
+
 
       <Dialog open={isQuizDialogOpen} onOpenChange={setIsQuizDialogOpen}>
         <DialogContent className="sm:max-w-md">

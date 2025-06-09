@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -254,7 +253,7 @@ export default function DashboardPage() {
     }
     switch (alert.level) {
         case "critical": return AlertTriangle;
-        case "warning": return AlertTriangle;
+        case "warning": return AlertTriangle; 
         case "info":
         default: return Info;
     }

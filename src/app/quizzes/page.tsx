@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -19,8 +18,8 @@ interface CourseForQuiz {
   description: string; 
   category: string; 
   imageHint: string;
-  quizId: string;
-  quizTitle: string;
+  quizId: string; // ID of the quiz document in 'quizzes' collection
+  quizTitle: string; // Title of the quiz itself
   mandatory: boolean;
 }
 
@@ -55,13 +54,37 @@ export default function QuizzesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const coursesQuery = query(collection(db, "courses"), orderBy("title"));
+      // Query courses that have a quizId, indicating they have an associated quiz
+      const coursesQuery = query(collection(db, "courses"), where("quizId", "!=", null), orderBy("title"));
       const coursesSnapshot = await getDocs(coursesQuery);
-      const fetchedCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CourseForQuiz));
+      
+      const fetchedCoursesWithQuiz: CourseForQuiz[] = [];
+      for (const courseDoc of coursesSnapshot.docs) {
+        const courseData = courseDoc.data();
+        if (courseData.quizId) { // Ensure quizId exists
+            let currentQuizTitle = "Course Quiz"; // Default
+            const quizSnap = await getDoc(doc(db, "quizzes", courseData.quizId));
+            if(quizSnap.exists()) {
+                currentQuizTitle = quizSnap.data()?.title || "Course Quiz";
+            }
+
+            fetchedCoursesWithQuiz.push({
+                id: courseDoc.id,
+                title: courseData.title,
+                description: courseData.description,
+                category: courseData.category,
+                imageHint: courseData.imageHint,
+                quizId: courseData.quizId,
+                quizTitle: currentQuizTitle,
+                mandatory: courseData.mandatory || false,
+            } as CourseForQuiz);
+        }
+      }
+
 
       const combinedQuizItems: CombinedQuizItem[] = [];
 
-      for (const course of fetchedCourses) {
+      for (const course of fetchedCoursesWithQuiz) {
         const progressDocId = `${user.uid}_${course.id}`;
         const progressDocRef = doc(db, "userTrainingProgress", progressDocId);
         const progressSnap = await getDoc(progressDocRef);
@@ -90,21 +113,26 @@ export default function QuizzesPage() {
             statusLabel = userProgress.contentStatus === 'NotStarted' ? "Course Not Started" : "Course In Progress";
             actionLabel = "Complete Course First";
             ActionIcon = BookOpen;
-            actionLink = "/training"; 
-            actionDisabled = false; 
+            actionLink = "/training"; // Link to general training page
+            actionDisabled = false; // Button becomes a link to training
         } else { 
             if (userProgress.quizStatus === 'Passed') {
                 statusLabel = `Passed (Score: ${userProgress.quizScore}%)`;
                 actionLabel = "Review Quiz"; 
                 ActionIcon = CheckCircle;
+                actionDisabled = true; // Placeholder for review, which isn't implemented
             } else if (userProgress.quizStatus === 'Failed') {
                 statusLabel = `Failed (Score: ${userProgress.quizScore}%)`;
                 actionLabel = "Retake Quiz";
                 ActionIcon = PlayCircle;
-            } else { 
+                // Link to /training to simulate retake via course action
+                actionLink = `/training`;
+            } else { // NotTaken or Attempted but not Passed/Failed (e.g. if interrupted)
                 statusLabel = "Ready for Quiz";
                 actionLabel = "Start Quiz";
                 ActionIcon = Zap;
+                // Link to /training to simulate start via course action
+                actionLink = `/training`; 
             }
         }
         
@@ -115,7 +143,7 @@ export default function QuizzesPage() {
           actionLabel,
           ActionIcon,
           actionDisabled,
-          actionLink,
+          actionLink, 
         });
       }
       setQuizzes(combinedQuizItems);
@@ -134,14 +162,16 @@ export default function QuizzesPage() {
     }
   }, [user, authLoading, fetchQuizzesAndProgress]);
 
-  const handleQuizAction = (quizTitle: string, link?: string) => {
-    if (link) {
-        window.location.href = link;
+  const handleQuizAction = (quizItem: CombinedQuizItem) => {
+    if (quizItem.actionLink) {
+        // If it's a link (e.g., "Complete Course First" or "Retake/Start Quiz" via training page)
+        window.location.href = quizItem.actionLink; 
         return;
     }
+    // For actions that don't navigate (like "Review Quiz" which is disabled or future actual quiz taking)
     toast({
-      title: `Quiz Action: ${quizTitle}`,
-      description: "Full quiz-taking or review functionality is coming soon!",
+      title: `Quiz Action: ${quizItem.quizTitle}`,
+      description: "This quiz interaction is currently simulated or linked through the Training Hub. Full quiz-taking or review functionality within this page is coming soon!",
     });
   };
 
@@ -194,7 +224,7 @@ export default function QuizzesPage() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            Regularly completing quizzes helps reinforce critical knowledge and procedures.
+            Regularly completing quizzes helps reinforce critical knowledge and procedures. Course content must be completed before taking a quiz.
           </p>
         </CardContent>
       </Card>
@@ -208,58 +238,51 @@ export default function QuizzesPage() {
       )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {quizzes.map((quiz) => {
-          const Icon = quiz.ActionIcon;
+        {quizzes.map((quizItem) => {
+          const Icon = quizItem.ActionIcon;
           const buttonContent = (
             <>
                 <Icon className="mr-2 h-4 w-4" />
-                {quiz.actionLabel}
+                {quizItem.actionLabel}
             </>
           );
           return (
-            <Card key={quiz.id} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
+            <Card key={quizItem.id} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
               <CardHeader className="flex-shrink-0">
                 <div className="flex items-start gap-4">
                     <Image
                         src={`https://placehold.co/70x70.png`}
-                        alt={quiz.quizTitle}
+                        alt={quizItem.quizTitle}
                         width={70}
                         height={70}
                         className="rounded-lg"
-                        data-ai-hint={quiz.imageHint || "quiz assessment"}
+                        data-ai-hint={quizItem.imageHint || "quiz assessment"}
                     />
                     <div>
-                        <CardTitle className="text-lg mb-1">{quiz.quizTitle}</CardTitle>
-                        <Badge variant="outline">{quiz.category}</Badge>
-                         {quiz.mandatory && (
+                        <CardTitle className="text-lg mb-1">{quizItem.quizTitle}</CardTitle>
+                        <Badge variant="outline" className="text-xs">{quizItem.category}</Badge>
+                         {quizItem.mandatory && (
                             <Badge variant="destructive" className="mt-1 ml-1 text-xs">Mandatory</Badge>
                         )}
+                         <p className="text-xs text-muted-foreground mt-1">Course: {quizItem.title}</p>
                     </div>
                 </div>
               </CardHeader>
               <CardContent className="flex-grow flex flex-col justify-between">
                 <div>
-                    <p className="text-sm text-muted-foreground mb-3 h-16 overflow-hidden" title={quiz.description}>
-                      {quiz.description}
+                    <p className="text-sm text-muted-foreground mb-3 h-12 overflow-hidden" title={quizItem.description}>
+                      {quizItem.description}
                     </p>
                     <div className="text-xs text-muted-foreground mb-3">
-                        <span>~10-20 Questions (Placeholder)</span> |
-                        <span className="ml-1 font-semibold">
-                           Status: {quiz.statusLabel}
+                        <span className="font-semibold">
+                           Status: {quizItem.statusLabel}
                         </span>
                     </div>
                 </div>
-                {quiz.actionLink ? (
-                     <Button asChild className="w-full mt-2" disabled={quiz.actionDisabled}>
-                        <Link href={quiz.actionLink}>
-                           {buttonContent}
-                        </Link>
-                    </Button>
-                ) : (
-                    <Button className="w-full mt-2" onClick={() => handleQuizAction(quiz.quizTitle)} disabled={quiz.actionDisabled}>
-                     {buttonContent}
-                    </Button>
-                )}
+                
+                <Button className="w-full mt-2" onClick={() => handleQuizAction(quizItem)} disabled={quizItem.actionDisabled}>
+                    {buttonContent}
+                </Button>
               </CardContent>
             </Card>
           );
