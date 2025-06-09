@@ -41,7 +41,7 @@ const purserReportFormSchema = z.object({
   
   captainName: z.string().optional(),
   firstOfficerName: z.string().optional(),
-  purserName: z.string().min(1, "Supervising crew (Purser/Instructor) name is required."), // Allow empty if placeholder means 'not selected'
+  purserName: z.string().nonempty({ message: "Supervising crew (Purser/Instructor) name is required."}),
   cabinCrewR1: z.string().optional(),
   cabinCrewL2: z.string().optional(),
   cabinCrewR2: z.string().optional(),
