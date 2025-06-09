@@ -10,9 +10,10 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, Trash2 } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 interface Flight {
   id: string;
@@ -114,10 +115,17 @@ export default function AdminFlightsPage() {
             </CardTitle>
             <CardDescription>View all scheduled and active flights in the system.</CardDescription>
           </div>
-          <Button variant="outline" onClick={fetchFlights} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh Flights
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={fetchFlights} disabled={isLoading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh Flights
+            </Button>
+            <Button asChild>
+              <Link href="/admin/flights/create">
+                <PlusCircle className="mr-2 h-4 w-4" /> Create New Flight
+              </Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {error && (
@@ -132,7 +140,7 @@ export default function AdminFlightsPage() {
             </div>
           )}
           {!isLoading && flights.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">No flights found. Admins can add flights via the 'Add New Flight' button on the Admin Console.</p>
+            <p className="text-muted-foreground text-center py-8">No flights found. Click the "Create New Flight" button to add one.</p>
           )}
           {flights.length > 0 && (
             <div className="rounded-md border">
