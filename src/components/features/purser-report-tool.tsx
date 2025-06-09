@@ -41,7 +41,7 @@ const purserReportFormSchema = z.object({
   
   captainName: z.string().optional(),
   firstOfficerName: z.string().optional(),
-  purserName: z.string().min(2, "Supervising crew (Purser/Instructor) name is required."),
+  purserName: z.string().min(1, "Supervising crew (Purser/Instructor) name is required."), // Allow empty if placeholder means 'not selected'
   cabinCrewR1: z.string().optional(),
   cabinCrewL2: z.string().optional(),
   cabinCrewR2: z.string().optional(),
@@ -77,6 +77,9 @@ export function PurserReportTool() {
   const [supervisingCrewList, setSupervisingCrewList] = React.useState<CrewUser[]>([]);
   const [isLoadingSupervisingCrew, setIsLoadingSupervisingCrew] = React.useState(true);
 
+  const [cabinCrewList, setCabinCrewList] = React.useState<CrewUser[]>([]);
+  const [isLoadingCabinCrew, setIsLoadingCabinCrew] = React.useState(true);
+
   const defaultDate = () => new Date().toISOString().split('T')[0];
 
   const form = useForm<PurserReportFormValues>({
@@ -91,9 +94,9 @@ export function PurserReportTool() {
       captainName: "", 
       firstOfficerName: "",
       purserName: "", 
-      cabinCrewR1: "D. Brown (R1)",
-      cabinCrewL2: "E. Davis (L2)",
-      cabinCrewR2: "F. Miller (R2)",
+      cabinCrewR1: "",
+      cabinCrewL2: "",
+      cabinCrewR2: "",
       otherCrewMembers: "",
 
       passengerLoad: { total: 200, adults: 180, children: 15, infants: 5 },
@@ -130,7 +133,7 @@ export function PurserReportTool() {
           const data = doc.data();
           fetchedCrew.push({
             uid: doc.id,
-            name: data.fullName || data.displayName || `Unnamed ${Array.isArray(roles) ? roles.join('/') : roles}`,
+            name: data.fullName || data.displayName || `Unnamed User (${doc.id.substring(0,5)})`,
           });
         });
         setList(fetchedCrew.sort((a, b) => a.name.localeCompare(b.name)));
@@ -148,6 +151,7 @@ export function PurserReportTool() {
     };
     fetchCrew("pilote", setPilotsList, setIsLoadingPilots);
     fetchCrew(["purser", "instructor"], setSupervisingCrewList, setIsLoadingSupervisingCrew);
+    fetchCrew("cabin crew", setCabinCrewList, setIsLoadingCabinCrew);
   }, [toast]);
 
   async function onSubmit(data: PurserReportFormValues) {
@@ -163,17 +167,10 @@ export function PurserReportTool() {
     setIsLoading(true);
     setReportResult(null);
 
-    // Determine the "role" for the selected supervising crew member for the AI prompt
-    // This is a simplification; in a real scenario, you might want to store the actual role selected.
-    let purserOrInstructorRole = "Purser"; // Default to Purser
-    const selectedSupervisingCrewMember = supervisingCrewList.find(c => c.name === data.purserName);
-    // To determine the actual role, we would need to fetch the user document again or store role with name.
-    // For now, we'll just use the name provided. The AI prompt is generic enough.
-
     const crewDetailsParts = [
       data.captainName ? `Captain: ${data.captainName}` : null,
       data.firstOfficerName ? `First Officer: ${data.firstOfficerName}` : null,
-      data.purserName ? `Supervising Crew: ${data.purserName}` : null, // Changed label for clarity if instructor
+      data.purserName ? `Supervising Crew: ${data.purserName}` : null,
       data.cabinCrewR1 ? `R1: ${data.cabinCrewR1}` : null,
       data.cabinCrewL2 ? `L2: ${data.cabinCrewL2}` : null,
       data.cabinCrewR2 ? `R2: ${data.cabinCrewR2}` : null,
@@ -290,14 +287,14 @@ export function PurserReportTool() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Captain's Name</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingPilots}>
+                      <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingPilots}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={isLoadingPilots ? "Loading pilots..." : "Select Captain"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {pilotsList.length === 0 && !isLoadingPilots && <SelectItem value="" disabled>No active pilots found</SelectItem>}
+                          <SelectItem value="">Not Assigned / Other</SelectItem>
                           {pilotsList.map((pilot) => (
                             <SelectItem key={pilot.uid} value={pilot.name}>
                               {pilot.name}
@@ -316,14 +313,14 @@ export function PurserReportTool() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>First Officer's Name</FormLabel>
-                       <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingPilots}>
+                       <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingPilots}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={isLoadingPilots ? "Loading pilots..." : "Select First Officer"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                           {pilotsList.length === 0 && !isLoadingPilots && <SelectItem value="" disabled>No active pilots found</SelectItem>}
+                           <SelectItem value="">Not Assigned / Other</SelectItem>
                           {pilotsList.map((pilot) => (
                             <SelectItem key={pilot.uid} value={pilot.name}>
                               {pilot.name}
@@ -342,14 +339,14 @@ export function PurserReportTool() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Supervising Crew (Purser/Instructor)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingSupervisingCrew}>
+                      <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingSupervisingCrew}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={isLoadingSupervisingCrew ? "Loading crew..." : "Select Purser or Instructor"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {supervisingCrewList.length === 0 && !isLoadingSupervisingCrew && <SelectItem value="" disabled>No active pursers/instructors found</SelectItem>}
+                          <SelectItem value="">Not Assigned / Other</SelectItem>
                           {supervisingCrewList.map((crew) => (
                             <SelectItem key={crew.uid} value={crew.name}>
                               {crew.name}
@@ -364,17 +361,71 @@ export function PurserReportTool() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                  <FormField control={form.control} name="cabinCrewR1" render={({ field }) => (
-                  <FormItem><FormLabel>Cabin Crew (R1)</FormLabel><FormControl><Input placeholder="Name (R1)" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Cabin Crew (R1)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingCabinCrew}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={isLoadingCabinCrew ? "Loading crew..." : "Select R1"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Not Assigned / Other</SelectItem>
+                          {cabinCrewList.map((crew) => (
+                            <SelectItem key={crew.uid} value={crew.name}>
+                              {crew.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    <FormDescription>Optional</FormDescription><FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="cabinCrewL2" render={({ field }) => (
-                  <FormItem><FormLabel>Cabin Crew (L2)</FormLabel><FormControl><Input placeholder="Name (L2)" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Cabin Crew (L2)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingCabinCrew}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={isLoadingCabinCrew ? "Loading crew..." : "Select L2"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Not Assigned / Other</SelectItem>
+                          {cabinCrewList.map((crew) => (
+                            <SelectItem key={crew.uid} value={crew.name}>
+                              {crew.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    <FormDescription>Optional</FormDescription><FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="cabinCrewR2" render={({ field }) => (
-                  <FormItem><FormLabel>Cabin Crew (R2)</FormLabel><FormControl><Input placeholder="Name (R2)" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Cabin Crew (R2)</FormLabel>
+                     <Select onValueChange={field.onChange} value={field.value || ""} disabled={isLoadingCabinCrew}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={isLoadingCabinCrew ? "Loading crew..." : "Select R2"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Not Assigned / Other</SelectItem>
+                          {cabinCrewList.map((crew) => (
+                            <SelectItem key={crew.uid} value={crew.name}>
+                              {crew.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    <FormDescription>Optional</FormDescription><FormMessage />
+                  </FormItem>
                 )} />
               </div>
               <FormField control={form.control} name="otherCrewMembers" render={({ field }) => (
-                <FormItem><FormLabel>Other Crew Members / Notes</FormLabel><FormControl><Textarea placeholder="List any additional crew or specific roles/notes..." {...field} /></FormControl><FormDescription>Optional. E.g., L1: S. King, Additional FA: P. White</FormDescription><FormMessage /></FormItem>
+                <FormItem><FormLabel>Other Crew Members / Notes</FormLabel><FormControl><Textarea placeholder="List any additional crew or specific roles/notes..." {...field} /></FormControl><FormDescription>Optional. E.g., L1: S. King, Additional FA: P. White (if not in lists)</FormDescription><FormMessage /></FormItem>
               )} />
             </CardContent>
           </Card>
