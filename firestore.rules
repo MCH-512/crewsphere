@@ -1,0 +1,152 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Lit le rôle de l'utilisateur directement depuis la collection 'users'
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserData(request.auth.uid).role == 'admin';
+    }
+
+    // Users collection
+    // Les documents sont identifiés par l'UID de l'utilisateur.
+    match /users/{userId} {
+      allow read: if isAdmin() || isUser(userId);
+      
+      // Création d'un document utilisateur (généralement lors de la première connexion/inscription via AuthProvider)
+      allow create: if isUser(userId) &&
+                       request.resource.data.email == request.auth.email &&
+                       // Un utilisateur ne peut pas s'auto-attribuer le rôle admin lors de la création.
+                       // Le rôle doit être 'crew', absent (null), ou vide. La logique applicative peut assigner 'crew' par défaut.
+                       (!('role' in request.resource.data) || request.resource.data.role == 'crew' || request.resource.data.role == null || request.resource.data.role == '');
+                       // Champs attendus lors de la création via AuthProvider ou Settings.
+                       // request.resource.data.keys().hasAll(['email', 'createdAt', 'lastLogin']) &&
+                       // request.resource.data.keys().hasOnly(['email', 'displayName', 'photoURL', 'createdAt', 'lastLogin', 'role']);
+
+      // Mise à jour d'un document utilisateur
+      allow update: if 
+                      // Un admin peut mettre à jour SEULEMENT le champ 'role' d'un utilisateur.
+                      (isAdmin() && request.resource.data.keys().hasOnly(['role']) && request.resource.data.role in ['admin', 'purser', 'crew']) ||
+                      // Un utilisateur peut mettre à jour son propre 'displayName', 'photoURL', ou 'lastLogin'.
+                      // Il ne peut pas changer son email (géré par Firebase Auth) ou son rôle.
+                      (isUser(userId) &&
+                       // Vérifie que les champs critiques ne sont pas modifiés par l'utilisateur.
+                       request.resource.data.email == resource.data.email && 
+                       request.resource.data.role == resource.data.role &&
+                       // Autorise la mise à jour des champs suivants uniquement.
+                       request.resource.data.keys().hasOnly(['email', 'displayName', 'photoURL', 'role', 'lastLogin', 'createdAt']) &&
+                       // L'utilisateur ne peut pas modifier createdAt lui-même.
+                       request.resource.data.createdAt == resource.data.createdAt
+                      );
+
+      allow delete: if isAdmin();
+    }
+
+    // Alerts collection
+    match /alerts/{alertId} {
+      // Les admins peuvent lire toutes les alertes.
+      // Les utilisateurs authentifiés peuvent lire les alertes qui leur sont destinées (userId correspond) ou les alertes globales (userId est null).
+      allow read: if isAuthenticated() && 
+                     (isAdmin() || 
+                      resource.data.userId == request.auth.uid || 
+                      resource.data.userId == null);
+      // Seuls les admins peuvent créer, mettre à jour ou supprimer des alertes.
+      allow create, update, delete: if isAdmin();
+      // TODO: Ajouter des validations de champs (ex: title, content, level obligatoires à la création).
+    }
+
+    // Courses collection
+    match /courses/{courseId} {
+      allow read: if isAuthenticated(); // Tous les utilisateurs authentifiés peuvent lire les cours.
+      allow create, update, delete: if isAdmin(); // Seuls les admins peuvent gérer les cours.
+      // TODO: Validation des champs (title, category, quizId, quizTitle, etc.).
+    }
+
+    // Documents collection
+    match /documents/{documentId} {
+      allow read: if isAuthenticated(); // Tous les utilisateurs authentifiés peuvent lire les métadonnées des documents.
+      allow create, update, delete: if isAdmin(); // Seuls les admins peuvent gérer les documents.
+      // TODO: Validation des champs (title, category, downloadURL, etc.).
+    }
+
+    // Flights collection
+    match /flights/{flightId} {
+      allow read: if isAuthenticated(); // Tous les utilisateurs authentifiés peuvent lire les informations de vol.
+      allow create, update, delete: if isAdmin(); // Seuls les admins peuvent gérer les vols.
+      // TODO: Validation des champs (flightNumber, airports, times, etc.).
+    }
+
+    // PurserReports collection
+    match /purserReports/{reportId} {
+      // Les admins peuvent lire tous les rapports. L'utilisateur qui a soumis le rapport peut lire ses propres rapports.
+      allow read: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
+      // Un utilisateur authentifié ne peut créer des rapports que pour lui-même (userId dans le document doit correspondre).
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Seuls les admins peuvent mettre à jour (ex: statut) ou supprimer les rapports.
+      allow update, delete: if isAdmin();
+      // TODO: Validation des champs (reportInput, userId, etc.).
+    }
+
+    // Requests collection
+    match /requests/{requestId} {
+      // Les admins peuvent lire toutes les requêtes. L'utilisateur qui a soumis la requête peut lire ses propres requêtes.
+      allow read: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid);
+      // Un utilisateur authentifié ne peut créer des requêtes que pour lui-même.
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Seuls les admins peuvent mettre à jour le statut des requêtes.
+      allow update: if isAdmin() && request.resource.data.keys().hasOnly(['status']); // Admin peut uniquement changer le statut.
+      allow delete: if isAdmin();
+      // TODO: Validation des champs (requestType, subject, details, userId, status, etc.).
+    }
+
+    // userTrainingProgress collection
+    // L'ID du document est structuré comme : `${userId}_${courseId}`
+    match /userTrainingProgress/{progressId} {
+      function getOwnerId() {
+        return progressId.split('_')[0];
+      }
+      // function getCourseId() { // Non utilisé directement dans les règles mais utile pour la compréhension
+      //  return progressId.split('_')[1];
+      // }
+
+      // L'utilisateur peut lire sa propre progression. Les admins peuvent lire toutes les progressions.
+      allow read: if isAuthenticated() && (isUser(getOwnerId()) || isAdmin());
+      
+      // L'utilisateur peut créer ou mettre à jour sa propre progression.
+      // Assure que userId et courseId dans le document ne sont pas modifiés après la création (si on les stocke aussi dans le document).
+      allow write: if isAuthenticated() && 
+                      isUser(getOwnerId()) &&
+                      request.resource.data.userId == getOwnerId(); // userId dans les données doit correspondre
+                      // Si courseId est aussi dans les données: request.resource.data.courseId == getCourseId();
+                      // Et à la création, vérifier que les champs obligatoires sont présents.
+                      // À la mise à jour, s'assurer que userId/courseId ne changent pas par rapport à resource.data.
+                      // Ex: à la mise à jour: request.resource.data.courseId == resource.data.courseId
+
+      // Pas de suppression par l'utilisateur pour l'instant. Peut-être par l'admin si nécessaire pour nettoyer des données.
+      allow delete: if isAdmin(); 
+    }
+
+    // Règle de sécurité par défaut : refuser toutes les lectures et écritures
+    // pour tous les documents non explicitement autorisés ci-dessus.
+    // CECI EST IMPORTANT ET DOIT ÊTRE LA DERNIÈRE RÈGLE DE MATCH.
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+    
