@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -8,7 +9,7 @@ import { ListChecks, PlayCircle, CheckCircle, Zap, AlertTriangle, Loader2, BookO
 import Image from "next/image";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, Timestamp, orderBy, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, query, Timestamp, orderBy, doc, getDoc, where } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 
@@ -306,3 +307,4 @@ export default function QuizzesPage() {
     </div>
   );
 }
+
