@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc } from "firebase/firestore"; // Added doc, getDoc
+import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { BookOpen, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, CheckCircle, XCircle, PlusCircle } from "lucide-react"; // Added Trash2, PlusCircle
+import { BookOpen, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, CheckCircle, XCircle, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 
@@ -19,20 +19,17 @@ interface Course {
   title: string;
   category: string;
   courseType?: string;
-  description?: string; // Optional: for quick view or edit
+  description?: string;
   duration?: string;
-  quizId?: string; // Link to quiz document
+  quizId?: string;
   published?: boolean;
   createdAt?: Timestamp;
   createdBy?: string;
-  // Fields to fetch from linked quiz (if needed for display)
   quizTitle?: string; 
 }
 
-// Interface for Quiz (simplified, fetched if quizId exists)
 interface QuizInfo {
   title: string;
-  // Potentially other quiz summary fields if needed
 }
 
 
@@ -57,14 +54,13 @@ export default function AdminCoursesPage() {
           ...courseData,
         };
 
-        // If quizId exists, fetch quiz title
         if (courseData.quizId) {
           const quizDocRef = doc(db, "quizzes", courseData.quizId);
           const quizDocSnap = await getDoc(quizDocRef);
           if (quizDocSnap.exists()) {
             course.quizTitle = (quizDocSnap.data() as QuizInfo).title;
           } else {
-            course.quizTitle = "Quiz not found";
+            course.quizTitle = "Quiz details not found";
           }
         }
         return course;
@@ -182,8 +178,10 @@ export default function AdminCoursesPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => toast({ title: "Edit Course", description: "Editing functionality coming soon!"})} disabled aria-label={`Edit course: ${course.title}`}>
-                          <Edit className="mr-1 h-4 w-4" /> Edit
+                        <Button variant="ghost" size="sm" asChild aria-label={`Edit course: ${course.title}`}>
+                          <Link href={`/admin/courses/edit/${course.id}`}>
+                            <Edit className="mr-1 h-4 w-4" /> Edit
+                          </Link>
                         </Button>
                         <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80" onClick={() => toast({ title: "Delete Course", description: "Deletion functionality coming soon!"})} disabled aria-label={`Delete course: ${course.title}`}>
                           <Trash2 className="mr-1 h-4 w-4" /> Delete
