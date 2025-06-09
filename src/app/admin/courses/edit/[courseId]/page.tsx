@@ -68,6 +68,16 @@ const courseTypes = [
 ];
 const questionTypes = ["mcq", "tf", "short"];
 
+const referenceBodyOptions = [
+  "Operation Manual",
+  "EASA",
+  "IATA",
+  "ICAO",
+  "DGAC",
+  "Note de service",
+  "Other",
+];
+
 const mcqOptionSchema = z.object({
   text: z.string().min(1, "Option text cannot be empty."),
   isCorrect: z.boolean().default(false),
@@ -87,6 +97,7 @@ const courseFormSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters.").max(150),
   category: z.string({ required_error: "Please select a course category." }),
   courseType: z.string({ required_error: "Please select a course type." }),
+  referenceBody: z.string().optional(),
   description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
   duration: z.string().min(1, "Duration is required (e.g., 60 minutes, 2 hours)."),
   associatedFile: z.custom<FileList>().optional(),
@@ -109,6 +120,7 @@ type CourseFormValues = z.infer<typeof courseFormSchema>;
 const defaultValues: Partial<CourseFormValues> = {
   questions: [{ text: "", questionType: "mcq", options: [{ text: "", isCorrect: false }, { text: "", isCorrect: false }], weight: 1}],
   courseType: "Initial Training",
+  referenceBody: "",
 };
 
 export default function EditComprehensiveCoursePage() {
@@ -182,6 +194,7 @@ export default function EditComprehensiveCoursePage() {
             title: courseData.title || "",
             category: courseData.category || "",
             courseType: courseData.courseType || "Initial Training",
+            referenceBody: courseData.referenceBody || "",
             description: courseData.description || "",
             duration: courseData.duration || "60 minutes",
             imageHint: courseData.imageHint || "",
@@ -268,7 +281,7 @@ export default function EditComprehensiveCoursePage() {
       const batch = writeBatch(db);
       const courseDocRef = doc(db, "courses", courseId);
       batch.update(courseDocRef, {
-        title: data.title, category: data.category, courseType: data.courseType, description: data.description,
+        title: data.title, category: data.category, courseType: data.courseType, referenceBody: data.referenceBody || null, description: data.description,
         duration: data.duration, fileURL: fileDownloadURL, imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
         updatedAt: serverTimestamp(),
       });
@@ -364,15 +377,20 @@ export default function EditComprehensiveCoursePage() {
                 <FormField control={form.control} name="courseType" render={({ field }) => (
                   <FormItem><FormLabel>Course Type*</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course type" /></SelectTrigger></FormControl><SelectContent>{courseTypes.map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
                 )} />
+                <FormField control={form.control} name="referenceBody" render={({ field }) => (
+                  <FormItem><FormLabel>Reference Document/Body</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select reference body" /></SelectTrigger></FormControl><SelectContent>{referenceBodyOptions.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent></Select><FormDescription>Optional. Specify the main reference document or body.</FormDescription><FormMessage /></FormItem>
+                )} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField control={form.control} name="duration" render={({ field }) => (
                   <FormItem><FormLabel>Estimated Duration*</FormLabel><FormControl><Input placeholder="e.g., 90 minutes, 3 hours" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
+                <FormField control={form.control} name="imageHint" render={({ field }) => (
+                  <FormItem><FormLabel>Course Image Hint (Optional)</FormLabel><FormControl><Input placeholder="e.g., emergency exit, first aid" {...field} /></FormControl><FormDescription>Keywords for course image (e.g., cockpit, safety vest).</FormDescription><FormMessage /></FormItem>
+              )} />
               </div>
               <FormField control={form.control} name="description" render={({ field }) => (
                 <FormItem><FormLabel>Description*</FormLabel><FormControl><Textarea placeholder="Detailed overview of the course..." className="min-h-[120px]" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="imageHint" render={({ field }) => (
-                  <FormItem><FormLabel>Course Image Hint (Optional)</FormLabel><FormControl><Input placeholder="e.g., emergency exit, first aid" {...field} /></FormControl><FormDescription>Keywords for course image (e.g., cockpit, safety vest).</FormDescription><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="associatedFile" render={({ field: { onChange, value, ...rest }}) => (
                 <FormItem>
@@ -543,3 +561,5 @@ export default function EditComprehensiveCoursePage() {
     </div>
   );
 }
+
+    
