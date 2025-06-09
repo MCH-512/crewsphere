@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -5,15 +6,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; 
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogPrimitiveDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"; // Renamed to avoid conflict
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
-import { db, auth as firebaseAuth } from "@/lib/firebase"; // Renamed auth to firebaseAuth to avoid conflict
-import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc } from "firebase/firestore";
+import { db, auth as firebaseAuth } from "@/lib/firebase";
+import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle } from "lucide-react";
@@ -33,33 +34,34 @@ interface UserDocument {
 }
 
 const availableRoles: SpecificRole[] = ['admin', 'purser', 'crew'];
-const NO_ROLE_SENTINEL = "_NONE_";
+const NO_ROLE_SENTINEL = "_NONE_"; // Sentinel value for "no role" or default
 
 const manageUserFormSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }).optional(),
   password: z.string().min(6, "Password must be at least 6 characters.").optional(),
-  confirmPassword: z.string().min(6, "Password must be at least 6 characters.").optional(),
+  confirmPassword: z.string().optional(), // Optional, validation handled by refine
   displayName: z.string().min(2, "Display name must be at least 2 characters.").max(50),
-  role: z.string().optional(), // Will be SpecificRole or ""
+  role: z.string().optional(), 
 })
 .refine((data) => {
-  // If password is provided, confirmPassword must match
-  if (data.password && data.password !== data.confirmPassword) {
-    return false;
+  // If password is provided, confirmPassword is required and must match
+  if (data.password) {
+    if (!data.confirmPassword) return false; // Confirm password is required if password is set
+    return data.password === data.confirmPassword;
   }
-  return true;
+  return true; // No password provided, so no need to check confirmPassword
 }, {
-  message: "Passwords don't match",
+  message: "Passwords don't match or confirmation is missing.",
   path: ["confirmPassword"],
 })
 .refine((data) => {
     // If creating (signified by presence of password), email is required
-    if (data.password && !data.email) {
+    if (data.password && (!data.email || data.email.trim() === "")) {
         return false;
     }
     return true;
 }, {
-    message: "Email is required for new user.",
+    message: "Email is required when setting a password for a new user.",
     path: ["email"]
 });
 
@@ -85,7 +87,7 @@ export default function AdminUsersPage() {
         password: "",
         confirmPassword: "",
         displayName: "",
-        role: "",
+        role: "", // Default to empty string, which will map to NO_ROLE_SENTINEL in Select
     }
   });
 
@@ -122,12 +124,12 @@ export default function AdminUsersPage() {
   const handleOpenCreateUserDialog = () => {
     setIsCreateMode(true);
     setCurrentUserToManage(null);
-    form.reset({ // Reset form for creation
+    form.reset({ 
         email: "",
         password: "",
         confirmPassword: "",
         displayName: "",
-        role: ""
+        role: "" 
     });
     setIsManageUserDialogOpen(true);
   };
@@ -135,11 +137,11 @@ export default function AdminUsersPage() {
   const handleOpenEditUserDialog = (userToEdit: UserDocument) => {
     setIsCreateMode(false);
     setCurrentUserToManage(userToEdit);
-    form.reset({ // Populate form for editing
+    form.reset({ 
         email: userToEdit.email || "",
         displayName: userToEdit.displayName || "",
         role: userToEdit.role || "",
-        password: "", // Clear password fields for edit mode
+        password: "", 
         confirmPassword: "",
     });
     setIsManageUserDialogOpen(true);
@@ -148,7 +150,6 @@ export default function AdminUsersPage() {
   const handleFormSubmit = async (data: ManageUserFormValues) => {
     setIsSubmitting(true);
     if (isCreateMode) {
-      // Create User
       if (!data.email || !data.password) {
         toast({ title: "Missing Fields", description: "Email and password are required for new users.", variant: "destructive"});
         setIsSubmitting(false);
@@ -165,7 +166,7 @@ export default function AdminUsersPage() {
           uid: newUser.uid,
           email: data.email,
           displayName: data.displayName,
-          role: data.role === NO_ROLE_SENTINEL ? "" : (data.role || ""), // Store empty string for no role
+          role: data.role as SpecificRole || "", // Ensure role is SpecificRole or empty
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
         });
@@ -184,16 +185,10 @@ export default function AdminUsersPage() {
         const userDocRef = doc(db, "users", currentUserToManage.uid);
         const updates: Partial<UserDocument> = {
             displayName: data.displayName,
-            role: data.role === NO_ROLE_SENTINEL ? undefined : (data.role as SpecificRole | undefined || undefined) // Handle empty string or undefined
+            role: data.role as SpecificRole || undefined 
         };
         
-        // Update Firestore
         await updateDoc(userDocRef, updates);
-
-        // Note: Updating another user's Firebase Auth displayName directly by an admin client-side is not straightforward
-        // The displayName in Firestore is the primary source of truth here for other users.
-        // The AuthProvider will pick up current user's display name on their login/refresh.
-
         toast({ title: "User Updated", description: `${currentUserToManage.email}'s information updated.` });
         fetchUsers();
         setIsManageUserDialogOpen(false);
@@ -312,10 +307,10 @@ export default function AdminUsersPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)}>
               <DialogHeader>
-                <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${currentUserToManage?.email}`}</DialogTitle>
-                <DialogDescription>
+                <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${currentUserToManage?.email || currentUserToManage?.displayName}`}</DialogTitle>
+                <DialogPrimitiveDescription>
                   {isCreateMode ? "Fill in the details for the new user." : "Modify the user's information below."}
-                </DialogDescription>
+                </DialogPrimitiveDescription>
               </DialogHeader>
               <div className="py-4 space-y-4">
                 <FormField
@@ -396,6 +391,7 @@ export default function AdminUsersPage() {
                             <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
                             </SelectContent>
                         </Select>
+                        <FormDescription>Optional. Assign a role or leave as default (no specific role).</FormDescription>
                         <FormMessage />
                         </FormItem>
                     )}
