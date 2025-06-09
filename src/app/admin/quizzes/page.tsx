@@ -8,29 +8,33 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, doc, getDoc } from "firebase/firestore"; // Added doc, getDoc
 import { useRouter } from "next/navigation";
-import { CheckSquare, Loader2, AlertTriangle, RefreshCw, Edit3, CheckCircle, XCircle, BookOpen } from "lucide-react";
+import { CheckSquare, Loader2, AlertTriangle, RefreshCw, Edit3, PlusCircle, BookOpen } from "lucide-react"; // Added PlusCircle, BookOpen
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 
-// This interface is derived from the 'courses' collection structure
-// as quizzes are currently defined as part of courses.
-interface CourseDerivedQuiz {
-  id: string; // Course document ID
-  courseTitle: string;
-  quizTitle?: string; // This is the specific quiz title from the course
-  quizId?: string;    // This is the specific quiz ID from the course
-  category?: string;
-  mandatory?: boolean;
-  // We might add more quiz-specific fields if we create a separate 'quizzes' collection later
+interface Quiz {
+  id: string; // Quiz document ID
+  title: string;
+  courseId: string;
+  randomizeQuestions?: boolean;
+  randomizeAnswers?: boolean;
+  // Fields to fetch from linked course
+  courseTitle?: string;
+  courseCategory?: string;
+}
+
+interface CourseInfo {
+  title: string;
+  category: string;
 }
 
 export default function AdminQuizzesPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [quizzes, setQuizzes] = React.useState<CourseDerivedQuiz[]>([]);
+  const [quizzes, setQuizzes] = React.useState<Quiz[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -38,23 +42,36 @@ export default function AdminQuizzesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Quizzes are defined within courses for now
-      const q = query(collection(db, "courses"), orderBy("title", "asc"));
+      const q = query(collection(db, "quizzes"), orderBy("title", "asc"));
       const querySnapshot = await getDocs(q);
-      const fetchedQuizzes = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id, // Using course ID as the unique key for this list item
-          courseTitle: data.title,
-          quizTitle: data.quizTitle,
-          quizId: data.quizId,
-          category: data.category,
-          mandatory: data.mandatory,
-        } as CourseDerivedQuiz;
+      
+      const fetchedQuizzesPromises = querySnapshot.docs.map(async (docSnapshot) => {
+        const quizData = docSnapshot.data() as Omit<Quiz, 'id' | 'courseTitle' | 'courseCategory'>;
+        const quiz: Quiz = {
+          id: docSnapshot.id,
+          ...quizData,
+        };
+
+        // Fetch linked course title and category
+        if (quizData.courseId) {
+          const courseDocRef = doc(db, "courses", quizData.courseId);
+          const courseDocSnap = await getDoc(courseDocRef);
+          if (courseDocSnap.exists()) {
+            const courseInfo = courseDocSnap.data() as CourseInfo;
+            quiz.courseTitle = courseInfo.title;
+            quiz.courseCategory = courseInfo.category;
+          } else {
+            quiz.courseTitle = "Course not found";
+          }
+        }
+        return quiz;
       });
+
+      const fetchedQuizzes = await Promise.all(fetchedQuizzesPromises);
       setQuizzes(fetchedQuizzes);
+
     } catch (err) {
-      console.error("Error fetching quizzes (from courses):", err);
+      console.error("Error fetching quizzes:", err);
       setError("Failed to load quizzes. Please try again.");
       toast({ title: "Loading Error", description: "Could not fetch quiz list.", variant: "destructive" });
     } finally {
@@ -99,9 +116,9 @@ export default function AdminQuizzesPage() {
           <div>
             <CardTitle className="text-2xl font-headline flex items-center">
               <CheckSquare className="mr-3 h-7 w-7 text-primary" />
-              All Defined Quizzes
+              Quizzes Management
             </CardTitle>
-            <CardDescription>View all quizzes associated with training courses. Manage questions and settings (future).</CardDescription>
+            <CardDescription>View all quizzes defined in the system. Manage questions and settings from the course creation/editing page.</CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={fetchQuizzes} disabled={isLoading}>
@@ -128,50 +145,45 @@ export default function AdminQuizzesPage() {
             </div>
           )}
           {!isLoading && quizzes.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">No quizzes found. Quizzes are defined when creating courses.</p>
+            <p className="text-muted-foreground text-center py-8">No quizzes found. Quizzes are created as part of a course.</p>
           )}
           {quizzes.length > 0 && (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Course Title (Quiz Context)</TableHead>
                     <TableHead>Quiz Title</TableHead>
-                    <TableHead>Quiz ID</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Mandatory</TableHead>
+                    <TableHead>Associated Course</TableHead>
+                    <TableHead>Course Category</TableHead>
+                    <TableHead>Randomize Questions</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {quizzes.map((quiz) => (
                     <TableRow key={quiz.id}>
-                      <TableCell className="font-medium">{quiz.courseTitle}</TableCell>
-                      <TableCell>{quiz.quizTitle || 'N/A'}</TableCell>
-                      <TableCell><Badge variant="secondary">{quiz.quizId || 'N/A'}</Badge></TableCell>
-                      <TableCell><Badge variant="outline">{quiz.category}</Badge></TableCell>
+                      <TableCell className="font-medium">{quiz.title}</TableCell>
                       <TableCell>
-                        {quiz.mandatory ? (
-                          <Badge variant="destructive" className="flex items-center w-fit">
-                            <CheckCircle className="mr-1 h-3 w-3" /> Yes
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="flex items-center w-fit">
-                            <XCircle className="mr-1 h-3 w-3" /> No
-                          </Badge>
-                        )}
+                        <Link href={`/admin/courses/edit/${quiz.courseId}`} className="hover:underline text-primary flex items-center gap-1">
+                            <BookOpen className="h-4 w-4"/>{quiz.courseTitle || 'N/A'}
+                        </Link>
+                      </TableCell>
+                      <TableCell><Badge variant="outline">{quiz.courseCategory || 'N/A'}</Badge></TableCell>
+                      <TableCell>
+                        <Badge variant={quiz.randomizeQuestions ? "default" : "secondary"}>
+                          {quiz.randomizeQuestions ? "Yes" : "No"}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => toast({ title: "Manage Questions", description: "Question management functionality coming soon!"})} 
-                          disabled // Enable when question management page is ready
-                          aria-label={`Manage questions for quiz: ${quiz.quizTitle || quiz.courseTitle}`}
+                          onClick={() => toast({ title: "Manage Questions", description: "Manage questions via the course edit page."})} 
+                          aria-label={`Manage questions for quiz: ${quiz.title}`}
                         >
                           <Edit3 className="mr-1 h-4 w-4" /> Manage Questions
                         </Button>
-                        {/* Future: Edit Quiz Metadata button if quizzes become separate entities */}
+                        {/* Future: Link to edit quiz directly if becomes separate from course edit */}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -180,12 +192,10 @@ export default function AdminQuizzesPage() {
             </div>
           )}
            <CardDescription className="mt-4 text-xs">
-            Quizzes are currently defined within each course. "Manage Questions" will allow adding/editing questions for the selected quiz ID.
+            Quizzes are created and their questions are managed within the course creation/editing interface.
           </CardDescription>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-    

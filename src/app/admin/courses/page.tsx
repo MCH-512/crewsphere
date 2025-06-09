@@ -8,22 +8,33 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc } from "firebase/firestore"; // Added doc, getDoc
 import { useRouter } from "next/navigation";
-import { BookOpen, Loader2, AlertTriangle, RefreshCw, Edit, CheckCircle, XCircle } from "lucide-react";
+import { BookOpen, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, CheckCircle, XCircle, PlusCircle } from "lucide-react"; // Added Trash2, PlusCircle
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 interface Course {
   id: string;
   title: string;
   category: string;
-  description: string;
-  mandatory: boolean;
-  quizId?: string;
-  quizTitle?: string;
-  imageHint?: string;
-  createdAt?: Timestamp; // Assuming you might add this later
+  courseType?: string;
+  description?: string; // Optional: for quick view or edit
+  duration?: string;
+  quizId?: string; // Link to quiz document
+  published?: boolean;
+  createdAt?: Timestamp;
+  createdBy?: string;
+  // Fields to fetch from linked quiz (if needed for display)
+  quizTitle?: string; 
 }
+
+// Interface for Quiz (simplified, fetched if quizId exists)
+interface QuizInfo {
+  title: string;
+  // Potentially other quiz summary fields if needed
+}
+
 
 export default function AdminCoursesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -37,13 +48,31 @@ export default function AdminCoursesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const q = query(collection(db, "courses"), orderBy("title", "asc"));
+      const q = query(collection(db, "courses"), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
-      const fetchedCourses = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      } as Course));
+      const fetchedCoursesPromises = querySnapshot.docs.map(async (docSnapshot) => {
+        const courseData = docSnapshot.data() as Omit<Course, 'id' | 'quizTitle'>;
+        const course: Course = {
+          id: docSnapshot.id,
+          ...courseData,
+        };
+
+        // If quizId exists, fetch quiz title
+        if (courseData.quizId) {
+          const quizDocRef = doc(db, "quizzes", courseData.quizId);
+          const quizDocSnap = await getDoc(quizDocRef);
+          if (quizDocSnap.exists()) {
+            course.quizTitle = (quizDocSnap.data() as QuizInfo).title;
+          } else {
+            course.quizTitle = "Quiz not found";
+          }
+        }
+        return course;
+      });
+      
+      const fetchedCourses = await Promise.all(fetchedCoursesPromises);
       setCourses(fetchedCourses);
+
     } catch (err) {
       console.error("Error fetching courses:", err);
       setError("Failed to load courses. Please try again.");
@@ -92,12 +121,19 @@ export default function AdminCoursesPage() {
               <BookOpen className="mr-3 h-7 w-7 text-primary" />
               Courses Management
             </CardTitle>
-            <CardDescription>View all available training courses in the system.</CardDescription>
+            <CardDescription>View and manage all training courses in the system. New courses include quiz and certificate setup.</CardDescription>
           </div>
-          <Button variant="outline" onClick={fetchCourses} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh Courses
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={fetchCourses} disabled={isLoading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button asChild>
+              <Link href="/admin/courses/create">
+                <PlusCircle className="mr-2 h-4 w-4" /> Create New Course
+              </Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {error && (
@@ -112,7 +148,7 @@ export default function AdminCoursesPage() {
             </div>
           )}
           {!isLoading && courses.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">No courses found. Admins can add courses (feature coming soon).</p>
+            <p className="text-muted-foreground text-center py-8">No courses found. Use the &quot;Create New Course&quot; button to add one.</p>
           )}
           {courses.length > 0 && (
             <div className="rounded-md border">
@@ -121,31 +157,36 @@ export default function AdminCoursesPage() {
                   <TableRow>
                     <TableHead>Title</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead>Mandatory</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Quiz Title</TableHead>
+                    <TableHead>Published</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {courses.map((course) => (
                     <TableRow key={course.id}>
-                      <TableCell className="font-medium">{course.title}</TableCell>
+                      <TableCell className="font-medium max-w-xs truncate" title={course.title}>{course.title}</TableCell>
                       <TableCell><Badge variant="outline">{course.category}</Badge></TableCell>
+                      <TableCell><Badge variant="secondary">{course.courseType || "N/A"}</Badge></TableCell>
+                      <TableCell>{course.quizTitle || 'N/A'}</TableCell>
                       <TableCell>
-                        {course.mandatory ? (
-                          <Badge variant="destructive" className="flex items-center w-fit">
+                        {course.published ? (
+                          <Badge variant="default" className="flex items-center w-fit bg-green-500 hover:bg-green-600">
                             <CheckCircle className="mr-1 h-3 w-3" /> Yes
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="flex items-center w-fit">
+                          <Badge variant="outline" className="flex items-center w-fit">
                             <XCircle className="mr-1 h-3 w-3" /> No
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell>{course.quizTitle || 'N/A'}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" onClick={() => toast({ title: "Edit Course", description: "Editing functionality coming soon!"})} disabled aria-label={`Edit course: ${course.title}`}>
                           <Edit className="mr-1 h-4 w-4" /> Edit
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80" onClick={() => toast({ title: "Delete Course", description: "Deletion functionality coming soon!"})} disabled aria-label={`Delete course: ${course.title}`}>
+                          <Trash2 className="mr-1 h-4 w-4" /> Delete
                         </Button>
                       </TableCell>
                     </TableRow>
