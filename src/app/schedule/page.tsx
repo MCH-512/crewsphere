@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { PlaneTakeoff, Briefcase, Users, MapPin, Loader2, AlertTriangle, PlusCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, getDocs, query, where, doc, getDoc, Timestamp, orderBy } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, doc, getDoc, Timestamp, orderBy, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -133,13 +133,12 @@ export default function SchedulePage() {
       await addDoc(collection(db, "userFlightAssignments"), {
         userId: user.uid,
         flightId: flightId,
-        assignedAt: Timestamp.now(),
+        assignedAt: serverTimestamp(), // Changed to serverTimestamp
       });
       toast({ title: "Flight Assigned!", description: "The flight has been added to your schedule.", action: <CheckCircle className="text-green-500"/> });
-      await fetchAssignedFlights(); // Refresh assigned flights
-      // fetchAvailableFlights will be re-triggered by useEffect due to assignedFlightsData dependency change
+      await fetchAssignedFlights(); 
     } catch (err) {
-      console.error("Error assigning flight:", err);
+      console.error("Error assigning flight:", err); 
       toast({ title: "Assignment Failed", description: "Could not assign flight. Please try again.", variant: "destructive"});
     } finally {
       setAssigningFlightId(null);
