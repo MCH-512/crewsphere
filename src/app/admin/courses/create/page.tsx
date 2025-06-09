@@ -78,6 +78,13 @@ const referenceBodyOptions = [
   "Other",
 ];
 
+const courseDurationOptions = [
+  "15 minutes", "30 minutes", "45 minutes",
+  "1 hour", "1 hour 30 minutes", "2 hours",
+  "2 hours 30 minutes", "3 hours", "4 hours",
+  "Half Day (4h)", "1 Day (8h)"
+];
+
 const moduleSchema = z.object({
   moduleCode: z.string().optional(),
   moduleTitle: z.string().min(3, "Module title is required and must be at least 3 characters."),
@@ -107,7 +114,7 @@ const courseFormSchema = z.object({
   courseType: z.string({ required_error: "Please select a course type." }),
   referenceBody: z.string().optional(),
   description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
-  duration: z.string().min(1, "Duration is required (e.g., 60 minutes, 2 hours)."),
+  duration: z.string({ required_error: "Please select an estimated duration." }),
   mandatory: z.boolean().default(false),
   associatedFile: z.custom<FileList>().optional(),
   imageHint: z.string().max(50).optional().describe("Keywords for course image (e.g., emergency exit)"),
@@ -151,7 +158,7 @@ const defaultValues: Partial<CourseFormValues> = {
   courseType: "Initial Training",
   referenceBody: "",
   description: "",
-  duration: "60 minutes",
+  duration: "1 hour",
   mandatory: false,
   imageHint: "",
   modules: [defaultModuleValue],
@@ -384,7 +391,13 @@ export default function CreateComprehensiveCoursePage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField control={form.control} name="duration" render={({ field }) => (
-                  <FormItem><FormLabel>Estimated Duration*</FormLabel><FormControl><Input placeholder="e.g., 90 minutes, 3 hours" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Estimated Duration*</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select estimated duration" /></SelectTrigger></FormControl>
+                            <SelectContent>{courseDurationOptions.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent>
+                        </Select>
+                    <FormMessage />
+                    </FormItem>
                 )} />
                  <FormField control={form.control} name="imageHint" render={({ field }) => (
                   <FormItem><FormLabel>Course Image Hint (Optional)</FormLabel><FormControl><Input placeholder="e.g., emergency exit, first aid" {...field} /></FormControl><FormDescription>Keywords for course image (e.g., cockpit, safety vest).</FormDescription><FormMessage /></FormItem>
@@ -618,6 +631,8 @@ export default function CreateComprehensiveCoursePage() {
     </div>
   );
 }
+    
+
     
 
     
