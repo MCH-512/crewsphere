@@ -34,7 +34,7 @@ import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 
-const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms"];
+const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms", "Procedures", "Memos"];
 const documentSources = [
   "Operations Manual (OMA)",
   "Operations Manual (OMD)",
@@ -88,66 +88,72 @@ export default function DocumentUploadPage() {
         return;
     }
 
-    const fileToUpload = data.file[0];
     setIsUploading(true);
     setUploadProgress(0);
 
-    const uniqueFileName = `${new Date().getTime()}-${fileToUpload.name.replace(/\s+/g, '_')}`;
-    const fileStoragePath = `documents/${uniqueFileName}`;
-    const materialStorageRef = storageRef(storage, fileStoragePath);
+    try {
+      const fileToUpload = data.file[0];
+      const uniqueFileName = `${new Date().getTime()}-${fileToUpload.name.replace(/\s+/g, '_')}`;
+      const fileStoragePath = `documents/${uniqueFileName}`;
+      const materialStorageRef = storageRef(storage, fileStoragePath);
 
-    const uploadTask = uploadBytesResumable(materialStorageRef, fileToUpload);
+      const uploadTask = uploadBytesResumable(materialStorageRef, fileToUpload);
 
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setUploadProgress(progress);
-      },
-      (error) => {
-        console.error("Upload failed:", error);
-        toast({ title: "Upload Failed", description: `Could not upload file: ${error.message}`, variant: "destructive" });
-        setIsUploading(false);
-      },
-      async () => {
-        try {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          const metadata = await getMetadata(uploadTask.snapshot.ref);
-          const fileSize = metadata.size;
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+        },
+        (error) => {
+          console.error("Upload failed:", error);
+          toast({ title: "Upload Failed", description: `Could not upload file: ${error.message}`, variant: "destructive" });
+          setIsUploading(false); // Ensure reset on uploadTask error
+        },
+        async () => {
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            const metadata = await getMetadata(uploadTask.snapshot.ref);
+            const fileSize = metadata.size;
 
-          await addDoc(collection(db, "documents"), {
-            title: data.title,
-            category: data.category,
-            source: data.source,
-            version: data.version || "",
-            downloadURL: downloadURL,
-            fileName: uniqueFileName,
-            fileType: fileToUpload.type,
-            size: (fileSize / (1024 * 1024)).toFixed(2) + "MB", // Store size in MB
-            documentContentType: 'file', // Mark as file type
-            lastUpdated: serverTimestamp(),
-            uploadedBy: user.uid,
-            uploaderEmail: user.email,
-          });
+            await addDoc(collection(db, "documents"), {
+              title: data.title,
+              category: data.category,
+              source: data.source,
+              version: data.version || "",
+              downloadURL: downloadURL,
+              fileName: uniqueFileName,
+              fileType: fileToUpload.type,
+              size: (fileSize / (1024 * 1024)).toFixed(2) + "MB", // Store size in MB
+              documentContentType: 'file', 
+              lastUpdated: serverTimestamp(),
+              uploadedBy: user.uid,
+              uploaderEmail: user.email,
+            });
 
-          toast({
-            title: "Document Uploaded Successfully",
-            description: `${data.title} has been uploaded and saved.`,
-            action: <CheckCircle className="text-green-500" />,
-          });
-          form.reset();
-          if (fileInputRef.current) {
-            fileInputRef.current.value = ""; // Reset file input
+            toast({
+              title: "Document Uploaded Successfully",
+              description: `${data.title} has been uploaded and saved.`,
+              action: <CheckCircle className="text-green-500" />,
+            });
+            form.reset();
+            if (fileInputRef.current) {
+              fileInputRef.current.value = ""; 
+            }
+            router.push("/admin/documents"); 
+          } catch (error) {
+            console.error("Error saving document metadata to Firestore:", error);
+            toast({ title: "Saving Failed", description: "File uploaded, but could not save document details. Please check Firestore.", variant: "destructive" });
+          } finally {
+            setIsUploading(false); // Ensure reset after metadata save/error
           }
-          router.push("/admin/documents"); 
-        } catch (error) {
-          console.error("Error saving document metadata to Firestore:", error);
-          toast({ title: "Saving Failed", description: "File uploaded, but could not save document details. Please check Firestore.", variant: "destructive" });
-        } finally {
-          setIsUploading(false);
         }
-      }
-    );
+      );
+    } catch (error) {
+      console.error("Error starting upload:", error);
+      toast({ title: "Upload Start Failed", description: "Could not start the file upload. Please try again.", variant: "destructive" });
+      setIsUploading(false); // Crucial: Reset if initial setup fails
+    }
   }
 
   React.useEffect(() => {
