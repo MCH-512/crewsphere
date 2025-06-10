@@ -54,6 +54,21 @@ const defaultValues: Partial<RequestFormValues> = {
   details: "",
 };
 
+// Updated request types based on the provided image
+const requestTypes = [
+  "Roster & Availability",
+  "Leave & Absences",
+  "Human Resources",
+  "Training & Qualifications",
+  "Uniform & Equipment",
+  "Payroll & Compensation",
+  "Mobility & Special Assignments",
+  "App Access & Technical Issues",
+  "Meetings & Support",
+  "General Inquiry", // Kept General Inquiry as a fallback
+  "Other", // Added Other as a general fallback
+];
+
 export default function RequestsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -131,11 +146,9 @@ export default function RequestsPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Leave Request">Leave Request</SelectItem>
-                        <SelectItem value="Schedule Change">Schedule Change</SelectItem>
-                        <SelectItem value="Maintenance Report">Maintenance Report</SelectItem>
-                        <SelectItem value="IT Support">IT Support</SelectItem>
-                        <SelectItem value="General Inquiry">General Inquiry</SelectItem>
+                        {requestTypes.map((type) => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormDescription>
@@ -207,4 +220,3 @@ export default function RequestsPage() {
     </div>
   );
 }
-
