@@ -12,6 +12,8 @@ import { useRouter } from "next/navigation";
 import { BellRing, Loader2, AlertTriangle, RefreshCw, Info, Briefcase, GraduationCap, LucideIcon } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import type { VariantProps } from "class-variance-authority";
+import { alertVariants } from "@/components/ui/alert"; // Import alertVariants to get its types
 
 interface Alert {
   id: string;
@@ -73,11 +75,12 @@ export default function MyAlertsPage() {
     }
   }, [user, authLoading, router, fetchAlerts]);
 
-  const getAlertVariant = (level: Alert["level"]): "default" | "destructive" => {
+  const getAlertVariant = (level: Alert["level"]): VariantProps<typeof alertVariants>["variant"] => {
     switch (level) {
       case 'critical':
         return 'destructive';
       case 'warning':
+        return 'warning';
       case 'info':
       default:
         return 'default';
@@ -89,10 +92,12 @@ export default function MyAlertsPage() {
         const lowerIconName = alert.iconName.toLowerCase();
         if (lowerIconName === "briefcase") return Briefcase;
         if (lowerIconName === "graduationcap") return GraduationCap;
+        // Add more icon name mappings here if needed
     }
+    // Default icons based on level if no specific iconName is provided or matched
     switch (alert.level) {
         case "critical": return AlertTriangle;
-        case "warning": return AlertTriangle; 
+        case "warning": return AlertTriangle; // Using AlertTriangle for warning too
         case "info":
         default: return Info;
     }
@@ -160,7 +165,7 @@ export default function MyAlertsPage() {
                   
                   return (
                   <ShadAlert key={alert.id} variant={getAlertVariant(alert.level)} className="shadow-sm">
-                    <IconComponent className="h-5 w-5" /> {/* Icon provided by ShadAlert styling */}
+                    <IconComponent className="h-5 w-5" /> {/* Icon styling handled by alertVariants */}
                     <div className="flex justify-between items-center mb-1">
                         <ShadAlertTitle>{alert.title}</ShadAlertTitle>
                         <p className="text-xs text-muted-foreground/80">{timeAgo}</p>
