@@ -200,11 +200,18 @@ export default function AdminPurserReportsPage() {
                   <h3 className="font-semibold text-lg mb-2">User Submitted Input Details:</h3>
                   <Card className="bg-background/50">
                     <CardContent className="pt-4 space-y-3 text-sm">
+                       <p><strong>Flight Number:</strong> {selectedReport.reportInput.flightNumber}</p>
+                       <p><strong>Date:</strong> {format(new Date(selectedReport.reportInput.flightDate), "PPP")}</p>
+                       <p><strong>Route:</strong> {selectedReport.reportInput.departureAirport} - {selectedReport.reportInput.arrivalAirport}</p>
                        <p><strong>Aircraft:</strong> {selectedReport.reportInput.aircraftTypeRegistration}</p>
                        <p><strong>Passenger Load:</strong> Total: {selectedReport.reportInput.passengerLoad.total}, Adults: {selectedReport.reportInput.passengerLoad.adults}, Children: {selectedReport.reportInput.passengerLoad.children}, Infants: {selectedReport.reportInput.passengerLoad.infants}</p>
                        <div>
-                         <p><strong>Crew:</strong></p>
+                         <p><strong>Crew Members:</strong></p>
                          <pre className="text-xs bg-muted p-2 rounded-md whitespace-pre-wrap">{selectedReport.reportInput.crewMembers}</pre>
+                       </div>
+                        <div className="border-t pt-2 mt-2">
+                           <Label className="font-medium">General Flight Summary:</Label>
+                           <p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.generalFlightSummary}</p>
                        </div>
                       
                        {Object.entries(selectedReport.reportInput).map(([key, value]) => {
@@ -219,12 +226,6 @@ export default function AdminPurserReportsPage() {
                          }
                          return null;
                        })}
-                        {selectedReport.reportInput.generalFlightSummary && (
-                            <div className="border-t pt-2 mt-2">
-                                <Label className="font-medium">General Flight Summary:</Label>
-                                <p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.generalFlightSummary}</p>
-                            </div>
-                        )}
                     </CardContent>
                   </Card>
                 </div>
