@@ -53,7 +53,8 @@ import {
   UserPlus,
   Loader2,
   Library, 
-  Award,   
+  Award,
+  Inbox, // Added Inbox icon   
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -63,7 +64,8 @@ import { Breadcrumbs } from "./breadcrumbs";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
-  { href: "/requests", label: "Requests", icon: SendHorizonal },
+  { href: "/requests", label: "Submit Request", icon: SendHorizonal },
+  { href: "/my-requests", label: "My Requests", icon: Inbox }, // Added My Requests
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/my-alerts", label: "My Alerts", icon: Bell },
   { type: "separator", key: "sep1" },
@@ -123,6 +125,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/documents": "Document Library",
     "/schedule": "My Schedule",
     "/requests": "Submit a Request",
+    "/my-requests": "My Submitted Requests", // Added title for new page
     "/my-alerts": "My Alerts",
     "/airport-briefings": "Airport Briefing Generator",
     "/flight-duty-calculator": "Flight Duty Calculator",

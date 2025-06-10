@@ -39,6 +39,7 @@ const predefinedLabels: { [key: string]: string } = {
   schedule: "My Schedule",
   requests: "Submit Request",
   "my-alerts": "My Alerts",
+  "my-requests": "My Submitted Requests", // Added label for new page
 };
 
 export function Breadcrumbs() {
@@ -125,4 +126,3 @@ export function Breadcrumbs() {
     </nav>
   );
 }
-
