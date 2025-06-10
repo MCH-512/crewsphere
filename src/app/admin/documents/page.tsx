@@ -6,9 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { 
-    Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
-    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+    Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose
 } from "@/components/ui/dialog";
+import { 
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogPrimitiveDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogPrimitiveTitle, AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle, UploadCloud, StickyNote, FileEdit, BarChartHorizontalBig } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +42,7 @@ interface Document {
   lastUpdated: Timestamp | string;
   size?: string;
   downloadURL?: string; 
-  filePath?: string; // Added to store full storage path
+  filePath?: string; 
   fileType?: string; 
   uploadedBy?: string;
   uploaderEmail?: string;
@@ -117,7 +119,7 @@ export default function AdminDocumentsPage() {
           lastUpdated: data.lastUpdated,
           size: data.size,
           downloadURL: data.downloadURL,
-          filePath: data.filePath, // Ensure filePath is fetched
+          filePath: data.filePath, 
           fileType: data.fileType,
           uploadedBy: data.uploadedBy,
           uploaderEmail: data.uploaderEmail,
@@ -153,18 +155,16 @@ export default function AdminDocumentsPage() {
     if (!documentToDelete) return;
     setIsDeleting(true);
     try {
-      // Delete from Firestore
       await deleteDoc(doc(db, "documents", documentToDelete.id));
 
-      // If it's a file, delete from Storage
       if (documentToDelete.documentContentType === 'file' && documentToDelete.filePath) {
         const fileRef = storageRef(storage, documentToDelete.filePath);
         await deleteObject(fileRef);
       }
       
       toast({ title: "Document Deleted", description: `"${documentToDelete.title}" has been successfully deleted.` });
-      setDocumentToDelete(null); // Close dialog
-      fetchDocuments(); // Refresh list
+      setDocumentToDelete(null); 
+      fetchDocuments(); 
     } catch (error) {
       console.error("Error deleting document:", error);
       toast({ title: "Deletion Failed", description: "Could not delete the document. Please try again.", variant: "destructive" });
@@ -299,7 +299,7 @@ export default function AdminDocumentsPage() {
         </Card>
       </AnimatedCard>
 
-      <Card className="shadow-lg mt-6"> {/* Added mt-6 for spacing */}
+      <Card className="shadow-lg mt-6">
         <CardHeader>
             <CardTitle className="text-xl font-headline">Document List & Filters</CardTitle>
         </CardHeader>
@@ -397,8 +397,10 @@ export default function AdminDocumentsPage() {
                                 <a href={doc.downloadURL} download><Download className="h-4 w-4" /></a>
                             </Button>
                         )}
-                        <Button variant="ghost" size="icon" onClick={() => toast({ title: "Edit Document", description: "Editing functionality coming soon!"})} disabled aria-label={`Edit document: ${doc.title}`}>
-                          <Edit className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" asChild aria-label={`Edit document: ${doc.title}`}>
+                          <Link href={`/admin/documents/edit/${doc.id}`}>
+                            <Edit className="h-4 w-4" />
+                          </Link>
                         </Button>
                         <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80" aria-label={`Delete document: ${doc.title}`} onClick={() => setDocumentToDelete(doc)}>
@@ -443,12 +445,12 @@ export default function AdminDocumentsPage() {
          <AlertDialog open={!!documentToDelete} onOpenChange={(open) => !open && setDocumentToDelete(null)}>
             <AlertDialogContent>
                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-                    <AlertDialogDescription>
+                    <AlertDialogPrimitiveTitle>Confirm Deletion</AlertDialogPrimitiveTitle>
+                    <AlertDialogPrimitiveDescription>
                         Are you sure you want to delete the document: "{documentToDelete.title}"?
                         {documentToDelete.documentContentType === 'file' && " This will also delete the associated file from storage."}
                         This action cannot be undone.
-                    </AlertDialogDescription>
+                    </AlertDialogPrimitiveDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setDocumentToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
