@@ -4,132 +4,141 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if the user is an admin
-    function isAdmin() {
-      // Ensure request.auth is not null before trying to access its properties
-      return request.auth != null && request.auth.uid != null &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Helper function to check if the user is authenticated
+    // Helper function to check if a user is authenticated
     function isAuthenticated() {
-      return request.auth != null && request.auth.uid != null;
+      return request.auth != null;
     }
 
-    // Users collection
+    // Helper function to check if a user is an admin
+    function isAdmin() {
+      // Admin must be authenticated and have 'admin' role in their user document
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Users Collection
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
-      allow update: if (isAuthenticated() && request.auth.uid == userId) || isAdmin();
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      allow create: if isAdmin(); // Only admins can create users initially. Signup creates Firebase Auth user, Firestore doc might be separate.
+                                 // If user signup creates this doc, rule would be: isAuthenticated() && request.auth.uid == userId;
+
+      // Update:
+      // - Admins can update any user document.
+      // - Authenticated users can update their OWN document, but only specific fields (displayName, fullName).
+      // - Other fields like role, email, employeeId, joiningDate, accountStatus should not be changeable by the user themselves.
+      allow update: if isAdmin() ||
+                     (isAuthenticated() && request.auth.uid == userId &&
+                       // Fields user IS ALLOWED to change
+                       (request.resource.data.displayName != resource.data.displayName || request.resource.data.fullName != resource.data.fullName || request.resource.data.lastLogin != resource.data.lastLogin) &&
+                       // Fields user IS NOT ALLOWED to change (must remain same as existing document)
+                       request.resource.data.email == resource.data.email &&
+                       request.resource.data.role == resource.data.role &&
+                       request.resource.data.employeeId == resource.data.employeeId &&
+                       request.resource.data.joiningDate == resource.data.joiningDate &&
+                       request.resource.data.accountStatus == resource.data.accountStatus &&
+                       request.resource.data.uid == resource.data.uid &&
+                       request.resource.data.createdAt == resource.data.createdAt &&
+                       // Ensure no other unexpected fields are added by the user
+                       request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'fullName', 'role', 'employeeId', 'joiningDate', 'accountStatus', 'createdAt', 'lastLogin'])
+                     );
+
       allow delete: if isAdmin();
     }
 
-    // Alerts collection
+    // Alerts Collection
     match /alerts/{alertId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
 
-    // Documents collection
+    // AlertAcknowledgements Collection
+    match /alertAcknowledgements/{ackId} {
+      // Users can create their own acknowledgements ensuring data integrity
+      allow create: if isAuthenticated() &&
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.keys().hasAll(['userId', 'alertId', 'acknowledgedAt']) &&
+                      request.resource.data.acknowledgedAt == request.time;
+      // Users can read their own acknowledgements, Admins can read all
+      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+      // No updates or deletes by users or admins for now to preserve audit trail
+      allow update, delete: if false;
+    }
+
+    // Documents Collection
     match /documents/{documentId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
 
-    // Flights collection
+    // Flights Collection
     match /flights/{flightId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
 
-    // Courses, Quizzes, Questions, CertificateRules
+    // Courses Collection
     match /courses/{courseId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
+
+    // Quizzes Collection
     match /quizzes/{quizId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
+
+    // Questions Collection
     match /questions/{questionId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
     }
+
+    // CertificateRules Collection
     match /certificateRules/{ruleId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated(); // Rules needed for display or cert generation logic
       allow create, update, delete: if isAdmin();
     }
 
-    // UserTrainingProgress
+    // UserTrainingProgress Collection
     match /userTrainingProgress/{progressId} {
-      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId
-                    && request.resource.data.userId is string // Ensure userId is present and a string
-                    && request.resource.data.courseId is string // Ensure courseId is present and a string
-                    && request.resource.data.contentStatus is string
-                    && request.resource.data.quizStatus is string
-                    && request.resource.data.lastUpdated == request.time;
-      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId
-                    && request.resource.data.lastUpdated == request.time;
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // User can update their own progress, admin can update any. User cannot change the userId field.
+      allow update: if isAdmin() ||
+                     (isAuthenticated() && resource.data.userId == request.auth.uid &&
+                      request.resource.data.userId == resource.data.userId); // userId must not change
+      // Only admins can delete progress records for now.
       allow delete: if isAdmin();
     }
 
-    // PurserReports
+    // PurserReports Collection
     match /purserReports/{reportId} {
-      allow read: if isAdmin();
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId
-                    && request.resource.data.userId is string
-                    && request.resource.data.userEmail is string
-                    && request.resource.data.reportInput is map
-                    && request.resource.data.reportOutput is map
-                    && request.resource.data.status == "submitted"
-                    && request.resource.data.createdAt == request.time;
+      // Users can create their own reports, ensuring the userId is their own.
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Users can read their own reports, Admins can read all reports.
+      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+      // Only Admins can update or delete submitted reports.
       allow update, delete: if isAdmin();
     }
 
-    // User Requests
+    // Requests Collection
     match /requests/{requestId} {
-      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId
-                    && request.resource.data.userId is string
-                    && request.resource.data.userEmail is string
-                    && request.resource.data.requestType is string
-                    && request.resource.data.urgencyLevel is string
-                    && request.resource.data.subject is string
-                    && request.resource.data.details is string
-                    && request.resource.data.status == "pending"
-                    && request.resource.data.createdAt == request.time;
-      allow update: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.userId && !('status' in request.resource.data));
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow update: if isAdmin(); // Only admins can update (e.g., status, adminResponse)
       allow delete: if isAdmin();
     }
 
-    // User Activities (schedule)
+    // UserActivities Collection (for schedule)
     match /userActivities/{activityId} {
-      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId
-                     && request.resource.data.userId is string
-                     && request.resource.data.activityType is string
-                     && request.resource.data.date is timestamp
-                     && request.resource.data.createdAt == request.time;
-      allow update: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
-      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
-    }
-
-    // Alert Acknowledgements
-    match /alertAcknowledgements/{ackId} {
-      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
-      // Create: User can create their own ack.
-      //         - userId in doc must match auth user's ID.
-      //         - alertId must be a string.
-      //         - acknowledgedAt must be server timestamp.
-      allow create: if isAuthenticated()
-                    && request.resource.data.userId == request.auth.uid
-                    && request.resource.data.alertId is string
-                    && request.resource.data.acknowledgedAt == request.time;
-      allow update: if false; // Acknowledgements are immutable.
-      allow delete: if false; // No deletion by users or admins for now.
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Users can read their own activities. Admins can read all user activities.
+      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+      // Users can update their own activities, ensuring userId doesn't change. Admins can update any.
+      allow update: if (isAuthenticated() && resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId) || isAdmin();
+      // Users can delete their own activities. Admins can delete any.
+      allow delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
     }
   }
 }
-
-    
