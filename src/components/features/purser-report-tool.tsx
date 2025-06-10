@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, where } from "firebase/firestore"; // Added 'where'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO } from "date-fns";
 
