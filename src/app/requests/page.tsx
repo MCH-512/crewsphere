@@ -25,11 +25,12 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SendHorizonal, Loader2 } from "lucide-react";
+import { SendHorizonal, Loader2, AlertTriangle } from "lucide-react"; // Added AlertTriangle
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert"; // Added Alert components
 
 const requestFormSchema = z.object({
   requestType: z.string({
@@ -54,7 +55,6 @@ const defaultValues: Partial<RequestFormValues> = {
   details: "",
 };
 
-// Updated request types based on the provided image
 const requestTypes = [
   "Roster & Availability",
   "Leave & Absences",
@@ -65,8 +65,8 @@ const requestTypes = [
   "Mobility & Special Assignments",
   "App Access & Technical Issues",
   "Meetings & Support",
-  "General Inquiry", // Kept General Inquiry as a fallback
-  "Other", // Added Other as a general fallback
+  "General Inquiry",
+  "Other",
 ];
 
 export default function RequestsPage() {
@@ -87,23 +87,23 @@ export default function RequestsPage() {
         description: "You must be logged in to submit a request.",
         variant: "destructive",
       });
-      setIsSubmitting(false);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, "requests"), {
+      const requestData = {
         ...data,
         userId: user.uid,
         userEmail: user.email,
         createdAt: serverTimestamp(),
-        status: "pending", 
-      });
+        status: "pending",
+      };
+      await addDoc(collection(db, "requests"), requestData);
 
       toast({
         title: "Request Submitted Successfully",
-        description: `Your ${data.requestType.toLowerCase()} for "${data.subject}" has been saved.`,
+        description: `Your ${data.requestType.toLowerCase()} request for "${data.subject}" has been saved.`,
       });
       form.reset();
     } catch (error) {
@@ -131,6 +131,15 @@ export default function RequestsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {!user && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Authentication Required</AlertTitle>
+              <ShadAlertDescription>
+                You must be logged in to submit a request. Please log in to continue.
+              </ShadAlertDescription>
+            </Alert>
+          )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <FormField
@@ -139,7 +148,7 @@ export default function RequestsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Request Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!user || isSubmitting}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a request type" />
@@ -166,7 +175,7 @@ export default function RequestsPage() {
                   <FormItem>
                     <FormLabel>Subject</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Annual leave for July" {...field} />
+                      <Input placeholder="e.g., Annual leave for July" {...field} disabled={!user || isSubmitting}/>
                     </FormControl>
                     <FormDescription>
                       A concise summary of your request.
@@ -187,6 +196,7 @@ export default function RequestsPage() {
                         placeholder="Please provide all necessary information related to your request..."
                         className="min-h-[150px]"
                         {...field}
+                        disabled={!user || isSubmitting}
                       />
                     </FormControl>
                     <FormDescription>
@@ -210,9 +220,6 @@ export default function RequestsPage() {
                   </>
                 )}
               </Button>
-               {!user && (
-                <p className="text-sm text-destructive">Please log in to submit a request.</p>
-              )}
             </form>
           </Form>
         </CardContent>

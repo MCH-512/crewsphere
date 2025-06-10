@@ -11,31 +11,43 @@ service cloud.firestore {
 
     // Users collection
     match /users/{userId} {
-      allow read; // Allow any authenticated user to read any user profile (for display names, etc.)
-      allow write: if request.auth != null && request.auth.uid == userId; // User can only write to their own document
-      // Admins can read/write any user document
+      allow read; 
+      allow write: if request.auth != null && request.auth.uid == userId; 
       allow read, write: if isAdmin();
     }
 
     // Alerts collection
     match /alerts/{alertId} {
-      allow read; // All users can read alerts
-      // Only admins can create/update/delete alerts
+      allow read; 
       allow create, update, delete: if isAdmin();
     }
 
     // Documents collection
     match /documents/{documentId} {
-      allow read; // All users can read documents
-      // Only admins can create/update/delete documents
+      allow read; 
       allow create, update, delete: if isAdmin();
     }
 
     // Flights collection
     match /flights/{flightId} {
-      allow read; // All users can read flight info
-      // Only admins can create/update/delete flights
+      allow read; 
       allow create, update, delete: if isAdmin();
+    }
+    
+    // User Activities collection (replaces userFlightAssignments)
+    match /userActivities/{activityId} {
+      // User can create their own activities
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // User can read their own activities
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      // User can update their own activities (e.g., comments, though less common)
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      // User can delete their own activities
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Admins can read all activities
+      allow read: if isAdmin();
+      // Admins can manage (update/delete) activities if necessary
+      allow update, delete: if isAdmin();
     }
 
     // Requests collection (user-submitted requests)
@@ -44,10 +56,10 @@ service cloud.firestore {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       // User can read their own requests
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      // Admins can read and update (e.g., status) any request
+      // Admins can read and update (e.g., status, adminResponse) any request
       allow read, update: if isAdmin();
-      // Generally, users should not be able to delete requests, nor update arbitrary fields.
-      allow delete: if false;
+      // Generally, users should not be able to delete requests. Admins could.
+      allow delete: if isAdmin(); 
     }
 
     // Purser Reports collection
@@ -56,70 +68,51 @@ service cloud.firestore {
         allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
         // Admins can read and manage all reports
         allow read, update, delete: if isAdmin();
-    }
-
-    // User Flight Assignments collection
-    match /userFlightAssignments/{assignmentId} {
-        // User can create their own assignments
-        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-        // User can read their own assignments
+        // Users can read their own submitted reports (if a page for this is added)
         allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-        // User can delete their own assignments (to remove from schedule)
-        allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
-        // Admins can manage all assignments
-        allow read, update, delete: if isAdmin();
-    }
-    
-    // User Activities collection
-    match /userActivities/{activityId} {
-        // User can create their own activities
-        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-        // User can read, update, and delete their own activities
-        allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
-        // Admins can read all user activities (e.g., for reporting or overview)
-        allow read: if isAdmin();
     }
 
     // Course-related collections
     match /courses/{courseId} {
-      allow read; // All users can read course information
+      allow read; 
       allow create, update, delete: if isAdmin();
     }
 
     match /quizzes/{quizId} {
-      allow read; // All users can read quiz information (related to a course)
+      allow read; 
       allow create, update, delete: if isAdmin();
     }
 
     match /questions/{questionId} {
-      // Questions are typically read as part of a quiz. Direct read might be limited.
-      // For simplicity, allow authenticated users to read (access control via quiz/course enrollment is ideal).
       allow read: if request.auth != null;
       allow create, update, delete: if isAdmin();
     }
 
     match /certificateRules/{ruleId} {
-      // Rules might be read by users if details are shown, or by admins.
       allow read: if request.auth != null;
       allow create, update, delete: if isAdmin();
     }
 
     match /userTrainingProgress/{progressId} {
       function isOwner() {
-        // Check if the authenticated user is the owner of the document
         return request.auth != null && resource.data.userId == request.auth.uid;
       }
        function isCreatingOwner() {
-        // Check if the authenticated user is creating their own document
         return request.auth != null && request.resource.data.userId == request.auth.uid;
       }
 
-      allow read, write: if isOwner(); // User can read/write their own progress
-      allow create: if isCreatingOwner(); // User can create their own progress doc
-      // Admins can read any user's progress
+      allow read, write: if isOwner(); 
+      allow create: if isCreatingOwner(); 
       allow read: if isAdmin();
-      // Admins generally shouldn't directly write to user progress unless for specific corrections (can be added if needed)
     }
+    
+    // Deprecated: User Flight Assignments (replaced by userActivities)
+    // match /userFlightAssignments/{assignmentId} {
+    //   allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    //   allow read, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    //   allow read, write, delete: if isAdmin();
+    // }
+
 
     // Default deny all other paths
     match /{document=**} {

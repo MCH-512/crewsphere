@@ -9,11 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea"; // Added Textarea
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Edit } from "lucide-react";
+import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Edit, Eye } from "lucide-react"; // Added Eye
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,6 +27,8 @@ interface UserRequest {
   details: string;
   createdAt: Timestamp;
   status: "pending" | "approved" | "rejected" | "in-progress";
+  adminResponse?: string; // To store admin's response/notes
+  updatedAt?: Timestamp; // To track when the status was last updated
 }
 
 export default function AdminUserRequestsPage() {
@@ -39,6 +42,7 @@ export default function AdminUserRequestsPage() {
   const [selectedRequest, setSelectedRequest] = React.useState<UserRequest | null>(null);
   const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
   const [newStatus, setNewStatus] = React.useState<UserRequest["status"] | "">("");
+  const [adminResponseText, setAdminResponseText] = React.useState("");
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
 
   const fetchRequests = React.useCallback(async () => {
@@ -55,10 +59,11 @@ export default function AdminUserRequestsPage() {
     } catch (err) {
       console.error("Error fetching requests:", err);
       setError("Failed to load user requests. Please try again.");
+      toast({ title: "Loading Error", description: "Could not fetch requests.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   React.useEffect(() => {
     if (!authLoading) {
@@ -72,26 +77,36 @@ export default function AdminUserRequestsPage() {
 
   const handleOpenManageDialog = (request: UserRequest) => {
     setSelectedRequest(request);
-    setNewStatus(request.status); // Pre-fill with current status
+    setNewStatus(request.status); 
+    setAdminResponseText(request.adminResponse || "");
     setIsManageDialogOpen(true);
   };
 
   const handleStatusUpdate = async () => {
-    if (!selectedRequest || !newStatus || newStatus === selectedRequest.status) {
-      toast({ title: "No Change", description: "Status is the same or not selected.", variant: "default" });
+    if (!selectedRequest || !newStatus ) {
+      toast({ title: "Selection Missing", description: "No request selected or new status not chosen.", variant: "default" });
+      return;
+    }
+    if (newStatus === selectedRequest.status && adminResponseText === (selectedRequest.adminResponse || "")) {
+      toast({ title: "No Change", description: "Status and response are the same.", variant: "default" });
       setIsManageDialogOpen(false);
       return;
     }
+
     setIsUpdatingStatus(true);
     try {
       const requestDocRef = doc(db, "requests", selectedRequest.id);
-      await updateDoc(requestDocRef, { status: newStatus });
-      toast({ title: "Status Updated", description: `Request status changed to ${newStatus}.` });
-      fetchRequests(); // Re-fetch to update the table
+      await updateDoc(requestDocRef, { 
+        status: newStatus,
+        adminResponse: adminResponseText || null, // Store null if empty
+        updatedAt: serverTimestamp(),
+       });
+      toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. Response saved.` });
+      fetchRequests(); 
       setIsManageDialogOpen(false);
     } catch (err) {
       console.error("Error updating status:", err);
-      toast({ title: "Update Failed", description: "Could not update request status.", variant: "destructive" });
+      toast({ title: "Update Failed", description: "Could not update request status/response.", variant: "destructive" });
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -187,7 +202,7 @@ export default function AdminUserRequestsPage() {
                       </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" onClick={() => handleOpenManageDialog(request)}>
-                          <Edit className="mr-1 h-4 w-4" /> Manage
+                          <Eye className="mr-1 h-4 w-4" /> View & Manage {/* Changed Icon and Label */}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -204,13 +219,14 @@ export default function AdminUserRequestsPage() {
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Manage Request: {selectedRequest.subject}</DialogTitle>
-              <DialogDescription>Review details and update the status of this request.</DialogDescription>
+              <DialogDescription>Review details, update status, and add response notes.</DialogDescription>
             </DialogHeader>
-            <div className="py-4 space-y-4">
+            <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-2">
               <div className="space-y-1">
                 <p className="text-sm font-medium">User: <span className="text-muted-foreground">{selectedRequest.userEmail}</span></p>
                 <p className="text-sm font-medium">Type: <span className="text-muted-foreground">{selectedRequest.requestType}</span></p>
                 <p className="text-sm font-medium">Submitted: <span className="text-muted-foreground">{format(selectedRequest.createdAt.toDate(), "PPpp")}</span></p>
+                {selectedRequest.updatedAt && <p className="text-sm font-medium">Last Updated: <span className="text-muted-foreground">{format(selectedRequest.updatedAt.toDate(), "PPpp")}</span></p>}
               </div>
               <div className="space-y-1">
                 <Label className="text-sm font-medium">Details:</Label>
@@ -233,12 +249,22 @@ export default function AdminUserRequestsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="admin-response">Admin Response / Notes</Label>
+                <Textarea
+                  id="admin-response"
+                  placeholder="Add your response or internal notes here..."
+                  value={adminResponseText}
+                  onChange={(e) => setAdminResponseText(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
             </div>
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button type="button" variant="outline">Cancel</Button>
               </DialogClose>
-              <Button onClick={handleStatusUpdate} disabled={isUpdatingStatus || !newStatus || newStatus === selectedRequest.status}>
+              <Button onClick={handleStatusUpdate} disabled={isUpdatingStatus}>
                 {isUpdatingStatus && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>
@@ -249,5 +275,3 @@ export default function AdminUserRequestsPage() {
     </div>
   );
 }
-
-    
