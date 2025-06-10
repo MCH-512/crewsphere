@@ -10,11 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input"; 
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter } from "lucide-react";
+import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority"; 
@@ -40,7 +41,8 @@ export default function AdminUserRequestsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [requests, setRequests] = React.useState<UserRequest[]>([]);
+  const [allRequests, setAllRequests] = React.useState<UserRequest[]>([]); // Store all fetched requests
+  const [filteredRequests, setFilteredRequests] = React.useState<UserRequest[]>([]); // Requests to display
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -50,6 +52,7 @@ export default function AdminUserRequestsPage() {
   const [adminResponseText, setAdminResponseText] = React.useState("");
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
   const [statusFilter, setStatusFilter] = React.useState<UserRequest["status"] | "all">("all");
+  const [searchTerm, setSearchTerm] = React.useState("");
 
   const fetchRequests = React.useCallback(async () => {
     setIsLoading(true);
@@ -66,7 +69,8 @@ export default function AdminUserRequestsPage() {
         id: doc.id,
         ...doc.data(),
       } as UserRequest));
-      setRequests(fetchedRequests);
+      setAllRequests(fetchedRequests); // Update all requests
+      setFilteredRequests(fetchedRequests); // Initially, filtered is same as all
     } catch (err) {
       console.error("Error fetching requests:", err);
       setError("Failed to load user requests. Please try again.");
@@ -85,6 +89,21 @@ export default function AdminUserRequestsPage() {
       }
     }
   }, [user, authLoading, router, fetchRequests]);
+
+  // Effect for client-side filtering based on searchTerm
+  React.useEffect(() => {
+    if (searchTerm === "") {
+      setFilteredRequests(allRequests);
+    } else {
+      const lowercasedFilter = searchTerm.toLowerCase();
+      const filtered = allRequests.filter(request =>
+        request.subject.toLowerCase().includes(lowercasedFilter) ||
+        request.userEmail.toLowerCase().includes(lowercasedFilter)
+      );
+      setFilteredRequests(filtered);
+    }
+  }, [searchTerm, allRequests]);
+
 
   const handleOpenManageDialog = (request: UserRequest) => {
     setSelectedRequest(request);
@@ -135,7 +154,7 @@ export default function AdminUserRequestsPage() {
 
   const getUrgencyBadgeVariant = (level?: UserRequest["urgencyLevel"]): VariantProps<typeof Badge>["variant"] => {
     if (!level || !["Low", "Medium", "High", "Critical"].includes(level)) {
-        return "outline"; // Default for N/A or unexpected values
+        return "outline";
     }
     switch (level) {
       case "Critical": return "destructive";
@@ -146,7 +165,7 @@ export default function AdminUserRequestsPage() {
     }
   };
 
-  if (authLoading || (isLoading && requests.length === 0 && !user)) {
+  if (authLoading || (isLoading && filteredRequests.length === 0 && !user)) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -178,8 +197,26 @@ export default function AdminUserRequestsPage() {
             <CardDescription>Review and manage all requests submitted by users.</CardDescription>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={fetchRequests} disabled={isLoading} className="w-full sm:w-auto">
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-grow md:max-w-xs">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search by subject or email..."
+                className="pl-8 w-full"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as UserRequest["status"] | "all")}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger className="w-full md:w-[180px]">
                     <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -189,28 +226,22 @@ export default function AdminUserRequestsPage() {
                     ))}
                 </SelectContent>
             </Select>
-            <Button variant="outline" onClick={fetchRequests} disabled={isLoading} className="w-full sm:w-auto">
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
           </div>
-        </CardHeader>
-        <CardContent>
           {error && (
             <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" /> {error}
             </div>
           )}
-          {isLoading && requests.length === 0 && (
+          {isLoading && filteredRequests.length === 0 && (
              <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="ml-3 text-muted-foreground">Loading request list...</p>
             </div>
           )}
-          {!isLoading && requests.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">No user requests found{statusFilter !== "all" ? ` for status: ${statusFilter}` : ""}.</p>
+          {!isLoading && filteredRequests.length === 0 && !error && (
+            <p className="text-muted-foreground text-center py-8">No user requests found{statusFilter !== "all" ? ` for status: ${statusFilter}` : ""}{searchTerm ? ` matching "${searchTerm}"` : ""}.</p>
           )}
-          {requests.length > 0 && (
+          {filteredRequests.length > 0 && (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -226,7 +257,7 @@ export default function AdminUserRequestsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {requests.map((request) => (
+                  {filteredRequests.map((request) => (
                     <TableRow key={request.id}>
                       <TableCell>
                         {request.createdAt ? format(request.createdAt.toDate(), "PPp") : 'N/A'}
@@ -279,7 +310,7 @@ export default function AdminUserRequestsPage() {
                   </Badge>
                 </p>
                 <p className="text-sm font-medium">Submitted: <span className="text-muted-foreground">{format(selectedRequest.createdAt.toDate(), "PPpp")}</span></p>
-                {selectedRequest.updatedAt && <p className="text-sm font-medium">Last Updated: <span className="text-muted-foreground">{format(selectedRequest.updatedAt.toDate(), "PPpp")}</span></p>}
+                {selectedRequest.updatedAt && selectedRequest.updatedAt.toMillis() !== selectedRequest.createdAt.toMillis() && <p className="text-sm font-medium">Last Updated: <span className="text-muted-foreground">{format(selectedRequest.updatedAt.toDate(), "PPpp")}</span></p>}
               </div>
               <div className="space-y-1">
                 <Label className="text-sm font-medium">Details:</Label>

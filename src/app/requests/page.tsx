@@ -31,6 +31,17 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const requestCategoriesAndTypes = {
   "Roster & Availability": [
@@ -46,7 +57,7 @@ const requestCategoriesAndTypes = {
     "Sick leave request",
     "Maternity/Paternity leave",
     "Unplanned absence – urgent notice",
-    "Special leave request (bereavement, wedding, etc.)", // Duplicate removed from here
+    "Special leave request (bereavement, wedding, etc.)",
     "Rest days tracking"
   ],
   "Human Resources": [
@@ -155,6 +166,9 @@ export default function RequestsPage() {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [specificTypes, setSpecificTypes] = React.useState<string[]>([]);
+  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
+  const [formDataToSubmit, setFormDataToSubmit] = React.useState<RequestFormValues | null>(null);
+
 
   const form = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
@@ -173,26 +187,33 @@ export default function RequestsPage() {
     form.setValue('specificRequestType', '', { shouldValidate: true });
   }, [watchedRequestCategory, form]);
 
-  async function onSubmit(data: RequestFormValues) {
-    if (!user) {
+  async function handleFormSubmit(data: RequestFormValues) {
+    setFormDataToSubmit(data);
+    setShowConfirmDialog(true);
+  }
+
+  async function confirmSubmit() {
+    if (!user || !formDataToSubmit) {
       toast({
-        title: "Authentication Error",
-        description: "You must be logged in to submit a request.",
+        title: "Error",
+        description: "User not logged in or no data to submit.",
         variant: "destructive",
       });
+      setShowConfirmDialog(false);
       return;
     }
 
     setIsSubmitting(true);
+    setShowConfirmDialog(false);
     try {
       const requestData = {
         userId: user.uid,
         userEmail: user.email,
-        requestType: data.requestCategory, 
-        specificRequestType: data.specificRequestType || null,
-        urgencyLevel: data.urgencyLevel,
-        subject: data.subject,
-        details: data.details,
+        requestType: formDataToSubmit.requestCategory, 
+        specificRequestType: formDataToSubmit.specificRequestType || null,
+        urgencyLevel: formDataToSubmit.urgencyLevel,
+        subject: formDataToSubmit.subject,
+        details: formDataToSubmit.details,
         createdAt: serverTimestamp(),
         status: "pending",
       };
@@ -200,10 +221,11 @@ export default function RequestsPage() {
 
       toast({
         title: "Request Submitted Successfully",
-        description: `Your ${data.requestCategory.toLowerCase()} request for "${data.subject}" has been saved.`,
+        description: `Your ${formDataToSubmit.requestCategory.toLowerCase()} request for "${formDataToSubmit.subject}" has been saved.`,
       });
       form.reset();
       setSpecificTypes([]); 
+      setFormDataToSubmit(null);
     } catch (error) {
       console.error("Error submitting request to Firestore:", error);
       toast({
@@ -239,7 +261,7 @@ export default function RequestsPage() {
             </Alert>
           )}
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
@@ -360,7 +382,7 @@ export default function RequestsPage() {
                   </FormItem>
                 )}
               />
-
+              
               <Button type="submit" disabled={isSubmitting || !user || !form.formState.isValid} className="w-full sm:w-auto">
                 {isSubmitting ? (
                   <>
@@ -381,6 +403,32 @@ export default function RequestsPage() {
           </Form>
         </CardContent>
       </Card>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Request Submission</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to submit this request?
+              {formDataToSubmit && (
+                <div className="mt-2 text-sm text-muted-foreground space-y-1">
+                  <p><strong>Category:</strong> {formDataToSubmit.requestCategory}</p>
+                  {formDataToSubmit.specificRequestType && <p><strong>Type:</strong> {formDataToSubmit.specificRequestType}</p>}
+                  <p><strong>Urgency:</strong> {formDataToSubmit.urgencyLevel}</p>
+                  <p><strong>Subject:</strong> {formDataToSubmit.subject}</p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setFormDataToSubmit(null)} disabled={isSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSubmit} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirm & Submit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
