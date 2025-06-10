@@ -9,26 +9,28 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea"; // Added Textarea
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Edit, Eye } from "lucide-react"; // Added Eye
+import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import type { VariantProps } from "class-variance-authority"; // For badge variants
 
 interface UserRequest {
   id: string;
   userId: string;
   userEmail: string;
   requestType: string;
+  urgencyLevel: "Low" | "Medium" | "High" | "Critical";
   subject: string;
   details: string;
   createdAt: Timestamp;
   status: "pending" | "approved" | "rejected" | "in-progress";
-  adminResponse?: string; // To store admin's response/notes
-  updatedAt?: Timestamp; // To track when the status was last updated
+  adminResponse?: string;
+  updatedAt?: Timestamp;
 }
 
 export default function AdminUserRequestsPage() {
@@ -98,7 +100,7 @@ export default function AdminUserRequestsPage() {
       const requestDocRef = doc(db, "requests", selectedRequest.id);
       await updateDoc(requestDocRef, { 
         status: newStatus,
-        adminResponse: adminResponseText || null, // Store null if empty
+        adminResponse: adminResponseText || null,
         updatedAt: serverTimestamp(),
        });
       toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. Response saved.` });
@@ -112,13 +114,23 @@ export default function AdminUserRequestsPage() {
     }
   };
 
-  const getStatusBadgeVariant = (status: UserRequest["status"]) => {
+  const getStatusBadgeVariant = (status: UserRequest["status"]): VariantProps<typeof Badge>["variant"] => {
     switch (status) {
       case "pending": return "secondary";
-      case "approved": return "default"; 
+      case "approved": return "success"; 
       case "rejected": return "destructive";
       case "in-progress": return "outline";
       default: return "secondary";
+    }
+  };
+
+  const getUrgencyBadgeVariant = (level: UserRequest["urgencyLevel"]): VariantProps<typeof Badge>["variant"] => {
+    switch (level) {
+      case "Critical": return "destructive";
+      case "High": return "default"; // Using default Shadcn orange-ish/primary
+      case "Medium": return "secondary";
+      case "Low": return "outline";
+      default: return "outline";
     }
   };
 
@@ -178,10 +190,11 @@ export default function AdminUserRequestsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date Submitted</TableHead>
+                    <TableHead>Submitted</TableHead>
                     <TableHead>User Email</TableHead>
                     <TableHead>Request Type</TableHead>
                     <TableHead>Subject</TableHead>
+                    <TableHead>Urgency</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -190,11 +203,17 @@ export default function AdminUserRequestsPage() {
                   {requests.map((request) => (
                     <TableRow key={request.id}>
                       <TableCell>
-                        {request.createdAt ? format(request.createdAt.toDate(), "PPpp") : 'N/A'}
+                        {request.createdAt ? format(request.createdAt.toDate(), "PPp") : 'N/A'}
                       </TableCell>
                       <TableCell className="font-medium">{request.userEmail}</TableCell>
                       <TableCell>{request.requestType}</TableCell>
                       <TableCell>{request.subject}</TableCell>
+                      <TableCell>
+                        <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize flex items-center gap-1">
+                          {request.urgencyLevel === "Critical" && <Zap className="h-3 w-3" />}
+                          {request.urgencyLevel}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(request.status)} className="capitalize">
                           {request.status}
@@ -202,7 +221,7 @@ export default function AdminUserRequestsPage() {
                       </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" onClick={() => handleOpenManageDialog(request)}>
-                          <Eye className="mr-1 h-4 w-4" /> View & Manage {/* Changed Icon and Label */}
+                          <Eye className="mr-1 h-4 w-4" /> View & Manage
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -225,6 +244,7 @@ export default function AdminUserRequestsPage() {
               <div className="space-y-1">
                 <p className="text-sm font-medium">User: <span className="text-muted-foreground">{selectedRequest.userEmail}</span></p>
                 <p className="text-sm font-medium">Type: <span className="text-muted-foreground">{selectedRequest.requestType}</span></p>
+                <p className="text-sm font-medium">Urgency: <Badge variant={getUrgencyBadgeVariant(selectedRequest.urgencyLevel)} className="capitalize ml-1">{selectedRequest.urgencyLevel}</Badge></p>
                 <p className="text-sm font-medium">Submitted: <span className="text-muted-foreground">{format(selectedRequest.createdAt.toDate(), "PPpp")}</span></p>
                 {selectedRequest.updatedAt && <p className="text-sm font-medium">Last Updated: <span className="text-muted-foreground">{format(selectedRequest.updatedAt.toDate(), "PPpp")}</span></p>}
               </div>

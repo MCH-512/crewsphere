@@ -25,16 +25,19 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SendHorizonal, Loader2, AlertTriangle } from "lucide-react"; // Added AlertTriangle
+import { SendHorizonal, Loader2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert"; // Added Alert components
+import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert";
 
 const requestFormSchema = z.object({
   requestType: z.string({
     required_error: "Please select a request type.",
+  }),
+  urgencyLevel: z.enum(["Low", "Medium", "High", "Critical"], {
+    required_error: "Please select an urgency level.",
   }),
   subject: z.string().min(5, {
     message: "Subject must be at least 5 characters.",
@@ -51,6 +54,8 @@ const requestFormSchema = z.object({
 type RequestFormValues = z.infer<typeof requestFormSchema>;
 
 const defaultValues: Partial<RequestFormValues> = {
+  requestType: "",
+  urgencyLevel: "Low",
   subject: "",
   details: "",
 };
@@ -68,6 +73,8 @@ const requestTypes = [
   "General Inquiry",
   "Other",
 ];
+
+const urgencyLevels: RequestFormValues["urgencyLevel"][] = ["Low", "Medium", "High", "Critical"];
 
 export default function RequestsPage() {
   const { toast } = useToast();
@@ -142,31 +149,58 @@ export default function RequestsPage() {
           )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <FormField
-                control={form.control}
-                name="requestType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Request Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!user || isSubmitting}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a request type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {requestTypes.map((type) => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Choose the category that best fits your request.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="requestType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Request Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!user || isSubmitting}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a request type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {requestTypes.map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Choose the category that best fits your request.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="urgencyLevel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Urgency Level</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!user || isSubmitting}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select urgency level" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {urgencyLevels.map((level) => (
+                            <SelectItem key={level} value={level}>{level}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        How urgent is this request?
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
