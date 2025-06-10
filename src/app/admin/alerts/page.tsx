@@ -8,11 +8,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, deleteDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { MessageSquareWarning, Loader2, AlertTriangle, RefreshCw, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface AlertDocument {
   id: string;
@@ -32,6 +43,9 @@ export default function AdminAlertsPage() {
   const [alerts, setAlerts] = React.useState<AlertDocument[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+
+  const [alertToDelete, setAlertToDelete] = React.useState<AlertDocument | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const fetchAlerts = React.useCallback(async () => {
     setIsLoading(true);
@@ -63,11 +77,27 @@ export default function AdminAlertsPage() {
     }
   }, [user, authLoading, router, fetchAlerts]);
 
+  const handleDeleteAlert = async () => {
+    if (!alertToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(db, "alerts", alertToDelete.id));
+      toast({ title: "Alert Deleted", description: `Alert "${alertToDelete.title}" has been successfully deleted.` });
+      setAlertToDelete(null);
+      fetchAlerts(); // Refresh list
+    } catch (error) {
+      console.error("Error deleting alert:", error);
+      toast({ title: "Deletion Failed", description: "Could not delete the alert. Please try again.", variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const getLevelBadgeVariant = (level: AlertDocument["level"]): "destructive" | "default" | "secondary" | "outline" => {
     switch (level) {
       case "critical": return "destructive";
-      case "warning": return "default"; // ShadCN 'default' variant often yellow-ish or primary. Theme dependent.
-      case "info": return "secondary"; // ShadCN 'secondary' variant.
+      case "warning": return "default";
+      case "info": return "secondary";
       default: return "outline";
     }
   };
@@ -154,9 +184,11 @@ export default function AdminAlertsPage() {
                         <Button variant="ghost" size="sm" onClick={() => toast({ title: "Edit Alert", description: "Editing functionality coming soon!"})} disabled aria-label={`Edit alert: ${alert.title}`}>
                           <Edit className="mr-1 h-4 w-4" /> Edit
                         </Button>
-                         <Button variant="ghost" size="sm" onClick={() => toast({ title: "Delete Alert", description: "Deletion functionality coming soon!"})} disabled className="text-destructive hover:text-destructive/80" aria-label={`Delete alert: ${alert.title}`}>
+                        <AlertDialogTrigger asChild>
+                         <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80" aria-label={`Delete alert: ${alert.title}`} onClick={() => setAlertToDelete(alert)}>
                           <Trash2 className="mr-1 h-4 w-4" /> Delete
                         </Button>
+                        </AlertDialogTrigger>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -169,6 +201,26 @@ export default function AdminAlertsPage() {
           </CardDescription>
         </CardContent>
       </Card>
+
+      {alertToDelete && (
+        <AlertDialog open={!!alertToDelete} onOpenChange={(open) => !open && setAlertToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete the alert: "{alertToDelete.title}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setAlertToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteAlert} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }
