@@ -43,7 +43,7 @@ const purserReportFormSchema = z.object({
   
   captainName: z.string().optional(),
   firstOfficerName: z.string().optional(),
-  purserName: z.string().nonempty({ message: "Supervising crew (Purser/Instructor) selection is required."}),
+  purserName: z.string().refine(val => val !== PLACEHOLDER_NONE_VALUE && val.trim() !== "", { message: "Supervising crew (Purser/Instructor) selection is required."}),
   cabinCrewR1: z.string().optional(),
   cabinCrewL2: z.string().optional(),
   cabinCrewR2: z.string().optional(),
@@ -93,12 +93,12 @@ export function PurserReportTool() {
       arrivalAirport: "JFK",
       aircraftTypeRegistration: "B789 G-ABCD",
       
-      captainName: "", 
-      firstOfficerName: "",
-      purserName: "", 
-      cabinCrewR1: "",
-      cabinCrewL2: "",
-      cabinCrewR2: "",
+      captainName: PLACEHOLDER_NONE_VALUE, 
+      firstOfficerName: PLACEHOLDER_NONE_VALUE,
+      purserName: PLACEHOLDER_NONE_VALUE, 
+      cabinCrewR1: PLACEHOLDER_NONE_VALUE,
+      cabinCrewL2: PLACEHOLDER_NONE_VALUE,
+      cabinCrewR2: PLACEHOLDER_NONE_VALUE,
       otherCrewMembers: "",
 
       passengerLoad: { total: 200, adults: 180, children: 15, infants: 5 },
@@ -170,12 +170,12 @@ export function PurserReportTool() {
     setReportResult(null);
 
     const crewDetailsParts = [
-      data.captainName ? `Captain: ${data.captainName}` : null,
-      data.firstOfficerName ? `First Officer: ${data.firstOfficerName}` : null,
-      data.purserName ? `Supervising Crew: ${data.purserName}` : null,
-      data.cabinCrewR1 ? `R1: ${data.cabinCrewR1}` : null,
-      data.cabinCrewL2 ? `L2: ${data.cabinCrewL2}` : null,
-      data.cabinCrewR2 ? `R2: ${data.cabinCrewR2}` : null,
+      data.captainName && data.captainName !== PLACEHOLDER_NONE_VALUE ? `Captain: ${data.captainName}` : null,
+      data.firstOfficerName && data.firstOfficerName !== PLACEHOLDER_NONE_VALUE  ? `First Officer: ${data.firstOfficerName}` : null,
+      data.purserName && data.purserName !== PLACEHOLDER_NONE_VALUE ? `Supervising Crew: ${data.purserName}` : null,
+      data.cabinCrewR1 && data.cabinCrewR1 !== PLACEHOLDER_NONE_VALUE ? `R1: ${data.cabinCrewR1}` : null,
+      data.cabinCrewL2 && data.cabinCrewL2 !== PLACEHOLDER_NONE_VALUE ? `L2: ${data.cabinCrewL2}` : null,
+      data.cabinCrewR2 && data.cabinCrewR2 !== PLACEHOLDER_NONE_VALUE ? `R2: ${data.cabinCrewR2}` : null,
       data.otherCrewMembers ? `Other Crew: ${data.otherCrewMembers}` : null,
     ];
     const crewMembersString = crewDetailsParts.filter(Boolean).join('\n');
@@ -291,7 +291,7 @@ export function PurserReportTool() {
                       <FormLabel>Captain's Name</FormLabel>
                       <Select 
                         onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
-                        value={field.value === "" ? PLACEHOLDER_NONE_VALUE : field.value} 
+                        value={field.value || PLACEHOLDER_NONE_VALUE} 
                         disabled={isLoadingPilots}
                       >
                         <FormControl>
@@ -321,7 +321,7 @@ export function PurserReportTool() {
                       <FormLabel>First Officer's Name</FormLabel>
                        <Select 
                         onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
-                        value={field.value === "" ? PLACEHOLDER_NONE_VALUE : field.value} 
+                        value={field.value || PLACEHOLDER_NONE_VALUE} 
                         disabled={isLoadingPilots}
                        >
                         <FormControl>
@@ -348,10 +348,10 @@ export function PurserReportTool() {
                   name="purserName" 
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Supervising Crew (Purser/Instructor)</FormLabel>
+                      <FormLabel>Supervising Crew (Purser/Instructor)*</FormLabel>
                       <Select 
-                        onValueChange={field.onChange} // For required field, direct change is fine
-                        value={field.value} // For required field, value is direct
+                        onValueChange={field.onChange} 
+                        value={field.value || PLACEHOLDER_NONE_VALUE}
                         disabled={isLoadingSupervisingCrew}
                       >
                         <FormControl>
@@ -360,7 +360,7 @@ export function PurserReportTool() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {/* No "Not Assigned" for required field */}
+                          <SelectItem value={PLACEHOLDER_NONE_VALUE} disabled>Select Supervising Crew</SelectItem>
                           {supervisingCrewList.map((crew) => (
                             <SelectItem key={crew.uid} value={crew.name}>
                               {crew.name}
@@ -379,7 +379,7 @@ export function PurserReportTool() {
                     <FormLabel>Cabin Crew (R1)</FormLabel>
                     <Select 
                         onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
-                        value={field.value === "" ? PLACEHOLDER_NONE_VALUE : field.value} 
+                        value={field.value || PLACEHOLDER_NONE_VALUE} 
                         disabled={isLoadingCabinCrew}
                     >
                         <FormControl>
@@ -404,7 +404,7 @@ export function PurserReportTool() {
                     <FormLabel>Cabin Crew (L2)</FormLabel>
                     <Select 
                         onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
-                        value={field.value === "" ? PLACEHOLDER_NONE_VALUE : field.value} 
+                        value={field.value || PLACEHOLDER_NONE_VALUE} 
                         disabled={isLoadingCabinCrew}
                     >
                         <FormControl>
@@ -429,7 +429,7 @@ export function PurserReportTool() {
                     <FormLabel>Cabin Crew (R2)</FormLabel>
                      <Select 
                         onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
-                        value={field.value === "" ? PLACEHOLDER_NONE_VALUE : field.value} 
+                        value={field.value || PLACEHOLDER_NONE_VALUE} 
                         disabled={isLoadingCabinCrew}
                      >
                         <FormControl>
