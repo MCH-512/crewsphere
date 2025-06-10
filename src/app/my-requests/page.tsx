@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ListTodo, Loader2, AlertTriangle, Inbox, MessageSquareText, CalendarCheck2 } from "lucide-react";
+import { ListTodo, Loader2, AlertTriangle, Inbox, MessageSquareText, CalendarCheck2, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority";
@@ -87,13 +87,13 @@ export default function MyRequestsPage() {
     }
   };
   
-  const getUrgencyBadgeVariant = (level: UserRequestForDisplay["urgencyLevel"]): VariantProps<typeof Badge>["variant"] => {
+  const getUrgencyBadgeVariant = (level?: UserRequestForDisplay["urgencyLevel"]): VariantProps<typeof Badge>["variant"] => {
     switch (level) {
       case "Critical": return "destructive";
-      case "High": return "default"; // Default often has a primary color fill
+      case "High": return "default"; 
       case "Medium": return "secondary";
       case "Low": return "outline";
-      default: return "outline";
+      default: return "outline"; // Fallback for N/A or unexpected values
     }
   };
 
@@ -165,10 +165,20 @@ export default function MyRequestsPage() {
                         {request.status}
                     </Badge>
                 </div>
-                 <div className="text-xs text-muted-foreground space-x-2">
+                 <div className="text-xs text-muted-foreground space-x-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span>Category: {request.requestType}</span>
                     {request.specificRequestType && <span>| Type: {request.specificRequestType}</span>}
-                     <span>| Urgency: <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize px-1.5 py-0.5 text-xs">{request.urgencyLevel}</Badge></span>
+                    <span>
+                      | Urgency: 
+                      {request.urgencyLevel && ["Low", "Medium", "High", "Critical"].includes(request.urgencyLevel) ? (
+                        <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize px-1.5 py-0.5 text-xs ml-1">
+                           {request.urgencyLevel === "Critical" && <Zap className="h-3 w-3 mr-1" />}
+                          {request.urgencyLevel}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="capitalize px-1.5 py-0.5 text-xs ml-1">N/A</Badge>
+                      )}
+                    </span>
                 </div>
               </CardHeader>
               <CardContent>
@@ -208,3 +218,6 @@ export default function MyRequestsPage() {
     </div>
   );
 }
+
+
+    
