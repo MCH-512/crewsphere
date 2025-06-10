@@ -32,6 +32,7 @@ const PurserReportInputSchema = z.object({
   cateringNotes: z.string().optional().describe('Comments on catering quality, quantity, and any issues encountered with meal services.'),
   maintenanceIssues: z.string().optional().describe('Description of any aircraft defects or maintenance issues noted by the crew during the flight.'),
   otherObservations: z.string().optional().describe('Any other relevant observations or information not covered in other sections (e.g., ground handling, customs/immigration issues).'),
+  crewPerformanceNotes: z.string().optional().describe('Observations on individual cabin crew performance during the flight. Each crew member\'s evaluation should be clearly demarcated.'),
 });
 export type PurserReportInput = z.infer<typeof PurserReportInputSchema>;
 
@@ -100,6 +101,11 @@ Report Sections:
 {{#if otherObservations}}
 8.  **## Other Observations/Information**:
     {{{otherObservations}}}
+{{/if}}
+
+{{#if crewPerformanceNotes}}
+9.  **## Crew Performance Notes**:
+    {{{crewPerformanceNotes}}}
 {{/if}}
 
 After generating the full report, provide a separate list of key highlights or action items that management should be aware of. This should be a concise summary of the most critical points from the entire report.

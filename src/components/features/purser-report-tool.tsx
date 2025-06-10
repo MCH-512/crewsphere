@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2 } from "lucide-react";
+import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote } from "lucide-react";
 import { generatePurserReport, type PurserReportOutput, type PurserReportInput } from "@/ai/flows/purser-report-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -51,6 +51,14 @@ interface AddedSection {
   content: string;
 }
 
+type CrewRoleForEval = 'R1' | 'L2' | 'R2';
+interface AddedCrewEvaluation {
+    id: string;
+    crewMemberRole: CrewRoleForEval;
+    crewMemberName: string;
+    evaluation: string;
+}
+
 const purserReportFormSchema = z.object({
   flightNumber: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars"),
   flightDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format. Use YYYY-MM-DD." }),
@@ -73,7 +81,6 @@ const purserReportFormSchema = z.object({
     infants: z.coerce.number().int().min(0, "Min 0 infants"),
   }),
   generalFlightSummary: z.string().min(10, "Min 10 characters for summary."),
-  // Dynamic sections will be handled outside the main form schema for Zod, managed by local state
 });
 
 type PurserReportFormValues = z.infer<typeof purserReportFormSchema>;
@@ -93,10 +100,13 @@ export function PurserReportTool() {
   const [cabinCrewList, setCabinCrewList] = React.useState<CrewUser[]>([]);
   const [isLoadingCabinCrew, setIsLoadingCabinCrew] = React.useState(true);
 
-  // State for dynamic sections
   const [addedSections, setAddedSections] = React.useState<AddedSection[]>([]);
   const [currentSectionType, setCurrentSectionType] = React.useState<ReportSectionType | "">("");
   const [currentSectionContent, setCurrentSectionContent] = React.useState("");
+
+  const [addedCrewEvaluations, setAddedCrewEvaluations] = React.useState<AddedCrewEvaluation[]>([]);
+  const [currentEvalCrewMemberRole, setCurrentEvalCrewMemberRole] = React.useState<CrewRoleForEval | "">("");
+  const [currentEvalContent, setCurrentEvalContent] = React.useState("");
 
   const defaultDate = () => new Date().toISOString().split('T')[0];
 
@@ -108,7 +118,6 @@ export function PurserReportTool() {
       departureAirport: "LHR",
       arrivalAirport: "JFK",
       aircraftTypeRegistration: "B789 G-ABCD",
-      
       captainName: PLACEHOLDER_NONE_VALUE, 
       firstOfficerName: PLACEHOLDER_NONE_VALUE,
       purserName: PLACEHOLDER_NONE_VALUE, 
@@ -116,7 +125,6 @@ export function PurserReportTool() {
       cabinCrewL2: PLACEHOLDER_NONE_VALUE,
       cabinCrewR2: PLACEHOLDER_NONE_VALUE,
       otherCrewMembers: "",
-
       passengerLoad: { total: 200, adults: 180, children: 15, infants: 5 },
       generalFlightSummary: "Flight was on time and smooth. Cabin service completed efficiently.",
     },
@@ -137,7 +145,6 @@ export function PurserReportTool() {
         } else {
           q = query(usersCollectionRef, where("role", "==", roles), where("accountStatus", "==", "active"));
         }
-        
         const querySnapshot = await getDocs(q);
         const fetchedCrew: CrewUser[] = [];
         querySnapshot.forEach((doc) => {
@@ -151,14 +158,8 @@ export function PurserReportTool() {
       } catch (error) {
         console.error(`Error fetching crew for role(s) ${JSON.stringify(roles)}:`, error);
         const roleName = Array.isArray(roles) ? roles.join('/') : roles;
-        toast({
-          title: "Error",
-          description: `Could not load ${roleName} list for selection.`,
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
+        toast({ title: "Error", description: `Could not load ${roleName} list.`, variant: "destructive" });
+      } finally { setLoading(false); }
     };
     fetchCrew("pilote", setPilotsList, setIsLoadingPilots);
     fetchCrew(["purser", "instructor"], setSupervisingCrewList, setIsLoadingSupervisingCrew);
@@ -166,40 +167,42 @@ export function PurserReportTool() {
   }, [toast]);
 
   const handleAddSection = () => {
-    if (!currentSectionType) {
-      toast({ title: "Missing Type", description: "Please select a section type.", variant: "destructive" });
-      return;
-    }
-    if (!currentSectionContent.trim()) {
-      toast({ title: "Missing Content", description: "Please enter content for the section.", variant: "destructive" });
-      return;
-    }
+    if (!currentSectionType) { toast({ title: "Missing Type", description: "Please select a section type.", variant: "destructive" }); return; }
+    if (!currentSectionContent.trim()) { toast({ title: "Missing Content", description: "Please enter content for the section.", variant: "destructive" }); return; }
     setAddedSections([...addedSections, { id: Date.now().toString(), type: currentSectionType, content: currentSectionContent.trim() }]);
-    setCurrentSectionType("");
-    setCurrentSectionContent("");
+    setCurrentSectionType(""); setCurrentSectionContent("");
   };
+  const handleRemoveSection = (id: string) => setAddedSections(addedSections.filter(section => section.id !== id));
 
-  const handleRemoveSection = (id: string) => {
-    setAddedSections(addedSections.filter(section => section.id !== id));
+  const handleAddCrewEvaluation = () => {
+    if (!currentEvalCrewMemberRole) { toast({ title: "Missing Crew Role", description: "Please select a crew member role to evaluate.", variant: "destructive" }); return; }
+    if (!currentEvalContent.trim()) { toast({ title: "Missing Evaluation", description: "Please enter evaluation notes.", variant: "destructive" }); return; }
+    
+    const crewMemberName = form.getValues(
+        currentEvalCrewMemberRole === 'R1' ? 'cabinCrewR1' :
+        currentEvalCrewMemberRole === 'L2' ? 'cabinCrewL2' : 'cabinCrewR2'
+    ) || "Unspecified Crew";
+
+    if (crewMemberName === PLACEHOLDER_NONE_VALUE || !crewMemberName.trim()){
+         toast({ title: "Crew Not Assigned", description: `No crew member is assigned to role ${currentEvalCrewMemberRole}. Please select a crew member first.`, variant: "destructive" }); return;
+    }
+
+    setAddedCrewEvaluations([...addedCrewEvaluations, { 
+        id: Date.now().toString(), 
+        crewMemberRole: currentEvalCrewMemberRole, 
+        crewMemberName: crewMemberName,
+        evaluation: currentEvalContent.trim() 
+    }]);
+    setCurrentEvalCrewMemberRole(""); setCurrentEvalContent("");
   };
-
+  const handleRemoveCrewEvaluation = (id: string) => setAddedCrewEvaluations(addedCrewEvaluations.filter(evalItem => evalItem.id !== id));
 
   async function onSubmit(data: PurserReportFormValues) {
-    if (!user) {
-      toast({
-        title: "Authentication Error",
-        description: "You must be logged in to submit a purser report.",
-        variant: "destructive",
-      });
-      return;
+    if (!user) { toast({ title: "Authentication Error", description: "You must be logged in.", variant: "destructive" }); return; }
+    if (addedSections.length === 0 && !data.generalFlightSummary && addedCrewEvaluations.length === 0) {
+        toast({ title: "Empty Report", description: "Provide a general summary, report section, or crew evaluation.", variant: "default" }); return;
     }
-    if (addedSections.length === 0 && !data.generalFlightSummary) {
-        toast({ title: "Empty Report", description: "Please provide a general flight summary or add at least one report section.", variant: "default" });
-        return;
-    }
-
-    setIsLoading(true);
-    setReportResult(null);
+    setIsLoading(true); setReportResult(null);
 
     const crewDetailsParts = [
       data.captainName && data.captainName !== PLACEHOLDER_NONE_VALUE ? `Captain: ${data.captainName}` : null,
@@ -212,7 +215,7 @@ export function PurserReportTool() {
     ];
     const crewMembersString = crewDetailsParts.filter(Boolean).join('\n');
 
-    const dynamicSections: Partial<PurserReportInput> = {};
+    const dynamicSections: Partial<Omit<PurserReportInput, 'crewPerformanceNotes'>> = {};
     addedSections.forEach(section => {
         switch (section.type) {
             case "Safety Incidents": dynamicSections.safetyIncidents = (dynamicSections.safetyIncidents ? dynamicSections.safetyIncidents + "\n\n---\n\n" : "") + section.content; break;
@@ -225,6 +228,9 @@ export function PurserReportTool() {
         }
     });
 
+    const crewPerformanceNotesString = addedCrewEvaluations
+        .map(ev => `Evaluation for ${ev.crewMemberRole} (${ev.crewMemberName}):\n${ev.evaluation}`)
+        .join("\n\n---\n\n");
 
     const aiInput: PurserReportInput = {
       flightNumber: data.flightNumber,
@@ -233,408 +239,104 @@ export function PurserReportTool() {
       arrivalAirport: data.arrivalAirport,
       aircraftTypeRegistration: data.aircraftTypeRegistration,
       crewMembers: crewMembersString,
-      passengerLoad: {
-        total: Number(data.passengerLoad.total),
-        adults: Number(data.passengerLoad.adults),
-        children: Number(data.passengerLoad.children),
-        infants: Number(data.passengerLoad.infants),
-      },
+      passengerLoad: { total: Number(data.passengerLoad.total), adults: Number(data.passengerLoad.adults), children: Number(data.passengerLoad.children), infants: Number(data.passengerLoad.infants) },
       generalFlightSummary: data.generalFlightSummary,
-      ...dynamicSections, // Spread the dynamically created sections
+      ...dynamicSections,
+      crewPerformanceNotes: crewPerformanceNotesString || undefined,
     };
 
     try {
       const generatedReport = await generatePurserReport(aiInput);
       setReportResult(generatedReport);
-      toast({
-        title: "Purser Report Generated by AI",
-        description: "Report is ready for review below. Now saving to database...",
-      });
-
-      await addDoc(collection(db, "purserReports"), {
-        reportInput: aiInput,
-        reportOutput: generatedReport,
-        userId: user.uid,
-        userEmail: user.email,
-        createdAt: serverTimestamp(),
-        status: "submitted", 
-      });
-
-      toast({
-        title: "Purser Report Saved",
-        description: "Your report has been successfully generated and saved to the database.",
-      });
-       form.reset(); // Reset main form
-       setAddedSections([]); // Clear dynamic sections
-       setCurrentSectionType("");
-       setCurrentSectionContent("");
-
-
+      toast({ title: "Purser Report Generated by AI", description: "Review below. Saving to database..." });
+      await addDoc(collection(db, "purserReports"), { reportInput: aiInput, reportOutput: generatedReport, userId: user.uid, userEmail: user.email, createdAt: serverTimestamp(), status: "submitted" });
+      toast({ title: "Purser Report Saved", description: "Report generated and saved." });
+      form.reset(); setAddedSections([]); setAddedCrewEvaluations([]); setCurrentSectionType(""); setCurrentSectionContent(""); setCurrentEvalCrewMemberRole(""); setCurrentEvalContent("");
     } catch (error) {
       console.error("Error in Purser Report process:", error);
-      let errorMessage = "An error occurred during the Purser Report process. Please try again.";
-      if (error instanceof Error) {
-        if (reportResult) { 
-            errorMessage = `AI report generated, but failed to save to database: ${error.message}`;
-        } else { 
-            errorMessage = `Failed to generate AI Purser Report: ${error.message}`;
-        }
-      }
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+      let errorMessage = "An error occurred. Please try again.";
+      if (error instanceof Error) { errorMessage = reportResult ? `AI report generated, but failed to save: ${error.message}` : `Failed to generate AI Report: ${error.message}`; }
+      toast({ title: "Error", description: errorMessage, variant: "destructive" });
+    } finally { setIsLoading(false); }
   }
+  
+  const availableEvalRoles: {label: string, value: CrewRoleForEval}[] = [];
+  if (form.getValues('cabinCrewR1') && form.getValues('cabinCrewR1') !== PLACEHOLDER_NONE_VALUE) availableEvalRoles.push({label: `R1: ${form.getValues('cabinCrewR1')}`, value: 'R1'});
+  if (form.getValues('cabinCrewL2') && form.getValues('cabinCrewL2') !== PLACEHOLDER_NONE_VALUE) availableEvalRoles.push({label: `L2: ${form.getValues('cabinCrewL2')}`, value: 'L2'});
+  if (form.getValues('cabinCrewR2') && form.getValues('cabinCrewR2') !== PLACEHOLDER_NONE_VALUE) availableEvalRoles.push({label: `R2: ${form.getValues('cabinCrewR2')}`, value: 'R2'});
+
 
   return (
     <div className="space-y-6">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-xl">Flight Information</CardTitle>
-              <CardDescription>Enter the core details of the flight.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <FormField control={form.control} name="flightNumber" render={({ field }) => (
-                  <FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input placeholder="e.g., BA245" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="flightDate" render={({ field }) => (
-                  <FormItem><FormLabel>Flight Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                 <FormField control={form.control} name="aircraftTypeRegistration" render={({ field }) => (
-                  <FormItem><FormLabel>Aircraft Type & Registration</FormLabel><FormControl><Input placeholder="e.g., B789 G-ABCD" {...field} /></FormControl><FormDescription>Type and registration (e.g., B787 G-XYZC)</FormDescription><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="departureAirport" render={({ field }) => (
-                  <FormItem><FormLabel>Departure Airport (From)</FormLabel><FormControl><Input placeholder="e.g., LHR" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="arrivalAirport" render={({ field }) => (
-                  <FormItem><FormLabel>Arrival Airport (To)</FormLabel><FormControl><Input placeholder="e.g., JFK" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-              </div>
-            </CardContent>
-          </Card>
+          <Card className="shadow-sm"><CardHeader><CardTitle className="text-xl">Flight Information</CardTitle><CardDescription>Core flight details.</CardDescription></CardHeader>
+            <CardContent className="space-y-4"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input placeholder="e.g., BA245" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="flightDate" render={({ field }) => (<FormItem><FormLabel>Flight Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="aircraftTypeRegistration" render={({ field }) => (<FormItem><FormLabel>Aircraft & Registration</FormLabel><FormControl><Input placeholder="e.g., B789 G-ABCD" {...field} /></FormControl><FormDescription>e.g., B787 G-XYZC</FormDescription><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="departureAirport" render={({ field }) => (<FormItem><FormLabel>Departure Airport</FormLabel><FormControl><Input placeholder="e.g., LHR" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="arrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival Airport</FormLabel><FormControl><Input placeholder="e.g., JFK" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            </div></CardContent></Card>
 
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-xl flex items-center"><Users className="mr-2 h-5 w-5 text-primary" /> Crew Information</CardTitle>
-              <CardDescription>List the operating crew members for this flight.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="captainName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Captain's Name</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
-                        value={field.value || PLACEHOLDER_NONE_VALUE} 
-                        disabled={isLoadingPilots}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={isLoadingPilots ? "Loading pilots..." : "Select Captain"} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>
-                          {pilotsList.map((pilot) => (
-                            <SelectItem key={pilot.uid} value={pilot.name}>
-                              {pilot.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>Optional. Select from available pilots.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="firstOfficerName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Officer's Name</FormLabel>
-                       <Select 
-                        onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
-                        value={field.value || PLACEHOLDER_NONE_VALUE} 
-                        disabled={isLoadingPilots}
-                       >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={isLoadingPilots ? "Loading pilots..." : "Select First Officer"} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                           <SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>
-                          {pilotsList.map((pilot) => (
-                            <SelectItem key={pilot.uid} value={pilot.name}>
-                              {pilot.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>Optional. Select from available pilots.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField 
-                  control={form.control} 
-                  name="purserName" 
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Supervising Crew (Purser/Instructor)*</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        value={field.value || PLACEHOLDER_NONE_VALUE}
-                        disabled={isLoadingSupervisingCrew}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={isLoadingSupervisingCrew ? "Loading crew..." : "Select Purser or Instructor"} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value={PLACEHOLDER_NONE_VALUE} disabled>Select Supervising Crew</SelectItem>
-                          {supervisingCrewList.map((crew) => (
-                            <SelectItem key={crew.uid} value={crew.name}>
-                              {crew.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} 
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                 <FormField control={form.control} name="cabinCrewR1" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cabin Crew (R1)</FormLabel>
-                    <Select 
-                        onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
-                        value={field.value || PLACEHOLDER_NONE_VALUE} 
-                        disabled={isLoadingCabinCrew}
-                    >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={isLoadingCabinCrew ? "Loading crew..." : "Select R1"} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>
-                          {cabinCrewList.map((crew) => (
-                            <SelectItem key={crew.uid} value={crew.name}>
-                              {crew.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    <FormDescription>Optional</FormDescription><FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="cabinCrewL2" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cabin Crew (L2)</FormLabel>
-                    <Select 
-                        onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
-                        value={field.value || PLACEHOLDER_NONE_VALUE} 
-                        disabled={isLoadingCabinCrew}
-                    >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={isLoadingCabinCrew ? "Loading crew..." : "Select L2"} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>
-                          {cabinCrewList.map((crew) => (
-                            <SelectItem key={crew.uid} value={crew.name}>
-                              {crew.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    <FormDescription>Optional</FormDescription><FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="cabinCrewR2" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cabin Crew (R2)</FormLabel>
-                     <Select 
-                        onValueChange={(value) => field.onChange(value === PLACEHOLDER_NONE_VALUE ? "" : value)} 
-                        value={field.value || PLACEHOLDER_NONE_VALUE} 
-                        disabled={isLoadingCabinCrew}
-                     >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={isLoadingCabinCrew ? "Loading crew..." : "Select R2"} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>
-                          {cabinCrewList.map((crew) => (
-                            <SelectItem key={crew.uid} value={crew.name}>
-                              {crew.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    <FormDescription>Optional</FormDescription><FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-              <FormField control={form.control} name="otherCrewMembers" render={({ field }) => (
-                <FormItem><FormLabel>Other Crew Members / Notes</FormLabel><FormControl><Textarea placeholder="List any additional crew or specific roles/notes..." {...field} /></FormControl><FormDescription>Optional. E.g., L1: S. King, Additional FA: P. White (if not in lists)</FormDescription><FormMessage /></FormItem>
-              )} />
-            </CardContent>
-          </Card>
+          <Card className="shadow-sm"><CardHeader><CardTitle className="text-xl flex items-center"><Users className="mr-2 h-5 w-5 text-primary" /> Crew Information</CardTitle><CardDescription>Operating crew.</CardDescription></CardHeader>
+            <CardContent className="space-y-4"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <FormField control={form.control} name="captainName" render={({ field }) => (<FormItem><FormLabel>Captain</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingPilots}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingPilots ? "Loading..." : "Select Captain"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{pilotsList.map(p => (<SelectItem key={p.uid} value={p.name}>{p.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="firstOfficerName" render={({ field }) => (<FormItem><FormLabel>First Officer</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingPilots}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingPilots ? "Loading..." : "Select F/O"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{pilotsList.map(p => (<SelectItem key={p.uid} value={p.name}>{p.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="purserName" render={({ field }) => (<FormItem><FormLabel>Supervising Crew*</FormLabel><Select onValueChange={field.onChange} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingSupervisingCrew}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingSupervisingCrew ? "Loading..." : "Select Purser/Instructor"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE} disabled>Select Supervising Crew</SelectItem>{supervisingCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+            </div><div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField control={form.control} name="cabinCrewR1" render={({ field }) => (<FormItem><FormLabel>Cabin Crew (R1)</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingCabinCrew}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingCabinCrew ? "Loading..." : "Select R1"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{cabinCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="cabinCrewL2" render={({ field }) => (<FormItem><FormLabel>Cabin Crew (L2)</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingCabinCrew}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingCabinCrew ? "Loading..." : "Select L2"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{cabinCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="cabinCrewR2" render={({ field }) => (<FormItem><FormLabel>Cabin Crew (R2)</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingCabinCrew}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingCabinCrew ? "Loading..." : "Select R2"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{cabinCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
+            </div><FormField control={form.control} name="otherCrewMembers" render={({ field }) => (<FormItem><FormLabel>Other Crew / Notes</FormLabel><FormControl><Textarea placeholder="Additional crew or notes..." {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
+            </CardContent></Card>
 
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-xl">Passenger Load</CardTitle>
-              <CardDescription>Specify the number of passengers by category.</CardDescription>
-            </CardHeader>
+          <Card className="shadow-sm"><CardHeader><CardTitle className="text-xl">Passenger Load</CardTitle><CardDescription>Passenger count by category.</CardDescription></CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <FormField control={form.control} name="passengerLoad.total" render={({ field }) => (
-                <FormItem><FormLabel>Total</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="passengerLoad.adults" render={({ field }) => (
-                <FormItem><FormLabel>Adults</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="passengerLoad.children" render={({ field }) => (
-                <FormItem><FormLabel>Children</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="passengerLoad.infants" render={({ field }) => (
-                <FormItem><FormLabel>Infants</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-xl">Report Sections</CardTitle>
-              <CardDescription>Provide details for each relevant section of the report by adding them below.</CardDescription>
-            </CardHeader>
+                <FormField control={form.control} name="passengerLoad.total" render={({ field }) => (<FormItem><FormLabel>Total</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="passengerLoad.adults" render={({ field }) => (<FormItem><FormLabel>Adults</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="passengerLoad.children" render={({ field }) => (<FormItem><FormLabel>Children</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="passengerLoad.infants" render={({ field }) => (<FormItem><FormLabel>Infants</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            </CardContent></Card>
+            
+          <Card className="shadow-sm"><CardHeader><CardTitle className="text-xl">Report Sections</CardTitle><CardDescription>Details for each relevant section.</CardDescription></CardHeader>
             <CardContent className="space-y-6">
-              <FormField control={form.control} name="generalFlightSummary" render={({ field }) => (
-                <FormItem><FormLabel>General Flight Summary</FormLabel><FormControl><Textarea placeholder="Overall flight conduct, punctuality, service notes..." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
+              <FormField control={form.control} name="generalFlightSummary" render={({ field }) => (<FormItem><FormLabel>General Flight Summary</FormLabel><FormControl><Textarea placeholder="Overall flight conduct..." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <Separator />
-              <div className="space-y-4 p-4 border rounded-md">
-                <h3 className="text-md font-semibold">Add Report Section</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                    <FormItem>
-                        <FormLabel>Section Type</FormLabel>
-                        <Select value={currentSectionType} onValueChange={(value) => setCurrentSectionType(value as ReportSectionType)}>
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select section type" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {reportSectionTypes.map(type => (
-                                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </FormItem>
-                     <Button type="button" onClick={handleAddSection} className="self-end" disabled={!currentSectionType || !currentSectionContent.trim()}>
-                        <PlusCircle className="mr-2 h-4 w-4"/> Add Section
-                    </Button>
-                </div>
-                <FormItem>
-                    <FormLabel>Section Content</FormLabel>
-                    <Textarea 
-                        placeholder="Enter details for the selected section type..." 
-                        className="min-h-[100px]" 
-                        value={currentSectionContent}
-                        onChange={(e) => setCurrentSectionContent(e.target.value)}
-                    />
-                </FormItem>
-              </div>
-              
-              {addedSections.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-md font-semibold">Added Sections:</h3>
-                  {addedSections.map((section) => (
-                    <Card key={section.id} className="p-3 bg-muted/50">
-                      <div className="flex justify-between items-center mb-1">
-                        <CardTitle className="text-sm font-medium">{section.type}</CardTitle>
-                        <Button variant="ghost" size="icon" onClick={() => handleRemoveSection(section.id)} className="h-6 w-6 text-destructive hover:text-destructive/80">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{section.content}</p>
-                    </Card>
-                  ))}
-                </div>
-              )}
+              <div className="space-y-4 p-4 border rounded-md"><h3 className="text-md font-semibold">Add Report Section</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                  <FormItem><FormLabel>Section Type</FormLabel><Select value={currentSectionType} onValueChange={(v) => setCurrentSectionType(v as ReportSectionType)}><FormControl><SelectTrigger><SelectValue placeholder="Select section type" /></SelectTrigger></FormControl><SelectContent>{reportSectionTypes.map(t => (<SelectItem key={t} value={t}>{t}</SelectItem>))}</SelectContent></Select></FormItem>
+                  <Button type="button" onClick={handleAddSection} className="self-end" disabled={!currentSectionType || !currentSectionContent.trim()}><PlusCircle className="mr-2 h-4 w-4"/> Add Section</Button>
+              </div><FormItem><FormLabel>Section Content</FormLabel><Textarea placeholder="Details for selected section..." className="min-h-[100px]" value={currentSectionContent} onChange={(e) => setCurrentSectionContent(e.target.value)}/></FormItem></div>
+              {addedSections.length > 0 && (<div className="space-y-3"><h3 className="text-md font-semibold">Added Sections:</h3>{addedSections.map(s => (<Card key={s.id} className="p-3 bg-muted/50"><div className="flex justify-between items-center mb-1"><CardTitle className="text-sm font-medium">{s.type}</CardTitle><Button variant="ghost" size="icon" onClick={() => handleRemoveSection(s.id)} className="h-6 w-6 text-destructive hover:text-destructive/80"><Trash2 className="h-4 w-4" /></Button></div><p className="text-sm text-muted-foreground whitespace-pre-wrap">{s.content}</p></Card>))}</div>)}
+            </CardContent></Card>
 
-            </CardContent>
-          </Card>
+          <Card className="shadow-sm"><CardHeader><CardTitle className="text-xl flex items-center"><MessageSquareQuote className="mr-2 h-5 w-5 text-primary"/>Crew Performance Evaluation</CardTitle><CardDescription>Add evaluations for cabin crew R1, R2, L2.</CardDescription></CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4 p-4 border rounded-md"><h3 className="text-md font-semibold">Add Crew Evaluation</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                  <FormItem><FormLabel>Crew Member Role</FormLabel>
+                    <Select value={currentEvalCrewMemberRole} onValueChange={(v) => setCurrentEvalCrewMemberRole(v as CrewRoleForEval)} disabled={availableEvalRoles.length === 0}>
+                      <FormControl><SelectTrigger><SelectValue placeholder={availableEvalRoles.length === 0 ? "Assign R1/L2/R2 first" : "Select crew role"} /></SelectTrigger></FormControl>
+                      <SelectContent>{availableEvalRoles.map(r => (<SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>))}</SelectContent>
+                    </Select>
+                  </FormItem>
+                  <Button type="button" onClick={handleAddCrewEvaluation} className="self-end" disabled={!currentEvalCrewMemberRole || !currentEvalContent.trim()}><PlusCircle className="mr-2 h-4 w-4"/>Add Evaluation</Button>
+              </div><FormItem><FormLabel>Evaluation Notes</FormLabel><Textarea placeholder="Performance notes, commendations, areas for improvement..." className="min-h-[100px]" value={currentEvalContent} onChange={(e) => setCurrentEvalContent(e.target.value)}/></FormItem></div>
+              {addedCrewEvaluations.length > 0 && (<div className="space-y-3"><h3 className="text-md font-semibold">Added Evaluations:</h3>{addedCrewEvaluations.map(ev => (<Card key={ev.id} className="p-3 bg-muted/50"><div className="flex justify-between items-center mb-1"><CardTitle className="text-sm font-medium">{ev.crewMemberRole}: {ev.crewMemberName}</CardTitle><Button variant="ghost" size="icon" onClick={() => handleRemoveCrewEvaluation(ev.id)} className="h-6 w-6 text-destructive hover:text-destructive/80"><Trash2 className="h-4 w-4" /></Button></div><p className="text-sm text-muted-foreground whitespace-pre-wrap">{ev.evaluation}</p></Card>))}</div>)}
+            </CardContent></Card>
           
           <Button type="submit" disabled={isLoading || !form.formState.isValid || !user} className="w-full sm:w-auto">
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating & Saving...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate & Save AI Report
-              </>
-            )}
+            {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating & Saving...</>) : (<><Sparkles className="mr-2 h-4 w-4" />Generate & Save AI Report</>)}
           </Button>
-          {!user && (
-            <p className="text-sm text-destructive">Please log in to submit a purser report.</p>
-          )}
+          {!user && (<p className="text-sm text-destructive">Please log in to submit.</p>)}
         </form>
       </Form>
 
       {reportResult && (
-        <Card className="mt-8 shadow-md bg-secondary/30">
-          <CardHeader>
-            <CardTitle className="text-xl font-headline flex items-center">
-              <ClipboardList className="mr-2 h-6 w-6 text-primary" />
-              AI-Generated Purser Report
-            </CardTitle>
-            <CardDescription>Review the report generated by AI. This has been saved to the database.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h3 className="font-semibold text-lg mb-2">Full Report (Markdown):</h3>
-              <div className="prose prose-sm max-w-none dark:prose-invert text-foreground p-4 border rounded-md bg-background">
-                <pre className="whitespace-pre-wrap font-sans text-sm">{reportResult.formattedReport}</pre>
-              </div>
-            </div>
-            {reportResult.keyHighlights && reportResult.keyHighlights.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Key Highlights:</h3>
-                <ul className="list-disc pl-5 space-y-1 text-sm">
-                  {reportResult.keyHighlights.map((highlight, index) => (
-                    <li key={index} className="p-2 border-l-4 border-primary bg-background rounded-r-md">{highlight}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <Card className="mt-8 shadow-md bg-secondary/30"><CardHeader><CardTitle className="text-xl font-headline flex items-center"><ClipboardList className="mr-2 h-6 w-6 text-primary" />AI-Generated Purser Report</CardTitle><CardDescription>Review the AI generated report. This has been saved.</CardDescription></CardHeader>
+          <CardContent className="space-y-6"><div><h3 className="font-semibold text-lg mb-2">Full Report (Markdown):</h3><div className="prose prose-sm max-w-none dark:prose-invert text-foreground p-4 border rounded-md bg-background"><pre className="whitespace-pre-wrap font-sans text-sm">{reportResult.formattedReport}</pre></div></div>
+          {reportResult.keyHighlights && reportResult.keyHighlights.length > 0 && (<div><h3 className="font-semibold text-lg mb-2">Key Highlights:</h3><ul className="list-disc pl-5 space-y-1 text-sm">{reportResult.keyHighlights.map((h, i) => (<li key={i} className="p-2 border-l-4 border-primary bg-background rounded-r-md">{h}</li>))}</ul></div>)}
+          </CardContent></Card>
       )}
     </div>
   );
 }
-
-    
