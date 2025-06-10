@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Edit, Trash2 } from "lucide-react";
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle, UploadCloud } from "lucide-react"; // Added PlusCircle and UploadCloud
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,12 +21,13 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
+import Link from "next/link"; // Added Link import
 
 interface Document {
   id: string;
   title: string;
   category: string;
-  source: string; // Added source field
+  source: string; 
   version?: string;
   lastUpdated: Timestamp | string;
   size?: string;
@@ -60,7 +61,7 @@ export default function AdminDocumentsPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
-  const [sourceFilter, setSourceFilter] = React.useState("all"); // Added source filter state
+  const [sourceFilter, setSourceFilter] = React.useState("all"); 
 
   const fetchDocuments = React.useCallback(async () => {
     setIsLoading(true);
@@ -74,7 +75,7 @@ export default function AdminDocumentsPage() {
           id: doc.id,
           title: data.title || "Untitled Document",
           category: data.category || "Uncategorized",
-          source: data.source || "Unknown", // Handle missing source
+          source: data.source || "Unknown", 
           version: data.version,
           lastUpdated: data.lastUpdated,
           size: data.size,
@@ -125,7 +126,7 @@ export default function AdminDocumentsPage() {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (doc.uploaderEmail || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || doc.category === categoryFilter;
-    const matchesSource = sourceFilter === "all" || doc.source === sourceFilter; // Filter by source
+    const matchesSource = sourceFilter === "all" || doc.source === sourceFilter; 
     return matchesSearch && matchesCategory && matchesSource;
   });
 
@@ -151,7 +152,7 @@ export default function AdminDocumentsPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-row justify-between items-start">
+        <CardHeader className="flex flex-col sm:flex-row justify-between items-start gap-2">
           <div>
             <CardTitle className="text-2xl font-headline flex items-center">
               <FileTextIcon className="mr-3 h-7 w-7 text-primary" />
@@ -159,10 +160,18 @@ export default function AdminDocumentsPage() {
             </CardTitle>
             <CardDescription>View and manage all documents in the system.</CardDescription>
           </div>
-          <Button variant="outline" onClick={fetchDocuments} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh Documents
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={fetchDocuments} disabled={isLoading} className="w-full sm:w-auto">
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh Documents
+            </Button>
+            <Button asChild className="w-full sm:w-auto">
+              <Link href="/admin/documents/upload">
+                <UploadCloud className="mr-2 h-4 w-4" />
+                Upload Document
+              </Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -219,7 +228,7 @@ export default function AdminDocumentsPage() {
           )}
 
           {!isLoading && !error && filteredDocuments.length === 0 && (
-            <p className="text-muted-foreground text-center py-10">No documents found matching your criteria. Admins can upload documents via the Admin Console.</p>
+            <p className="text-muted-foreground text-center py-10">No documents found matching your criteria. Click &quot;Upload Document&quot; to add new files.</p>
           )}
 
           {!isLoading && !error && filteredDocuments.length > 0 && (
@@ -230,7 +239,7 @@ export default function AdminDocumentsPage() {
                     <TableHead className="w-[50px]">Type</TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead>Provenance</TableHead> {/* Changed from Source */}
+                    <TableHead>Provenance</TableHead> 
                     <TableHead>Version</TableHead>
                     <TableHead>Size</TableHead>
                     <TableHead>Uploaded By</TableHead>
@@ -244,7 +253,7 @@ export default function AdminDocumentsPage() {
                       <TableCell>{getIconForFileType(doc.fileType)}</TableCell>
                       <TableCell className="font-medium max-w-xs truncate" title={doc.title}>{doc.title}</TableCell>
                       <TableCell><Badge variant="outline">{doc.category}</Badge></TableCell>
-                      <TableCell><Badge variant="secondary">{doc.source}</Badge></TableCell> {/* Changed from Source */}
+                      <TableCell><Badge variant="secondary">{doc.source}</Badge></TableCell> 
                       <TableCell>{doc.version || "N/A"}</TableCell>
                       <TableCell>{doc.size || "N/A"}</TableCell>
                       <TableCell className="text-xs">{doc.uploaderEmail || 'N/A'}</TableCell>
