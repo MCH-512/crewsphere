@@ -32,19 +32,33 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL, getMetadata } from "firebase/storage";
 import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
-import { Label } from "@/components/ui/label"; // Added Label import
+import { Label } from "@/components/ui/label";
+
+const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms"];
+const documentSources = [
+  "Operations Manual (OMA)",
+  "Operations Manual (OMD)",
+  "Cabin Safety Manual (CSM)",
+  "EASA",
+  "IATA",
+  "ICAO",
+  "DGAC",
+  "Cabin Procedures Manual (CPM)",
+  "Compagnie procedures",
+  "Relevant Tunisian laws",
+  "Other",
+];
 
 const documentUploadFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters.").max(100),
   category: z.string({ required_error: "Please select a category." }),
+  source: z.string({ required_error: "Please select the document source." }),
   version: z.string().max(20).optional(),
   file: z.custom<FileList>((val) => val instanceof FileList && val.length > 0, "Please select a file to upload.")
     .refine((files) => files?.[0]?.size <= 10 * 1024 * 1024, `File size should be less than 10MB.`) // Max 10MB
 });
 
 type DocumentUploadFormValues = z.infer<typeof documentUploadFormSchema>;
-
-const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms"];
 
 export default function DocumentUploadPage() {
   const { toast } = useToast();
@@ -59,6 +73,7 @@ export default function DocumentUploadPage() {
     defaultValues: {
       title: "",
       category: "",
+      source: "",
       version: "",
     },
   });
@@ -102,6 +117,7 @@ export default function DocumentUploadPage() {
           await addDoc(collection(db, "documents"), {
             title: data.title,
             category: data.category,
+            source: data.source,
             version: data.version || "",
             downloadURL: downloadURL,
             fileName: uniqueFileName,
@@ -121,7 +137,7 @@ export default function DocumentUploadPage() {
           if (fileInputRef.current) {
             fileInputRef.current.value = ""; // Reset file input
           }
-          router.push("/documents"); // Redirect to documents list
+          router.push("/admin/documents"); 
         } catch (error) {
           console.error("Error saving document metadata to Firestore:", error);
           toast({ title: "Saving Failed", description: "File uploaded, but could not save document details. Please check Firestore.", variant: "destructive" });
@@ -213,6 +229,29 @@ export default function DocumentUploadPage() {
                 />
                 <FormField
                   control={form.control}
+                  name="source"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Provenance</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select the document source" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {documentSources.map(src => (
+                            <SelectItem key={src} value={src}>{src}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                  control={form.control}
                   name="version"
                   render={({ field }) => (
                     <FormItem>
@@ -224,12 +263,11 @@ export default function DocumentUploadPage() {
                     </FormItem>
                   )}
                 />
-              </div>
               
               <FormField
                 control={form.control}
                 name="file"
-                render={({ field: { onChange, value, ...rest } }) => ( // Destructure value to avoid passing it to input
+                render={({ field: { onChange, value, ...rest } }) => ( 
                     <FormItem>
                         <FormLabel>Document File</FormLabel>
                         <FormControl>
@@ -280,3 +318,4 @@ export default function DocumentUploadPage() {
     </div>
   );
 }
+

@@ -26,6 +26,7 @@ interface Document {
   id: string;
   title: string;
   category: string;
+  source: string; // Added source field
   version?: string;
   lastUpdated: Timestamp | string;
   size?: string;
@@ -36,6 +37,19 @@ interface Document {
 }
 
 const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms"];
+const documentSources = [
+  "Operations Manual (OMA)",
+  "Operations Manual (OMD)",
+  "Cabin Safety Manual (CSM)",
+  "EASA",
+  "IATA",
+  "ICAO",
+  "DGAC",
+  "Cabin Procedures Manual (CPM)",
+  "Compagnie procedures",
+  "Relevant Tunisian laws",
+  "Other",
+];
 
 export default function AdminDocumentsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -46,6 +60,7 @@ export default function AdminDocumentsPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
+  const [sourceFilter, setSourceFilter] = React.useState("all"); // Added source filter state
 
   const fetchDocuments = React.useCallback(async () => {
     setIsLoading(true);
@@ -59,6 +74,7 @@ export default function AdminDocumentsPage() {
           id: doc.id,
           title: data.title || "Untitled Document",
           category: data.category || "Uncategorized",
+          source: data.source || "Unknown", // Handle missing source
           version: data.version,
           lastUpdated: data.lastUpdated,
           size: data.size,
@@ -109,7 +125,8 @@ export default function AdminDocumentsPage() {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (doc.uploaderEmail || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || doc.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const matchesSource = sourceFilter === "all" || doc.source === sourceFilter; // Filter by source
+    return matchesSearch && matchesCategory && matchesSource;
   });
 
   if (authLoading || (isLoading && !user)) {
@@ -151,7 +168,7 @@ export default function AdminDocumentsPage() {
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <Input 
               placeholder="Search by title or uploader..." 
-              className="max-w-xs" 
+              className="flex-grow sm:flex-grow-0 sm:max-w-xs" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               disabled={isLoading} 
@@ -168,6 +185,21 @@ export default function AdminDocumentsPage() {
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select 
+              value={sourceFilter}
+              onValueChange={setSourceFilter}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="w-full sm:w-[240px]">
+                <SelectValue placeholder="Filter by provenance" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Provenances</SelectItem>
+                {documentSources.map(src => (
+                  <SelectItem key={src} value={src}>{src}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -198,6 +230,7 @@ export default function AdminDocumentsPage() {
                     <TableHead className="w-[50px]">Type</TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Category</TableHead>
+                    <TableHead>Provenance</TableHead> {/* Changed from Source */}
                     <TableHead>Version</TableHead>
                     <TableHead>Size</TableHead>
                     <TableHead>Uploaded By</TableHead>
@@ -211,6 +244,7 @@ export default function AdminDocumentsPage() {
                       <TableCell>{getIconForFileType(doc.fileType)}</TableCell>
                       <TableCell className="font-medium max-w-xs truncate" title={doc.title}>{doc.title}</TableCell>
                       <TableCell><Badge variant="outline">{doc.category}</Badge></TableCell>
+                      <TableCell><Badge variant="secondary">{doc.source}</Badge></TableCell> {/* Changed from Source */}
                       <TableCell>{doc.version || "N/A"}</TableCell>
                       <TableCell>{doc.size || "N/A"}</TableCell>
                       <TableCell className="text-xs">{doc.uploaderEmail || 'N/A'}</TableCell>
@@ -240,3 +274,4 @@ export default function AdminDocumentsPage() {
     </div>
   );
 }
+

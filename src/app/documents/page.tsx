@@ -25,29 +25,32 @@ interface Document {
   id: string;
   title: string;
   category: string;
+  source: string; // Added source field
   version?: string;
-  lastUpdated: Timestamp | string; // Can be Firestore Timestamp or string date
+  lastUpdated: Timestamp | string;
   size?: string;
   downloadURL: string;
-  iconName?: "FileTextIcon" | "FileSpreadsheet"; // Example icon names
+  fileType?: string; 
 }
 
+const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms"];
+
 export default function DocumentsPage() {
-  const [documents, setDocuments] = React.useState<Document[]>([]);
+  const [allDocuments, setAllDocuments] = React.useState<Document[]>([]);
+  const [filteredDocuments, setFilteredDocuments] = React.useState<Document[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const { toast } = useToast();
 
-  // Define available categories for the filter dropdown
-  const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General"];
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [categoryFilter, setCategoryFilter] = React.useState("all");
 
 
   const fetchDocuments = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // For now, let's order by title. We can make this more sophisticated later.
-      const q = query(collection(db, "documents"), orderBy("title", "asc"));
+      const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc")); // Order by lastUpdated
       const querySnapshot = await getDocs(q);
       const fetchedDocuments = querySnapshot.docs.map(doc => {
         const data = doc.data();
@@ -55,14 +58,16 @@ export default function DocumentsPage() {
           id: doc.id,
           title: data.title || "Untitled Document",
           category: data.category || "Uncategorized",
+          source: data.source || "Unknown", // Handle missing source
           version: data.version,
-          lastUpdated: data.lastUpdated, // Keep as Timestamp or string
+          lastUpdated: data.lastUpdated, 
           size: data.size,
           downloadURL: data.downloadURL || "#",
-          iconName: data.iconName,
+          fileType: data.fileType,
         } as Document;
       });
-      setDocuments(fetchedDocuments);
+      setAllDocuments(fetchedDocuments);
+      setFilteredDocuments(fetchedDocuments); // Initialize filtered list
     } catch (err) {
       console.error("Error fetching documents:", err);
       setError("Failed to load documents. Please ensure you have a 'documents' collection in Firestore.");
@@ -80,23 +85,40 @@ export default function DocumentsPage() {
     fetchDocuments();
   }, [fetchDocuments]);
 
-  const getIconForDocument = (doc: Document) => {
-    // Basic mapping, can be expanded
-    if (doc.iconName === "FileSpreadsheet") return <FileTextIcon className="h-6 w-6 text-primary" />; // Placeholder, ideally use actual FileSpreadsheet
-    return <FileTextIcon className="h-6 w-6 text-primary" />;
+  React.useEffect(() => {
+    let currentDocuments = [...allDocuments];
+    if (categoryFilter !== "all") {
+      currentDocuments = currentDocuments.filter(doc => doc.category === categoryFilter);
+    }
+    if (searchTerm) {
+      currentDocuments = currentDocuments.filter(doc => 
+        doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        doc.source.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    setFilteredDocuments(currentDocuments);
+  }, [searchTerm, categoryFilter, allDocuments]);
+
+
+  const getIconForFileType = (fileType?: string) => {
+    if (!fileType) return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
+    if (fileType.includes("pdf")) return <FileTextIcon className="h-5 w-5 text-red-600" />;
+    if (fileType.includes("word") || fileType.includes("document")) return <FileTextIcon className="h-5 w-5 text-blue-600" />;
+    if (fileType.includes("excel") || fileType.includes("sheet")) return <FileTextIcon className="h-5 w-5 text-green-600" />;
+    return <FileTextIcon className="h-5 w-5 text-primary" />;
   };
 
   const formatDate = (dateValue: Timestamp | string) => {
     if (!dateValue) return "N/A";
     if (typeof dateValue === "string") {
       try {
-        return format(new Date(dateValue), "yyyy-MM-dd");
+        return format(new Date(dateValue), "PP"); // e.g. Jul 28, 2024
       } catch (e) {
-        return dateValue; // If string is not a valid date, show as is
+        return dateValue; 
       }
     }
     if (dateValue instanceof Timestamp) {
-      return format(dateValue.toDate(), "yyyy-MM-dd");
+      return format(dateValue.toDate(), "PP");
     }
     return "Invalid Date";
   };
@@ -117,19 +139,28 @@ export default function DocumentsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <Input placeholder="Search documents... (coming soon)" className="max-w-xs" disabled={isLoading} />
-              <Select defaultValue="all" disabled={isLoading}>
+              <Input 
+                placeholder="Search by title or source..." 
+                className="max-w-xs" 
+                disabled={isLoading} 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Select 
+                value={categoryFilter}
+                onValueChange={setCategoryFilter}
+                disabled={isLoading}
+              >
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
                   {categories.map(cat => (
-                    <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Button disabled={isLoading}>Search</Button>
             </div>
 
             {isLoading && (
@@ -145,18 +176,19 @@ export default function DocumentsPage() {
               </div>
             )}
 
-            {!isLoading && !error && documents.length === 0 && (
-              <p className="text-muted-foreground text-center py-10">No documents found. Admins can upload documents via the Admin Console.</p>
+            {!isLoading && !error && filteredDocuments.length === 0 && (
+              <p className="text-muted-foreground text-center py-10">No documents found{categoryFilter !== "all" || searchTerm ? " matching your criteria" : ""}. Admins can upload documents via the Admin Console.</p>
             )}
 
-            {!isLoading && !error && documents.length > 0 && (
+            {!isLoading && !error && filteredDocuments.length > 0 && (
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[60px]">Icon</TableHead>
+                      <TableHead className="w-[60px]">Type</TableHead>
                       <TableHead>Title</TableHead>
                       <TableHead>Category</TableHead>
+                      <TableHead>Provenance</TableHead>
                       <TableHead>Version</TableHead>
                       <TableHead>Last Updated</TableHead>
                       <TableHead>Size</TableHead>
@@ -164,11 +196,12 @@ export default function DocumentsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {documents.map((doc) => (
+                    {filteredDocuments.map((doc) => (
                       <TableRow key={doc.id}>
-                        <TableCell>{getIconForDocument(doc)}</TableCell>
-                        <TableCell className="font-medium">{doc.title}</TableCell>
+                        <TableCell>{getIconForFileType(doc.fileType)}</TableCell>
+                        <TableCell className="font-medium max-w-sm truncate" title={doc.title}>{doc.title}</TableCell>
                         <TableCell><Badge variant="outline">{doc.category}</Badge></TableCell>
+                        <TableCell><Badge variant="secondary">{doc.source}</Badge></TableCell>
                         <TableCell>{doc.version || "N/A"}</TableCell>
                         <TableCell>{formatDate(doc.lastUpdated)}</TableCell>
                         <TableCell>{doc.size || "N/A"}</TableCell>
@@ -191,6 +224,4 @@ export default function DocumentsPage() {
       </AnimatedCard>
     </div>
   );
-
     
-
