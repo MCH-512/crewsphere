@@ -45,6 +45,7 @@ export default function AdminAlertsPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  // const [alertToDelete, setAlertToDelete] = React.useState<AlertDocument | null>(null); // Keep for AlertDialog state management
 
   const fetchAlerts = React.useCallback(async () => {
     setIsLoading(true);
@@ -186,8 +187,10 @@ export default function AdminAlertsPage() {
                       <TableCell>{alert.iconName || 'N/A'}</TableCell>
                       <TableCell>{format(alert.createdAt.toDate(), "PPp")}</TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => toast({ title: "Edit Alert", description: "Editing functionality coming soon!"})} disabled aria-label={`Edit alert: ${alert.title}`}>
-                          <Edit className="mr-1 h-4 w-4" /> Edit
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/admin/alerts/edit/${alert.id}`} aria-label={`Edit alert: ${alert.title}`}>
+                            <Edit className="mr-1 h-4 w-4" /> Edit
+                          </Link>
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
