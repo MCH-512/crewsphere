@@ -402,13 +402,13 @@ export default function AdminDocumentsPage() {
                             <Edit className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <AlertDialogTrigger asChild>
-                        <AlertDialog> {/* Wrap with AlertDialog */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80" aria-label={`Delete document: ${doc.title}`} onClick={() => setDocumentToDelete(doc)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                        </AlertDialog> {/* End AlertDialog wrap */}
-                        </AlertDialogTrigger>
+                          </AlertDialogTrigger>
+                        </AlertDialog>
                       </TableCell> 
                     </TableRow>
                   ))}
