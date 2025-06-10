@@ -18,18 +18,28 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote } from "lucide-react";
+import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff } from "lucide-react";
 import { generatePurserReport, type PurserReportOutput, type PurserReportInput } from "@/ai/flows/purser-report-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, getDocs, query, where } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format, parseISO } from "date-fns";
 
 interface CrewUser {
   uid: string;
   name: string;
+}
+
+interface FlightForSelection {
+  id: string;
+  flightNumber: string;
+  departureAirport: string;
+  arrivalAirport: string;
+  scheduledDepartureDateTimeUTC: string; // ISO string
+  aircraftType: string;
 }
 
 const PLACEHOLDER_NONE_VALUE = "_NONE_"; 
@@ -91,6 +101,11 @@ export function PurserReportTool() {
   const { toast } = useToast();
   const { user } = useAuth();
   
+  const [availableFlights, setAvailableFlights] = React.useState<FlightForSelection[]>([]);
+  const [isLoadingFlights, setIsLoadingFlights] = React.useState(true);
+  const [selectedFlightIdState, setSelectedFlightIdState] = React.useState<string | null>(null);
+
+
   const [pilotsList, setPilotsList] = React.useState<CrewUser[]>([]);
   const [isLoadingPilots, setIsLoadingPilots] = React.useState(true);
   
@@ -113,11 +128,11 @@ export function PurserReportTool() {
   const form = useForm<PurserReportFormValues>({
     resolver: zodResolver(purserReportFormSchema),
     defaultValues: {
-      flightNumber: "BA245",
+      flightNumber: "",
       flightDate: defaultDate(),
-      departureAirport: "LHR",
-      arrivalAirport: "JFK",
-      aircraftTypeRegistration: "B789 G-ABCD",
+      departureAirport: "",
+      arrivalAirport: "",
+      aircraftTypeRegistration: "",
       captainName: PLACEHOLDER_NONE_VALUE, 
       firstOfficerName: PLACEHOLDER_NONE_VALUE,
       purserName: PLACEHOLDER_NONE_VALUE, 
@@ -125,10 +140,42 @@ export function PurserReportTool() {
       cabinCrewL2: PLACEHOLDER_NONE_VALUE,
       cabinCrewR2: PLACEHOLDER_NONE_VALUE,
       otherCrewMembers: "",
-      passengerLoad: { total: 200, adults: 180, children: 15, infants: 5 },
-      generalFlightSummary: "Flight was on time and smooth. Cabin service completed efficiently.",
+      passengerLoad: { total: 0, adults: 0, children: 0, infants: 0 },
+      generalFlightSummary: "",
     },
   });
+
+  React.useEffect(() => {
+    const fetchInitialFlights = async () => {
+      setIsLoadingFlights(true);
+      try {
+        // Fetch recent/upcoming flights, adjust limit as needed
+        const flightsQuery = query(collection(db, "flights"), orderBy("scheduledDepartureDateTimeUTC", "desc"), limit(50)); 
+        const querySnapshot = await getDocs(flightsQuery);
+        const fetchedFlightsData: FlightForSelection[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          fetchedFlightsData.push({
+            id: doc.id,
+            flightNumber: data.flightNumber,
+            departureAirport: data.departureAirport,
+            arrivalAirport: data.arrivalAirport,
+            scheduledDepartureDateTimeUTC: data.scheduledDepartureDateTimeUTC,
+            aircraftType: data.aircraftType,
+          });
+        });
+        setAvailableFlights(fetchedFlightsData);
+      } catch (error) {
+        console.error("Error fetching available flights:", error);
+        toast({ title: "Error", description: "Could not load available flights.", variant: "destructive" });
+      } finally {
+        setIsLoadingFlights(false);
+      }
+    };
+    if (user) {
+      fetchInitialFlights();
+    }
+  }, [toast, user]);
 
   React.useEffect(() => {
     const fetchCrew = async (
@@ -161,10 +208,33 @@ export function PurserReportTool() {
         toast({ title: "Error", description: `Could not load ${roleName} list.`, variant: "destructive" });
       } finally { setLoading(false); }
     };
-    fetchCrew("pilote", setPilotsList, setIsLoadingPilots);
-    fetchCrew(["purser", "instructor"], setSupervisingCrewList, setIsLoadingSupervisingCrew);
-    fetchCrew("cabin crew", setCabinCrewList, setIsLoadingCabinCrew);
-  }, [toast]);
+   if (user) {
+      fetchCrew("pilote", setPilotsList, setIsLoadingPilots);
+      fetchCrew(["purser", "instructor"], setSupervisingCrewList, setIsLoadingSupervisingCrew);
+      fetchCrew("cabin crew", setCabinCrewList, setIsLoadingCabinCrew);
+    }
+  }, [toast, user]);
+
+  const handleFlightSelection = (flightId: string) => {
+    if (flightId === "_MANUAL_ENTRY_") {
+        form.reset({
+            ...form.getValues(), // Keep other form values
+            flightNumber: "", flightDate: defaultDate(), departureAirport: "", 
+            arrivalAirport: "", aircraftTypeRegistration: "" 
+        });
+        setSelectedFlightIdState(null);
+        return;
+    }
+    const selectedFlight = availableFlights.find(f => f.id === flightId);
+    if (selectedFlight) {
+        form.setValue("flightNumber", selectedFlight.flightNumber);
+        form.setValue("flightDate", new Date(selectedFlight.scheduledDepartureDateTimeUTC).toISOString().split('T')[0]);
+        form.setValue("departureAirport", selectedFlight.departureAirport);
+        form.setValue("arrivalAirport", selectedFlight.arrivalAirport);
+        form.setValue("aircraftTypeRegistration", selectedFlight.aircraftType); // Use aircraftType from flight record
+        setSelectedFlightIdState(flightId);
+    }
+  };
 
   const handleAddSection = () => {
     if (!currentSectionType) { toast({ title: "Missing Type", description: "Please select a section type.", variant: "destructive" }); return; }
@@ -249,9 +319,27 @@ export function PurserReportTool() {
       const generatedReport = await generatePurserReport(aiInput);
       setReportResult(generatedReport);
       toast({ title: "Purser Report Generated by AI", description: "Review below. Saving to database..." });
-      await addDoc(collection(db, "purserReports"), { reportInput: aiInput, reportOutput: generatedReport, userId: user.uid, userEmail: user.email, createdAt: serverTimestamp(), status: "submitted" });
+      
+      const reportDataToSave = {
+        reportInput: aiInput,
+        reportOutput: generatedReport,
+        userId: user.uid,
+        userEmail: user.email,
+        createdAt: serverTimestamp(),
+        status: "submitted",
+        associatedFlightId: selectedFlightIdState || null,
+      };
+      await addDoc(collection(db, "purserReports"), reportDataToSave);
+
       toast({ title: "Purser Report Saved", description: "Report generated and saved." });
-      form.reset(); setAddedSections([]); setAddedCrewEvaluations([]); setCurrentSectionType(""); setCurrentSectionContent(""); setCurrentEvalCrewMemberRole(""); setCurrentEvalContent("");
+      form.reset(); 
+      setAddedSections([]); 
+      setAddedCrewEvaluations([]); 
+      setCurrentSectionType(""); 
+      setCurrentSectionContent(""); 
+      setCurrentEvalCrewMemberRole(""); 
+      setCurrentEvalContent("");
+      setSelectedFlightIdState(null);
     } catch (error) {
       console.error("Error in Purser Report process:", error);
       let errorMessage = "An error occurred. Please try again.";
@@ -270,14 +358,40 @@ export function PurserReportTool() {
     <div className="space-y-6">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <Card className="shadow-sm"><CardHeader><CardTitle className="text-xl">Flight Information</CardTitle><CardDescription>Core flight details.</CardDescription></CardHeader>
-            <CardContent className="space-y-4"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">Flight Information</CardTitle>
+              <CardDescription>Select an existing flight or enter details manually.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormItem>
+                <FormLabel>Select Existing Flight (Optional)</FormLabel>
+                <Select onValueChange={handleFlightSelection} value={selectedFlightIdState || "_MANUAL_ENTRY_"} disabled={isLoadingFlights}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={isLoadingFlights ? "Loading flights..." : "Choose a flight or enter manually"} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="_MANUAL_ENTRY_">Enter Details Manually / Not Listed</SelectItem>
+                    {availableFlights.map(flight => (
+                      <SelectItem key={flight.id} value={flight.id}>
+                        {flight.flightNumber}: {flight.departureAirport} to {flight.arrivalAirport} ({format(parseISO(flight.scheduledDepartureDateTimeUTC), "MMM d, yyyy HH:mm")} UTC)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                 <FormDescription>Choosing a flight will pre-fill the fields below.</FormDescription>
+              </FormItem>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input placeholder="e.g., BA245" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="flightDate" render={({ field }) => (<FormItem><FormLabel>Flight Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="aircraftTypeRegistration" render={({ field }) => (<FormItem><FormLabel>Aircraft & Registration</FormLabel><FormControl><Input placeholder="e.g., B789 G-ABCD" {...field} /></FormControl><FormDescription>e.g., B787 G-XYZC</FormDescription><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="departureAirport" render={({ field }) => (<FormItem><FormLabel>Departure Airport</FormLabel><FormControl><Input placeholder="e.g., LHR" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="arrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival Airport</FormLabel><FormControl><Input placeholder="e.g., JFK" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            </div></CardContent></Card>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card className="shadow-sm"><CardHeader><CardTitle className="text-xl flex items-center"><Users className="mr-2 h-5 w-5 text-primary" /> Crew Information</CardTitle><CardDescription>Operating crew.</CardDescription></CardHeader>
             <CardContent className="space-y-4"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -340,3 +454,4 @@ export function PurserReportTool() {
     </div>
   );
 }
+
