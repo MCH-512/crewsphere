@@ -143,6 +143,7 @@ export function PurserReportTool() {
       passengerLoad: { total: 0, adults: 0, children: 0, infants: 0 },
       generalFlightSummary: "",
     },
+    mode: "onChange", // Ensure dynamic validation
   });
 
   React.useEffect(() => {
@@ -187,18 +188,17 @@ export function PurserReportTool() {
       try {
         const usersCollectionRef = collection(db, "users");
         let q;
-        let rolesToQuery = roles;
+        let rolesToQuery: string[] = [];
 
-        // Specifically handle the supervising crew case for case-insensitivity
         if (Array.isArray(roles) && roles.includes("purser") && roles.includes("instructor")) {
-            rolesToQuery = ["purser", "Purser", "instructor", "Instructor"];
+            rolesToQuery = ["purser", "Purser", "instructor", "Instructor"]; // Case-insensitive for specific roles
+        } else if (typeof roles === 'string') {
+            rolesToQuery = [roles]; // If it's a single string role
+        } else if (Array.isArray(roles)) {
+            rolesToQuery = roles; // If it's already an array of specific roles
         }
-
-        if (Array.isArray(rolesToQuery)) {
-          q = query(usersCollectionRef, where("role", "in", rolesToQuery), where("accountStatus", "==", "active"));
-        } else { // rolesToQuery will be a string here if not the supervising crew case
-          q = query(usersCollectionRef, where("role", "==", rolesToQuery), where("accountStatus", "==", "active"));
-        }
+        
+        q = query(usersCollectionRef, where("role", "in", rolesToQuery), where("accountStatus", "==", "active"));
         
         const querySnapshot = await getDocs(q);
         const fetchedCrew: CrewUser[] = [];
