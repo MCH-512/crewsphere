@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, where } from "firebase/firestore"; // Added 'where'
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, where } from "firebase/firestore"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO } from "date-fns";
 
@@ -353,6 +353,17 @@ export function PurserReportTool() {
   if (form.getValues('cabinCrewL2') && form.getValues('cabinCrewL2') !== PLACEHOLDER_NONE_VALUE) availableEvalRoles.push({label: `L2: ${form.getValues('cabinCrewL2')}`, value: 'L2'});
   if (form.getValues('cabinCrewR2') && form.getValues('cabinCrewR2') !== PLACEHOLDER_NONE_VALUE) availableEvalRoles.push({label: `R2: ${form.getValues('cabinCrewR2')}`, value: 'R2'});
 
+  const purserSelectPlaceholder = isLoadingSupervisingCrew
+    ? "Loading..."
+    : supervisingCrewList.length === 0
+    ? "No supervising crew available"
+    : "Select Purser/Instructor";
+
+  const purserDisabledItemText = isLoadingSupervisingCrew
+    ? "Loading..."
+    : supervisingCrewList.length === 0
+    ? "No supervising crew available"
+    : "Select Supervising Crew";
 
   return (
     <div className="space-y-6">
@@ -397,7 +408,33 @@ export function PurserReportTool() {
             <CardContent className="space-y-4"><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <FormField control={form.control} name="captainName" render={({ field }) => (<FormItem><FormLabel>Captain</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingPilots}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingPilots ? "Loading..." : "Select Captain"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{pilotsList.map(p => (<SelectItem key={p.uid} value={p.name}>{p.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="firstOfficerName" render={({ field }) => (<FormItem><FormLabel>First Officer</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingPilots}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingPilots ? "Loading..." : "Select F/O"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{pilotsList.map(p => (<SelectItem key={p.uid} value={p.name}>{p.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="purserName" render={({ field }) => (<FormItem><FormLabel>Supervising Crew*</FormLabel><Select onValueChange={field.onChange} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingSupervisingCrew}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingSupervisingCrew ? "Loading..." : "Select Purser/Instructor"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE} disabled>Select Supervising Crew</SelectItem>{supervisingCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField 
+                  control={form.control} 
+                  name="purserName" 
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Supervising Crew*</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        value={field.value || PLACEHOLDER_NONE_VALUE} 
+                        disabled={isLoadingSupervisingCrew || (!isLoadingSupervisingCrew && supervisingCrewList.length === 0)}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={purserSelectPlaceholder} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value={PLACEHOLDER_NONE_VALUE} disabled>
+                            {purserDisabledItemText}
+                          </SelectItem>
+                          {supervisingCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} 
+                />
             </div><div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField control={form.control} name="cabinCrewR1" render={({ field }) => (<FormItem><FormLabel>Cabin Crew (R1)</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingCabinCrew}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingCabinCrew ? "Loading..." : "Select R1"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{cabinCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="cabinCrewL2" render={({ field }) => (<FormItem><FormLabel>Cabin Crew (L2)</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingCabinCrew}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingCabinCrew ? "Loading..." : "Select L2"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{cabinCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
