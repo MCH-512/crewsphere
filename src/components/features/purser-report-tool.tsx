@@ -187,11 +187,19 @@ export function PurserReportTool() {
       try {
         const usersCollectionRef = collection(db, "users");
         let q;
-        if (Array.isArray(roles)) {
-          q = query(usersCollectionRef, where("role", "in", roles), where("accountStatus", "==", "active"));
-        } else {
-          q = query(usersCollectionRef, where("role", "==", roles), where("accountStatus", "==", "active"));
+        let rolesToQuery = roles;
+
+        // Specifically handle the supervising crew case for case-insensitivity
+        if (Array.isArray(roles) && roles.includes("purser") && roles.includes("instructor")) {
+            rolesToQuery = ["purser", "Purser", "instructor", "Instructor"];
         }
+
+        if (Array.isArray(rolesToQuery)) {
+          q = query(usersCollectionRef, where("role", "in", rolesToQuery), where("accountStatus", "==", "active"));
+        } else { // rolesToQuery will be a string here if not the supervising crew case
+          q = query(usersCollectionRef, where("role", "==", rolesToQuery), where("accountStatus", "==", "active"));
+        }
+        
         const querySnapshot = await getDocs(q);
         const fetchedCrew: CrewUser[] = [];
         querySnapshot.forEach((doc) => {
@@ -210,7 +218,7 @@ export function PurserReportTool() {
     };
    if (user) {
       fetchCrew("pilote", setPilotsList, setIsLoadingPilots);
-      fetchCrew(["purser", "instructor"], setSupervisingCrewList, setIsLoadingSupervisingCrew);
+      fetchCrew(["purser", "instructor"], setSupervisingCrewList, setIsLoadingSupervisingCrew); 
       fetchCrew("cabin crew", setCabinCrewList, setIsLoadingCabinCrew);
     }
   }, [toast, user]);
