@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle, UploadCloud, StickyNote, FileEdit } from "lucide-react";
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle, UploadCloud, StickyNote, FileEdit, BarChartHorizontalBig } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,6 +25,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
+import { AnimatedCard } from "@/components/motion/animated-card";
 
 interface Document {
   id: string;
@@ -74,14 +75,31 @@ export default function AdminDocumentsPage() {
   const [selectedDocumentForView, setSelectedDocumentForView] = React.useState<Document | null>(null);
   const [isViewNoteDialogOpen, setIsViewNoteDialogOpen] = React.useState(false);
 
+  const [totalDocumentsCount, setTotalDocumentsCount] = React.useState<number>(0);
+  const [fileCount, setFileCount] = React.useState<number>(0);
+  const [textNoteCount, setTextNoteCount] = React.useState<number>(0);
+
+
   const fetchDocuments = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setTotalDocumentsCount(0);
+    setFileCount(0);
+    setTextNoteCount(0);
     try {
       const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc"));
       const querySnapshot = await getDocs(q);
+      let tempFileCount = 0;
+      let tempTextNoteCount = 0;
+
       const fetchedDocuments = querySnapshot.docs.map(doc => {
         const data = doc.data();
+        const docContentType = data.documentContentType || 'file';
+        if (docContentType === 'file') {
+          tempFileCount++;
+        } else if (docContentType === 'text') {
+          tempTextNoteCount++;
+        }
         return {
           id: doc.id,
           title: data.title || "Untitled Document",
@@ -94,11 +112,15 @@ export default function AdminDocumentsPage() {
           fileType: data.fileType,
           uploadedBy: data.uploadedBy,
           uploaderEmail: data.uploaderEmail,
-          documentContentType: data.documentContentType || 'file', // Default to file if not set
+          documentContentType: docContentType,
           content: data.content,
         } as Document;
       });
       setDocuments(fetchedDocuments);
+      setTotalDocumentsCount(fetchedDocuments.length);
+      setFileCount(tempFileCount);
+      setTextNoteCount(tempTextNoteCount);
+
     } catch (err) {
       console.error("Error fetching documents:", err);
       setError("Failed to load documents.");
@@ -140,7 +162,8 @@ export default function AdminDocumentsPage() {
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (doc.uploaderEmail || "").toLowerCase().includes(searchTerm.toLowerCase());
+                          (doc.uploaderEmail || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (doc.source || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || doc.category === categoryFilter;
     const matchesSource = sourceFilter === "all" || doc.source === sourceFilter; 
     return matchesSearch && matchesCategory && matchesSource;
@@ -201,16 +224,56 @@ export default function AdminDocumentsPage() {
             </Button>
             <Button asChild className="w-full sm:w-auto">
               <Link href="/admin/documents/create-note">
-                <FileEdit className="mr-2 h-4 w-4" /> {/* Changed icon */}
+                <FileEdit className="mr-2 h-4 w-4" />
                 Create Note
               </Link>
             </Button>
           </div>
         </CardHeader>
+      </Card>
+      
+      <AnimatedCard delay={0.1}>
+        <Card className="shadow-md">
+            <CardHeader>
+                <CardTitle className="text-lg font-headline flex items-center">
+                    <BarChartHorizontalBig className="mr-2 h-5 w-5 text-primary"/>
+                    Document Statistics
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                {isLoading && totalDocumentsCount === 0 ? (
+                    <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        <p className="ml-2 text-muted-foreground">Loading statistics...</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center sm:text-left">
+                        <div>
+                            <p className="text-sm text-muted-foreground">Total Documents</p>
+                            <p className="text-2xl font-bold">{totalDocumentsCount}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground">Uploaded Files</p>
+                            <p className="text-2xl font-bold">{fileCount}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground">Text Notes/Procedures</p>
+                            <p className="text-2xl font-bold">{textNoteCount}</p>
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+      </AnimatedCard>
+
+      <Card className="shadow-lg mt-6"> {/* Added mt-6 for spacing */}
+        <CardHeader>
+            <CardTitle className="text-xl font-headline">Document List & Filters</CardTitle>
+        </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <Input 
-              placeholder="Search by title or uploader..." 
+              placeholder="Search by title, uploader, or source..." 
               className="flex-grow sm:flex-grow-0 sm:max-w-xs" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -248,7 +311,7 @@ export default function AdminDocumentsPage() {
             </Select>
           </div>
 
-          {isLoading && (
+          {isLoading && documents.length === 0 && (
             <div className="flex items-center justify-center py-10">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
               <p className="ml-3 text-muted-foreground">Loading documents...</p>
@@ -327,12 +390,12 @@ export default function AdminDocumentsPage() {
                 {selectedDocumentForView.version && ` | Version: ${selectedDocumentForView.version}`}
               </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="flex-grow pr-6 -mr-6"> {/* Added negative margin for scrollbar */}
+            <ScrollArea className="flex-grow pr-6 -mr-6">
                 <div className="py-4 prose prose-sm max-w-none dark:prose-invert text-foreground whitespace-pre-wrap">
                     <ReactMarkdown>{selectedDocumentForView.content || "No content available."}</ReactMarkdown>
                 </div>
             </ScrollArea>
-            <DialogFooter className="mt-auto pt-4 border-t"> {/* Ensure footer is at bottom */}
+            <DialogFooter className="mt-auto pt-4 border-t"> 
               <DialogClose asChild>
                 <Button variant="outline">Close</Button>
               </DialogClose>
@@ -343,3 +406,4 @@ export default function AdminDocumentsPage() {
     </div>
   );
 }
+
