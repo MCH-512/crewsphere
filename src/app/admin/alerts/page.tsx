@@ -21,9 +21,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
-import { MessageSquareWarning, Loader2, AlertTriangle, RefreshCw, Edit, Trash2 } from "lucide-react";
+import { MessageSquareWarning, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import Link from "next/link";
 
 interface AlertDocument {
   id: string;
@@ -43,8 +44,6 @@ export default function AdminAlertsPage() {
   const [alerts, setAlerts] = React.useState<AlertDocument[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-
-  // alertToDelete state is no longer needed to control dialog visibility
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const fetchAlerts = React.useCallback(async () => {
@@ -79,11 +78,11 @@ export default function AdminAlertsPage() {
 
   const handleDeleteAlert = async (alertToDelete: AlertDocument) => {
     if (!alertToDelete) return;
-    setIsDeleting(true); // Consider making isDeleting an object keyed by alert.id if multiple can be pending
+    setIsDeleting(true);
     try {
       await deleteDoc(doc(db, "alerts", alertToDelete.id));
       toast({ title: "Alert Deleted", description: `Alert "${alertToDelete.title}" has been successfully deleted.` });
-      fetchAlerts(); // Refresh list
+      fetchAlerts(); 
     } catch (error) {
       console.error("Error deleting alert:", error);
       toast({ title: "Deletion Failed", description: "Could not delete the alert. Please try again.", variant: "destructive" });
@@ -132,10 +131,17 @@ export default function AdminAlertsPage() {
             </CardTitle>
             <CardDescription>View all alerts that have been sent to users.</CardDescription>
           </div>
-          <Button variant="outline" onClick={fetchAlerts} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh Alerts
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={fetchAlerts} disabled={isLoading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh Alerts
+            </Button>
+            <Button asChild>
+              <Link href="/admin/alerts/create">
+                <PlusCircle className="mr-2 h-4 w-4" /> Create New Alert
+              </Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {error && (
@@ -150,7 +156,7 @@ export default function AdminAlertsPage() {
             </div>
           )}
           {!isLoading && alerts.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">No alerts found. Admins can create alerts via the Admin Console.</p>
+            <p className="text-muted-foreground text-center py-8">No alerts found. Click the "Create New Alert" button to add one.</p>
           )}
           {alerts.length > 0 && (
             <div className="rounded-md border">
