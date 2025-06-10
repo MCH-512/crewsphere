@@ -46,8 +46,7 @@ const requestCategoriesAndTypes = {
     "Sick leave request",
     "Maternity/Paternity leave",
     "Unplanned absence – urgent notice",
-    "Special leave request (bereavement, wedding, etc.)",
-    "Special leave request (bereavement, wedding, etc.)",
+    "Special leave request (bereavement, wedding, etc.)", // Duplicate removed from here
     "Rest days tracking"
   ],
   "Human Resources": [
@@ -189,7 +188,7 @@ export default function RequestsPage() {
       const requestData = {
         userId: user.uid,
         userEmail: user.email,
-        requestType: data.requestCategory, // Storing main category as 'requestType' in DB
+        requestType: data.requestCategory, 
         specificRequestType: data.specificRequestType || null,
         urgencyLevel: data.urgencyLevel,
         subject: data.subject,
@@ -204,7 +203,7 @@ export default function RequestsPage() {
         description: `Your ${data.requestCategory.toLowerCase()} request for "${data.subject}" has been saved.`,
       });
       form.reset();
-      setSpecificTypes([]); // Reset specific types as well
+      setSpecificTypes([]); 
     } catch (error) {
       console.error("Error submitting request to Firestore:", error);
       toast({
@@ -275,7 +274,7 @@ export default function RequestsPage() {
                       <FormLabel>Specific Request Type</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
-                        value={field.value} // Ensure value is controlled
+                        value={field.value || ""} 
                         disabled={!user || isSubmitting || specificTypes.length === 0}
                       >
                         <FormControl>
@@ -362,7 +361,7 @@ export default function RequestsPage() {
                 )}
               />
 
-              <Button type="submit" disabled={isSubmitting || !user} className="w-full sm:w-auto">
+              <Button type="submit" disabled={isSubmitting || !user || !form.formState.isValid} className="w-full sm:w-auto">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -375,6 +374,9 @@ export default function RequestsPage() {
                   </>
                 )}
               </Button>
+               {!form.formState.isValid && user && (
+                 <p className="text-sm text-destructive">Please fill all required fields correctly before submitting.</p>
+               )}
             </form>
           </Form>
         </CardContent>
@@ -382,5 +384,3 @@ export default function RequestsPage() {
     </div>
   );
 }
-
-    
