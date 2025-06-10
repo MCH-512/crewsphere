@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search } from "lucide-react";
+import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority"; 
@@ -35,14 +35,20 @@ interface UserRequest {
   updatedAt?: Timestamp;
 }
 
+type SortableColumn = "createdAt" | "status" | "urgencyLevel";
+type SortDirection = "asc" | "desc";
+
 const requestStatuses: UserRequest["status"][] = ["pending", "approved", "rejected", "in-progress"];
+const urgencyOrder: Record<UserRequest["urgencyLevel"], number> = { "Low": 0, "Medium": 1, "High": 2, "Critical": 3 };
+const statusOrder: Record<UserRequest["status"], number> = { "pending": 0, "in-progress": 1, "approved": 2, "rejected": 3 };
+
 
 export default function AdminUserRequestsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [allRequests, setAllRequests] = React.useState<UserRequest[]>([]); // Store all fetched requests
-  const [filteredRequests, setFilteredRequests] = React.useState<UserRequest[]>([]); // Requests to display
+  const [allRequests, setAllRequests] = React.useState<UserRequest[]>([]); 
+  const [filteredAndSortedRequests, setFilteredAndSortedRequests] = React.useState<UserRequest[]>([]); 
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -51,26 +57,24 @@ export default function AdminUserRequestsPage() {
   const [newStatus, setNewStatus] = React.useState<UserRequest["status"] | "">("");
   const [adminResponseText, setAdminResponseText] = React.useState("");
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
+  
   const [statusFilter, setStatusFilter] = React.useState<UserRequest["status"] | "all">("all");
   const [searchTerm, setSearchTerm] = React.useState("");
+
+  const [sortColumn, setSortColumn] = React.useState<SortableColumn>("createdAt");
+  const [sortDirection, setSortDirection] = React.useState<SortDirection>("desc");
 
   const fetchRequests = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      let q;
-      if (statusFilter === "all") {
-        q = query(collection(db, "requests"), orderBy("createdAt", "desc"));
-      } else {
-        q = query(collection(db, "requests"), where("status", "==", statusFilter), orderBy("createdAt", "desc"));
-      }
+      const q = query(collection(db, "requests"), orderBy("createdAt", "desc")); // Always fetch all, sorting/filtering done client-side
       const querySnapshot = await getDocs(q);
       const fetchedRequests = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
       } as UserRequest));
-      setAllRequests(fetchedRequests); // Update all requests
-      setFilteredRequests(fetchedRequests); // Initially, filtered is same as all
+      setAllRequests(fetchedRequests); 
     } catch (err) {
       console.error("Error fetching requests:", err);
       setError("Failed to load user requests. Please try again.");
@@ -78,7 +82,7 @@ export default function AdminUserRequestsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast, statusFilter]);
+  }, [toast]);
 
   React.useEffect(() => {
     if (!authLoading) {
@@ -90,19 +94,38 @@ export default function AdminUserRequestsPage() {
     }
   }, [user, authLoading, router, fetchRequests]);
 
-  // Effect for client-side filtering based on searchTerm
   React.useEffect(() => {
-    if (searchTerm === "") {
-      setFilteredRequests(allRequests);
-    } else {
+    let processedRequests = [...allRequests];
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      processedRequests = processedRequests.filter(request => request.status === statusFilter);
+    }
+
+    // Apply search term filter
+    if (searchTerm !== "") {
       const lowercasedFilter = searchTerm.toLowerCase();
-      const filtered = allRequests.filter(request =>
+      processedRequests = processedRequests.filter(request =>
         request.subject.toLowerCase().includes(lowercasedFilter) ||
         request.userEmail.toLowerCase().includes(lowercasedFilter)
       );
-      setFilteredRequests(filtered);
     }
-  }, [searchTerm, allRequests]);
+
+    // Apply sorting
+    processedRequests.sort((a, b) => {
+      let comparison = 0;
+      if (sortColumn === "createdAt") {
+        comparison = a.createdAt.toMillis() - b.createdAt.toMillis();
+      } else if (sortColumn === "status") {
+        comparison = statusOrder[a.status] - statusOrder[b.status];
+      } else if (sortColumn === "urgencyLevel") {
+        comparison = urgencyOrder[a.urgencyLevel] - urgencyOrder[b.urgencyLevel];
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+
+    setFilteredAndSortedRequests(processedRequests);
+  }, [allRequests, statusFilter, searchTerm, sortColumn, sortDirection]);
 
 
   const handleOpenManageDialog = (request: UserRequest) => {
@@ -164,8 +187,29 @@ export default function AdminUserRequestsPage() {
       default: return "outline";
     }
   };
+  
+  const handleSort = (column: SortableColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection(column === "createdAt" ? "desc" : "asc"); // Default desc for date, asc for others
+    }
+  };
 
-  if (authLoading || (isLoading && filteredRequests.length === 0 && !user)) {
+  const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
+    <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50 transition-colors">
+      <div className="flex items-center gap-1">
+        {label}
+        {sortColumn === column && (
+          <ArrowUpDown className={`h-3 w-3 ${sortDirection === "desc" ? "" : "rotate-180"}`} />
+        )}
+      </div>
+    </TableHead>
+  );
+
+
+  if (authLoading || (isLoading && filteredAndSortedRequests.length === 0 && !user)) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -217,6 +261,7 @@ export default function AdminUserRequestsPage() {
             </div>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as UserRequest["status"] | "all")}>
                 <SelectTrigger className="w-full md:w-[180px]">
+                    <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
                     <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -232,32 +277,32 @@ export default function AdminUserRequestsPage() {
               <AlertTriangle className="h-5 w-5" /> {error}
             </div>
           )}
-          {isLoading && filteredRequests.length === 0 && (
+          {isLoading && allRequests.length === 0 && (
              <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="ml-3 text-muted-foreground">Loading request list...</p>
             </div>
           )}
-          {!isLoading && filteredRequests.length === 0 && !error && (
+          {!isLoading && filteredAndSortedRequests.length === 0 && !error && (
             <p className="text-muted-foreground text-center py-8">No user requests found{statusFilter !== "all" ? ` for status: ${statusFilter}` : ""}{searchTerm ? ` matching "${searchTerm}"` : ""}.</p>
           )}
-          {filteredRequests.length > 0 && (
+          {filteredAndSortedRequests.length > 0 && (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Submitted</TableHead>
+                    <SortableHeader column="createdAt" label="Submitted" />
                     <TableHead>User Email</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Specific Type</TableHead>
                     <TableHead>Subject</TableHead>
-                    <TableHead>Urgency</TableHead>
-                    <TableHead>Status</TableHead>
+                    <SortableHeader column="urgencyLevel" label="Urgency" />
+                    <SortableHeader column="status" label="Status" />
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRequests.map((request) => (
+                  {filteredAndSortedRequests.map((request) => (
                     <TableRow key={request.id}>
                       <TableCell>
                         {request.createdAt ? format(request.createdAt.toDate(), "PPp") : 'N/A'}
@@ -359,3 +404,4 @@ export default function AdminUserRequestsPage() {
   );
 }
     
+
