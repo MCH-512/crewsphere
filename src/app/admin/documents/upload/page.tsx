@@ -90,13 +90,13 @@ export default function DocumentUploadPage() {
 
     setIsUploading(true);
     setUploadProgress(0);
+    
+    const fileToUpload = data.file[0];
+    const uniqueFileName = `${new Date().getTime()}-${fileToUpload.name.replace(/\s+/g, '_')}`;
+    const fileStoragePath = `documents/${uniqueFileName}`; // This is the full path in Firebase Storage
 
     try {
-      const fileToUpload = data.file[0];
-      const uniqueFileName = `${new Date().getTime()}-${fileToUpload.name.replace(/\s+/g, '_')}`;
-      const fileStoragePath = `documents/${uniqueFileName}`;
       const materialStorageRef = storageRef(storage, fileStoragePath);
-
       const uploadTask = uploadBytesResumable(materialStorageRef, fileToUpload);
 
       uploadTask.on(
@@ -108,7 +108,7 @@ export default function DocumentUploadPage() {
         (error) => {
           console.error("Upload failed:", error);
           toast({ title: "Upload Failed", description: `Could not upload file: ${error.message}`, variant: "destructive" });
-          setIsUploading(false); // Ensure reset on uploadTask error
+          setIsUploading(false); 
         },
         async () => {
           try {
@@ -122,9 +122,10 @@ export default function DocumentUploadPage() {
               source: data.source,
               version: data.version || "",
               downloadURL: downloadURL,
-              fileName: uniqueFileName,
+              filePath: fileStoragePath, // Store the full path for deletion
+              fileName: fileToUpload.name, // Store original file name for display if needed
               fileType: fileToUpload.type,
-              size: (fileSize / (1024 * 1024)).toFixed(2) + "MB", // Store size in MB
+              size: (fileSize / (1024 * 1024)).toFixed(2) + "MB", 
               documentContentType: 'file', 
               lastUpdated: serverTimestamp(),
               uploadedBy: user.uid,
@@ -145,14 +146,14 @@ export default function DocumentUploadPage() {
             console.error("Error saving document metadata to Firestore:", error);
             toast({ title: "Saving Failed", description: "File uploaded, but could not save document details. Please check Firestore.", variant: "destructive" });
           } finally {
-            setIsUploading(false); // Ensure reset after metadata save/error
+            setIsUploading(false); 
           }
         }
       );
     } catch (error) {
       console.error("Error starting upload:", error);
       toast({ title: "Upload Start Failed", description: "Could not start the file upload. Please try again.", variant: "destructive" });
-      setIsUploading(false); // Crucial: Reset if initial setup fails
+      setIsUploading(false); 
     }
   }
 
@@ -326,4 +327,3 @@ export default function DocumentUploadPage() {
     </div>
   );
 }
-

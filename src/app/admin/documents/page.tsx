@@ -5,7 +5,10 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { 
+    Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle, UploadCloud, StickyNote, FileEdit, BarChartHorizontalBig } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
+import { db, storage } from "@/lib/firebase";
+import { collection, getDocs, query, orderBy, Timestamp, doc, deleteDoc } from "firebase/firestore";
+import { ref as storageRef, deleteObject } from "firebase/storage";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
@@ -35,12 +39,13 @@ interface Document {
   version?: string;
   lastUpdated: Timestamp | string;
   size?: string;
-  downloadURL?: string; // Optional for text documents
-  fileType?: string; // Optional for text documents
+  downloadURL?: string; 
+  filePath?: string; // Added to store full storage path
+  fileType?: string; 
   uploadedBy?: string;
   uploaderEmail?: string;
   documentContentType?: 'file' | 'text';
-  content?: string; // For text documents
+  content?: string; 
 }
 
 const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms", "Procedures", "Memos"];
@@ -74,6 +79,9 @@ export default function AdminDocumentsPage() {
 
   const [selectedDocumentForView, setSelectedDocumentForView] = React.useState<Document | null>(null);
   const [isViewNoteDialogOpen, setIsViewNoteDialogOpen] = React.useState(false);
+  
+  const [documentToDelete, setDocumentToDelete] = React.useState<Document | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const [totalDocumentsCount, setTotalDocumentsCount] = React.useState<number>(0);
   const [fileCount, setFileCount] = React.useState<number>(0);
@@ -109,6 +117,7 @@ export default function AdminDocumentsPage() {
           lastUpdated: data.lastUpdated,
           size: data.size,
           downloadURL: data.downloadURL,
+          filePath: data.filePath, // Ensure filePath is fetched
           fileType: data.fileType,
           uploadedBy: data.uploadedBy,
           uploaderEmail: data.uploaderEmail,
@@ -123,7 +132,7 @@ export default function AdminDocumentsPage() {
 
     } catch (err) {
       console.error("Error fetching documents:", err);
-      setError("Failed to load documents.");
+      setError("Failed to load documents. Please try again.");
       toast({ title: "Loading Error", description: "Could not fetch documents.", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -139,6 +148,30 @@ export default function AdminDocumentsPage() {
       }
     }
   }, [user, authLoading, router, fetchDocuments]);
+
+  const handleDeleteDocument = async () => {
+    if (!documentToDelete) return;
+    setIsDeleting(true);
+    try {
+      // Delete from Firestore
+      await deleteDoc(doc(db, "documents", documentToDelete.id));
+
+      // If it's a file, delete from Storage
+      if (documentToDelete.documentContentType === 'file' && documentToDelete.filePath) {
+        const fileRef = storageRef(storage, documentToDelete.filePath);
+        await deleteObject(fileRef);
+      }
+      
+      toast({ title: "Document Deleted", description: `"${documentToDelete.title}" has been successfully deleted.` });
+      setDocumentToDelete(null); // Close dialog
+      fetchDocuments(); // Refresh list
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      toast({ title: "Deletion Failed", description: "Could not delete the document. Please try again.", variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const getIconForDocumentType = (doc: Document) => {
     if (doc.documentContentType === 'text') {
@@ -367,9 +400,11 @@ export default function AdminDocumentsPage() {
                         <Button variant="ghost" size="icon" onClick={() => toast({ title: "Edit Document", description: "Editing functionality coming soon!"})} disabled aria-label={`Edit document: ${doc.title}`}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                         <Button variant="ghost" size="icon" onClick={() => toast({ title: "Delete Document", description: "Deletion functionality coming soon!"})} disabled className="text-destructive hover:text-destructive/80" aria-label={`Delete document: ${doc.title}`}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80" aria-label={`Delete document: ${doc.title}`} onClick={() => setDocumentToDelete(doc)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </AlertDialogTrigger>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -403,7 +438,28 @@ export default function AdminDocumentsPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {documentToDelete && (
+         <AlertDialog open={!!documentToDelete} onOpenChange={(open) => !open && setDocumentToDelete(null)}>
+            <AlertDialogContent>
+                 <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Are you sure you want to delete the document: "{documentToDelete.title}"?
+                        {documentToDelete.documentContentType === 'file' && " This will also delete the associated file from storage."}
+                        This action cannot be undone.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDocumentToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteDocument} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                         {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Delete
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }
-
