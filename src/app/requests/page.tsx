@@ -32,10 +32,90 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert";
 
+const requestCategoriesAndTypes = {
+  "Roster & Availability": [
+    "Roster change request",
+    "Temporary unavailability (exam, pregnancy, etc.)",
+    "Flight swap between colleagues",
+    "Request for exceptional day off",
+    "Roster error reporting",
+    "Positioning flight or deadhead request"
+  ],
+  "Leave & Absences": [
+    "Annual leave request",
+    "Sick leave request",
+    "Maternity/Paternity leave",
+    "Unplanned absence – urgent notice",
+    "Special leave request (bereavement, wedding, etc.)",
+    "Special leave request (bereavement, wedding, etc.)",
+    "Rest days tracking"
+  ],
+  "Human Resources": [
+    "Update of personal data",
+    "HR complaint or conflict",
+    "Follow-up on individual interview",
+    "Request for administrative letter (certificate, etc.)",
+    "Bank details change",
+    "Unfair treatment complaint"
+  ],
+  "Training & Qualifications": [
+    "Enrollment in a training session",
+    "Issue with license validity",
+    "Training postponement or cancellation",
+    "Access issue with e-learning platform",
+    "Equivalency or exemption request",
+    "Training/exam result complaint"
+  ],
+  "Uniform & Equipment": [
+    "Uniform order or replacement",
+    "Size issue or uniform defect report",
+    "Lost or stolen equipment",
+    "Replenishment of allocated items",
+    "Problem with service shoes",
+    "Uniform delivery delay"
+  ],
+  "Payroll & Compensation": [
+    "Salary calculation request",
+    "Missing or incorrect flight allowance",
+    "Payslip clarification request",
+    "Unreceived daily allowances",
+    "Travel expense reimbursement issue",
+    "Request for adjustment (flown hours, standby, etc.)"
+  ],
+  "Mobility & Special Assignments": [
+    "Application for special assignment (event, VIP flight...)",
+    "Voluntary transfer to another base",
+    "Temporary mission request",
+    "Interest in Cabin Crew Ambassador Program",
+    "Temporary transfer request",
+    "Post-assignment feedback"
+  ],
+  "App Access & Technical Issues": [
+    "Crew app login issue",
+    "Roster display bug",
+    "Access denied to some features",
+    "Schedule synchronization error",
+    "E-learning portal issue",
+    "Password reset / 2FA problem"
+  ],
+  "Meetings & Support": [
+    "Request meeting with manager",
+    "Need for emotional or psychological support",
+    "Request for mediation or support session",
+    "Follow-up after difficult flight",
+    "Request for coaching or mentoring",
+    "Feedback group participation"
+  ]
+};
+
+const requestCategoryKeys = Object.keys(requestCategoriesAndTypes) as (keyof typeof requestCategoriesAndTypes)[];
+const allRequestCategories = [...requestCategoryKeys, "General Inquiry", "Other"];
+
 const requestFormSchema = z.object({
-  requestType: z.string({
-    required_error: "Please select a request type.",
+  requestCategory: z.string({
+    required_error: "Please select a request category.",
   }),
+  specificRequestType: z.string().optional(),
   urgencyLevel: z.enum(["Low", "Medium", "High", "Critical"], {
     required_error: "Please select an urgency level.",
   }),
@@ -49,30 +129,25 @@ const requestFormSchema = z.object({
   }).max(1000, {
     message: "Details must not be longer than 1000 characters.",
   }),
+}).superRefine((data, ctx) => {
+  if (requestCategoriesAndTypes[data.requestCategory as keyof typeof requestCategoriesAndTypes] && (!data.specificRequestType || data.specificRequestType.trim() === "")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Please select a specific request type for this category.",
+      path: ["specificRequestType"],
+    });
+  }
 });
 
 type RequestFormValues = z.infer<typeof requestFormSchema>;
 
 const defaultValues: Partial<RequestFormValues> = {
-  requestType: "",
+  requestCategory: "",
+  specificRequestType: "",
   urgencyLevel: "Low",
   subject: "",
   details: "",
 };
-
-const requestTypes = [
-  "Roster & Availability",
-  "Leave & Absences",
-  "Human Resources",
-  "Training & Qualifications",
-  "Uniform & Equipment",
-  "Payroll & Compensation",
-  "Mobility & Special Assignments",
-  "App Access & Technical Issues",
-  "Meetings & Support",
-  "General Inquiry",
-  "Other",
-];
 
 const urgencyLevels: RequestFormValues["urgencyLevel"][] = ["Low", "Medium", "High", "Critical"];
 
@@ -80,12 +155,24 @@ export default function RequestsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [specificTypes, setSpecificTypes] = React.useState<string[]>([]);
 
   const form = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
     defaultValues,
     mode: "onChange",
   });
+
+  const watchedRequestCategory = form.watch("requestCategory");
+
+  React.useEffect(() => {
+    if (watchedRequestCategory && requestCategoriesAndTypes[watchedRequestCategory as keyof typeof requestCategoriesAndTypes]) {
+      setSpecificTypes(requestCategoriesAndTypes[watchedRequestCategory as keyof typeof requestCategoriesAndTypes]);
+    } else {
+      setSpecificTypes([]);
+    }
+    form.setValue('specificRequestType', '', { shouldValidate: true });
+  }, [watchedRequestCategory, form]);
 
   async function onSubmit(data: RequestFormValues) {
     if (!user) {
@@ -100,9 +187,13 @@ export default function RequestsPage() {
     setIsSubmitting(true);
     try {
       const requestData = {
-        ...data,
         userId: user.uid,
         userEmail: user.email,
+        requestType: data.requestCategory, // Storing main category as 'requestType' in DB
+        specificRequestType: data.specificRequestType || null,
+        urgencyLevel: data.urgencyLevel,
+        subject: data.subject,
+        details: data.details,
         createdAt: serverTimestamp(),
         status: "pending",
       };
@@ -110,9 +201,10 @@ export default function RequestsPage() {
 
       toast({
         title: "Request Submitted Successfully",
-        description: `Your ${data.requestType.toLowerCase()} request for "${data.subject}" has been saved.`,
+        description: `Your ${data.requestCategory.toLowerCase()} request for "${data.subject}" has been saved.`,
       });
       form.reset();
+      setSpecificTypes([]); // Reset specific types as well
     } catch (error) {
       console.error("Error submitting request to Firestore:", error);
       toast({
@@ -152,7 +244,7 @@ export default function RequestsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="requestType"
+                  name="requestCategory"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Request Category</FormLabel>
@@ -163,7 +255,7 @@ export default function RequestsPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {requestTypes.map((type) => (
+                          {allRequestCategories.map((type) => (
                             <SelectItem key={type} value={type}>{type}</SelectItem>
                           ))}
                         </SelectContent>
@@ -176,6 +268,36 @@ export default function RequestsPage() {
                   )}
                 />
                 <FormField
+                  control={form.control}
+                  name="specificRequestType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Specific Request Type</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        value={field.value} // Ensure value is controlled
+                        disabled={!user || isSubmitting || specificTypes.length === 0}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={specificTypes.length === 0 ? "N/A for selected category" : "Select specific type"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {specificTypes.map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Specify the type if applicable for the chosen category.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+               <FormField
                   control={form.control}
                   name="urgencyLevel"
                   render={({ field }) => (
@@ -200,7 +322,6 @@ export default function RequestsPage() {
                     </FormItem>
                   )}
                 />
-              </div>
 
               <FormField
                 control={form.control}
@@ -261,3 +382,5 @@ export default function RequestsPage() {
     </div>
   );
 }
+
+    

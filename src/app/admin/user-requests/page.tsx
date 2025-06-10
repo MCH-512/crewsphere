@@ -17,13 +17,14 @@ import { useRouter } from "next/navigation";
 import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { VariantProps } from "class-variance-authority"; // For badge variants
+import type { VariantProps } from "class-variance-authority"; 
 
 interface UserRequest {
   id: string;
   userId: string;
   userEmail: string;
-  requestType: string;
+  requestType: string; // This is the main category
+  specificRequestType?: string | null; // The more specific type
   urgencyLevel: "Low" | "Medium" | "High" | "Critical";
   subject: string;
   details: string;
@@ -127,7 +128,7 @@ export default function AdminUserRequestsPage() {
   const getUrgencyBadgeVariant = (level: UserRequest["urgencyLevel"]): VariantProps<typeof Badge>["variant"] => {
     switch (level) {
       case "Critical": return "destructive";
-      case "High": return "default"; // Using default Shadcn orange-ish/primary
+      case "High": return "default"; 
       case "Medium": return "secondary";
       case "Low": return "outline";
       default: return "outline";
@@ -192,7 +193,8 @@ export default function AdminUserRequestsPage() {
                   <TableRow>
                     <TableHead>Submitted</TableHead>
                     <TableHead>User Email</TableHead>
-                    <TableHead>Request Type</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Specific Type</TableHead>
                     <TableHead>Subject</TableHead>
                     <TableHead>Urgency</TableHead>
                     <TableHead>Status</TableHead>
@@ -207,6 +209,7 @@ export default function AdminUserRequestsPage() {
                       </TableCell>
                       <TableCell className="font-medium">{request.userEmail}</TableCell>
                       <TableCell>{request.requestType}</TableCell>
+                      <TableCell>{request.specificRequestType || 'N/A'}</TableCell>
                       <TableCell>{request.subject}</TableCell>
                       <TableCell>
                         <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize flex items-center gap-1">
@@ -221,7 +224,7 @@ export default function AdminUserRequestsPage() {
                       </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" onClick={() => handleOpenManageDialog(request)}>
-                          <Eye className="mr-1 h-4 w-4" /> View & Manage
+                          <Eye className="mr-1 h-4 w-4" /> View &amp; Manage
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -243,7 +246,8 @@ export default function AdminUserRequestsPage() {
             <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-2">
               <div className="space-y-1">
                 <p className="text-sm font-medium">User: <span className="text-muted-foreground">{selectedRequest.userEmail}</span></p>
-                <p className="text-sm font-medium">Type: <span className="text-muted-foreground">{selectedRequest.requestType}</span></p>
+                <p className="text-sm font-medium">Category: <span className="text-muted-foreground">{selectedRequest.requestType}</span></p>
+                {selectedRequest.specificRequestType && <p className="text-sm font-medium">Specific Type: <span className="text-muted-foreground">{selectedRequest.specificRequestType}</span></p>}
                 <p className="text-sm font-medium">Urgency: <Badge variant={getUrgencyBadgeVariant(selectedRequest.urgencyLevel)} className="capitalize ml-1">{selectedRequest.urgencyLevel}</Badge></p>
                 <p className="text-sm font-medium">Submitted: <span className="text-muted-foreground">{format(selectedRequest.createdAt.toDate(), "PPpp")}</span></p>
                 {selectedRequest.updatedAt && <p className="text-sm font-medium">Last Updated: <span className="text-muted-foreground">{format(selectedRequest.updatedAt.toDate(), "PPpp")}</span></p>}
@@ -295,3 +299,5 @@ export default function AdminUserRequestsPage() {
     </div>
   );
 }
+
+    
