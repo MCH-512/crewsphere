@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, deleteDoc, where, getCountFromServer } from "firebase/firestore";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
-import { MessageSquareWarning, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle } from "lucide-react";
+import { MessageSquareWarning, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle, CheckSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -35,6 +35,7 @@ interface AlertDocument {
   iconName?: string | null;
   createdAt: Timestamp;
   createdBy: string;
+  acknowledgementCount?: number; // Added for acknowledgement count
 }
 
 export default function AdminAlertsPage() {
@@ -52,11 +53,24 @@ export default function AdminAlertsPage() {
     try {
       const q = query(collection(db, "alerts"), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
-      const fetchedAlerts = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      } as AlertDocument));
+      
+      const fetchedAlertsPromises = querySnapshot.docs.map(async (docSnapshot) => {
+        const alertData = {
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+        } as AlertDocument;
+
+        // Fetch acknowledgement count for this alert
+        const ackQuery = query(collection(db, "alertAcknowledgements"), where("alertId", "==", alertData.id));
+        const ackSnapshot = await getCountFromServer(ackQuery);
+        alertData.acknowledgementCount = ackSnapshot.data().count;
+        
+        return alertData;
+      });
+
+      const fetchedAlerts = await Promise.all(fetchedAlertsPromises);
       setAlerts(fetchedAlerts);
+
     } catch (err) {
       console.error("Error fetching alerts:", err);
       setError("Failed to load alerts. Please try again.");
@@ -81,6 +95,8 @@ export default function AdminAlertsPage() {
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, "alerts", alertToDelete.id));
+      // Optionally, delete associated acknowledgements (or handle via Firestore rules/Cloud Functions for cascading deletes)
+      // For now, we'll leave acknowledgements, as they might be useful for historical audit.
       toast({ title: "Alert Deleted", description: `Alert "${alertToDelete.title}" has been successfully deleted.` });
       fetchAlerts(); 
     } catch (error) {
@@ -94,7 +110,7 @@ export default function AdminAlertsPage() {
   const getLevelBadgeVariant = (level: AlertDocument["level"]): "destructive" | "warning" | "secondary" | "outline" => {
     switch (level) {
       case "critical": return "destructive";
-      case "warning": return "warning"; // Use the new 'warning' variant
+      case "warning": return "warning"; 
       case "info": return "secondary";
       default: return "outline";
     }
@@ -129,7 +145,7 @@ export default function AdminAlertsPage() {
               <MessageSquareWarning className="mr-3 h-7 w-7 text-primary" />
               All Broadcast Alerts
             </CardTitle>
-            <CardDescription>View all alerts that have been sent to users.</CardDescription>
+            <CardDescription>View all alerts that have been sent to users. Manage acknowledgements.</CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={fetchAlerts} disabled={isLoading}>
@@ -168,6 +184,7 @@ export default function AdminAlertsPage() {
                     <TableHead>Target</TableHead>
                     <TableHead>Icon</TableHead>
                     <TableHead>Created At</TableHead>
+                    <TableHead>Acknowledged By</TableHead> 
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -185,6 +202,16 @@ export default function AdminAlertsPage() {
                       <TableCell>{alert.userId ? `User: ${alert.userId.substring(0,10)}...` : "Global"}</TableCell>
                       <TableCell>{alert.iconName || 'N/A'}</TableCell>
                       <TableCell>{format(alert.createdAt.toDate(), "PPp")}</TableCell>
+                      <TableCell className="text-sm">
+                        {alert.acknowledgementCount !== undefined ? (
+                            <span className="flex items-center">
+                                <CheckSquare className="mr-1.5 h-4 w-4 text-green-600"/> 
+                                {alert.acknowledgementCount} {alert.userId ? "" : "user(s)"}
+                            </span>
+                        ) : (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground"/>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" asChild>
                           <Link href={`/admin/alerts/edit/${alert.id}`} aria-label={`Edit alert: ${alert.title}`}>
@@ -222,6 +249,7 @@ export default function AdminAlertsPage() {
           )}
            <CardDescription className="mt-4 text-xs">
             Content of alerts is not shown in this table for brevity. Full content is visible to users on their dashboards.
+            Acknowledgement counts provide an overview of how many users have seen global alerts, or if a targeted alert has been seen.
           </CardDescription>
         </CardContent>
       </Card>
