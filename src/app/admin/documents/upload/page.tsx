@@ -93,9 +93,10 @@ export default function DocumentUploadPage() {
     setUploadProgress(0);
 
     const uniqueFileName = `${new Date().getTime()}-${fileToUpload.name.replace(/\s+/g, '_')}`;
-    const fileStorageRef = storageRef(storage, `documents/${uniqueFileName}`);
+    const fileStoragePath = `documents/${uniqueFileName}`;
+    const materialStorageRef = storageRef(storage, fileStoragePath);
 
-    const uploadTask = uploadBytesResumable(fileStorageRef, fileToUpload);
+    const uploadTask = uploadBytesResumable(materialStorageRef, fileToUpload);
 
     uploadTask.on(
       "state_changed",
@@ -123,6 +124,7 @@ export default function DocumentUploadPage() {
             fileName: uniqueFileName,
             fileType: fileToUpload.type,
             size: (fileSize / (1024 * 1024)).toFixed(2) + "MB", // Store size in MB
+            documentContentType: 'file', // Mark as file type
             lastUpdated: serverTimestamp(),
             uploadedBy: user.uid,
             uploaderEmail: user.email,
@@ -181,7 +183,7 @@ export default function DocumentUploadPage() {
         <CardHeader>
           <CardTitle className="text-2xl font-headline flex items-center">
             <UploadCloud className="mr-3 h-7 w-7 text-primary" />
-            Upload New Document
+            Upload New Document File
           </CardTitle>
           <CardDescription>
             Fill in the details and select a file to upload it to the document library.
@@ -302,12 +304,12 @@ export default function DocumentUploadPage() {
                 {isUploading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Uploading...
+                    Uploading File...
                   </>
                 ) : (
                   <>
                     <UploadCloud className="mr-2 h-4 w-4" />
-                    Upload Document
+                    Upload File
                   </>
                 )}
               </Button>

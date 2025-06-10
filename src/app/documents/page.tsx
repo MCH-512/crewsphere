@@ -5,7 +5,9 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, StickyNote } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,20 +22,23 @@ import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firesto
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { AnimatedCard } from "@/components/motion/animated-card";
+import ReactMarkdown from "react-markdown";
 
 interface Document {
   id: string;
   title: string;
   category: string;
-  source: string; // Added source field
+  source: string; 
   version?: string;
   lastUpdated: Timestamp | string;
   size?: string;
-  downloadURL: string;
-  fileType?: string; 
+  downloadURL?: string; // Optional for text documents
+  fileType?: string; // Optional for text documents
+  documentContentType?: 'file' | 'text';
+  content?: string; // For text documents
 }
 
-const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms"];
+const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms", "Procedures", "Memos"];
 
 export default function DocumentsPage() {
   const [allDocuments, setAllDocuments] = React.useState<Document[]>([]);
@@ -45,12 +50,15 @@ export default function DocumentsPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
 
+  const [selectedDocumentForView, setSelectedDocumentForView] = React.useState<Document | null>(null);
+  const [isViewNoteDialogOpen, setIsViewNoteDialogOpen] = React.useState(false);
+
 
   const fetchDocuments = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc")); // Order by lastUpdated
+      const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc")); 
       const querySnapshot = await getDocs(q);
       const fetchedDocuments = querySnapshot.docs.map(doc => {
         const data = doc.data();
@@ -58,16 +66,18 @@ export default function DocumentsPage() {
           id: doc.id,
           title: data.title || "Untitled Document",
           category: data.category || "Uncategorized",
-          source: data.source || "Unknown", // Handle missing source
+          source: data.source || "Unknown", 
           version: data.version,
           lastUpdated: data.lastUpdated, 
           size: data.size,
-          downloadURL: data.downloadURL || "#",
+          downloadURL: data.downloadURL,
           fileType: data.fileType,
+          documentContentType: data.documentContentType || 'file',
+          content: data.content,
         } as Document;
       });
       setAllDocuments(fetchedDocuments);
-      setFilteredDocuments(fetchedDocuments); // Initialize filtered list
+      setFilteredDocuments(fetchedDocuments); 
     } catch (err) {
       console.error("Error fetching documents:", err);
       setError("Failed to load documents. Please ensure you have a 'documents' collection in Firestore.");
@@ -100,11 +110,14 @@ export default function DocumentsPage() {
   }, [searchTerm, categoryFilter, allDocuments]);
 
 
-  const getIconForFileType = (fileType?: string) => {
-    if (!fileType) return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
-    if (fileType.includes("pdf")) return <FileTextIcon className="h-5 w-5 text-red-600" />;
-    if (fileType.includes("word") || fileType.includes("document")) return <FileTextIcon className="h-5 w-5 text-blue-600" />;
-    if (fileType.includes("excel") || fileType.includes("sheet")) return <FileTextIcon className="h-5 w-5 text-green-600" />;
+  const getIconForDocumentType = (doc: Document) => {
+    if (doc.documentContentType === 'text') {
+      return <StickyNote className="h-5 w-5 text-yellow-500" />;
+    }
+    if (!doc.fileType) return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
+    if (doc.fileType.includes("pdf")) return <FileTextIcon className="h-5 w-5 text-red-600" />;
+    if (doc.fileType.includes("word") || doc.fileType.includes("document")) return <FileTextIcon className="h-5 w-5 text-blue-600" />;
+    if (doc.fileType.includes("excel") || doc.fileType.includes("sheet")) return <FileTextIcon className="h-5 w-5 text-green-600" />;
     return <FileTextIcon className="h-5 w-5 text-primary" />;
   };
 
@@ -112,7 +125,7 @@ export default function DocumentsPage() {
     if (!dateValue) return "N/A";
     if (typeof dateValue === "string") {
       try {
-        return format(new Date(dateValue), "PP"); // e.g. Jul 28, 2024
+        return format(new Date(dateValue), "PP"); 
       } catch (e) {
         return dateValue; 
       }
@@ -121,6 +134,17 @@ export default function DocumentsPage() {
       return format(dateValue.toDate(), "PP");
     }
     return "Invalid Date";
+  };
+
+  const handleViewDocument = (doc: Document) => {
+    if (doc.documentContentType === 'text') {
+      setSelectedDocumentForView(doc);
+      setIsViewNoteDialogOpen(true);
+    } else if (doc.downloadURL) {
+      window.open(doc.downloadURL, '_blank');
+    } else {
+      toast({ title: "View Error", description: "No content or URL available for this document.", variant: "destructive"});
+    }
   };
 
   return (
@@ -177,7 +201,7 @@ export default function DocumentsPage() {
             )}
 
             {!isLoading && !error && filteredDocuments.length === 0 && (
-              <p className="text-muted-foreground text-center py-10">No documents found{categoryFilter !== "all" || searchTerm ? " matching your criteria" : ""}. Admins can upload documents via the Admin Console.</p>
+              <p className="text-muted-foreground text-center py-10">No documents found{categoryFilter !== "all" || searchTerm ? " matching your criteria" : ""}.</p>
             )}
 
             {!isLoading && !error && filteredDocuments.length > 0 && (
@@ -198,20 +222,22 @@ export default function DocumentsPage() {
                   <TableBody>
                     {filteredDocuments.map((doc) => (
                       <TableRow key={doc.id}>
-                        <TableCell>{getIconForFileType(doc.fileType)}</TableCell>
+                        <TableCell>{getIconForDocumentType(doc)}</TableCell>
                         <TableCell className="font-medium max-w-sm truncate" title={doc.title}>{doc.title}</TableCell>
                         <TableCell><Badge variant="outline">{doc.category}</Badge></TableCell>
                         <TableCell><Badge variant="secondary">{doc.source}</Badge></TableCell>
                         <TableCell>{doc.version || "N/A"}</TableCell>
                         <TableCell>{formatDate(doc.lastUpdated)}</TableCell>
-                        <TableCell>{doc.size || "N/A"}</TableCell>
+                        <TableCell>{doc.documentContentType === 'text' ? "N/A" : (doc.size || "N/A")}</TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Button variant="ghost" size="icon" asChild aria-label={`View document: ${doc.title}`}>
-                            <a href={doc.downloadURL} target="_blank" rel="noopener noreferrer"><Eye className="h-4 w-4" /></a>
-                          </Button>
-                          <Button variant="ghost" size="icon" asChild aria-label={`Download document: ${doc.title}`}>
-                             <a href={doc.downloadURL} download><Download className="h-4 w-4" /></a>
-                          </Button>
+                           <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc)} aria-label={`View document: ${doc.title}`}>
+                                <Eye className="h-4 w-4" />
+                            </Button>
+                          {doc.documentContentType === 'file' && doc.downloadURL && (
+                            <Button variant="ghost" size="icon" asChild aria-label={`Download document: ${doc.title}`}>
+                                <a href={doc.downloadURL} download><Download className="h-4 w-4" /></a>
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -222,6 +248,30 @@ export default function DocumentsPage() {
           </CardContent>
         </Card>
       </AnimatedCard>
+
+       {selectedDocumentForView && selectedDocumentForView.documentContentType === 'text' && (
+        <Dialog open={isViewNoteDialogOpen} onOpenChange={setIsViewNoteDialogOpen}>
+          <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[80vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>{selectedDocumentForView.title}</DialogTitle>
+              <DialogDescription>
+                Category: {selectedDocumentForView.category} | Source: {selectedDocumentForView.source}
+                {selectedDocumentForView.version && ` | Version: ${selectedDocumentForView.version}`}
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-grow pr-6 -mr-6"> 
+                <div className="py-4 prose prose-sm max-w-none dark:prose-invert text-foreground whitespace-pre-wrap">
+                    <ReactMarkdown>{selectedDocumentForView.content || "No content available."}</ReactMarkdown>
+                </div>
+            </ScrollArea>
+            <DialogFooter className="mt-auto pt-4 border-t">
+              <DialogClose asChild>
+                <Button variant="outline">Close</Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
     

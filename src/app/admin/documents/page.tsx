@@ -5,7 +5,9 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle, UploadCloud } from "lucide-react"; // Added PlusCircle and UploadCloud
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle, UploadCloud, StickyNote, FileEdit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,7 +23,8 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
-import Link from "next/link"; // Added Link import
+import Link from "next/link";
+import ReactMarkdown from "react-markdown";
 
 interface Document {
   id: string;
@@ -31,13 +34,15 @@ interface Document {
   version?: string;
   lastUpdated: Timestamp | string;
   size?: string;
-  downloadURL: string;
-  fileType?: string;
+  downloadURL?: string; // Optional for text documents
+  fileType?: string; // Optional for text documents
   uploadedBy?: string;
   uploaderEmail?: string;
+  documentContentType?: 'file' | 'text';
+  content?: string; // For text documents
 }
 
-const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms"];
+const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms", "Procedures", "Memos"];
 const documentSources = [
   "Operations Manual (OMA)",
   "Operations Manual (OMD)",
@@ -49,6 +54,9 @@ const documentSources = [
   "Cabin Procedures Manual (CPM)",
   "Compagnie procedures",
   "Relevant Tunisian laws",
+  "Internal Memo",
+  "Safety Bulletin",
+  "Operational Notice",
   "Other",
 ];
 
@@ -62,6 +70,9 @@ export default function AdminDocumentsPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
   const [sourceFilter, setSourceFilter] = React.useState("all"); 
+
+  const [selectedDocumentForView, setSelectedDocumentForView] = React.useState<Document | null>(null);
+  const [isViewNoteDialogOpen, setIsViewNoteDialogOpen] = React.useState(false);
 
   const fetchDocuments = React.useCallback(async () => {
     setIsLoading(true);
@@ -79,10 +90,12 @@ export default function AdminDocumentsPage() {
           version: data.version,
           lastUpdated: data.lastUpdated,
           size: data.size,
-          downloadURL: data.downloadURL || "#",
+          downloadURL: data.downloadURL,
           fileType: data.fileType,
           uploadedBy: data.uploadedBy,
           uploaderEmail: data.uploaderEmail,
+          documentContentType: data.documentContentType || 'file', // Default to file if not set
+          content: data.content,
         } as Document;
       });
       setDocuments(fetchedDocuments);
@@ -105,9 +118,12 @@ export default function AdminDocumentsPage() {
     }
   }, [user, authLoading, router, fetchDocuments]);
 
-  const getIconForFileType = (fileType?: string) => {
-    if (!fileType) return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
-    if (fileType.includes("pdf") || fileType.includes("word") || fileType.includes("document") || fileType.includes("excel") || fileType.includes("sheet")) {
+  const getIconForDocumentType = (doc: Document) => {
+    if (doc.documentContentType === 'text') {
+      return <StickyNote className="h-5 w-5 text-yellow-500" />;
+    }
+    if (!doc.fileType) return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
+    if (doc.fileType.includes("pdf") || doc.fileType.includes("word") || doc.fileType.includes("document") || doc.fileType.includes("excel") || doc.fileType.includes("sheet")) {
       return <FileTextIcon className="h-5 w-5 text-primary" />;
     }
     return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
@@ -129,6 +145,18 @@ export default function AdminDocumentsPage() {
     const matchesSource = sourceFilter === "all" || doc.source === sourceFilter; 
     return matchesSearch && matchesCategory && matchesSource;
   });
+
+  const handleViewDocument = (doc: Document) => {
+    if (doc.documentContentType === 'text') {
+      setSelectedDocumentForView(doc);
+      setIsViewNoteDialogOpen(true);
+    } else if (doc.downloadURL) {
+      window.open(doc.downloadURL, '_blank');
+    } else {
+      toast({ title: "View Error", description: "No content or URL available for this document.", variant: "destructive"});
+    }
+  };
+
 
   if (authLoading || (isLoading && !user)) {
     return (
@@ -158,17 +186,23 @@ export default function AdminDocumentsPage() {
               <FileTextIcon className="mr-3 h-7 w-7 text-primary" />
               Document Management
             </CardTitle>
-            <CardDescription>View and manage all documents in the system.</CardDescription>
+            <CardDescription>View, upload files, or create textual notes/procedures.</CardDescription>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={fetchDocuments} disabled={isLoading} className="w-full sm:w-auto">
               <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh Documents
+              Refresh
             </Button>
             <Button asChild className="w-full sm:w-auto">
               <Link href="/admin/documents/upload">
                 <UploadCloud className="mr-2 h-4 w-4" />
-                Upload Document
+                Upload File
+              </Link>
+            </Button>
+            <Button asChild className="w-full sm:w-auto">
+              <Link href="/admin/documents/create-note">
+                <FileEdit className="mr-2 h-4 w-4" /> {/* Changed icon */}
+                Create Note
               </Link>
             </Button>
           </div>
@@ -228,7 +262,7 @@ export default function AdminDocumentsPage() {
           )}
 
           {!isLoading && !error && filteredDocuments.length === 0 && (
-            <p className="text-muted-foreground text-center py-10">No documents found matching your criteria. Click &quot;Upload Document&quot; to add new files.</p>
+            <p className="text-muted-foreground text-center py-10">No documents found matching your criteria. Click "Upload File" or "Create Note" to add new content.</p>
           )}
 
           {!isLoading && !error && filteredDocuments.length > 0 && (
@@ -250,21 +284,23 @@ export default function AdminDocumentsPage() {
                 <TableBody>
                   {filteredDocuments.map((doc) => (
                     <TableRow key={doc.id}>
-                      <TableCell>{getIconForFileType(doc.fileType)}</TableCell>
+                      <TableCell>{getIconForDocumentType(doc)}</TableCell>
                       <TableCell className="font-medium max-w-xs truncate" title={doc.title}>{doc.title}</TableCell>
                       <TableCell><Badge variant="outline">{doc.category}</Badge></TableCell>
                       <TableCell><Badge variant="secondary">{doc.source}</Badge></TableCell> 
                       <TableCell>{doc.version || "N/A"}</TableCell>
-                      <TableCell>{doc.size || "N/A"}</TableCell>
+                      <TableCell>{doc.documentContentType === 'text' ? "N/A" : (doc.size || "N/A")}</TableCell>
                       <TableCell className="text-xs">{doc.uploaderEmail || 'N/A'}</TableCell>
                       <TableCell className="text-xs">{formatDate(doc.lastUpdated)}</TableCell>
                       <TableCell className="text-right space-x-1">
-                        <Button variant="ghost" size="icon" asChild aria-label={`View document: ${doc.title}`}>
-                          <a href={doc.downloadURL} target="_blank" rel="noopener noreferrer"><Eye className="h-4 w-4" /></a>
+                        <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc)} aria-label={`View document: ${doc.title}`}>
+                            <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" asChild aria-label={`Download document: ${doc.title}`}>
-                           <a href={doc.downloadURL} download><Download className="h-4 w-4" /></a>
-                        </Button>
+                        {doc.documentContentType === 'file' && doc.downloadURL && (
+                            <Button variant="ghost" size="icon" asChild aria-label={`Download document: ${doc.title}`}>
+                                <a href={doc.downloadURL} download><Download className="h-4 w-4" /></a>
+                            </Button>
+                        )}
                         <Button variant="ghost" size="icon" onClick={() => toast({ title: "Edit Document", description: "Editing functionality coming soon!"})} disabled aria-label={`Edit document: ${doc.title}`}>
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -280,7 +316,30 @@ export default function AdminDocumentsPage() {
           )}
         </CardContent>
       </Card>
+
+      {selectedDocumentForView && selectedDocumentForView.documentContentType === 'text' && (
+        <Dialog open={isViewNoteDialogOpen} onOpenChange={setIsViewNoteDialogOpen}>
+          <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[80vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>{selectedDocumentForView.title}</DialogTitle>
+              <DialogDescription>
+                Category: {selectedDocumentForView.category} | Source: {selectedDocumentForView.source}
+                {selectedDocumentForView.version && ` | Version: ${selectedDocumentForView.version}`}
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-grow pr-6 -mr-6"> {/* Added negative margin for scrollbar */}
+                <div className="py-4 prose prose-sm max-w-none dark:prose-invert text-foreground whitespace-pre-wrap">
+                    <ReactMarkdown>{selectedDocumentForView.content || "No content available."}</ReactMarkdown>
+                </div>
+            </ScrollArea>
+            <DialogFooter className="mt-auto pt-4 border-t"> {/* Ensure footer is at bottom */}
+              <DialogClose asChild>
+                <Button variant="outline">Close</Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
-
