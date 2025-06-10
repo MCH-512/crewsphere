@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Shadcn Alert
 
 interface UserRequestForDisplay {
   id: string;
@@ -22,7 +23,7 @@ interface UserRequestForDisplay {
   specificRequestType?: string | null;
   urgencyLevel: "Low" | "Medium" | "High" | "Critical";
   subject: string;
-  details: string; // Not directly displayed in list, but good to have
+  details: string; 
   createdAt: Timestamp;
   status: "pending" | "approved" | "rejected" | "in-progress";
   adminResponse?: string;
@@ -71,7 +72,6 @@ export default function MyRequestsPage() {
       if (user) {
         fetchMyRequests();
       } else {
-        // Redirect to login if not authenticated (AuthContext usually handles this, but as a fallback)
         router.push('/login');
       }
     }
@@ -82,18 +82,21 @@ export default function MyRequestsPage() {
       case "pending": return "secondary";
       case "approved": return "success";
       case "rejected": return "destructive";
-      case "in-progress": return "outline"; // Using 'outline' for in-progress
+      case "in-progress": return "outline"; 
       default: return "secondary";
     }
   };
   
   const getUrgencyBadgeVariant = (level?: UserRequestForDisplay["urgencyLevel"]): VariantProps<typeof Badge>["variant"] => {
+    if (!level || !["Low", "Medium", "High", "Critical"].includes(level)) {
+        return "outline"; 
+    }
     switch (level) {
       case "Critical": return "destructive";
       case "High": return "default"; 
       case "Medium": return "secondary";
       case "Low": return "outline";
-      default: return "outline"; // Fallback for N/A or unexpected values
+      default: return "outline"; 
     }
   };
 
@@ -170,14 +173,10 @@ export default function MyRequestsPage() {
                     {request.specificRequestType && <span>| Type: {request.specificRequestType}</span>}
                     <span>
                       | Urgency: 
-                      {request.urgencyLevel && ["Low", "Medium", "High", "Critical"].includes(request.urgencyLevel) ? (
-                        <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize px-1.5 py-0.5 text-xs ml-1">
+                      <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize px-1.5 py-0.5 text-xs ml-1">
                            {request.urgencyLevel === "Critical" && <Zap className="h-3 w-3 mr-1" />}
-                          {request.urgencyLevel}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="capitalize px-1.5 py-0.5 text-xs ml-1">N/A</Badge>
-                      )}
+                          {request.urgencyLevel || "N/A"}
+                      </Badge>
                     </span>
                 </div>
               </CardHeader>
@@ -198,14 +197,17 @@ export default function MyRequestsPage() {
                   </AccordionItem>
                   {request.adminResponse && (
                     <AccordionItem value="response">
-                      <AccordionTrigger className="text-sm py-2">
+                      <AccordionTrigger className="text-sm py-2 font-medium text-primary">
                         <span className="flex items-center gap-1">
-                          <MessageSquareText className="h-4 w-4 text-primary" />
-                          View Admin Response
+                          <MessageSquareText className="h-4 w-4" />
+                          Admin Response
                         </span>
                       </AccordionTrigger>
                       <AccordionContent className="pt-2">
-                        <p className="text-sm whitespace-pre-wrap bg-primary/10 p-3 rounded-md border border-primary/30">{request.adminResponse}</p>
+                        <Alert variant={request.status === 'approved' ? 'default' : request.status === 'rejected' ? 'destructive' : 'default'} className="bg-primary/5 border-primary/20">
+                            <AlertTitle className="font-semibold">Response from Admin:</AlertTitle>
+                            <AlertDescription className="whitespace-pre-wrap text-foreground/90">{request.adminResponse}</AlertDescription>
+                        </Alert>
                       </AccordionContent>
                     </AccordionItem>
                   )}
@@ -218,6 +220,5 @@ export default function MyRequestsPage() {
     </div>
   );
 }
-
 
     

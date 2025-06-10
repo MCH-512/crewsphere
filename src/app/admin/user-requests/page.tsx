@@ -12,9 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap } from "lucide-react";
+import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority"; 
@@ -34,6 +34,8 @@ interface UserRequest {
   updatedAt?: Timestamp;
 }
 
+const requestStatuses: UserRequest["status"][] = ["pending", "approved", "rejected", "in-progress"];
+
 export default function AdminUserRequestsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -47,12 +49,18 @@ export default function AdminUserRequestsPage() {
   const [newStatus, setNewStatus] = React.useState<UserRequest["status"] | "">("");
   const [adminResponseText, setAdminResponseText] = React.useState("");
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
+  const [statusFilter, setStatusFilter] = React.useState<UserRequest["status"] | "all">("all");
 
   const fetchRequests = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const q = query(collection(db, "requests"), orderBy("createdAt", "desc"));
+      let q;
+      if (statusFilter === "all") {
+        q = query(collection(db, "requests"), orderBy("createdAt", "desc"));
+      } else {
+        q = query(collection(db, "requests"), where("status", "==", statusFilter), orderBy("createdAt", "desc"));
+      }
       const querySnapshot = await getDocs(q);
       const fetchedRequests = querySnapshot.docs.map(doc => ({
         id: doc.id,
@@ -66,7 +74,7 @@ export default function AdminUserRequestsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, statusFilter]);
 
   React.useEffect(() => {
     if (!authLoading) {
@@ -126,6 +134,9 @@ export default function AdminUserRequestsPage() {
   };
 
   const getUrgencyBadgeVariant = (level?: UserRequest["urgencyLevel"]): VariantProps<typeof Badge>["variant"] => {
+    if (!level || !["Low", "Medium", "High", "Critical"].includes(level)) {
+        return "outline"; // Default for N/A or unexpected values
+    }
     switch (level) {
       case "Critical": return "destructive";
       case "High": return "default"; 
@@ -158,7 +169,7 @@ export default function AdminUserRequestsPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-row justify-between items-start">
+        <CardHeader className="flex flex-col sm:flex-row justify-between items-start gap-3">
           <div>
             <CardTitle className="text-2xl font-headline flex items-center">
               <ClipboardList className="mr-3 h-7 w-7 text-primary" />
@@ -166,10 +177,23 @@ export default function AdminUserRequestsPage() {
             </CardTitle>
             <CardDescription>Review and manage all requests submitted by users.</CardDescription>
           </div>
-          <Button variant="outline" onClick={fetchRequests} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as UserRequest["status"] | "all")}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    {requestStatuses.map(status => (
+                        <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={fetchRequests} disabled={isLoading} className="w-full sm:w-auto">
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {error && (
@@ -184,7 +208,7 @@ export default function AdminUserRequestsPage() {
             </div>
           )}
           {!isLoading && requests.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">No user requests found at this time.</p>
+            <p className="text-muted-foreground text-center py-8">No user requests found{statusFilter !== "all" ? ` for status: ${statusFilter}` : ""}.</p>
           )}
           {requests.length > 0 && (
             <div className="rounded-md border">
@@ -212,14 +236,10 @@ export default function AdminUserRequestsPage() {
                       <TableCell>{request.specificRequestType || 'N/A'}</TableCell>
                       <TableCell>{request.subject}</TableCell>
                       <TableCell>
-                        {request.urgencyLevel && ["Low", "Medium", "High", "Critical"].includes(request.urgencyLevel) ? (
-                          <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize flex items-center gap-1">
+                        <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize flex items-center gap-1">
                             {request.urgencyLevel === "Critical" && <Zap className="h-3 w-3" />}
-                            {request.urgencyLevel}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">N/A</Badge>
-                        )}
+                            {request.urgencyLevel || "N/A"}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(request.status)} className="capitalize">
@@ -253,11 +273,10 @@ export default function AdminUserRequestsPage() {
                 <p className="text-sm font-medium">Category: <span className="text-muted-foreground">{selectedRequest.requestType}</span></p>
                 {selectedRequest.specificRequestType && <p className="text-sm font-medium">Specific Type: <span className="text-muted-foreground">{selectedRequest.specificRequestType}</span></p>}
                 <p className="text-sm font-medium">Urgency: 
-                  {selectedRequest.urgencyLevel && ["Low", "Medium", "High", "Critical"].includes(selectedRequest.urgencyLevel) ? (
-                    <Badge variant={getUrgencyBadgeVariant(selectedRequest.urgencyLevel)} className="capitalize ml-1">{selectedRequest.urgencyLevel}</Badge>
-                  ) : (
-                    <Badge variant="outline" className="ml-1">N/A</Badge>
-                  )}
+                  <Badge variant={getUrgencyBadgeVariant(selectedRequest.urgencyLevel)} className="capitalize ml-1 px-1.5 py-0.5 text-xs">
+                    {selectedRequest.urgencyLevel === "Critical" && <Zap className="h-3 w-3 mr-1" />}
+                    {selectedRequest.urgencyLevel || "N/A"}
+                  </Badge>
                 </p>
                 <p className="text-sm font-medium">Submitted: <span className="text-muted-foreground">{format(selectedRequest.createdAt.toDate(), "PPpp")}</span></p>
                 {selectedRequest.updatedAt && <p className="text-sm font-medium">Last Updated: <span className="text-muted-foreground">{format(selectedRequest.updatedAt.toDate(), "PPpp")}</span></p>}
@@ -276,10 +295,9 @@ export default function AdminUserRequestsPage() {
                     <SelectValue placeholder="Select new status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
+                    {requestStatuses.map(status => (
+                         <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -309,5 +327,4 @@ export default function AdminUserRequestsPage() {
     </div>
   );
 }
-
     
