@@ -155,11 +155,11 @@ export default function RequestsPage() {
                   name="requestType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Request Type</FormLabel>
+                      <FormLabel>Request Category</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!user || isSubmitting}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a request type" />
+                            <SelectValue placeholder="Select a request category" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
