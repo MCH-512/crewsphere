@@ -22,8 +22,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
 import { MessageSquareWarning, Loader2, AlertTriangle, RefreshCw, Edit, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast"; // Added useToast import
-import { format } from "date-fns"; // Added date-fns import
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 interface AlertDocument {
   id: string;
@@ -44,7 +44,7 @@ export default function AdminAlertsPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  const [alertToDelete, setAlertToDelete] = React.useState<AlertDocument | null>(null);
+  // alertToDelete state is no longer needed to control dialog visibility
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const fetchAlerts = React.useCallback(async () => {
@@ -77,13 +77,12 @@ export default function AdminAlertsPage() {
     }
   }, [user, authLoading, router, fetchAlerts]);
 
-  const handleDeleteAlert = async () => {
+  const handleDeleteAlert = async (alertToDelete: AlertDocument) => {
     if (!alertToDelete) return;
-    setIsDeleting(true);
+    setIsDeleting(true); // Consider making isDeleting an object keyed by alert.id if multiple can be pending
     try {
       await deleteDoc(doc(db, "alerts", alertToDelete.id));
       toast({ title: "Alert Deleted", description: `Alert "${alertToDelete.title}" has been successfully deleted.` });
-      setAlertToDelete(null);
       fetchAlerts(); // Refresh list
     } catch (error) {
       console.error("Error deleting alert:", error);
@@ -184,11 +183,28 @@ export default function AdminAlertsPage() {
                         <Button variant="ghost" size="sm" onClick={() => toast({ title: "Edit Alert", description: "Editing functionality coming soon!"})} disabled aria-label={`Edit alert: ${alert.title}`}>
                           <Edit className="mr-1 h-4 w-4" /> Edit
                         </Button>
-                        <AlertDialogTrigger asChild>
-                         <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80" aria-label={`Delete alert: ${alert.title}`} onClick={() => setAlertToDelete(alert)}>
-                          <Trash2 className="mr-1 h-4 w-4" /> Delete
-                        </Button>
-                        </AlertDialogTrigger>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                           <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80" aria-label={`Delete alert: ${alert.title}`}>
+                            <Trash2 className="mr-1 h-4 w-4" /> Delete
+                          </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete the alert: "{alert.title}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteAlert(alert)} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -201,25 +217,6 @@ export default function AdminAlertsPage() {
           </CardDescription>
         </CardContent>
       </Card>
-
-      <AlertDialog open={!!alertToDelete} onOpenChange={(open) => !open && setAlertToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete the alert: "{alertToDelete?.title}"? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setAlertToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteAlert} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
-
