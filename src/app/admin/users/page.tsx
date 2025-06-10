@@ -21,10 +21,11 @@ import { useRouter } from "next/navigation";
 import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff } from "lucide-react"; // Added Power, PowerOff
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { badgeVariants, type VariantProps as BadgeCvaVariantProps } from "@/components/ui/badge"; // Corrected import alias
+import { badgeVariants } from "@/components/ui/badge"; 
 import { format } from "date-fns"; 
 import { type VariantProps as CvaVariantProps } from "class-variance-authority";
 
+type BadgeCvaVariantProps = CvaVariantProps<typeof badgeVariants>;
 
 type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'other';
 type AccountStatus = 'active' | 'inactive';

@@ -11,7 +11,7 @@ import {
 import { 
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogPrimitiveDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogPrimitiveTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area"; 
 import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle, UploadCloud, StickyNote, FileEdit, BarChartHorizontalBig } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -403,11 +403,13 @@ export default function AdminDocumentsPage() {
                           </Link>
                         </Button>
                         <AlertDialogTrigger asChild>
+                        <AlertDialog> {/* Wrap with AlertDialog */}
                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80" aria-label={`Delete document: ${doc.title}`} onClick={() => setDocumentToDelete(doc)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
+                        </AlertDialog> {/* End AlertDialog wrap */}
                         </AlertDialogTrigger>
-                      </TableCell>
+                      </TableCell> 
                     </TableRow>
                   ))}
                 </TableBody>
