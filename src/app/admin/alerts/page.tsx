@@ -45,7 +45,6 @@ export default function AdminAlertsPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
-  // const [alertToDelete, setAlertToDelete] = React.useState<AlertDocument | null>(null); // Keep for AlertDialog state management
 
   const fetchAlerts = React.useCallback(async () => {
     setIsLoading(true);
@@ -92,10 +91,10 @@ export default function AdminAlertsPage() {
     }
   };
 
-  const getLevelBadgeVariant = (level: AlertDocument["level"]): "destructive" | "default" | "secondary" | "outline" => {
+  const getLevelBadgeVariant = (level: AlertDocument["level"]): "destructive" | "warning" | "secondary" | "outline" => {
     switch (level) {
       case "critical": return "destructive";
-      case "warning": return "default";
+      case "warning": return "warning"; // Use the new 'warning' variant
       case "info": return "secondary";
       default: return "outline";
     }

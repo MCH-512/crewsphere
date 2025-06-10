@@ -28,6 +28,9 @@ body {
     --success: 145 63% 90%; /* Light green background for success */
     --success-foreground: 145 75% 30%; /* Dark green text for success */
     --success-border: 145 60% 70%; /* Medium green border for success (if needed, or use border-transparent with bg) */
+    --warning-background: 48 100% 90%; /* Light yellow background (e.g., #FFF9E6) */
+    --warning-foreground: 40 90% 25%; /* Darker yellow/brownish text (e.g., #7A5B00) */
+    --warning-border: 45 85% 75%; /* Optional border color (e.g., #FADD73) */
     --border: 207 40% 85%;
     --input: 207 40% 90%;
     --ring: 207 51% 40%; /* Adjusted ring to match new primary */
@@ -70,6 +73,9 @@ body {
     --success: 145 63% 20%; /* Darker green background for success in dark mode */
     --success-foreground: 145 60% 80%; /* Lighter green text for success in dark mode */
     --success-border: 145 60% 40%; /* Medium green border for success in dark mode */
+    --warning-background: 40 70% 30%; /* Darker yellow/amber background (e.g., #664D03) */
+    --warning-foreground: 45 100% 85%; /* Lighter text for dark warning bg (e.g., #FFEFB3) */
+    --warning-border: 45 75% 45%; /* Optional border color (e.g., #B38B00) */
     --border: 210 20% 30%;
     --input: 210 20% 28%;
     --ring: 207 51% 60%;
