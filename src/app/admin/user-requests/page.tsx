@@ -23,8 +23,8 @@ interface UserRequest {
   id: string;
   userId: string;
   userEmail: string;
-  requestType: string; // This is the main category
-  specificRequestType?: string | null; // The more specific type
+  requestType: string; 
+  specificRequestType?: string | null; 
   urgencyLevel: "Low" | "Medium" | "High" | "Critical";
   subject: string;
   details: string;
@@ -125,7 +125,7 @@ export default function AdminUserRequestsPage() {
     }
   };
 
-  const getUrgencyBadgeVariant = (level: UserRequest["urgencyLevel"]): VariantProps<typeof Badge>["variant"] => {
+  const getUrgencyBadgeVariant = (level?: UserRequest["urgencyLevel"]): VariantProps<typeof Badge>["variant"] => {
     switch (level) {
       case "Critical": return "destructive";
       case "High": return "default"; 
@@ -212,10 +212,14 @@ export default function AdminUserRequestsPage() {
                       <TableCell>{request.specificRequestType || 'N/A'}</TableCell>
                       <TableCell>{request.subject}</TableCell>
                       <TableCell>
-                        <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize flex items-center gap-1">
-                          {request.urgencyLevel === "Critical" && <Zap className="h-3 w-3" />}
-                          {request.urgencyLevel}
-                        </Badge>
+                        {request.urgencyLevel && ["Low", "Medium", "High", "Critical"].includes(request.urgencyLevel) ? (
+                          <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize flex items-center gap-1">
+                            {request.urgencyLevel === "Critical" && <Zap className="h-3 w-3" />}
+                            {request.urgencyLevel}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">N/A</Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(request.status)} className="capitalize">
@@ -248,7 +252,13 @@ export default function AdminUserRequestsPage() {
                 <p className="text-sm font-medium">User: <span className="text-muted-foreground">{selectedRequest.userEmail}</span></p>
                 <p className="text-sm font-medium">Category: <span className="text-muted-foreground">{selectedRequest.requestType}</span></p>
                 {selectedRequest.specificRequestType && <p className="text-sm font-medium">Specific Type: <span className="text-muted-foreground">{selectedRequest.specificRequestType}</span></p>}
-                <p className="text-sm font-medium">Urgency: <Badge variant={getUrgencyBadgeVariant(selectedRequest.urgencyLevel)} className="capitalize ml-1">{selectedRequest.urgencyLevel}</Badge></p>
+                <p className="text-sm font-medium">Urgency: 
+                  {selectedRequest.urgencyLevel && ["Low", "Medium", "High", "Critical"].includes(selectedRequest.urgencyLevel) ? (
+                    <Badge variant={getUrgencyBadgeVariant(selectedRequest.urgencyLevel)} className="capitalize ml-1">{selectedRequest.urgencyLevel}</Badge>
+                  ) : (
+                    <Badge variant="outline" className="ml-1">N/A</Badge>
+                  )}
+                </p>
                 <p className="text-sm font-medium">Submitted: <span className="text-muted-foreground">{format(selectedRequest.createdAt.toDate(), "PPpp")}</span></p>
                 {selectedRequest.updatedAt && <p className="text-sm font-medium">Last Updated: <span className="text-muted-foreground">{format(selectedRequest.updatedAt.toDate(), "PPpp")}</span></p>}
               </div>
