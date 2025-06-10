@@ -28,17 +28,34 @@ interface Document {
   id: string;
   title: string;
   category: string;
-  source: string; 
+  source: string;
   version?: string;
   lastUpdated: Timestamp | string;
   size?: string;
-  downloadURL?: string; // Optional for text documents
-  fileType?: string; // Optional for text documents
+  downloadURL?: string;
+  fileType?: string;
   documentContentType?: 'file' | 'text';
-  content?: string; // For text documents
+  content?: string;
 }
 
 const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms", "Procedures", "Memos"];
+// Define documentSources here as well, or move to a shared constants file
+const documentSources = [
+  "Operations Manual (OMA)",
+  "Operations Manual (OMD)",
+  "Cabin Safety Manual (CSM)",
+  "EASA",
+  "IATA",
+  "ICAO",
+  "DGAC",
+  "Cabin Procedures Manual (CPM)",
+  "Compagnie procedures",
+  "Relevant Tunisian laws",
+  "Internal Memo",
+  "Safety Bulletin",
+  "Operational Notice",
+  "Other",
+];
 
 export default function DocumentsPage() {
   const [allDocuments, setAllDocuments] = React.useState<Document[]>([]);
@@ -49,6 +66,7 @@ export default function DocumentsPage() {
 
   const [searchTerm, setSearchTerm] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
+  const [sourceFilter, setSourceFilter] = React.useState("all"); // New state for source filter
 
   const [selectedDocumentForView, setSelectedDocumentForView] = React.useState<Document | null>(null);
   const [isViewNoteDialogOpen, setIsViewNoteDialogOpen] = React.useState(false);
@@ -58,7 +76,7 @@ export default function DocumentsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc")); 
+      const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc"));
       const querySnapshot = await getDocs(q);
       const fetchedDocuments = querySnapshot.docs.map(doc => {
         const data = doc.data();
@@ -66,9 +84,9 @@ export default function DocumentsPage() {
           id: doc.id,
           title: data.title || "Untitled Document",
           category: data.category || "Uncategorized",
-          source: data.source || "Unknown", 
+          source: data.source || "Unknown",
           version: data.version,
-          lastUpdated: data.lastUpdated, 
+          lastUpdated: data.lastUpdated,
           size: data.size,
           downloadURL: data.downloadURL,
           fileType: data.fileType,
@@ -77,7 +95,7 @@ export default function DocumentsPage() {
         } as Document;
       });
       setAllDocuments(fetchedDocuments);
-      setFilteredDocuments(fetchedDocuments); 
+      setFilteredDocuments(fetchedDocuments);
     } catch (err) {
       console.error("Error fetching documents:", err);
       setError("Failed to load documents. Please ensure you have a 'documents' collection in Firestore.");
@@ -100,14 +118,17 @@ export default function DocumentsPage() {
     if (categoryFilter !== "all") {
       currentDocuments = currentDocuments.filter(doc => doc.category === categoryFilter);
     }
+    if (sourceFilter !== "all") { // Apply source filter
+      currentDocuments = currentDocuments.filter(doc => doc.source === sourceFilter);
+    }
     if (searchTerm) {
-      currentDocuments = currentDocuments.filter(doc => 
+      currentDocuments = currentDocuments.filter(doc =>
         doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         doc.source.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     setFilteredDocuments(currentDocuments);
-  }, [searchTerm, categoryFilter, allDocuments]);
+  }, [searchTerm, categoryFilter, sourceFilter, allDocuments]);
 
 
   const getIconForDocumentType = (doc: Document) => {
@@ -125,9 +146,9 @@ export default function DocumentsPage() {
     if (!dateValue) return "N/A";
     if (typeof dateValue === "string") {
       try {
-        return format(new Date(dateValue), "PP"); 
+        return format(new Date(dateValue), "PP");
       } catch (e) {
-        return dateValue; 
+        return dateValue;
       }
     }
     if (dateValue instanceof Timestamp) {
@@ -162,26 +183,41 @@ export default function DocumentsPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <Input 
-                placeholder="Search by title or source..." 
-                className="max-w-xs" 
-                disabled={isLoading} 
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6">
+              <Input
+                placeholder="Search by title or source..."
+                className="max-w-xs"
+                disabled={isLoading}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <Select 
+              <Select
                 value={categoryFilter}
                 onValueChange={setCategoryFilter}
                 disabled={isLoading}
               >
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger className="w-full sm:w-[200px]">
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
                   {categories.map(cat => (
                     <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={sourceFilter}
+                onValueChange={setSourceFilter}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="w-full sm:w-[240px]">
+                  <SelectValue placeholder="Filter by provenance" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Provenances</SelectItem>
+                  {documentSources.map(src => (
+                    <SelectItem key={src} value={src}>{src}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -201,7 +237,7 @@ export default function DocumentsPage() {
             )}
 
             {!isLoading && !error && filteredDocuments.length === 0 && (
-              <p className="text-muted-foreground text-center py-10">No documents found{categoryFilter !== "all" || searchTerm ? " matching your criteria" : ""}.</p>
+              <p className="text-muted-foreground text-center py-10">No documents found{categoryFilter !== "all" || sourceFilter !== "all" || searchTerm ? " matching your criteria" : ""}.</p>
             )}
 
             {!isLoading && !error && filteredDocuments.length > 0 && (
@@ -259,7 +295,7 @@ export default function DocumentsPage() {
                 {selectedDocumentForView.version && ` | Version: ${selectedDocumentForView.version}`}
               </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="flex-grow pr-6 -mr-6"> 
+            <ScrollArea className="flex-grow pr-6 -mr-6">
                 <div className="py-4 prose prose-sm max-w-none dark:prose-invert text-foreground whitespace-pre-wrap">
                     <ReactMarkdown>{selectedDocumentForView.content || "No content available."}</ReactMarkdown>
                 </div>
@@ -274,4 +310,6 @@ export default function DocumentsPage() {
       )}
     </div>
   );
+    
+
     
