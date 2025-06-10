@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, ClipboardList, Users } from "lucide-react";
+import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2 } from "lucide-react";
 import { generatePurserReport, type PurserReportOutput, type PurserReportInput } from "@/ai/flows/purser-report-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -32,7 +32,24 @@ interface CrewUser {
   name: string;
 }
 
-const PLACEHOLDER_NONE_VALUE = "_NONE_"; // Sentinel value for no selection
+const PLACEHOLDER_NONE_VALUE = "_NONE_"; 
+
+const reportSectionTypes = [
+  "Safety Incidents",
+  "Security Incidents",
+  "Medical Incidents",
+  "Passenger Feedback",
+  "Catering Notes",
+  "Maintenance Issues",
+  "Other Observations",
+] as const;
+type ReportSectionType = typeof reportSectionTypes[number];
+
+interface AddedSection {
+  id: string;
+  type: ReportSectionType;
+  content: string;
+}
 
 const purserReportFormSchema = z.object({
   flightNumber: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars"),
@@ -56,13 +73,7 @@ const purserReportFormSchema = z.object({
     infants: z.coerce.number().int().min(0, "Min 0 infants"),
   }),
   generalFlightSummary: z.string().min(10, "Min 10 characters for summary."),
-  safetyIncidents: z.string().optional(),
-  securityIncidents: z.string().optional(),
-  medicalIncidents: z.string().optional(),
-  passengerFeedback: z.string().optional(),
-  cateringNotes: z.string().optional(),
-  maintenanceIssues: z.string().optional(),
-  otherObservations: z.string().optional(),
+  // Dynamic sections will be handled outside the main form schema for Zod, managed by local state
 });
 
 type PurserReportFormValues = z.infer<typeof purserReportFormSchema>;
@@ -81,6 +92,11 @@ export function PurserReportTool() {
 
   const [cabinCrewList, setCabinCrewList] = React.useState<CrewUser[]>([]);
   const [isLoadingCabinCrew, setIsLoadingCabinCrew] = React.useState(true);
+
+  // State for dynamic sections
+  const [addedSections, setAddedSections] = React.useState<AddedSection[]>([]);
+  const [currentSectionType, setCurrentSectionType] = React.useState<ReportSectionType | "">("");
+  const [currentSectionContent, setCurrentSectionContent] = React.useState("");
 
   const defaultDate = () => new Date().toISOString().split('T')[0];
 
@@ -103,13 +119,6 @@ export function PurserReportTool() {
 
       passengerLoad: { total: 200, adults: 180, children: 15, infants: 5 },
       generalFlightSummary: "Flight was on time and smooth. Cabin service completed efficiently.",
-      safetyIncidents: "",
-      securityIncidents: "",
-      medicalIncidents: "",
-      passengerFeedback: "",
-      cateringNotes: "",
-      maintenanceIssues: "",
-      otherObservations: "",
     },
   });
 
@@ -156,6 +165,25 @@ export function PurserReportTool() {
     fetchCrew("cabin crew", setCabinCrewList, setIsLoadingCabinCrew);
   }, [toast]);
 
+  const handleAddSection = () => {
+    if (!currentSectionType) {
+      toast({ title: "Missing Type", description: "Please select a section type.", variant: "destructive" });
+      return;
+    }
+    if (!currentSectionContent.trim()) {
+      toast({ title: "Missing Content", description: "Please enter content for the section.", variant: "destructive" });
+      return;
+    }
+    setAddedSections([...addedSections, { id: Date.now().toString(), type: currentSectionType, content: currentSectionContent.trim() }]);
+    setCurrentSectionType("");
+    setCurrentSectionContent("");
+  };
+
+  const handleRemoveSection = (id: string) => {
+    setAddedSections(addedSections.filter(section => section.id !== id));
+  };
+
+
   async function onSubmit(data: PurserReportFormValues) {
     if (!user) {
       toast({
@@ -164,6 +192,10 @@ export function PurserReportTool() {
         variant: "destructive",
       });
       return;
+    }
+    if (addedSections.length === 0 && !data.generalFlightSummary) {
+        toast({ title: "Empty Report", description: "Please provide a general flight summary or add at least one report section.", variant: "default" });
+        return;
     }
 
     setIsLoading(true);
@@ -180,6 +212,20 @@ export function PurserReportTool() {
     ];
     const crewMembersString = crewDetailsParts.filter(Boolean).join('\n');
 
+    const dynamicSections: Partial<PurserReportInput> = {};
+    addedSections.forEach(section => {
+        switch (section.type) {
+            case "Safety Incidents": dynamicSections.safetyIncidents = (dynamicSections.safetyIncidents ? dynamicSections.safetyIncidents + "\n\n---\n\n" : "") + section.content; break;
+            case "Security Incidents": dynamicSections.securityIncidents = (dynamicSections.securityIncidents ? dynamicSections.securityIncidents + "\n\n---\n\n" : "") + section.content; break;
+            case "Medical Incidents": dynamicSections.medicalIncidents = (dynamicSections.medicalIncidents ? dynamicSections.medicalIncidents + "\n\n---\n\n" : "") + section.content; break;
+            case "Passenger Feedback": dynamicSections.passengerFeedback = (dynamicSections.passengerFeedback ? dynamicSections.passengerFeedback + "\n\n---\n\n" : "") + section.content; break;
+            case "Catering Notes": dynamicSections.cateringNotes = (dynamicSections.cateringNotes ? dynamicSections.cateringNotes + "\n\n---\n\n" : "") + section.content; break;
+            case "Maintenance Issues": dynamicSections.maintenanceIssues = (dynamicSections.maintenanceIssues ? dynamicSections.maintenanceIssues + "\n\n---\n\n" : "") + section.content; break;
+            case "Other Observations": dynamicSections.otherObservations = (dynamicSections.otherObservations ? dynamicSections.otherObservations + "\n\n---\n\n" : "") + section.content; break;
+        }
+    });
+
+
     const aiInput: PurserReportInput = {
       flightNumber: data.flightNumber,
       flightDate: new Date(data.flightDate).toISOString().split('T')[0],
@@ -194,13 +240,7 @@ export function PurserReportTool() {
         infants: Number(data.passengerLoad.infants),
       },
       generalFlightSummary: data.generalFlightSummary,
-      safetyIncidents: data.safetyIncidents,
-      securityIncidents: data.securityIncidents,
-      medicalIncidents: data.medicalIncidents,
-      passengerFeedback: data.passengerFeedback,
-      cateringNotes: data.cateringNotes,
-      maintenanceIssues: data.maintenanceIssues,
-      otherObservations: data.otherObservations,
+      ...dynamicSections, // Spread the dynamically created sections
     };
 
     try {
@@ -224,6 +264,11 @@ export function PurserReportTool() {
         title: "Purser Report Saved",
         description: "Your report has been successfully generated and saved to the database.",
       });
+       form.reset(); // Reset main form
+       setAddedSections([]); // Clear dynamic sections
+       setCurrentSectionType("");
+       setCurrentSectionContent("");
+
 
     } catch (error) {
       console.error("Error in Purser Report process:", error);
@@ -480,33 +525,63 @@ export function PurserReportTool() {
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle className="text-xl">Report Sections</CardTitle>
-              <CardDescription>Provide details for each relevant section of the report.</CardDescription>
+              <CardDescription>Provide details for each relevant section of the report by adding them below.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <FormField control={form.control} name="generalFlightSummary" render={({ field }) => (
                 <FormItem><FormLabel>General Flight Summary</FormLabel><FormControl><Textarea placeholder="Overall flight conduct, punctuality, service notes..." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
-              <FormField control={form.control} name="safetyIncidents" render={({ field }) => (
-                <FormItem><FormLabel>Safety Incidents/Observations</FormLabel><FormControl><Textarea placeholder="Detail any safety-related events or concerns..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional. E.g., turbulence, equipment malfunctions affecting safety.</FormDescription><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="securityIncidents" render={({ field }) => (
-                <FormItem><FormLabel>Security Incidents/Observations</FormLabel><FormControl><Textarea placeholder="Detail any security-related events..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional. E.g., unruly passengers, security breaches.</FormDescription><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="medicalIncidents" render={({ field }) => (
-                <FormItem><FormLabel>Medical Incidents</FormLabel><FormControl><Textarea placeholder="Describe any medical events and actions taken..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional. E.g., passenger fainted, first aid administered.</FormDescription><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="passengerFeedback" render={({ field }) => (
-                <FormItem><FormLabel>Passenger Feedback (Notable)</FormLabel><FormControl><Textarea placeholder="Summarize significant positive or negative feedback..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="cateringNotes" render={({ field }) => (
-                <FormItem><FormLabel>Catering Notes</FormLabel><FormControl><Textarea placeholder="Comments on meal service, quality, quantity, issues..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="maintenanceIssues" render={({ field }) => (
-                <FormItem><FormLabel>Maintenance Issues Noted</FormLabel><FormControl><Textarea placeholder="Describe any aircraft defects or issues observed..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional. E.g., broken seat recline, IFE malfunction.</FormDescription><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="otherObservations" render={({ field }) => (
-                <FormItem><FormLabel>Other Observations/Information</FormLabel><FormControl><Textarea placeholder="Any other relevant details not covered above..." className="min-h-[100px]" {...field} /></FormControl><FormDescription>Optional. E.g., ground handling issues, customs/immigration delays.</FormDescription><FormMessage /></FormItem>
-              )} />
+              <Separator />
+              <div className="space-y-4 p-4 border rounded-md">
+                <h3 className="text-md font-semibold">Add Report Section</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <FormItem>
+                        <FormLabel>Section Type</FormLabel>
+                        <Select value={currentSectionType} onValueChange={(value) => setCurrentSectionType(value as ReportSectionType)}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select section type" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {reportSectionTypes.map(type => (
+                                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </FormItem>
+                     <Button type="button" onClick={handleAddSection} className="self-end" disabled={!currentSectionType || !currentSectionContent.trim()}>
+                        <PlusCircle className="mr-2 h-4 w-4"/> Add Section
+                    </Button>
+                </div>
+                <FormItem>
+                    <FormLabel>Section Content</FormLabel>
+                    <Textarea 
+                        placeholder="Enter details for the selected section type..." 
+                        className="min-h-[100px]" 
+                        value={currentSectionContent}
+                        onChange={(e) => setCurrentSectionContent(e.target.value)}
+                    />
+                </FormItem>
+              </div>
+              
+              {addedSections.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-md font-semibold">Added Sections:</h3>
+                  {addedSections.map((section) => (
+                    <Card key={section.id} className="p-3 bg-muted/50">
+                      <div className="flex justify-between items-center mb-1">
+                        <CardTitle className="text-sm font-medium">{section.type}</CardTitle>
+                        <Button variant="ghost" size="icon" onClick={() => handleRemoveSection(section.id)} className="h-6 w-6 text-destructive hover:text-destructive/80">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{section.content}</p>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
             </CardContent>
           </Card>
           
@@ -562,3 +637,4 @@ export function PurserReportTool() {
   );
 }
 
+    
