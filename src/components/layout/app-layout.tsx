@@ -54,7 +54,8 @@ import {
   Loader2,
   Library, 
   Award,
-  Inbox, // Added Inbox icon   
+  Inbox, 
+  ClipboardCheck,  // Added for My Purser Reports
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -65,7 +66,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/requests", label: "Submit Request", icon: SendHorizonal },
-  { href: "/my-requests", label: "My Requests", icon: Inbox }, // Added My Requests
+  { href: "/my-requests", label: "My Requests", icon: Inbox }, 
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/my-alerts", label: "My Alerts", icon: Bell },
   { type: "separator", key: "sep1" },
@@ -76,7 +77,8 @@ const navItems = [
   { type: "separator", key: "sep2" },
   { href: "/airport-briefings", label: "Airport Briefings", icon: Navigation },
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
-  { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
+  { href: "/purser-reports", label: "Submit Purser Report", icon: FileSignature },
+  { href: "/my-purser-reports", label: "My Purser Reports", icon: ClipboardCheck }, // New Item
   { href: "/insights", label: "AI Insights", icon: Brain },
   { type: "separator", key: "sep3", adminOnly: true },
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
@@ -125,11 +127,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/documents": "Document Library",
     "/schedule": "My Schedule",
     "/requests": "Submit a Request",
-    "/my-requests": "My Submitted Requests", // Added title for new page
+    "/my-requests": "My Submitted Requests", 
     "/my-alerts": "My Alerts",
     "/airport-briefings": "Airport Briefing Generator",
     "/flight-duty-calculator": "Flight Duty Calculator",
-    "/purser-reports": "Purser Report Generator",
+    "/purser-reports": "Submit Purser Report",
+    "/my-purser-reports": "My Purser Reports", // New Title
     "/insights": "AI-Driven Operational Insights",
     "/training": "Training Hub",
     "/courses": "Course Library",

@@ -25,10 +25,11 @@ const predefinedLabels: { [key: string]: string } = {
   upload: "Upload Document",
   alerts: "Alerts Management",
   create: "Create New", // Generic "Create"
-  courses: "Course Library", // User-facing & Admin-facing now have same name for consistency
+  courses: "Course Library", 
   flights: "Flight Management",
-  "purser-reports": "Purser Reports",
-  "user-requests": "User Requests",
+  "purser-reports": "Submit Purser Report", // User-facing action label
+  "my-purser-reports": "My Purser Reports", // New label for user's own reports
+  "user-requests": "User Requests", // Admin view of requests
   "airport-briefings": "Airport Briefings",
   "flight-duty-calculator": "Duty Calculator",
   insights: "AI Insights",
@@ -37,9 +38,9 @@ const predefinedLabels: { [key: string]: string } = {
   certificates: "My Certificates",
   settings: "Settings",
   schedule: "My Schedule",
-  requests: "Submit Request",
+  requests: "Submit Request", // User action label
   "my-alerts": "My Alerts",
-  "my-requests": "My Submitted Requests", // Added label for new page
+  "my-requests": "My Submitted Requests", 
 };
 
 export function Breadcrumbs() {
@@ -99,6 +100,8 @@ export function Breadcrumbs() {
             label = "Create Course";
           } else if (pathname.includes("/admin/flights/create") && isLast) {
             label = "Add New Flight";
+          } else if (pathname.includes("/admin/purser-reports") && isLast) { // Ensures admin view is "Submitted Purser Reports"
+            label = "Submitted Purser Reports";
           }
 
 
