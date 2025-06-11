@@ -8,12 +8,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, deleteDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Flight {
   id: string;
@@ -35,6 +46,8 @@ export default function AdminFlightsPage() {
   const [flights, setFlights] = React.useState<Flight[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [flightToDelete, setFlightToDelete] = React.useState<Flight | null>(null);
 
   const fetchFlights = React.useCallback(async () => {
     setIsLoading(true);
@@ -65,6 +78,22 @@ export default function AdminFlightsPage() {
       }
     }
   }, [user, authLoading, router, fetchFlights]);
+
+  const handleDeleteFlight = async () => {
+    if (!flightToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(db, "flights", flightToDelete.id));
+      toast({ title: "Flight Deleted", description: `Flight ${flightToDelete.flightNumber} has been deleted.` });
+      fetchFlights(); // Refresh the list
+      setFlightToDelete(null); // Close dialog
+    } catch (error) {
+      console.error("Error deleting flight:", error);
+      toast({ title: "Deletion Failed", description: "Could not delete the flight.", variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const getStatusBadgeVariant = (status: Flight["status"]): "secondary" | "default" | "outline" | "destructive" => {
     switch (status) {
@@ -172,12 +201,33 @@ export default function AdminFlightsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => toast({ title: "Edit Flight", description: "Editing functionality coming soon!"})} disabled aria-label={`Edit flight: ${flight.flightNumber}`}>
-                          <Edit className="mr-1 h-4 w-4" /> Edit
+                        <Button variant="ghost" size="sm" asChild aria-label={`Edit flight: ${flight.flightNumber}`}>
+                          <Link href={`/admin/flights/edit/${flight.id}`}>
+                            <Edit className="mr-1 h-4 w-4" /> Edit
+                          </Link>
                         </Button>
-                         <Button variant="ghost" size="sm" onClick={() => toast({ title: "Delete Flight", description: "Deletion functionality coming soon!"})} disabled className="text-destructive hover:text-destructive/80" aria-label={`Delete flight: ${flight.flightNumber}`}>
-                          <Trash2 className="mr-1 h-4 w-4" /> Delete
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                           <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80" onClick={() => setFlightToDelete(flight)} aria-label={`Delete flight: ${flight.flightNumber}`}>
+                            <Trash2 className="mr-1 h-4 w-4" /> Delete
+                          </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete flight {flightToDelete?.flightNumber} ({flightToDelete?.departureAirport} - {flightToDelete?.arrivalAirport})? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={() => setFlightToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDeleteFlight} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     </TableRow>
                   ))}

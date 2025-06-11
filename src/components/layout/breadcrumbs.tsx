@@ -39,6 +39,7 @@ const predefinedLabels: { [key: string]: string } = {
   "my-alerts": "My Alerts",
   "my-requests": "My Submitted Requests", 
   "system-settings": "System Configuration",
+  "edit": "Edit", // Generic edit label
 };
 
 export function Breadcrumbs() {
@@ -74,21 +75,23 @@ export function Breadcrumbs() {
           
           let label = predefinedLabels[segment] || formatSegment(segment);
           
+          // Handle dynamic segments like [flightId]
           if (segment.startsWith("[") && segment.endsWith("]")) {
-             if (segments[index-1] === "edit" || segments[index-2] === "edit") { 
-                label = "Edit";
-            } else if (segments[index-1] === "courses" && segments[index-2] === "admin") {
-                label = "Edit Course"; 
-            } else if (segments[index-1] === "alerts" && segments[index-2] === "admin") {
-                 label = "Edit Alert";
+             // If the previous segment was 'edit' or if the segment before 'edit' was 'admin'
+             if (segments[index-1] === "edit") { 
+                label = "Edit"; // Generic "Edit" for dynamic part
+            } else if (segments[index-2] === "edit" && segments[index-1] !== "admin") { // e.g. /admin/someResource/edit/[id]
+                label = `Edit ${formatSegment(segments[index-1])}`;
             }
             else {
-                label = "Details"; 
+                label = "Details"; // Fallback for other dynamic segments
             }
           } else if (pathname.includes("/admin/courses/edit/") && isLast) {
             label = "Edit Course";
           } else if (pathname.includes("/admin/courses/create") && isLast) {
             label = "Create Course";
+          } else if (pathname.includes("/admin/flights/edit/") && isLast) { // Specific for flight edit
+            label = "Edit Flight";
           } else if (pathname.includes("/admin/flights/create") && isLast) {
             label = "Add New Flight";
           } else if (pathname.includes("/admin/purser-reports") && isLast) { 

@@ -147,10 +147,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/admin/documents/upload": "Upload New Document",
     "/admin/alerts": "All Broadcast Alerts",
     "/admin/alerts/create": "Create New Alert",
+    "/admin/alerts/edit": "Edit Alert",
     "/admin/courses": "Courses Management",
     "/admin/courses/create": "Create New Training Course",
+    "/admin/courses/edit": "Edit Training Course",
     "/admin/flights": "Manage Flights",
     "/admin/flights/create": "Add New Flight",
+    "/admin/flights/edit": "Edit Flight",
     "/admin/purser-reports": "Submitted Purser Reports",
     "/admin/user-requests": "User Submitted Requests",
     "/admin/quizzes": "Quizzes Overview", 
@@ -167,15 +170,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         currentTitle = pageTitles[path];
       }
     } else if (pathname.startsWith(path + '/') && path !== '/') {
-      if (path.length > longestMatch.length) {
+       // Check if the path is a dynamic route parent like /admin/flights for /admin/flights/edit/[id]
+      if (pathname.startsWith(path + "/edit/") || pathname.startsWith(path + "/create")) {
+         if (path.length > longestMatch.length) {
+          longestMatch = path;
+          currentTitle = pageTitles[path];
+        }
+      } else if (path.length > longestMatch.length) { // General case for non-dynamic children
         longestMatch = path;
-        currentTitle = pageTitles[path]; 
+        currentTitle = pageTitles[path];
       }
     }
   }
+   // Final check for exact match if no longer prefix match was better
   if (pageTitles[pathname]) {
     currentTitle = pageTitles[pathname];
   }
+
 
   const currentPageTitle = currentTitle;
 
