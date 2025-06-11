@@ -18,7 +18,7 @@ import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-  SidebarProvider, // Added SidebarProvider import
+  SidebarProvider, 
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,7 @@ import {
   Library, 
   Award,
   Inbox, 
-  ClipboardCheck,  // Added for My Purser Reports
+  ClipboardCheck,  
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -78,7 +78,7 @@ const navItems = [
   { href: "/airport-briefings", label: "Airport Briefings", icon: Navigation },
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/purser-reports", label: "Submit Purser Report", icon: FileSignature },
-  { href: "/my-purser-reports", label: "My Purser Reports", icon: ClipboardCheck }, // New Item
+  { href: "/my-purser-reports", label: "My Purser Reports", icon: ClipboardCheck }, 
   { href: "/insights", label: "AI Insights", icon: Brain },
   { type: "separator", key: "sep3", adminOnly: true },
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
@@ -132,7 +132,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/airport-briefings": "Airport Briefing Generator",
     "/flight-duty-calculator": "Flight Duty Calculator",
     "/purser-reports": "Submit Purser Report",
-    "/my-purser-reports": "My Purser Reports", // New Title
+    "/my-purser-reports": "My Purser Reports", 
     "/insights": "AI-Driven Operational Insights",
     "/training": "Training Hub",
     "/courses": "Course Library",
@@ -154,6 +154,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/admin/purser-reports": "Submitted Purser Reports",
     "/admin/user-requests": "User Submitted Requests",
     "/admin/quizzes": "Quizzes Overview", 
+    "/admin/system-settings": "System Configuration",
   };
   
   let currentTitle = "AirCrew Hub"; 
@@ -179,7 +180,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const currentPageTitle = currentTitle;
 
   if (pathname === "/login" || pathname === "/signup") {
-    return <>{children}</>; // Render children directly for login/signup pages
+    return <>{children}</>; 
   }
   
   if (loading && !user) { 
@@ -190,7 +191,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // For all other pages, wrap with SidebarProvider and the main layout
   return (
     <SidebarProvider defaultOpen>
       <LayoutWithSidebar currentPageTitle={currentPageTitle} user={user} handleLogout={handleLogout} theme={theme} toggleTheme={toggleTheme}>
@@ -200,9 +200,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Helper component to use hooks from SidebarProvider
 function LayoutWithSidebar({ children, currentPageTitle, user, handleLogout, theme, toggleTheme }: { children: React.ReactNode; currentPageTitle: string; user: any; handleLogout: () => void; theme: string; toggleTheme: () => void; }) {
-  const { isMobile } = useSidebar(); // Hook can be used here as it's inside SidebarProvider
+  const { isMobile } = useSidebar(); 
   const pathname = usePathname();
 
   return (

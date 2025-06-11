@@ -66,7 +66,7 @@ export default function AdminConsolePage() {
       delay: 0.15
     },
     { 
-      icon: ServerCog, // Changed from MessageSquareWarning
+      icon: ServerCog, 
       title: "Alerts Management", 
       description: "Create and manage global or user-specific alerts. Creation option is available from the management page.", 
       buttonText: "Manage Alerts", 
@@ -91,7 +91,7 @@ export default function AdminConsolePage() {
       delay: 0.3
     },
     { 
-      icon: Files, // Changed from ClipboardCheck for consistency
+      icon: Files, 
       title: "Purser Report Review", 
       description: "Access, review, and analyze submitted Purser Reports for operational insights and follow-up actions.", 
       buttonText: "Manage Reports", 
@@ -111,8 +111,8 @@ export default function AdminConsolePage() {
       title: "System Settings", 
       description: "Configure application-wide settings and integrations.", 
       buttonText: "Configure Settings", 
-      href: "#", 
-      disabled: true,
+      href: "/admin/system-settings", 
+      disabled: false, // Enabled this section
       delay: 0.45
     },
     { 

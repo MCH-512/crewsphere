@@ -7,29 +7,26 @@ import { usePathname } from "next/navigation";
 import { ChevronRight, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Helper function to capitalize and format path segments
 const formatSegment = (segment: string): string => {
   if (!segment) return "";
-  // Replace hyphens with spaces and capitalize each word
   return segment
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
 
-// Predefined labels for specific paths to make them more user-friendly
 const predefinedLabels: { [key: string]: string } = {
   admin: "Admin Console",
   users: "User Management",
   documents: "Document Library",
   upload: "Upload Document",
   alerts: "Alerts Management",
-  create: "Create New", // Generic "Create"
+  create: "Create New", 
   courses: "Course Library", 
   flights: "Flight Management",
-  "purser-reports": "Submit Purser Report", // User-facing action label
-  "my-purser-reports": "My Purser Reports", // New label for user's own reports
-  "user-requests": "User Requests", // Admin view of requests
+  "purser-reports": "Submit Purser Report", 
+  "my-purser-reports": "My Purser Reports", 
+  "user-requests": "User Requests", 
   "airport-briefings": "Airport Briefings",
   "flight-duty-calculator": "Duty Calculator",
   insights: "AI Insights",
@@ -38,28 +35,22 @@ const predefinedLabels: { [key: string]: string } = {
   certificates: "My Certificates",
   settings: "Settings",
   schedule: "My Schedule",
-  requests: "Submit Request", // User action label
+  requests: "Submit Request", 
   "my-alerts": "My Alerts",
   "my-requests": "My Submitted Requests", 
+  "system-settings": "System Configuration",
 };
 
 export function Breadcrumbs() {
   const pathname = usePathname();
-  const segments = pathname.split("/").filter(Boolean); // Filter out empty strings
+  const segments = pathname.split("/").filter(Boolean); 
 
   if (segments.length === 0) {
     return null;
   }
   
-  // Adjusted logic for single segment admin paths like /admin/courses, /admin/users
-  // and user paths like /courses, /certificates
   if (segments.length === 1 && !pathname.startsWith("/admin/edit") && !pathname.startsWith("/admin/create")) {
-      // For simple top-level pages like /settings, /documents, /courses, /certificates, or /admin itself
       if (segments[0] !== 'admin' || (segments[0] === 'admin' && segments.length === 1)) {
-           // If it's /admin and only /admin, we want to show "Dashboard / Admin Console"
-           // For other single segment non-admin pages, no breadcrumbs.
-           // If it's just /admin, it will proceed to render.
-           // If it's /courses, /certificates etc. (single non-admin segment), don't render.
            if (segments[0] !== 'admin') return null;
       }
   }
@@ -83,16 +74,16 @@ export function Breadcrumbs() {
           
           let label = predefinedLabels[segment] || formatSegment(segment);
           
-          // Special handling for dynamic segments like [courseId]
           if (segment.startsWith("[") && segment.endsWith("]")) {
-            // Try to get context from previous segment or a predefined label for "edit"
-             if (segments[index-1] === "edit" || segments[index-2] === "edit") { // Check current and previous segment for "edit"
+             if (segments[index-1] === "edit" || segments[index-2] === "edit") { 
                 label = "Edit";
             } else if (segments[index-1] === "courses" && segments[index-2] === "admin") {
-                label = "Edit Course"; // More specific if it's /admin/courses/edit/[id]
+                label = "Edit Course"; 
+            } else if (segments[index-1] === "alerts" && segments[index-2] === "admin") {
+                 label = "Edit Alert";
             }
             else {
-                label = "Details"; // Generic fallback
+                label = "Details"; 
             }
           } else if (pathname.includes("/admin/courses/edit/") && isLast) {
             label = "Edit Course";
@@ -100,8 +91,12 @@ export function Breadcrumbs() {
             label = "Create Course";
           } else if (pathname.includes("/admin/flights/create") && isLast) {
             label = "Add New Flight";
-          } else if (pathname.includes("/admin/purser-reports") && isLast) { // Ensures admin view is "Submitted Purser Reports"
+          } else if (pathname.includes("/admin/purser-reports") && isLast) { 
             label = "Submitted Purser Reports";
+          } else if (pathname.includes("/admin/alerts/edit/") && isLast) {
+            label = "Edit Alert";
+          } else if (pathname.includes("/admin/alerts/create") && isLast) {
+            label = "Create Alert";
           }
 
 
