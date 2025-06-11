@@ -32,6 +32,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { AnimatedCard } from "@/components/motion/animated-card";
+import { documentCategories, documentSources } from "@/config/document-options";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 interface Document {
   id: string;
@@ -46,27 +48,11 @@ interface Document {
   fileType?: string; 
   uploadedBy?: string;
   uploaderEmail?: string;
-  documentContentType?: 'file' | 'markdown' | 'fileWithMarkdown'; // Updated
+  documentContentType?: 'file' | 'markdown' | 'fileWithMarkdown'; 
   content?: string; 
 }
 
-const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms", "Procedures", "Memos"];
-const documentSources = [
-  "Operations Manual (OMA)",
-  "Operations Manual (OMD)",
-  "Cabin Safety Manual (CSM)",
-  "EASA",
-  "IATA",
-  "ICAO",
-  "DGAC",
-  "Cabin Procedures Manual (CPM)",
-  "Compagnie procedures",
-  "Relevant Tunisian laws",
-  "Internal Memo",
-  "Safety Bulletin",
-  "Operational Notice",
-  "Other",
-];
+const categories = documentCategories; // Use imported categories
 
 export default function AdminDocumentsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -107,7 +93,7 @@ export default function AdminDocumentsPage() {
 
       const fetchedDocuments = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        const docContentType = data.documentContentType || (data.downloadURL ? 'file' : 'markdown'); // Fallback for older docs
+        const docContentType = data.documentContentType || (data.downloadURL ? 'file' : 'markdown'); 
         if (docContentType === 'file') {
           tempFileCount++;
         } else if (docContentType === 'markdown') {
@@ -158,16 +144,35 @@ export default function AdminDocumentsPage() {
   }, [user, authLoading, router, fetchDocuments]);
 
   const handleDeleteDocument = async () => {
-    if (!documentToDelete) return;
+    if (!documentToDelete || !user) return;
     setIsDeleting(true);
     try {
+      // Delete Firestore document
       await deleteDoc(doc(db, "documents", documentToDelete.id));
 
+      // Delete file from Firebase Storage if filePath exists
       if (documentToDelete.filePath && (documentToDelete.documentContentType === 'file' || documentToDelete.documentContentType === 'fileWithMarkdown')) {
         const fileRef = storageRef(storage, documentToDelete.filePath);
-        await deleteObject(fileRef);
+        try {
+            await deleteObject(fileRef);
+        } catch (storageError: any) {
+            // Log storage error but proceed if Firestore deletion was successful
+            console.warn(`Could not delete file ${documentToDelete.filePath} from storage:`, storageError);
+            if (storageError.code !== 'storage/object-not-found') { // Don't toast if file was already gone
+                 toast({ title: "File Deletion Warning", description: `Document record deleted, but associated file could not be removed from storage: ${storageError.message}`, variant: "warning" });
+            }
+        }
       }
       
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "DELETE_DOCUMENT",
+        entityType: "DOCUMENT",
+        entityId: documentToDelete.id,
+        details: { title: documentToDelete.title, category: documentToDelete.category, source: documentToDelete.source },
+      });
+
       toast({ title: "Document Deleted", description: `"${documentToDelete.title}" has been successfully deleted.` });
       setDocumentToDelete(null); 
       fetchDocuments(); 
@@ -183,8 +188,8 @@ export default function AdminDocumentsPage() {
     switch (doc.documentContentType) {
         case 'markdown': return <StickyNote className="h-5 w-5 text-yellow-500" />;
         case 'file': return <FileTextIcon className="h-5 w-5 text-primary" />;
-        case 'fileWithMarkdown': return <Layers className="h-5 w-5 text-green-500" />; // New icon for combined
-        default: // Fallback for older documents or unspecified type
+        case 'fileWithMarkdown': return <Layers className="h-5 w-5 text-green-500" />; 
+        default: 
             if (doc.downloadURL) return <FileTextIcon className="h-5 w-5 text-primary" />;
             if (doc.content) return <StickyNote className="h-5 w-5 text-yellow-500" />;
             return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
@@ -212,7 +217,7 @@ export default function AdminDocumentsPage() {
   const handleViewDocument = (doc: Document) => {
     if (doc.documentContentType === 'markdown' || doc.documentContentType === 'fileWithMarkdown') {
       setSelectedDocumentForView(doc);
-      setIsViewNoteDialogOpen(true); // Re-use or rename dialog for combined view
+      setIsViewNoteDialogOpen(true); 
     } else if (doc.documentContentType === 'file' && doc.downloadURL) {
       window.open(doc.downloadURL, '_blank');
     } else {
@@ -398,7 +403,7 @@ export default function AdminDocumentsPage() {
                         </Button>
                         {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
                             <Button variant="ghost" size="icon" asChild aria-label={`Download document: ${doc.title}`}>
-                                <a href={doc.downloadURL} download><Download className="h-4 w-4" /></a>
+                                <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="h-4 w-4" /></a>
                             </Button>
                         )}
                         <Button variant="ghost" size="icon" asChild aria-label={`Edit document: ${doc.title}`}>
@@ -412,6 +417,23 @@ export default function AdminDocumentsPage() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogPrimitiveTitle>Confirm Deletion</AlertDialogPrimitiveTitle>
+                                <AlertDialogPrimitiveDescription>
+                                    Are you sure you want to delete the document: "{documentToDelete?.title}"?
+                                    {(documentToDelete?.documentContentType === 'file' || documentToDelete?.documentContentType === 'fileWithMarkdown') && " This will also delete the associated file from storage."}
+                                    This action cannot be undone.
+                                </AlertDialogPrimitiveDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setDocumentToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteDocument} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
                         </AlertDialog>
                       </TableCell> 
                     </TableRow>
@@ -423,7 +445,7 @@ export default function AdminDocumentsPage() {
         </CardContent>
       </Card>
 
-      {selectedDocumentForView && (doc.documentContentType === 'markdown' || doc.documentContentType === 'fileWithMarkdown') && (
+      {selectedDocumentForView && (selectedDocumentForView.documentContentType === 'markdown' || selectedDocumentForView.documentContentType === 'fileWithMarkdown') && (
         <Dialog open={isViewNoteDialogOpen} onOpenChange={setIsViewNoteDialogOpen}>
           <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[80vh] flex flex-col">
             <DialogHeader>
@@ -440,18 +462,18 @@ export default function AdminDocumentsPage() {
                     <div className="mt-4 pt-4 border-t">
                       <h4 className="font-semibold mb-2">Attached File:</h4>
                       <Button asChild variant="outline">
-                        <a href={selectedDocumentForView.downloadURL} target="_blank" rel="noopener noreferrer">
+                        <a href={selectedDocumentForView.downloadURL} target="_blank" rel="noopener noreferrer" download={selectedDocumentForView.fileName || selectedDocumentForView.title}>
                           <Download className="mr-2 h-4 w-4" /> {selectedDocumentForView.fileName || "Download File"} ({selectedDocumentForView.size})
                         </a>
                       </Button>
                     </div>
                   )}
                   {selectedDocumentForView.documentContentType === 'markdown' && !selectedDocumentForView.content && (
-                    <p className="italic">No text content available for this document.</p>
+                     <p className="italic">No text content available for this document.</p>
                   )}
                 </div>
             </ScrollArea>
-            <DialogFooter className="mt-auto pt-4 border-t"> 
+            <DialogFooter className="mt-auto pt-4 border-t">
               <DialogClose asChild>
                 <Button variant="outline">Close</Button>
               </DialogClose>
@@ -459,29 +481,9 @@ export default function AdminDocumentsPage() {
           </DialogContent>
         </Dialog>
       )}
-
-      {documentToDelete && (
-         <AlertDialog open={!!documentToDelete} onOpenChange={(open) => !open && setDocumentToDelete(null)}>
-            <AlertDialogContent>
-                 <AlertDialogHeader>
-                    <AlertDialogPrimitiveTitle>Confirm Deletion</AlertDialogPrimitiveTitle>
-                    <AlertDialogPrimitiveDescription>
-                        Are you sure you want to delete the document: "{documentToDelete.title}"?
-                        {(documentToDelete.documentContentType === 'file' || documentToDelete.documentContentType === 'fileWithMarkdown') && " This will also delete the associated file from storage."}
-                        This action cannot be undone.
-                    </AlertDialogPrimitiveDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setDocumentToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteDocument} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                         {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Delete
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-      )}
     </div>
   );
 }
 
+
+    
