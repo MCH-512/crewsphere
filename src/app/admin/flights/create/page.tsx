@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -24,19 +25,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plane, Loader2, AlertTriangle, CheckCircle, PlusCircle } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, CheckCircle, PlusCircle, CalendarPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 const flightFormSchema = z.object({
   flightNumber: z.string().min(3, "Flight number must be at least 3 characters.").max(10),
   departureAirport: z.string().min(3, "Airport code must be 3 characters.").max(4).toUpperCase(),
   arrivalAirport: z.string().min(3, "Airport code must be 3 characters.").max(4).toUpperCase(),
-  scheduledDepartureDateTimeUTC: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid departure date/time." }),
-  scheduledArrivalDateTimeUTC: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid arrival date/time." }),
+  baseDepartureTimeUTC: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time. Use HH:MM UTC format."),
+  baseArrivalTimeUTC: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time. Use HH:MM UTC format."),
+  flightDates: z.string().min(10, "Please enter at least one date in YYYY-MM-DD format."),
   aircraftType: z.string().min(3, "Aircraft type must be at least 3 characters.").max(50),
   status: z.enum(["Scheduled", "On Time", "Delayed", "Cancelled"], { required_error: "Please select a flight status." }),
 });
@@ -47,8 +49,9 @@ const defaultValues: Partial<FlightFormValues> = {
   flightNumber: "",
   departureAirport: "",
   arrivalAirport: "",
-  scheduledDepartureDateTimeUTC: new Date().toISOString().slice(0, 16),
-  scheduledArrivalDateTimeUTC: new Date(new Date().getTime() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16), // Default to 2 hours later
+  baseDepartureTimeUTC: "10:00",
+  baseArrivalTimeUTC: "12:00",
+  flightDates: new Date().toISOString().split('T')[0], // Default to today's date
   aircraftType: "",
   status: "Scheduled",
 };
@@ -62,6 +65,7 @@ export default function CreateFlightPage() {
   const form = useForm<FlightFormValues>({
     resolver: zodResolver(flightFormSchema),
     defaultValues,
+    mode: "onChange",
   });
 
   React.useEffect(() => {
@@ -77,28 +81,80 @@ export default function CreateFlightPage() {
       return;
     }
     setIsSubmitting(true);
-    try {
-      await addDoc(collection(db, "flights"), {
-        ...data,
-        scheduledDepartureDateTimeUTC: new Date(data.scheduledDepartureDateTimeUTC).toISOString(),
-        scheduledArrivalDateTimeUTC: new Date(data.scheduledArrivalDateTimeUTC).toISOString(),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        createdBy: user.uid,
-      });
 
-      toast({
-        title: "Flight Created Successfully",
-        description: `Flight ${data.flightNumber} has been added to the schedule.`,
-        action: <CheckCircle className="text-green-500" />,
-      });
-      form.reset();
-      router.push('/admin/flights'); // Redirect to the flights list page
+    const datesArray = data.flightDates.split('\n').map(d => d.trim()).filter(d => d && /^\d{4}-\d{2}-\d{2}$/.test(d));
+    let flightsCreatedCount = 0;
+    let flightsFailedCount = 0;
+    
+    if (datesArray.length === 0) {
+        toast({ title: "No Valid Dates", description: "Please enter at least one valid date in YYYY-MM-DD format.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+    }
+
+    const batch = writeBatch(db);
+
+    for (const dateStr of datesArray) {
+      try {
+        const depDateTimeStr = `${dateStr}T${data.baseDepartureTimeUTC}:00Z`;
+        const arrDateTimeStr = `${dateStr}T${data.baseArrivalTimeUTC}:00Z`;
+
+        let departureDateTime = new Date(depDateTimeStr);
+        let arrivalDateTime = new Date(arrDateTimeStr);
+
+        if (isNaN(departureDateTime.getTime()) || isNaN(arrivalDateTime.getTime())) {
+            console.warn(`Invalid date/time constructed for date ${dateStr} with times ${data.baseDepartureTimeUTC}/${data.baseArrivalTimeUTC}`);
+            flightsFailedCount++;
+            continue;
+        }
+        
+        // Adjust arrival date if arrival time is on or before departure time (suggesting next day arrival)
+        if (arrivalDateTime <= departureDateTime) {
+          arrivalDateTime.setDate(arrivalDateTime.getDate() + 1);
+        }
+        
+        const flightDocRef = doc(collection(db, "flights"));
+        const flightDataForFirestore = {
+          flightNumber: data.flightNumber,
+          departureAirport: data.departureAirport,
+          arrivalAirport: data.arrivalAirport,
+          aircraftType: data.aircraftType,
+          status: data.status,
+          scheduledDepartureDateTimeUTC: departureDateTime.toISOString(),
+          scheduledArrivalDateTimeUTC: arrivalDateTime.toISOString(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          createdBy: user.uid,
+        };
+        batch.set(flightDocRef, flightDataForFirestore);
+        flightsCreatedCount++;
+      } catch (e) {
+        flightsFailedCount++;
+        console.error(`Error processing date ${dateStr}:`, e);
+      }
+    }
+
+    try {
+        if (flightsCreatedCount > 0) {
+            await batch.commit();
+            toast({
+                title: "Flight Creation Successful",
+                description: `${flightsCreatedCount} flight(s) created. ${flightsFailedCount > 0 ? `${flightsFailedCount} failed.` : ''}`,
+                action: flightsFailedCount > 0 ? <AlertTriangle className="text-destructive"/> : <CheckCircle className="text-green-500" />,
+            });
+            form.reset();
+            router.push('/admin/flights'); 
+        } else if (flightsFailedCount > 0) {
+             toast({ title: "Flight Creation Failed", description: `No flights created. ${flightsFailedCount} date(s) could not be processed. Check console.`, variant: "destructive" });
+        } else {
+            // This case should be caught by the initial datesArray.length check, but as a fallback
+            toast({ title: "No Flights to Create", description: "No valid dates were provided to create flights.", variant: "default" });
+        }
     } catch (error) {
-      console.error("Error creating flight in Firestore:", error);
-      toast({ title: "Creation Failed", description: "Could not create the flight. Please try again.", variant: "destructive" });
+        console.error("Error committing batch flight creation:", error);
+        toast({ title: "Batch Creation Failed", description: "Could not save the flights. Please try again.", variant: "destructive" });
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
   }
 
@@ -126,11 +182,11 @@ export default function CreateFlightPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="text-2xl font-headline flex items-center">
-            <PlusCircle className="mr-3 h-7 w-7 text-primary" />
-            Add New Flight
+            <CalendarPlus className="mr-3 h-7 w-7 text-primary" />
+            Add New Flight(s)
           </CardTitle>
           <CardDescription>
-            Fill in the details below to add a new flight to the system. All times are in UTC.
+            Define a flight template and specify dates to create multiple flight instances. All times are in UTC.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -157,9 +213,9 @@ export default function CreateFlightPage() {
                     <FormItem>
                       <FormLabel>Aircraft Type</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Boeing 787-9, Airbus A320neo" {...field} />
+                        <Input placeholder="e.g., Boeing 787-9" {...field} />
                       </FormControl>
-                      <FormDescription>You can include registration if desired, e.g., "Boeing 787-9 (G-ABCD)".</FormDescription>
+                      <FormDescription>You can include registration if desired.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -198,28 +254,28 @@ export default function CreateFlightPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="scheduledDepartureDateTimeUTC"
+                  name="baseDepartureTimeUTC"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Scheduled Departure (UTC)</FormLabel>
+                      <FormLabel>Base Departure Time (UTC)</FormLabel>
                       <FormControl>
-                        <Input type="datetime-local" {...field} />
+                        <Input type="time" {...field} />
                       </FormControl>
-                      <FormDescription>Date and Time in UTC.</FormDescription>
+                      <FormDescription>Format: HH:MM (24-hour).</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 <FormField
                   control={form.control}
-                  name="scheduledArrivalDateTimeUTC"
+                  name="baseArrivalTimeUTC"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Scheduled Arrival (UTC)</FormLabel>
+                      <FormLabel>Base Arrival Time (UTC)</FormLabel>
                       <FormControl>
-                        <Input type="datetime-local" {...field} />
+                        <Input type="time" {...field} />
                       </FormControl>
-                      <FormDescription>Date and Time in UTC.</FormDescription>
+                      <FormDescription>Format: HH:MM (24-hour).</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -228,10 +284,34 @@ export default function CreateFlightPage() {
               
               <FormField
                 control={form.control}
+                name="flightDates"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Flight Dates (UTC)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter dates in YYYY-MM-DD format, one date per line. Example:
+2024-08-01
+2024-08-03
+2024-08-05"
+                        className="min-h-[120px] font-mono text-sm"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Each date will create a separate flight instance using the times and details above.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel>Status for Created Flights</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -250,19 +330,22 @@ export default function CreateFlightPage() {
                 )}
               />
 
-              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+              <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="w-full sm:w-auto">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Adding Flight...
+                    Creating Flights...
                   </>
                 ) : (
                   <>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Flight
+                    Create Flight(s)
                   </>
                 )}
               </Button>
+              {!form.formState.isValid && user && (
+                <p className="text-sm text-destructive">Please fill all required fields correctly before submitting.</p>
+              )}
             </form>
           </Form>
         </CardContent>
@@ -270,5 +353,4 @@ export default function CreateFlightPage() {
     </div>
   );
 }
-
     
