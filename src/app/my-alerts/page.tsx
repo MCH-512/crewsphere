@@ -10,7 +10,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, Timestamp, getDocs, or, serverTimestamp, doc, getDoc, setDoc } from "firebase/firestore"; // Removed addDoc
 import { useRouter } from "next/navigation";
 import { BellRing, Loader2, AlertTriangle, RefreshCw, Info, Briefcase, GraduationCap, LucideIcon, CheckCircle } from "lucide-react";
-import { formatDistanceToNowStrict } from "date-fns"; // Removed format
+import { formatDistanceToNowStrict } from "date-fns"; 
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority";
 import { alertVariants } from "@/components/ui/alert"; 
@@ -100,7 +100,7 @@ export default function MyAlertsPage() {
             router.push('/login');
         }
     }
-  }, [user, authLoading, router, fetchAlerts]);
+  }, [user, authLoading, router, fetchAlerts]); // Corrected dependency here
 
   const handleAcknowledge = async (alertId: string) => {
     if (!user) {
