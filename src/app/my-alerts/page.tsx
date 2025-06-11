@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, Timestamp, getDocs, or, serverTimestamp, doc, getDoc, setDoc } from "firebase/firestore"; // Removed addDoc
+import { collection, query, where, orderBy, Timestamp, getDocs, or, serverTimestamp, doc, getDoc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { BellRing, Loader2, AlertTriangle, RefreshCw, Info, Briefcase, GraduationCap, LucideIcon, CheckCircle } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns"; 
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority";
 import { alertVariants } from "@/components/ui/alert"; 
+import { useNotification } from "@/contexts/notification-context"; 
 
 interface AlertData {
   id: string;
@@ -35,6 +36,7 @@ export default function MyAlertsPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [isAcknowledging, setIsAcknowledging] = React.useState<Record<string, boolean>>({});
+  const { refreshUnreadCount } = useNotification();
 
 
   const fetchAlerts = React.useCallback(async () => {
@@ -50,7 +52,7 @@ export default function MyAlertsPage() {
         collection(db, "alerts"),
         or(
             where("userId", "==", user.uid),
-            where("userId", "==", null) // Global alerts
+            where("userId", "==", null) 
         ),
         orderBy("createdAt", "desc")
       );
@@ -60,7 +62,7 @@ export default function MyAlertsPage() {
 
       const userAcknowledgementsMap = new Map<string, Timestamp>();
       if (fetchedAlertsData.length > 0) {
-        // Construct document IDs for acknowledgements to fetch them directly
+        
         const ackPromises = fetchedAlertsData.map(alert => {
           const ackDocId = `${user.uid}_${alert.id}`;
           return getDoc(doc(db, "alertAcknowledgements", ackDocId));
@@ -100,7 +102,7 @@ export default function MyAlertsPage() {
             router.push('/login');
         }
     }
-  }, [user, authLoading, router, fetchAlerts]); // Corrected dependency here
+  }, [user, authLoading, router, fetchAlerts]);
 
   const handleAcknowledge = async (alertId: string) => {
     if (!user) {
@@ -116,7 +118,6 @@ export default function MyAlertsPage() {
 
       if (ackSnap.exists()) {
           toast({ title: "Already Acknowledged", description: "This alert was already marked as read.", variant: "default" });
-          // Ensure local state is up-to-date if somehow out of sync
           if (!alerts.find(a => a.id === alertId)?.isAcknowledged) {
             setAlerts(prevAlerts => prevAlerts.map(alert => 
               alert.id === alertId 
@@ -124,15 +125,16 @@ export default function MyAlertsPage() {
                 : alert
             ));
           }
+          await refreshUnreadCount(); 
           return;
       }
 
       await setDoc(ackDocRef, {
         alertId: alertId,
         userId: user.uid,
-        userEmail: user.email, // Store email for potential admin overview
+        userEmail: user.email, 
         acknowledgedAt: serverTimestamp(),
-        alertTitle: alerts.find(a => a.id === alertId)?.title || "N/A" // Store title for context
+        alertTitle: alerts.find(a => a.id === alertId)?.title || "N/A" 
       });
       
       setAlerts(prevAlerts => prevAlerts.map(alert => 
@@ -140,6 +142,7 @@ export default function MyAlertsPage() {
           ? { ...alert, isAcknowledged: true, acknowledgedOn: Timestamp.now() } 
           : alert
       ));
+      await refreshUnreadCount(); 
       toast({ title: "Alert Acknowledged", description: "Marked as read.", action: <CheckCircle className="text-green-500" /> });
     } catch (err) {
       console.error("Error acknowledging alert:", err);

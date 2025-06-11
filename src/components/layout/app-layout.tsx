@@ -19,10 +19,12 @@ import {
   TooltipTrigger,
   TooltipContent,
   SidebarProvider, 
+  SidebarMenuBadge,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,11 +59,12 @@ import {
   Inbox, 
   ClipboardCheck, 
   FilePlus,
-  Users, // Added Users icon here
+  Users, 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
 import { useToast } from "@/hooks/use-toast";
+import { useNotification } from "@/contexts/notification-context"; 
 import { Breadcrumbs } from "./breadcrumbs"; 
 
 const navItems = [
@@ -70,7 +73,7 @@ const navItems = [
   { href: "/requests", label: "Submit Request", icon: SendHorizonal },
   { href: "/my-requests", label: "My Requests", icon: Inbox }, 
   { href: "/documents", label: "Documents", icon: FileText },
-  { href: "/my-alerts", label: "My Alerts", icon: Bell },
+  { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
   { type: "separator", key: "sep1" },
   { href: "/training", label: "Training Hub", icon: GraduationCap },
   { href: "/courses", label: "Course Library", icon: Library },
@@ -113,6 +116,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const { user, loading, logout } = useAuth();
   const { toast } = useToast();
+  const { unreadAlertsCount, isLoadingCount: isNotificationCountLoading } = useNotification();
 
   const handleLogout = async () => {
     try {
@@ -205,21 +209,47 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider defaultOpen>
-      <LayoutWithSidebar currentPageTitle={currentPageTitle} user={user} handleLogout={handleLogout} theme={theme} toggleTheme={toggleTheme}>
+      <LayoutWithSidebar 
+        currentPageTitle={currentPageTitle} 
+        user={user} 
+        handleLogout={handleLogout} 
+        theme={theme} 
+        toggleTheme={toggleTheme}
+        unreadAlertsCount={unreadAlertsCount}
+        isNotificationCountLoading={isNotificationCountLoading}
+      >
         {children}
       </LayoutWithSidebar>
     </SidebarProvider>
   );
 }
 
-function LayoutWithSidebar({ children, currentPageTitle, user, handleLogout, theme, toggleTheme }: { children: React.ReactNode; currentPageTitle: string; user: any; handleLogout: () => void; theme: string; toggleTheme: () => void; }) {
+function LayoutWithSidebar({ 
+  children, 
+  currentPageTitle, 
+  user, 
+  handleLogout, 
+  theme, 
+  toggleTheme,
+  unreadAlertsCount,
+  isNotificationCountLoading
+}: { 
+  children: React.ReactNode; 
+  currentPageTitle: string; 
+  user: any; 
+  handleLogout: () => void; 
+  theme: string; 
+  toggleTheme: () => void;
+  unreadAlertsCount: number;
+  isNotificationCountLoading: boolean;
+}) {
   const { isMobile } = useSidebar(); 
   const pathname = usePathname();
 
   const adminNavItems = [
     { href: "/admin", label: "Admin Console", icon: ServerCog },
     { href: "/admin/users", label: "User Management", icon: Users },
-    { href: "/admin/documents", label: "Document Management", icon: FilePlus }, // Updated Icon
+    { href: "/admin/documents", label: "Document Management", icon: FilePlus }, 
     { href: "/admin/alerts", label: "Alert Management", icon: Bell },
     { href: "/admin/courses", label: "Course Management", icon: GraduationCap },
     { href: "/admin/user-requests", label: "User Requests", icon: ClipboardCheck },
@@ -245,10 +275,10 @@ function LayoutWithSidebar({ children, currentPageTitle, user, handleLogout, the
           <SidebarMenu>
             {currentNavItems.map((item) => {
               if (item.type === "separator") {
-                if (item.adminOnly && user?.role !== 'admin' && !pathname.startsWith('/admin')) return null; // Hide admin separator if not admin and not in admin path
+                if (item.adminOnly && user?.role !== 'admin' && !pathname.startsWith('/admin')) return null; 
                 return <Separator key={item.key} className="my-2" />;
               }
-              // Hide admin-only items if user is not admin, unless already in an admin path (e.g. specific link to admin page)
+              
               if (item.adminOnly && user?.role !== 'admin' && !pathname.startsWith('/admin')) { 
                 return null; 
               }
@@ -271,6 +301,11 @@ function LayoutWithSidebar({ children, currentPageTitle, user, handleLogout, the
                       <a>
                         <item.icon className="w-5 h-5" />
                         <span>{item.label}</span>
+                         {item.id === "my-alerts-nav" && user && unreadAlertsCount > 0 && (
+                          <SidebarMenuBadge className="ml-auto bg-destructive text-destructive-foreground">
+                            {isNotificationCountLoading ? <Loader2 className="h-3 w-3 animate-spin"/> : unreadAlertsCount}
+                          </SidebarMenuBadge>
+                        )}
                       </a>
                     </SidebarMenuButton>
                   </Link>
@@ -314,8 +349,18 @@ function LayoutWithSidebar({ children, currentPageTitle, user, handleLogout, the
               {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </Button>
             {user && (
-              <Button variant="ghost" size="icon" aria-label="View notifications" asChild>
-                <Link href="/my-alerts"><Bell className="h-5 w-5" /></Link>
+              <Button variant="ghost" size="icon" aria-label="View notifications" asChild className="relative">
+                <Link href="/my-alerts">
+                  <Bell className="h-5 w-5" />
+                  {unreadAlertsCount > 0 && (
+                    <Badge 
+                        variant="destructive" 
+                        className="absolute -top-1 -right-1 h-4 w-4 min-w-4 p-0 flex items-center justify-center text-xs leading-none rounded-full"
+                    >
+                      {isNotificationCountLoading ? <Loader2 className="h-2.5 w-2.5 animate-spin"/> : unreadAlertsCount}
+                    </Badge>
+                  )}
+                </Link>
               </Button>
             )}
             <DropdownMenu>
