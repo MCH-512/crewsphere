@@ -4,7 +4,6 @@
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -35,142 +34,20 @@ import { ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebas
 import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-
-const courseCategories = [
-  "General Information",
-  "Safety Equipment",
-  "Standard Operating Procedures (SOPs)",
-  "Emergency Procedures",
-  "First Aid",
-  "Dangerous Goods (DG)",
-  "Safety Management System (SMS)",
-  "Crew Resource Management (CRM)",
-  "Aircraft Type Rating",
-  "Fatigue Risk Management System (FRMS)",
-  "Flight Time Limitations (FTL)",
-  "Civil Aviation Security (AVSEC)",
-  "Etiquette and Personal Development",
-  "Cabin Crew Instructor Training",
-  "Cabin Senior (Purser) Training",
-  "Brand & Grooming",
-  "Onboard Service",
-  "Premium Service & Customer Relationship",
-  "Drills Briefing",
-  "General Knowledge",
-];
-
-const courseTypes = [
-  "Initial Training", 
-  "Recurrent Training", 
-  "Specialized Training", 
-  "Commercial Training", 
-  "Other Training"
-];
-const questionTypes = ["mcq", "tf", "short"]; 
-
-const referenceBodyOptions = [
-  "Operation Manual",
-  "EASA",
-  "IATA",
-  "ICAO",
-  "DGAC",
-  "Note de service",
-  "Other",
-];
-
-const courseDurationOptions = [
-  "15 minutes", "30 minutes", "45 minutes",
-  "1 hour", "1 hour 30 minutes", "2 hours",
-  "2 hours 30 minutes", "3 hours", "4 hours",
-  "Half Day (4h)", "1 Day (8h)"
-];
-
-const moduleSchema = z.object({
-  moduleCode: z.string().optional(),
-  moduleTitle: z.string().min(3, "Module title is required and must be at least 3 characters."),
-  moduleObjectives: z.string().min(10, "Module objectives are required and must be at least 10 characters."),
-  durationMinutes: z.coerce.number().int().min(1, "Duration must be at least 1 minute."),
-  linkedQuizId: z.string().optional(),
-});
-
-const mcqOptionSchema = z.object({
-  text: z.string().min(1, "Option text cannot be empty."),
-  isCorrect: z.boolean().default(false),
-});
-
-const questionSchema = z.object({
-  text: z.string().min(5, "Question text must be at least 5 characters."),
-  questionType: z.enum(["mcq", "tf", "short"], { required_error: "Please select a question type." }),
-  options: z.array(mcqOptionSchema).optional(), 
-  correctAnswerBoolean: z.boolean().optional(), 
-  correctAnswerText: z.string().optional(), 
-  weight: z.coerce.number().min(1, "Weight must be at least 1.").default(1),
-});
-
-const courseFormSchema = z.object({
-  // Course Details
-  title: z.string().min(5, "Title must be at least 5 characters.").max(150),
-  category: z.string({ required_error: "Please select a course category." }),
-  courseType: z.string({ required_error: "Please select a course type." }),
-  referenceBody: z.string().optional(),
-  description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
-  duration: z.string({ required_error: "Please select an estimated duration." }),
-  mandatory: z.boolean().default(false),
-  associatedFile: z.custom<FileList>().optional(),
-  imageHint: z.string().max(50).optional().describe("Keywords for course image (e.g., emergency exit)"),
-  
-  // Course Modules
-  modules: z.array(moduleSchema).optional(),
-
-  // Quiz Details
-  quizTitle: z.string().min(5, "Quiz Title must be at least 5 characters.").max(100),
-  questions: z.array(questionSchema).min(1, "At least one question is required for the quiz."),
-  randomizeQuestions: z.boolean().default(false),
-  randomizeAnswers: z.boolean().default(false), 
-
-  // Certification Rules
-  passingThreshold: z.coerce.number().min(0).max(100, "Threshold must be between 0 and 100.").default(80),
-  certificateExpiryDays: z.coerce.number().int().min(0, "Expiry days must be 0 or more (0 for no expiry).").default(365), 
-  certificateLogoUrl: z.string().url("Must be a valid URL or leave empty.").optional().or(z.literal("")),
-  certificateSignature: z.string().min(2, "Signature text/URL is required.").default("Express Airline Training Department"),
-});
-
-type CourseFormValues = z.infer<typeof courseFormSchema>;
-
-const defaultModuleValue: z.infer<typeof moduleSchema> = {
-  moduleCode: "",
-  moduleTitle: "",
-  moduleObjectives: "",
-  durationMinutes: 30,
-  linkedQuizId: "",
-};
-
-const defaultQuestionValue: z.infer<typeof questionSchema> = {
-  text: "",
-  questionType: "mcq",
-  options: [{ text: "", isCorrect: false }, { text: "", isCorrect: false }],
-  weight: 1,
-};
-
-const defaultValues: Partial<CourseFormValues> = {
-  title: "",
-  category: "",
-  courseType: "Initial Training",
-  referenceBody: "",
-  description: "",
-  duration: "1 hour",
-  mandatory: false,
-  imageHint: "",
-  modules: [defaultModuleValue],
-  quizTitle: "",
-  questions: [defaultQuestionValue],
-  randomizeQuestions: false,
-  randomizeAnswers: false,
-  passingThreshold: 80,
-  certificateExpiryDays: 365,
-  certificateLogoUrl: "https://placehold.co/150x50.png", 
-  certificateSignature: "Express Airline Training Department",
-};
+import { 
+  courseCategories, 
+  courseTypes, 
+  questionTypes, 
+  referenceBodyOptions, 
+  courseDurationOptions 
+} from "@/config/course-options";
+import { 
+  courseFormSchema, 
+  type CourseFormValues, 
+  defaultModuleValue, 
+  defaultQuestionValue, 
+  defaultValues 
+} from "@/schemas/course-schema";
 
 export default function CreateComprehensiveCoursePage() {
   const { toast } = useToast();
@@ -182,7 +59,7 @@ export default function CreateComprehensiveCoursePage() {
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
-    defaultValues,
+    defaultValues, // Use imported defaultValues
     mode: "onBlur",
   });
 
@@ -273,7 +150,7 @@ export default function CreateComprehensiveCoursePage() {
         mandatory: data.mandatory,
         fileURL: fileDownloadURL,
         imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
-        modules: data.modules || [],
+        modules: data.modules || [], // Ensure modules array is not undefined
         published: false, 
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -326,7 +203,7 @@ export default function CreateComprehensiveCoursePage() {
         description: `Course "${data.title}" with its quiz and certification rules has been saved.`,
         action: <CheckCircle className="text-green-500" />,
       });
-      form.reset(defaultValues); 
+      form.reset(defaultValues); // Use imported defaultValues for reset
       if (fileInputRef.current) fileInputRef.current.value = ""; 
       router.push('/admin/courses');
     } catch (error) {
@@ -631,8 +508,4 @@ export default function CreateComprehensiveCoursePage() {
     </div>
   );
 }
-    
-
-    
-
     

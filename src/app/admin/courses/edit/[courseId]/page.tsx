@@ -4,7 +4,6 @@
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -35,123 +34,20 @@ import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject }
 import { Progress } from "@/components/ui/progress";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-
-const courseCategories = [
-  "General Information",
-  "Safety Equipment",
-  "Standard Operating Procedures (SOPs)",
-  "Emergency Procedures",
-  "First Aid",
-  "Dangerous Goods (DG)",
-  "Safety Management System (SMS)",
-  "Crew Resource Management (CRM)",
-  "Aircraft Type Rating",
-  "Fatigue Risk Management System (FRMS)",
-  "Flight Time Limitations (FTL)",
-  "Civil Aviation Security (AVSEC)",
-  "Etiquette and Personal Development",
-  "Cabin Crew Instructor Training",
-  "Cabin Senior (Purser) Training",
-  "Brand & Grooming",
-  "Onboard Service",
-  "Premium Service & Customer Relationship",
-  "Drills Briefing",
-  "General Knowledge",
-];
-
-const courseTypes = [
-  "Initial Training", 
-  "Recurrent Training", 
-  "Specialized Training", 
-  "Commercial Training", 
-  "Other Training"
-];
-const questionTypes = ["mcq", "tf", "short"];
-
-const referenceBodyOptions = [
-  "Operation Manual",
-  "EASA",
-  "IATA",
-  "ICAO",
-  "DGAC",
-  "Note de service",
-  "Other",
-];
-
-const courseDurationOptions = [
-  "15 minutes", "30 minutes", "45 minutes",
-  "1 hour", "1 hour 30 minutes", "2 hours",
-  "2 hours 30 minutes", "3 hours", "4 hours",
-  "Half Day (4h)", "1 Day (8h)"
-];
-
-const moduleSchema = z.object({
-  id: z.string().optional(), // For identifying existing modules during edit (if stored separately, not needed if embedded)
-  moduleCode: z.string().optional(),
-  moduleTitle: z.string().min(3, "Module title is required and must be at least 3 characters."),
-  moduleObjectives: z.string().min(10, "Module objectives are required and must be at least 10 characters."),
-  durationMinutes: z.coerce.number().int().min(1, "Duration must be at least 1 minute."),
-  linkedQuizId: z.string().optional(),
-});
-
-const mcqOptionSchema = z.object({
-  text: z.string().min(1, "Option text cannot be empty."),
-  isCorrect: z.boolean().default(false),
-});
-
-const questionSchema = z.object({
-  id: z.string().optional(), 
-  text: z.string().min(5, "Question text must be at least 5 characters."),
-  questionType: z.enum(["mcq", "tf", "short"], { required_error: "Please select a question type." }),
-  options: z.array(mcqOptionSchema).optional(),
-  correctAnswerBoolean: z.boolean().optional(),
-  correctAnswerText: z.string().optional(),
-  weight: z.coerce.number().min(1, "Weight must be at least 1.").default(1),
-});
-
-const courseFormSchema = z.object({
-  title: z.string().min(5, "Title must be at least 5 characters.").max(150),
-  category: z.string({ required_error: "Please select a course category." }),
-  courseType: z.string({ required_error: "Please select a course type." }),
-  referenceBody: z.string().optional(),
-  description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
-  duration: z.string({ required_error: "Please select an estimated duration." }),
-  mandatory: z.boolean().default(false),
-  associatedFile: z.custom<FileList>().optional(),
-  imageHint: z.string().max(50).optional().describe("Keywords for course image (e.g., emergency exit)"),
-  existingFileUrl: z.string().optional(), 
-
-  modules: z.array(moduleSchema).optional(),
-
-  quizTitle: z.string().min(5, "Quiz Title must be at least 5 characters.").max(100),
-  questions: z.array(questionSchema).min(1, "At least one question is required for the quiz."),
-  randomizeQuestions: z.boolean().default(false),
-  randomizeAnswers: z.boolean().default(false),
-
-  passingThreshold: z.coerce.number().min(0).max(100, "Threshold must be between 0 and 100.").default(80),
-  certificateExpiryDays: z.coerce.number().int().min(0, "Expiry days must be 0 or more (0 for no expiry).").default(365),
-  certificateLogoUrl: z.string().url("Must be a valid URL or leave empty.").optional().or(z.literal("")),
-  certificateSignature: z.string().min(2, "Signature text/URL is required.").default("Express Airline Training Department"),
-});
-
-type CourseFormValues = z.infer<typeof courseFormSchema>;
-
-const defaultModuleValue: z.infer<typeof moduleSchema> = {
-  moduleCode: "",
-  moduleTitle: "",
-  moduleObjectives: "",
-  durationMinutes: 30,
-  linkedQuizId: "",
-};
-
-const defaultValues: Partial<CourseFormValues> = {
-  modules: [defaultModuleValue],
-  questions: [{ text: "", questionType: "mcq", options: [{ text: "", isCorrect: false }, { text: "", isCorrect: false }], weight: 1}],
-  courseType: "Initial Training",
-  referenceBody: "",
-  mandatory: false,
-  duration: "1 hour",
-};
+import { 
+  courseCategories, 
+  courseTypes, 
+  questionTypes, 
+  referenceBodyOptions, 
+  courseDurationOptions 
+} from "@/config/course-options";
+import { 
+  courseFormSchema, 
+  type CourseFormValues, 
+  defaultModuleValue, 
+  defaultQuestionValue, 
+  defaultValues as initialFormDefaultValues // Use a different name to avoid conflict with form.reset
+} from "@/schemas/course-schema";
 
 export default function EditComprehensiveCoursePage() {
   const { toast } = useToast();
@@ -169,7 +65,7 @@ export default function EditComprehensiveCoursePage() {
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
-    defaultValues,
+    defaultValues: initialFormDefaultValues, // Use imported defaultValues for initial form structure
     mode: "onBlur",
   });
 
@@ -235,9 +131,10 @@ export default function EditComprehensiveCoursePage() {
             mandatory: courseData.mandatory || false,
             imageHint: courseData.imageHint || "",
             existingFileUrl: courseData.fileURL || "",
-            modules: courseData.modules || [defaultModuleValue],
+            // associatedFile is not reset here, it's for new uploads
+            modules: courseData.modules && courseData.modules.length > 0 ? courseData.modules : [defaultModuleValue],
             quizTitle: quizData?.title || "",
-            questions: questionsData.length > 0 ? questionsData : defaultValues.questions,
+            questions: questionsData.length > 0 ? questionsData : [defaultQuestionValue],
             randomizeQuestions: quizData?.randomizeQuestions || false,
             randomizeAnswers: quizData?.randomizeAnswers || false,
             passingThreshold: certRuleData?.passingThreshold || 80,
@@ -245,8 +142,10 @@ export default function EditComprehensiveCoursePage() {
             certificateLogoUrl: certRuleData?.logoURL || "https://placehold.co/150x50.png",
             certificateSignature: certRuleData?.signatureTextOrURL || "Express Airline Training Department",
           });
+          // `replaceModules` and `replaceQuestions` might be redundant if form.reset works as expected for field arrays.
+          // However, keeping them ensures the field array state is correctly initialized.
           replaceModules(courseData.modules && courseData.modules.length > 0 ? courseData.modules : [defaultModuleValue]);
-          replaceQuestions(questionsData.length > 0 ? questionsData : defaultValues.questions as any[]);
+          replaceQuestions(questionsData.length > 0 ? questionsData.map(q => ({...q})) : [defaultQuestionValue]);
 
 
         } catch (error) {
@@ -431,7 +330,7 @@ export default function EditComprehensiveCoursePage() {
                     </FormItem>
                 )} />
                 <FormField control={form.control} name="imageHint" render={({ field }) => (
-                  <FormItem><FormLabel>Course Image Hint (Optional)</FormLabel><FormControl><Input placeholder="e.g., emergency exit, first aid" {...field} /></FormControl><FormDescription>Keywords for course image (e.g., cockpit, safety vest).</FormDescription><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Course Image Hint (Optional)</FormLabel><FormControl><Input placeholder="e.g., emergency exit, first aid" {...field} value={field.value || ""} /></FormControl><FormDescription>Keywords for course image (e.g., cockpit, safety vest).</FormDescription><FormMessage /></FormItem>
               )} />
               </div>
               <FormField control={form.control} name="description" render={({ field }) => (
@@ -497,13 +396,13 @@ export default function EditComprehensiveCoursePage() {
                   )} />
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField control={form.control} name={`modules.${index}.moduleCode`} render={({ field }) => (
-                      <FormItem><FormLabel>Module Code</FormLabel><FormControl><Input placeholder="e.g., CRM-001" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
+                      <FormItem><FormLabel>Module Code</FormLabel><FormControl><Input placeholder="e.g., CRM-001" {...field} value={field.value || ""} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name={`modules.${index}.durationMinutes`} render={({ field }) => (
                       <FormItem><FormLabel>Duration (minutes)*</FormLabel><FormControl><Input type="number" placeholder="30" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name={`modules.${index}.linkedQuizId`} render={({ field }) => (
-                      <FormItem><FormLabel>Linked Quiz ID</FormLabel><FormControl><Input placeholder="e.g., QUIZ-CRM-001" {...field} /></FormControl><FormDescription>Optional external ID</FormDescription><FormMessage /></FormItem>
+                      <FormItem><FormLabel>Linked Quiz ID</FormLabel><FormControl><Input placeholder="e.g., QUIZ-CRM-001" {...field} value={field.value || ""} /></FormControl><FormDescription>Optional external ID</FormDescription><FormMessage /></FormItem>
                     )} />
                   </div>
                 </Card>
@@ -587,12 +486,12 @@ export default function EditComprehensiveCoursePage() {
                   )}
                   {form.watch(`questions.${index}.questionType`) === 'short' && (
                     <FormField control={form.control} name={`questions.${index}.correctAnswerText`} render={({ field }) => (
-                      <FormItem><FormLabel>Correct Answer Text* (Case-sensitive)</FormLabel><FormControl><Input placeholder="Enter exact answer" {...field} /></FormControl><FormMessage /></FormItem>
+                      <FormItem><FormLabel>Correct Answer Text* (Case-sensitive)</FormLabel><FormControl><Input placeholder="Enter exact answer" {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>
                     )} />
                   )}
                 </Card>
               ))}
-              <Button type="button" variant="outline" onClick={() => appendQuestion({ text: "", questionType: "mcq", options: [{text: "", isCorrect: false},{text: "", isCorrect: false}], weight: 1 })}><PlusCircle className="mr-2 h-4 w-4" />Add Question</Button>
+              <Button type="button" variant="outline" onClick={() => appendQuestion(defaultQuestionValue)}><PlusCircle className="mr-2 h-4 w-4" />Add Question</Button>
             </CardContent>
           </Card>
 
@@ -609,7 +508,7 @@ export default function EditComprehensiveCoursePage() {
                 )} />
               </div>
               <FormField control={form.control} name="certificateLogoUrl" render={({ field }) => (
-                <FormItem><FormLabel>Certificate Logo URL (Optional)</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormDescription>Link to your airline's logo. Default placeholder will be used if empty.</FormDescription><FormMessage /></FormItem>
+                <FormItem><FormLabel>Certificate Logo URL (Optional)</FormLabel><FormControl><Input placeholder="https://..." {...field} value={field.value || ""} /></FormControl><FormDescription>Link to your airline's logo. Default placeholder will be used if empty.</FormDescription><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="certificateSignature" render={({ field }) => (
                 <FormItem><FormLabel>Certificate Signature Text/Authority*</FormLabel><FormControl><Input placeholder="Express Airline Training Department" {...field} /></FormControl><FormDescription>Text to display as the issuing authority or signature.</FormDescription><FormMessage /></FormItem>
@@ -666,8 +565,4 @@ export default function EditComprehensiveCoursePage() {
     </div>
   );
 }
-    
-
-    
-
     
