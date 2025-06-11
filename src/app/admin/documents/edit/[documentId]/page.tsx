@@ -35,7 +35,17 @@ import { Progress } from "@/components/ui/progress";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 
-const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms", "Procedures", "Memos"];
+const categories = [
+  "SOPs (Standard Operating Procedures)",
+  "SEP (Safety & Emergency Procedures)",
+  "CRM & FRMS",
+  "AVSEC (Aviation Security)",
+  "Cabin & Service Operations",
+  "Dangerous Goods (DGR)",
+  "Manuels",
+  "Training & Formations",
+  "Règlementation & Références"
+];
 const documentSources = [
   "Operations Manual (OMA)",
   "Operations Manual (OMD)",
@@ -498,4 +508,3 @@ export default function EditDocumentPage() {
     </div>
   );
 }
-
