@@ -271,6 +271,35 @@ export default function SchedulePage() {
     setDailyActivityTypesMap(newMap);
   }, [userActivities]);
 
+  const flightsForDialogOnSelectedDate = React.useMemo(() => {
+    if (!selectedDate || watchedActivityType !== 'flight') {
+        return [];
+    }
+
+    const startOfSelectedDayUTC = Date.UTC(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+        0, 0, 0, 0
+    );
+    const endOfSelectedDayUTC = Date.UTC(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate() + 1, 
+        0, 0, 0, 0
+    );
+
+    return availableFlightsData.filter(flight => {
+        try {
+            const flightDepartureTimestamp = parseISO(flight.scheduledDepartureDateTimeUTC).getTime();
+            return flightDepartureTimestamp >= startOfSelectedDayUTC && flightDepartureTimestamp < endOfSelectedDayUTC;
+        } catch (e) {
+            console.error("Error parsing flight date for dialog filtering:", flight.scheduledDepartureDateTimeUTC, e);
+            return false;
+        }
+    });
+  }, [availableFlightsData, selectedDate, watchedActivityType]);
+
 
   const handleOpenAddActivityDialog = () => {
     if (selectedDate) {
@@ -400,12 +429,6 @@ export default function SchedulePage() {
     const dateKey = format(props.date, "yyyy-MM-dd");
     const activityTypesOnDate = dailyActivityTypesMap.get(dateKey);
     const dayNumber = props.date.getDate();
-
-    // Only render dots if the day is in the current displayMonth
-    // The button wrapper for the day will handle visibility for outside days.
-    // if (!isSameMonth(props.date, props.displayMonth)) {
-    //   return <div className="text-muted-foreground opacity-50">{dayNumber}</div>; 
-    // }
   
     return (
       <div className="relative w-full h-full flex flex-col items-center justify-center">
@@ -639,24 +662,34 @@ export default function SchedulePage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Select Flight</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingAvailableFlights}>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingAvailableFlights || !selectedDate}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder={isLoadingAvailableFlights ? "Loading flights..." : "Choose a flight"} />
+                            <SelectValue 
+                                placeholder={
+                                    isLoadingAvailableFlights ? "Loading flights..." : 
+                                    !selectedDate ? "Select a date first" :
+                                    flightsForDialogOnSelectedDate.length === 0 ? `No flights for $\{selectedDate ? format(selectedDate, "PPP") : ""}` :
+                                    "Choose a flight"
+                                } 
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {!isLoadingAvailableFlights && availableFlightsData.length === 0 && (
-                            <div className="p-2 text-sm text-muted-foreground">No available flights to assign.</div>
+                          {isLoadingAvailableFlights ? (
+                             <div className="p-2 text-sm text-muted-foreground flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</div>
+                          ) : flightsForDialogOnSelectedDate.length === 0 ? (
+                            <div className="p-2 text-sm text-muted-foreground">No flights available for {selectedDate ? format(selectedDate, "PPP") : "the selected date"}.</div>
+                          ) : (
+                            flightsForDialogOnSelectedDate.map(flight => (
+                                <SelectItem key={flight.id} value={flight.id}>
+                                {flight.flightNumber} ({flight.departureAirport}-{flight.arrivalAirport}) - {format(parseISO(flight.scheduledDepartureDateTimeUTC), "HH:mm")} UTC
+                                </SelectItem>
+                            ))
                           )}
-                          {availableFlightsData.map(flight => (
-                            <SelectItem key={flight.id} value={flight.id}>
-                              {flight.flightNumber} ({flight.departureAirport}-{flight.arrivalAirport}) - {format(parseISO(flight.scheduledDepartureDateTimeUTC), "MMM d, HH:mm")} UTC
-                            </SelectItem>
-                          ))}
                         </SelectContent>
                       </Select>
-                      <FormDescription>Choose from upcoming flights you are not yet assigned to.</FormDescription>
+                      <FormDescription>Showing flights departing on {selectedDate ? format(selectedDate, "PPP") : "the selected date"} that you are not yet assigned to.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
