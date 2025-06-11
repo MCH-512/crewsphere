@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -25,48 +24,175 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plane, Loader2, AlertTriangle, CheckCircle, PlusCircle, CalendarPlus } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, AlertTriangle, CheckCircle, PlusCircle, CalendarPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { addDays, addWeeks, addMonths, getDay, isBefore, isEqual, isAfter, startOfDay, parseISO, formatISO, set } from "date-fns";
 
-const flightFormSchema = z.object({
+const weekDays = [
+  { id: 1, label: "Mon" }, { id: 2, label: "Tue" }, { id: 3, label: "Wed" },
+  { id: 4, label: "Thu" }, { id: 5, label: "Fri" }, { id: 6, label: "Sat" },
+  { id: 0, label: "Sun" } // date-fns: 0 for Sunday, 6 for Saturday
+];
+
+const flightRecurrenceFormSchema = z.object({
   flightNumber: z.string().min(3, "Flight number must be at least 3 characters.").max(10),
   departureAirport: z.string().min(3, "Airport code must be 3 characters.").max(4).toUpperCase(),
   arrivalAirport: z.string().min(3, "Airport code must be 3 characters.").max(4).toUpperCase(),
   baseDepartureTimeUTC: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time. Use HH:MM UTC format."),
   baseArrivalTimeUTC: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time. Use HH:MM UTC format."),
-  flightDates: z.string().min(10, "Please enter at least one date in YYYY-MM-DD format."),
   aircraftType: z.string().min(3, "Aircraft type must be at least 3 characters.").max(50),
   status: z.enum(["Scheduled", "On Time", "Delayed", "Cancelled"], { required_error: "Please select a flight status." }),
+
+  frequency: z.enum(["once", "daily", "weekly", "monthly", "custom"], { required_error: "Frequency is required." }),
+  startDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid start date."}),
+  
+  daysOfWeek: z.array(z.number().min(0).max(6)).optional(),
+
+  endsOn: z.enum(["never", "onDate", "afterOccurrences"], { required_error: "Please specify when the recurrence ends." }).default("never"),
+  endDate: z.string().optional(),
+  numberOfOccurrences: z.coerce.number().int().min(1).optional(),
+
+  customDates: z.array(z.date()).optional(), // Store as Date objects from calendar, convert to string on submit
+})
+.superRefine((data, ctx) => {
+  if (data.frequency === "weekly" && (!data.daysOfWeek || data.daysOfWeek.length === 0)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please select at least one day for weekly recurrence.", path: ["daysOfWeek"]});
+  }
+  if (data.endsOn === "onDate") {
+    if (!data.endDate || data.endDate.trim() === "") {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "End date is required if 'Ends on date' is selected.", path: ["endDate"]});
+    } else if (data.endDate && new Date(data.startDate) > new Date(data.endDate)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "End date cannot be before start date.", path: ["endDate"]});
+    }
+  }
+  if (data.endsOn === "afterOccurrences" && (!data.numberOfOccurrences || data.numberOfOccurrences < 1)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Number of occurrences must be at least 1.", path: ["numberOfOccurrences"]});
+  }
+  if (data.frequency === "custom" && (!data.customDates || data.customDates.length === 0)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please select at least one date for custom frequency.", path: ["customDates"]});
+  }
+
+  if (data.endsOn !== "onDate") data.endDate = undefined;
+  if (data.endsOn !== "afterOccurrences") data.numberOfOccurrences = undefined;
 });
 
-type FlightFormValues = z.infer<typeof flightFormSchema>;
+type FlightRecurrenceFormValues = z.infer<typeof flightRecurrenceFormSchema>;
 
-const defaultValues: Partial<FlightFormValues> = {
+const defaultValues: Partial<FlightRecurrenceFormValues> = {
   flightNumber: "",
   departureAirport: "",
   arrivalAirport: "",
   baseDepartureTimeUTC: "10:00",
   baseArrivalTimeUTC: "12:00",
-  flightDates: new Date().toISOString().split('T')[0], // Default to today's date
   aircraftType: "",
   status: "Scheduled",
+  frequency: "once",
+  startDate: new Date().toISOString().split('T')[0],
+  daysOfWeek: [],
+  endsOn: "never",
+  customDates: [],
 };
+
+// Helper function to generate dates based on recurrence rules
+const generateRecurrentDates = (values: FlightRecurrenceFormValues): Date[] => {
+    const dates: Date[] = [];
+    const { frequency, startDate: rawStartDate, daysOfWeek, endsOn, endDate: rawEndDate, numberOfOccurrences, customDates } = values;
+
+    if (!rawStartDate) return [];
+    
+    let currentDate = startOfDay(parseISO(rawStartDate));
+    const limitEndDate = rawEndDate ? startOfDay(parseISO(rawEndDate)) : null;
+
+    if (frequency === "once") {
+        dates.push(currentDate);
+        return dates;
+    }
+    if (frequency === "custom") {
+        return customDates ? customDates.map(d => startOfDay(d)) : [];
+    }
+
+    let occurrences = 0;
+    const maxOccurrences = endsOn === "afterOccurrences" ? numberOfOccurrences : Infinity;
+    const maxLoop = 366 * 2; // Limit to 2 years of generation to prevent infinite loops with "never"
+
+    for (let i = 0; i < maxLoop && occurrences < maxOccurrences; i++) {
+        if (limitEndDate && isAfter(currentDate, limitEndDate)) {
+            break;
+        }
+
+        if (frequency === "daily") {
+            dates.push(new Date(currentDate)); // Push a copy
+            occurrences++;
+        } else if (frequency === "weekly") {
+            if (daysOfWeek?.includes(getDay(currentDate))) {
+                dates.push(new Date(currentDate));
+                occurrences++;
+            }
+        } else if (frequency === "monthly") {
+            // Simple monthly: repeats on the same day of the month as the start date
+            if (currentDate.getDate() === parseISO(rawStartDate).getDate()) {
+                 dates.push(new Date(currentDate));
+                 occurrences++;
+            }
+        }
+        
+        if (frequency === "daily" || frequency === "weekly") {
+          currentDate = addDays(currentDate, 1);
+        } else if (frequency === "monthly") {
+          // To correctly handle "same day of month", we advance day by day
+          // until we find the next matching day of month in the next month.
+          // Or, for simplicity, advance by 1 day and check date.
+          currentDate = addDays(currentDate,1);
+          // More robust monthly logic could be:
+          // if (currentDate.getDate() === parseISO(rawStartDate).getDate()) {
+          //   currentDate = addMonths(currentDate, 1); // Advance to next month, same day
+          // } else {
+          //    // If we are not on the target day, move to the next day
+          //    // This logic could be tricky with end of months.
+          //    // For now, the check inside the loop handles it by adding if date matches.
+          //    currentDate = addDays(currentDate,1);
+          // }
+        }
+
+
+        if (dates.length >= maxLoop && endsOn === "never") { // Safety break for "never ending"
+            console.warn("Reached generation limit for 'never ending' recurrence.");
+            break;
+        }
+    }
+    return dates;
+};
+
 
 export default function CreateFlightPage() {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  
+  const [customSelectedDates, setCustomSelectedDates] = React.useState<Date[] | undefined>([]);
 
-  const form = useForm<FlightFormValues>({
-    resolver: zodResolver(flightFormSchema),
+
+  const form = useForm<FlightRecurrenceFormValues>({
+    resolver: zodResolver(flightRecurrenceFormSchema),
     defaultValues,
     mode: "onChange",
   });
+  
+  const watchedFrequency = form.watch("frequency");
+  const watchedEndsOn = form.watch("endsOn");
+
+   React.useEffect(() => {
+    form.setValue("customDates", customSelectedDates);
+  }, [customSelectedDates, form]);
+
 
   React.useEffect(() => {
     if (!authLoading && (!user || user.role !== 'admin')) {
@@ -75,46 +201,40 @@ export default function CreateFlightPage() {
     }
   }, [user, authLoading, router, toast]);
 
-  async function onSubmit(data: FlightFormValues) {
+  async function onSubmit(data: FlightRecurrenceFormValues) {
     if (!user || user.role !== 'admin') {
       toast({ title: "Unauthorized", description: "You do not have permission to create flights.", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
 
-    const datesArray = data.flightDates.split('\n').map(d => d.trim()).filter(d => d && /^\d{4}-\d{2}-\d{2}$/.test(d));
+    const generatedDates = generateRecurrentDates(data);
     let flightsCreatedCount = 0;
     let flightsFailedCount = 0;
     
-    if (datesArray.length === 0) {
-        toast({ title: "No Valid Dates", description: "Please enter at least one valid date in YYYY-MM-DD format.", variant: "destructive" });
+    if (generatedDates.length === 0) {
+        toast({ title: "No Dates to Schedule", description: "No flight dates were generated based on your recurrence rules.", variant: "destructive" });
         setIsSubmitting(false);
         return;
     }
 
     const batch = writeBatch(db);
 
-    for (const dateStr of datesArray) {
+    for (const date of generatedDates) {
       try {
-        const depDateTimeStr = `${dateStr}T${data.baseDepartureTimeUTC}:00Z`;
-        const arrDateTimeStr = `${dateStr}T${data.baseArrivalTimeUTC}:00Z`;
+        const dateStr = formatISO(date, { representation: 'date' }); // YYYY-MM-DD
+        const depDateTimeStr = `${dateStr}T${data.baseDepartureTimeUTC}:00.000Z`;
+        const arrDateTimeStr = `${dateStr}T${data.baseArrivalTimeUTC}:00.000Z`;
 
-        let departureDateTime = new Date(depDateTimeStr);
-        let arrivalDateTime = new Date(arrDateTimeStr);
-
-        if (isNaN(departureDateTime.getTime()) || isNaN(arrivalDateTime.getTime())) {
-            console.warn(`Invalid date/time constructed for date ${dateStr} with times ${data.baseDepartureTimeUTC}/${data.baseArrivalTimeUTC}`);
-            flightsFailedCount++;
-            continue;
-        }
+        let departureDateTime = parseISO(depDateTimeStr);
+        let arrivalDateTime = parseISO(arrDateTimeStr);
         
-        // Adjust arrival date if arrival time is on or before departure time (suggesting next day arrival)
         if (arrivalDateTime <= departureDateTime) {
-          arrivalDateTime.setDate(arrivalDateTime.getDate() + 1);
+          arrivalDateTime = addDays(arrivalDateTime, 1);
         }
         
         const flightDocRef = doc(collection(db, "flights"));
-        const flightDataForFirestore = {
+        batch.set(flightDocRef, {
           flightNumber: data.flightNumber,
           departureAirport: data.departureAirport,
           arrivalAirport: data.arrivalAirport,
@@ -125,12 +245,11 @@ export default function CreateFlightPage() {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           createdBy: user.uid,
-        };
-        batch.set(flightDocRef, flightDataForFirestore);
+        });
         flightsCreatedCount++;
       } catch (e) {
         flightsFailedCount++;
-        console.error(`Error processing date ${dateStr}:`, e);
+        console.error(`Error processing date ${date}:`, e);
       }
     }
 
@@ -143,12 +262,12 @@ export default function CreateFlightPage() {
                 action: flightsFailedCount > 0 ? <AlertTriangle className="text-destructive"/> : <CheckCircle className="text-green-500" />,
             });
             form.reset();
+            setCustomSelectedDates([]);
             router.push('/admin/flights'); 
         } else if (flightsFailedCount > 0) {
              toast({ title: "Flight Creation Failed", description: `No flights created. ${flightsFailedCount} date(s) could not be processed. Check console.`, variant: "destructive" });
         } else {
-            // This case should be caught by the initial datesArray.length check, but as a fallback
-            toast({ title: "No Flights to Create", description: "No valid dates were provided to create flights.", variant: "default" });
+            toast({ title: "No Flights to Create", description: "No dates were generated based on your rules.", variant: "default" });
         }
     } catch (error) {
         console.error("Error committing batch flight creation:", error);
@@ -183,168 +302,133 @@ export default function CreateFlightPage() {
         <CardHeader>
           <CardTitle className="text-2xl font-headline flex items-center">
             <CalendarPlus className="mr-3 h-7 w-7 text-primary" />
-            Add New Flight(s)
+            Add New Flight(s) with Recurrence
           </CardTitle>
           <CardDescription>
-            Define a flight template and specify dates to create multiple flight instances. All times are in UTC.
+            Define a flight template and specify recurrence rules to create multiple flight instances. All times are in UTC.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="flightNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Flight Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., BA245, UAL175" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="aircraftType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Aircraft Type</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Boeing 787-9" {...field} />
-                      </FormControl>
-                      <FormDescription>You can include registration if desired.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              {/* Basic Flight Info */}
+              <Card><CardHeader><CardTitle className="text-lg">Base Flight Details</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input placeholder="e.g., BA245" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="aircraftType" render={({ field }) => (<FormItem><FormLabel>Aircraft Type</FormLabel><FormControl><Input placeholder="e.g., Boeing 787-9" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="departureAirport" render={({ field }) => (<FormItem><FormLabel>Departure Airport (ICAO/IATA)</FormLabel><FormControl><Input placeholder="e.g., EGLL" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="arrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival Airport (ICAO/IATA)</FormLabel><FormControl><Input placeholder="e.g., KJFK" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="baseDepartureTimeUTC" render={({ field }) => (<FormItem><FormLabel>Base Departure Time (UTC)</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormDescription>HH:MM (24h)</FormDescription><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="baseArrivalTimeUTC" render={({ field }) => (<FormItem><FormLabel>Base Arrival Time (UTC)</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormDescription>HH:MM (24h)</FormDescription><FormMessage /></FormItem>)} />
+                  </div>
+                  <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Status for Created Flights</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select flight status" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Scheduled">Scheduled</SelectItem><SelectItem value="On Time">On Time</SelectItem><SelectItem value="Delayed">Delayed</SelectItem><SelectItem value="Cancelled">Cancelled</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                </CardContent>
+              </Card>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="departureAirport"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Departure Airport (ICAO/IATA)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., EGLL, LHR" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="arrivalAirport"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Arrival Airport (ICAO/IATA)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., KJFK, JFK" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              {/* Recurrence Rules */}
+              <Card><CardHeader><CardTitle className="text-lg">Recurrence Rules</CardTitle></CardHeader>
+                <CardContent className="space-y-6">
+                  <FormField control={form.control} name="startDate" render={({ field }) => (
+                    <FormItem className="flex flex-col"><FormLabel>Start Date*</FormLabel>
+                      <FormControl><Input type="date" {...field} className="w-full md:w-1/2" /></FormControl>
+                      <FormDescription>The first date this flight will occur.</FormDescription><FormMessage />
+                    </FormItem>)} />
+                  
+                  <FormField control={form.control} name="frequency" render={({ field }) => (
+                    <FormItem><FormLabel>Frequency*</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select frequency" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="once">Once (Only Start Date)</SelectItem>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly (Same day of month as start)</SelectItem>
+                          <SelectItem value="custom">Custom Dates</SelectItem>
+                        </SelectContent>
+                      </Select><FormMessage />
+                    </FormItem>)} />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="baseDepartureTimeUTC"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Base Departure Time (UTC)</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormDescription>Format: HH:MM (24-hour).</FormDescription>
-                      <FormMessage />
-                    </FormItem>
+                  {watchedFrequency === "weekly" && (
+                    <FormField control={form.control} name="daysOfWeek" render={() => (
+                      <FormItem><FormLabel>Repeat on (Weekly)*</FormLabel>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 md:gap-3 items-center rounded-md border p-3">
+                          {weekDays.map((day) => (
+                            <FormField key={day.id} control={form.control} name="daysOfWeek"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                  <FormControl>
+                                    <Checkbox checked={field.value?.includes(day.id)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([...(field.value || []), day.id])
+                                          : field.onChange(field.value?.filter((value) => value !== day.id));
+                                      }} />
+                                  </FormControl>
+                                  <FormLabel className="text-sm font-normal">{day.label}</FormLabel>
+                                </FormItem>
+                              )} />
+                          ))}
+                        </div><FormMessage />
+                      </FormItem>)} />
                   )}
-                />
-                <FormField
-                  control={form.control}
-                  name="baseArrivalTimeUTC"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Base Arrival Time (UTC)</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormDescription>Format: HH:MM (24-hour).</FormDescription>
-                      <FormMessage />
-                    </FormItem>
+
+                  {watchedFrequency === "custom" && (
+                    <FormField control={form.control} name="customDates"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col items-start">
+                          <FormLabel>Select Custom Dates*</FormLabel>
+                          <Calendar mode="multiple" selected={customSelectedDates} onSelect={setCustomSelectedDates} className="rounded-md border self-center" />
+                           <FormDescription>Selected Dates: {customSelectedDates && customSelectedDates.length > 0 ? customSelectedDates.map(d=>d.toLocaleDateString()).join(', ') : "None"}</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
                   )}
-                />
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="flightDates"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Flight Dates (UTC)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Enter dates in YYYY-MM-DD format, one date per line. Example:
-2024-08-01
-2024-08-03
-2024-08-05"
-                        className="min-h-[120px] font-mono text-sm"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Each date will create a separate flight instance using the times and details above.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status for Created Flights</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select flight status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Scheduled">Scheduled</SelectItem>
-                        <SelectItem value="On Time">On Time</SelectItem>
-                        <SelectItem value="Delayed">Delayed</SelectItem>
-                        <SelectItem value="Cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
+                  {watchedFrequency !== "once" && watchedFrequency !== "custom" && (
+                    <FormField control={form.control} name="endsOn" render={({ field }) => (
+                      <FormItem className="space-y-3"><FormLabel>Ends*</FormLabel>
+                        <FormControl>
+                          <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
+                            <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="never" /></FormControl><FormLabel className="font-normal">Never</FormLabel></FormItem>
+                            <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="onDate" /></FormControl><FormLabel className="font-normal">On Date</FormLabel></FormItem>
+                            <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="afterOccurrences" /></FormControl><FormLabel className="font-normal">After Occurrences</FormLabel></FormItem>
+                          </RadioGroup>
+                        </FormControl><FormMessage />
+                      </FormItem>)} />
+                  )}
+
+                  {watchedFrequency !== "once" && watchedFrequency !== "custom" && watchedEndsOn === "onDate" && (
+                    <FormField control={form.control} name="endDate" render={({ field }) => (
+                      <FormItem className="flex flex-col"><FormLabel>End Date*</FormLabel>
+                        <FormControl><Input type="date" {...field} className="w-full md:w-1/2" /></FormControl>
+                        <FormMessage />
+                      </FormItem>)} />
+                  )}
+
+                  {watchedFrequency !== "once" && watchedFrequency !== "custom" && watchedEndsOn === "afterOccurrences" && (
+                     <FormField control={form.control} name="numberOfOccurrences" render={({ field }) => (
+                        <FormItem><FormLabel>Number of Occurrences*</FormLabel>
+                            <FormControl><Input type="number" placeholder="e.g., 10" {...field} className="w-full md:w-1/2" /></FormControl>
+                            <FormMessage />
+                        </FormItem>)} />
+                  )}
+                </CardContent>
+              </Card>
 
               <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="w-full sm:w-auto">
                 {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Flights...
-                  </>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating Flights...</>
                 ) : (
-                  <>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Create Flight(s)
-                  </>
+                  <><PlusCircle className="mr-2 h-4 w-4" />Create Flight(s)</>
                 )}
               </Button>
               {!form.formState.isValid && user && (
-                <p className="text-sm text-destructive">Please fill all required fields correctly before submitting.</p>
+                <p className="text-sm text-destructive">Please fill all required fields correctly and ensure recurrence rules are logical.</p>
               )}
             </form>
           </Form>
