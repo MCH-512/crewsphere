@@ -34,7 +34,7 @@ interface CourseData {
   modules?: ModuleData[];
   duration?: string; 
   fileURL?: string; 
-  certificateRuleId?: string; // Ensure this is part of CourseData
+  certificateRuleId?: string; 
 }
 
 interface UserProgressData {
@@ -145,26 +145,7 @@ export default function CoursesLibraryPage() {
     if (!course) return;
 
     if (course.progress?.quizStatus === 'Passed' && course.progress?.certificateDetails) {
-        let finalProgressData = { ...course.progress }; // Clone to modify for dialog
-        
-        if (finalProgressData.certificateDetails && course.certificateRuleId) {
-            const certRuleRef = doc(db, "certificateRules", course.certificateRuleId);
-            try {
-                const certRuleSnap = await getDoc(certRuleRef);
-                if (certRuleSnap.exists()) {
-                    finalProgressData.certificateDetails.logoURL = certRuleSnap.data()?.logoURL || "https://placehold.co/150x50.png";
-                    finalProgressData.certificateDetails.signatureTextOrURL = certRuleSnap.data()?.signatureTextOrURL || "Express Airline Training Department";
-                }
-            } catch (e) { console.error("Error fetching cert rule details for dialog", e); }
-        }
-         // Fallbacks if not set from certRule or ruleId missing
-        if(finalProgressData.certificateDetails){
-            finalProgressData.certificateDetails.logoURL = finalProgressData.certificateDetails.logoURL || "https://placehold.co/150x50.png";
-            finalProgressData.certificateDetails.signatureTextOrURL = finalProgressData.certificateDetails.signatureTextOrURL || "Express Airline Training Department";
-        }
-
-
-        setSelectedCourseForCert({...course, progress: finalProgressData }); // Use the augmented progress data
+        setSelectedCourseForCert(course); // Certificate details should be complete now
         setIsCertDialogOpen(true);
     } else if (course.progress?.contentStatus !== 'Completed') {
         setSelectedCourseForContent(course);
@@ -216,7 +197,9 @@ export default function CoursesLibraryPage() {
     const score = passed ? Math.floor(Math.random() * 21) + 80 : Math.floor(Math.random() * 40) + 40; 
 
     let expiryDurationDays = 365; 
-    let logoURL, signatureTextOrURL, provider;
+    let logoURL = "https://placehold.co/150x50.png";
+    let signatureTextOrURL = "Express Airline Training Department";
+    let provider = "AirCrew Hub Training Dept.";
 
     if (course.certificateRuleId) {
         try {
@@ -224,14 +207,12 @@ export default function CoursesLibraryPage() {
             if (ruleSnap.exists()) {
                  const ruleData = ruleSnap.data();
                  expiryDurationDays = ruleData.expiryDurationDays === 0 ? 0 : (ruleData.expiryDurationDays || 365);
-                 logoURL = ruleData.logoURL;
-                 signatureTextOrURL = ruleData.signatureTextOrURL;
-                 provider = ruleData.provider || "AirCrew Hub Training Dept.";
+                 logoURL = ruleData.logoURL || logoURL;
+                 signatureTextOrURL = ruleData.signatureTextOrURL || signatureTextOrURL;
+                 provider = ruleData.provider || provider;
             }
-        } catch (e) { console.error("Could not fetch cert rule, using default expiry", e); }
+        } catch (e) { console.error("Could not fetch cert rule, using default values", e); }
     }
-    provider = provider || "AirCrew Hub Training Dept.";
-
 
     const newProgressData: Partial<UserProgressData> = {
       userId: user.uid,
@@ -251,7 +232,7 @@ export default function CoursesLibraryPage() {
         provider: provider,
         certificateId: `ACH-CERT-${course.id.substring(0,5)}-${new Date().getFullYear()}`,
         issuedDate: issuedDate,
-        expiryDate: expiryDate, // This can be undefined if expiryDurationDays is 0
+        expiryDate: expiryDate, 
         logoURL: logoURL,
         signatureTextOrURL: signatureTextOrURL,
       };
@@ -475,7 +456,7 @@ export default function CoursesLibraryPage() {
         </DialogContent>
       </Dialog>
 
-      {selectedCourseForCert && (
+      {selectedCourseForCert && selectedCourseForCert.progress?.certificateDetails && (
         <Dialog open={isCertDialogOpen} onOpenChange={setIsCertDialogOpen}>
             <DialogContent className="sm:max-w-[650px]">
               <DialogHeader>
@@ -486,18 +467,18 @@ export default function CoursesLibraryPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="mx-auto my-4">
-                  <Image src={selectedCourseForCert.progress?.certificateDetails?.logoURL || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4 mx-auto" data-ai-hint="company logo airline"/>
+                  <Image src={selectedCourseForCert.progress.certificateDetails.logoURL || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4 mx-auto" data-ai-hint="company logo airline"/>
                   <div className="border-2 border-dashed border-primary p-6 rounded-lg bg-secondary/30 aspect-[8.5/5.5] w-full max-w-md flex flex-col items-center justify-around text-center" data-ai-hint="certificate award">
                         <h4 className="text-2xl font-bold text-primary">Certificate of Completion</h4>
                         <p className="text-sm my-2">This certifies that</p>
                         <p className="text-xl font-semibold">{user?.displayName || user?.email || "Crew Member"}</p>
                         <p className="text-sm my-2">has successfully completed the course</p>
                         <p className="text-lg font-medium">&quot;{selectedCourseForCert?.title}&quot;</p>
-                        <p className="text-xs mt-3">Date of Completion: {selectedCourseForCert?.progress?.certificateDetails?.issuedDate ? new Date(selectedCourseForCert.progress.certificateDetails.issuedDate).toLocaleDateString() : 'N/A'}</p>
-                        <p className="text-xs mt-1">Certificate ID: {selectedCourseForCert?.progress?.certificateDetails?.certificateId}</p>
-                         {selectedCourseForCert?.progress?.certificateDetails?.expiryDate && <p className="text-xs mt-1">Valid Until: {new Date(selectedCourseForCert.progress.certificateDetails.expiryDate).toLocaleDateString()}</p>}
-                        <p className="text-xs mt-3">Issued by: {selectedCourseForCert?.progress?.certificateDetails?.provider}</p>
-                        <p className="text-xs mt-3">Signature: {selectedCourseForCert?.progress?.certificateDetails?.signatureTextOrURL || "Express Airline Training Department"}</p>
+                        <p className="text-xs mt-3">Date of Completion: {selectedCourseForCert.progress.certificateDetails.issuedDate ? new Date(selectedCourseForCert.progress.certificateDetails.issuedDate).toLocaleDateString() : 'N/A'}</p>
+                        <p className="text-xs mt-1">Certificate ID: {selectedCourseForCert.progress.certificateDetails.certificateId}</p>
+                         {selectedCourseForCert.progress.certificateDetails.expiryDate && <p className="text-xs mt-1">Valid Until: {new Date(selectedCourseForCert.progress.certificateDetails.expiryDate).toLocaleDateString()}</p>}
+                        <p className="text-xs mt-3">Issued by: {selectedCourseForCert.progress.certificateDetails.provider}</p>
+                        <p className="text-xs mt-3">Signature: {selectedCourseForCert.progress.certificateDetails.signatureTextOrURL || "Express Airline Training Department"}</p>
                     </div>
                 </div>
                 <div className="space-y-1 text-sm mt-4">

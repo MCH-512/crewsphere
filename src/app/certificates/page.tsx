@@ -20,12 +20,12 @@ interface CourseData {
   category: string;
   imageHint: string;
   quizId: string;
-  quizTitle?: string; // Made optional, will ensure it's fetched if needed
+  quizTitle?: string; 
   mandatory: boolean;
   modules?: { moduleTitle: string; durationMinutes: number }[];
   duration?: string; 
   fileURL?: string; 
-  certificateRuleId?: string; // Added to fetch certificate rules
+  certificateRuleId?: string; 
 }
 
 interface UserProgressData {
@@ -46,7 +46,7 @@ interface UserProgressData {
 }
 
 interface CertifiedCourse extends CourseData {
-  progress: UserProgressData; // Progress is guaranteed for certified courses
+  progress: UserProgressData; 
 }
 
 export default function CertificatesPage() {
@@ -102,23 +102,13 @@ export default function CertificatesPage() {
                 currentQuizTitle = "Course Quiz"; 
             }
             
-            let finalProgressData = { ...progressData };
-            // Ensure certificateDetails exists before trying to augment it
+            // Certificate details (logoURL, signatureTextOrURL, provider) should now be complete from `simulateQuiz`
+            // Provide fallbacks if they are somehow missing (e.g., older data)
+            const finalProgressData = { ...progressData };
             if (finalProgressData.certificateDetails) {
-                if (courseDataFromDb.certificateRuleId) {
-                    const certRuleRef = doc(db, "certificateRules", courseDataFromDb.certificateRuleId);
-                    try {
-                        const certRuleSnap = await getDoc(certRuleRef);
-                        if (certRuleSnap.exists()) {
-                            finalProgressData.certificateDetails.logoURL = certRuleSnap.data()?.logoURL || "https://placehold.co/150x50.png";
-                            finalProgressData.certificateDetails.signatureTextOrURL = certRuleSnap.data()?.signatureTextOrURL || "Express Airline Training Department";
-                            // Provider might also come from here if design changes
-                        }
-                    } catch (e) { console.error("Error fetching cert rule for certificate display", e); }
-                }
-                // Fallbacks if not set from certRule
                 finalProgressData.certificateDetails.logoURL = finalProgressData.certificateDetails.logoURL || "https://placehold.co/150x50.png";
                 finalProgressData.certificateDetails.signatureTextOrURL = finalProgressData.certificateDetails.signatureTextOrURL || "Express Airline Training Department";
+                finalProgressData.certificateDetails.provider = finalProgressData.certificateDetails.provider || "AirCrew Hub Training Dept.";
             }
 
 
@@ -243,7 +233,7 @@ export default function CertificatesPage() {
         )}
       </section>
 
-      {selectedCourseForCert && (
+      {selectedCourseForCert && selectedCourseForCert.progress?.certificateDetails && (
         <Dialog open={isCertDialogOpen} onOpenChange={setIsCertDialogOpen}>
             <DialogContent className="sm:max-w-[650px]">
               <DialogHeader>
@@ -254,18 +244,18 @@ export default function CertificatesPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="mx-auto my-4">
-                  <Image src={selectedCourseForCert.progress?.certificateDetails?.logoURL || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4 mx-auto" data-ai-hint="company logo airline"/>
+                  <Image src={selectedCourseForCert.progress.certificateDetails.logoURL || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4 mx-auto" data-ai-hint="company logo airline"/>
                    <div className="border-2 border-dashed border-primary p-6 rounded-lg bg-secondary/30 aspect-[8.5/5.5] w-full max-w-md flex flex-col items-center justify-around text-center" data-ai-hint="certificate award">
                         <h4 className="text-2xl font-bold text-primary">Certificate of Completion</h4>
                         <p className="text-sm my-2">This certifies that</p>
                         <p className="text-xl font-semibold">{user?.displayName || user?.email || "Crew Member"}</p>
                         <p className="text-sm my-2">has successfully completed the course</p>
                         <p className="text-lg font-medium">&quot;{selectedCourseForCert?.title}&quot;</p>
-                        <p className="text-xs mt-3">Date of Completion: {selectedCourseForCert?.progress?.certificateDetails?.issuedDate ? new Date(selectedCourseForCert.progress.certificateDetails.issuedDate).toLocaleDateString() : 'N/A'}</p>
-                        <p className="text-xs mt-1">Certificate ID: {selectedCourseForCert?.progress?.certificateDetails?.certificateId}</p>
-                         {selectedCourseForCert?.progress?.certificateDetails?.expiryDate && <p className="text-xs mt-1">Valid Until: {new Date(selectedCourseForCert.progress.certificateDetails.expiryDate).toLocaleDateString()}</p>}
-                        <p className="text-xs mt-3">Issued by: {selectedCourseForCert?.progress?.certificateDetails?.provider}</p>
-                        <p className="text-xs mt-3">Signature: {selectedCourseForCert?.progress?.certificateDetails?.signatureTextOrURL || "Express Airline Training Department"}</p>
+                        <p className="text-xs mt-3">Date of Completion: {selectedCourseForCert.progress.certificateDetails.issuedDate ? new Date(selectedCourseForCert.progress.certificateDetails.issuedDate).toLocaleDateString() : 'N/A'}</p>
+                        <p className="text-xs mt-1">Certificate ID: {selectedCourseForCert.progress.certificateDetails.certificateId}</p>
+                         {selectedCourseForCert.progress.certificateDetails.expiryDate && <p className="text-xs mt-1">Valid Until: {new Date(selectedCourseForCert.progress.certificateDetails.expiryDate).toLocaleDateString()}</p>}
+                        <p className="text-xs mt-3">Issued by: {selectedCourseForCert.progress.certificateDetails.provider}</p>
+                        <p className="text-xs mt-3">Signature: {selectedCourseForCert.progress.certificateDetails.signatureTextOrURL || "Express Airline Training Department"}</p>
                     </div>
                 </div>
                 <div className="space-y-1 text-sm mt-4">
@@ -285,3 +275,4 @@ export default function CertificatesPage() {
     </div>
   );
 }
+

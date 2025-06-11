@@ -35,6 +35,7 @@ interface CourseData {
   modules?: ModuleData[];
   duration?: string; 
   fileURL?: string; 
+  certificateRuleId?: string;
 }
 
 interface UserProgressData {
@@ -48,6 +49,8 @@ interface UserProgressData {
     certificateId: string;
     issuedDate: string; 
     expiryDate?: string; 
+    logoURL?: string;
+    signatureTextOrURL?: string;
   };
   lastUpdated: Timestamp;
 }
@@ -65,10 +68,11 @@ export default function TrainingPage() {
   const [loadingError, setLoadingError] = React.useState<string | null>(null);
 
   const [selectedCourseForQuiz, setSelectedCourseForQuiz] = React.useState<CombinedCourse | null>(null);
-  // SelectedCourseForCert is no longer needed here, handled by /certificates page
   const [selectedCourseForContent, setSelectedCourseForContent] = React.useState<CombinedCourse | null>(null);
+  const [selectedCourseForCertDialog, setSelectedCourseForCertDialog] = React.useState<CombinedCourse | null>(null); // Renamed to avoid conflict if cert page also uses selectedCourseForCert
   const [isQuizDialogOpen, setIsQuizDialogOpen] = React.useState(false);
   const [isContentDialogOpen, setIsContentDialogOpen] = React.useState(false);
+  const [isCertDialogOpen, setIsCertDialogOpen] = React.useState(false); // For this page's cert dialog
   const [isUpdating, setIsUpdating] = React.useState(false);
 
   const fetchTrainingData = React.useCallback(async () => {
@@ -117,7 +121,7 @@ export default function TrainingPage() {
 
         combinedCoursesWithProgress.push({ ...courseData, progress: userProgress });
       }
-      // Filter courses for this page: show only those not yet passed, or mandatory and not passed
+      
       const relevantCourses = combinedCoursesWithProgress.filter(c => 
         c.progress?.quizStatus !== 'Passed' || (c.mandatory && c.progress?.quizStatus !== 'Passed')
       );
@@ -146,14 +150,15 @@ export default function TrainingPage() {
     const course = courses.find(c => c.id === courseId);
     if (!course) return;
 
-    if (course.progress?.contentStatus !== 'Completed') {
+    if (course.progress?.quizStatus === 'Passed' && course.progress?.certificateDetails) {
+        // This case should ideally not happen on this page if it's filtered out
+        // But if it does, prepare for cert dialog
+        setSelectedCourseForCertDialog(course);
+        setIsCertDialogOpen(true);
+    } else if (course.progress?.contentStatus !== 'Completed') {
         setSelectedCourseForContent(course);
         setIsContentDialogOpen(true);
     } else {
-      // If content is completed, and quiz is not passed, open quiz dialog
-      // If quiz is passed, this course shouldn't be in the "available/in-progress" list anymore
-      // unless it's mandatory and failed, or some other specific logic for this page.
-      // For now, assume if it's here and content is completed, it's ready for quiz.
       setSelectedCourseForQuiz(course);
       setIsQuizDialogOpen(true);
     }
@@ -201,16 +206,23 @@ export default function TrainingPage() {
     const score = passed ? Math.floor(Math.random() * 21) + 80 : Math.floor(Math.random() * 40) + 40; 
 
     let expiryDurationDays = 365; 
-    const courseDocRef = doc(db, "courses", course.id);
-    const courseSnap = await getDoc(courseDocRef);
-    if (courseSnap.exists() && courseSnap.data().certificateRuleId) {
+    let logoURL = "https://placehold.co/150x50.png";
+    let signatureTextOrURL = "Express Airline Training Department";
+    let provider = "AirCrew Hub Training Dept.";
+
+    if (course.certificateRuleId) {
         try {
-            const ruleSnap = await getDoc(doc(db, "certificateRules", courseSnap.data().certificateRuleId));
+            const ruleSnap = await getDoc(doc(db, "certificateRules", course.certificateRuleId));
             if (ruleSnap.exists()) {
-                 expiryDurationDays = ruleSnap.data().expiryDurationDays || 365;
+                 const ruleData = ruleSnap.data();
+                 expiryDurationDays = ruleData.expiryDurationDays === 0 ? 0 : (ruleData.expiryDurationDays || 365);
+                 logoURL = ruleData.logoURL || logoURL;
+                 signatureTextOrURL = ruleData.signatureTextOrURL || signatureTextOrURL;
+                 provider = ruleData.provider || provider;
             }
-        } catch (e) { console.error("Could not fetch cert rule, using default expiry", e); }
+        } catch (e) { console.error("Could not fetch cert rule, using default values", e); }
     }
+
 
     const newProgressData: Partial<UserProgressData> = {
       userId: user.uid,
@@ -228,10 +240,12 @@ export default function TrainingPage() {
       }
       
       newProgressData.certificateDetails = {
-        provider: "AirCrew Hub Training Dept.",
+        provider: provider,
         certificateId: `ACH-CERT-${course.id.substring(0,5)}-${new Date().getFullYear()}`,
         issuedDate: issuedDate,
         expiryDate: expiryDate,
+        logoURL: logoURL,
+        signatureTextOrURL: signatureTextOrURL,
       };
     }
 
@@ -313,7 +327,22 @@ export default function TrainingPage() {
 
               const CourseActionIcon = contentStatus !== 'Completed' ? ChevronRight : 
                                        quizStatus === 'NotTaken' ? HelpCircle : 
-                                       quizStatus === 'Failed' ? XCircle : PlayCircle;
+                                       quizStatus === 'Failed' ? XCircle : PlayCircle; // Should mostly be PlayCircle (retake/take)
+              
+              let actionButtonLabel = "View Course Material";
+              if (contentStatus === 'Completed') {
+                if (quizStatus === 'Failed') {
+                  actionButtonLabel = "Retake Quiz";
+                } else if (quizStatus === 'NotTaken' || quizStatus === 'Attempted') {
+                  actionButtonLabel = "Take Quiz";
+                }
+              } else if (contentStatus === 'NotStarted') {
+                actionButtonLabel = "Start Course";
+              } else { // InProgress
+                actionButtonLabel = "Continue Course";
+              }
+
+
               return (
               <Card key={course.id} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
                 <CardHeader className="flex-shrink-0">
@@ -350,8 +379,7 @@ export default function TrainingPage() {
                   </div>
                   <Button onClick={() => handleCourseAction(course.id)} className="w-full mt-2" disabled={isUpdating}>
                     {isUpdating && courses.find(c => c.id === course.id && (c.id === selectedCourseForContent?.id || c.id === selectedCourseForQuiz?.id)) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CourseActionIcon className="mr-2 h-4 w-4" />}
-                    {contentStatus !== 'Completed' ? (contentStatus === 'NotStarted' ? 'Start Course' : 'Continue Course') :
-                     quizStatus === 'Failed' ? 'Retake Quiz' : (quizStatus === 'NotTaken' ? 'Take Quiz' : 'Review Quiz')}
+                    {actionButtonLabel}
                   </Button>
                 </CardContent>
               </Card>
@@ -447,7 +475,46 @@ export default function TrainingPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Removed Certificate Dialog from here, it's on /certificates and /courses pages */}
+       {selectedCourseForCertDialog && selectedCourseForCertDialog.progress?.certificateDetails && (
+        <Dialog open={isCertDialogOpen} onOpenChange={setIsCertDialogOpen}>
+            <DialogContent className="sm:max-w-[650px]">
+              <DialogHeader>
+                <DialogTitle>Certificate of Completion</DialogTitle>
+                <DialogDescription>
+                  This certificate is awarded for the successful completion of the {selectedCourseForCertDialog?.title} program.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="mx-auto my-4">
+                  <Image src={selectedCourseForCertDialog.progress.certificateDetails.logoURL || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4 mx-auto" data-ai-hint="company logo airline"/>
+                  <div className="border-2 border-dashed border-primary p-6 rounded-lg bg-secondary/30 aspect-[8.5/5.5] w-full max-w-md flex flex-col items-center justify-around text-center" data-ai-hint="certificate award">
+                        <h4 className="text-2xl font-bold text-primary">Certificate of Completion</h4>
+                        <p className="text-sm my-2">This certifies that</p>
+                        <p className="text-xl font-semibold">{user?.displayName || user?.email || "Crew Member"}</p>
+                        <p className="text-sm my-2">has successfully completed the course</p>
+                        <p className="text-lg font-medium">&quot;{selectedCourseForCertDialog?.title}&quot;</p>
+                        <p className="text-xs mt-3">Date of Completion: {selectedCourseForCertDialog.progress.certificateDetails.issuedDate ? new Date(selectedCourseForCertDialog.progress.certificateDetails.issuedDate).toLocaleDateString() : 'N/A'}</p>
+                        <p className="text-xs mt-1">Certificate ID: {selectedCourseForCertDialog.progress.certificateDetails.certificateId}</p>
+                         {selectedCourseForCertDialog.progress.certificateDetails.expiryDate && <p className="text-xs mt-1">Valid Until: {new Date(selectedCourseForCertDialog.progress.certificateDetails.expiryDate).toLocaleDateString()}</p>}
+                        <p className="text-xs mt-3">Issued by: {selectedCourseForCertDialog.progress.certificateDetails.provider}</p>
+                        <p className="text-xs mt-3">Signature: {selectedCourseForCertDialog.progress.certificateDetails.signatureTextOrURL || "Express Airline Training Department"}</p>
+                    </div>
+                </div>
+                <div className="space-y-1 text-sm mt-4">
+                   <p className="font-semibold text-center">Achieved Score: {selectedCourseForCertDialog?.progress?.quizScore}%</p>
+                   {selectedCourseForCertDialog?.mandatory && <p className="font-semibold text-destructive text-center mt-1">This was a mandatory training.</p>}
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">Close</Button>
+                </DialogClose>
+                <Button type="button" onClick={() => {toast({title: "Feature Not Implemented", description: "PDF download is not available in this demo."});} }>Download PDF</Button>
+              </DialogFooter>
+            </DialogContent>
+        </Dialog>
+      )}
+
 
       <div className="text-center mt-8">
          <Button variant="outline" asChild>
