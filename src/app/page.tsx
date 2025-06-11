@@ -6,15 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
-import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy } from "lucide-react";
+import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { generateDailyBriefing, type DailyBriefingOutput } from "@/ai/flows/daily-briefing-flow";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, limit, getDocs, Timestamp, or, doc, getDoc } from "firebase/firestore";
-import { formatDistanceToNowStrict, format } from "date-fns";
+import { collection, query, where, orderBy, limit, getDocs, Timestamp, or, doc, getDoc, DocumentData } from "firebase/firestore";
+import { formatDistanceToNowStrict, format, parseISO, addHours, subHours, startOfDay } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
@@ -24,8 +24,8 @@ interface Alert {
   content: string;
   level: "critical" | "warning" | "info";
   createdAt: Timestamp;
-  userId?: string; 
-  iconName?: string; 
+  userId?: string;
+  iconName?: string;
 }
 
 interface FeaturedCourse {
@@ -42,10 +42,42 @@ interface RecentDocument {
   title: string;
   category: string;
   content?: string;
-  description?: string; // Assuming a short description field might exist or we use content
+  description?: string;
   lastUpdated: Timestamp;
   documentContentType?: 'file' | 'markdown' | 'fileWithMarkdown';
   downloadURL?: string;
+}
+
+interface Flight {
+  id: string;
+  flightNumber: string;
+  departureAirport: string;
+  arrivalAirport: string;
+  scheduledDepartureDateTimeUTC: string; // ISO string
+  scheduledArrivalDateTimeUTC: string; // ISO string
+  aircraftType: string;
+  status: "Scheduled" | "On Time" | "Delayed" | "Cancelled";
+}
+
+interface UserActivity extends DocumentData {
+    id: string;
+    userId: string;
+    activityType: "flight" | "off" | "standby" | "leave" | "sick" | "training" | "other";
+    date: Timestamp; // The day of the activity
+    flightId?: string | null;
+    // flightDetails are populated client-side if activityType is 'flight'
+}
+
+interface UpcomingDutyData {
+  flightNumber: string;
+  route: string;
+  aircraft: string;
+  reportingTime: string;
+  reportingDate: string;
+  reportingLocation: string;
+  etd: string;
+  eta: string;
+  gate: string;
 }
 
 
@@ -69,6 +101,10 @@ export default function DashboardPage() {
   const [recentDocumentsLoading, setRecentDocumentsLoading] = React.useState(true);
   const [recentDocumentsError, setRecentDocumentsError] = React.useState<string | null>(null);
 
+  const [upcomingDuty, setUpcomingDuty] = React.useState<UpcomingDutyData | null>(null);
+  const [isUpcomingDutyLoading, setIsUpcomingDutyLoading] = React.useState(true);
+  const [upcomingDutyError, setUpcomingDutyError] = React.useState<string | null>(null);
+
 
   React.useEffect(() => {
     if (user) {
@@ -83,7 +119,6 @@ export default function DashboardPage() {
         setIsBriefingLoading(false);
         return;
       }
-      
       setIsBriefingLoading(true);
       setBriefingError(null);
       try {
@@ -118,13 +153,13 @@ export default function DashboardPage() {
           collection(db, "alerts"),
           where("userId", "==", user.uid),
           orderBy("createdAt", "desc"),
-          limit(3) 
+          limit(3)
         );
         const globalAlertsQuery = query(
           collection(db, "alerts"),
-          where("userId", "==", null), 
+          where("userId", "==", null),
           orderBy("createdAt", "desc"),
-          limit(3) 
+          limit(3)
         );
         
         const [userAlertsSnapshot, globalAlertsSnapshot] = await Promise.all([
@@ -136,14 +171,14 @@ export default function DashboardPage() {
         const fetchedGlobalAlerts = globalAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alert));
         
         const combinedAlerts = [...fetchedUserAlerts, ...fetchedGlobalAlerts]
-          .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()) 
-          .reduce((acc, current) => { 
+          .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
+          .reduce((acc, current) => {
             if (!acc.find(item => item.id === current.id)) {
               acc.push(current);
             }
             return acc;
           }, [] as Alert[])
-          .slice(0, 3); 
+          .slice(0, 3);
 
         setAlerts(combinedAlerts);
       } catch (err) {
@@ -174,7 +209,7 @@ export default function DashboardPage() {
           collection(db, "courses"),
           where("mandatory", "==", true),
           orderBy("title"),
-          limit(5) 
+          limit(5)
         );
         const mandatorySnapshot = await getDocs(mandatoryQuery);
         const potentialMandatoryCourses = mandatorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FeaturedCourse));
@@ -184,7 +219,7 @@ export default function DashboardPage() {
           const progressDocId = `${user.uid}_${course.id}`;
           const progressSnap = await getDoc(doc(db, "userTrainingProgress", progressDocId));
           if (progressSnap.exists() && progressSnap.data().quizStatus === 'Passed') {
-            continue; 
+            continue;
           }
           finalFeaturedCourses.push(course);
         }
@@ -193,21 +228,21 @@ export default function DashboardPage() {
           const existingIds = finalFeaturedCourses.map(c => c.id);
           const generalQuery = query(
             collection(db, "courses"),
-            orderBy("category"), 
+            orderBy("category"),
             orderBy("title"),
-            limit(10) 
+            limit(10)
           );
           const generalSnapshot = await getDocs(generalQuery);
           const potentialGeneralCourses = generalSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as FeaturedCourse));
 
           for (const course of potentialGeneralCourses) {
             if (finalFeaturedCourses.length >= 2) break;
-            if (existingIds.includes(course.id)) continue; 
+            if (existingIds.includes(course.id)) continue;
 
             const progressDocId = `${user.uid}_${course.id}`;
             const progressSnap = await getDoc(doc(db, "userTrainingProgress", progressDocId));
             if (progressSnap.exists() && progressSnap.data().quizStatus === 'Passed') {
-              continue; 
+              continue;
             }
             finalFeaturedCourses.push(course);
           }
@@ -252,17 +287,82 @@ export default function DashboardPage() {
     fetchRecentDocuments();
   }, [user, toast]);
 
-  const upcomingDuty = {
-    flightNumber: "BA245",
-    route: "LHR - JFK",
-    aircraft: "Boeing 787-9 (G-ZBKC)",
-    reportingTime: "10:00 UTC",
-    reportingDate: "July 31, 2024",
-    reportingLocation: "Crew Report Centre, T5",
-    etd: "12:30 UTC",
-    eta: "15:00 EST (19:00 UTC)",
-    gate: "C55 (LHR)",
-  };
+  React.useEffect(() => {
+    async function fetchUpcomingDuty() {
+      if (!user) {
+        setIsUpcomingDutyLoading(false);
+        setUpcomingDuty(null);
+        return;
+      }
+      setIsUpcomingDutyLoading(true);
+      setUpcomingDutyError(null);
+      setUpcomingDuty(null);
+
+      try {
+        const today = startOfDay(new Date());
+        const activitiesQuery = query(
+          collection(db, "userActivities"),
+          where("userId", "==", user.uid),
+          where("activityType", "==", "flight"),
+          where("date", ">=", Timestamp.fromDate(today)), // Only activities from today onwards
+          orderBy("date", "asc") // Order by date first
+        );
+
+        const activitiesSnapshot = await getDocs(activitiesQuery);
+        if (activitiesSnapshot.empty) {
+          setIsUpcomingDutyLoading(false);
+          return;
+        }
+
+        let nextFlightActivity: UserActivity | null = null;
+        let nextFlightDetails: Flight | null = null;
+
+        for (const activityDoc of activitiesSnapshot.docs) {
+          const activityData = activityDoc.data() as UserActivity;
+          if (activityData.flightId) {
+            const flightDocRef = doc(db, "flights", activityData.flightId);
+            const flightDocSnap = await getDoc(flightDocRef);
+            if (flightDocSnap.exists()) {
+              const flightData = { id: flightDocSnap.id, ...flightDocSnap.data() } as Flight;
+              // Further ensure the flight's departure time is in the future
+              if (new Date(flightData.scheduledDepartureDateTimeUTC) > new Date()) {
+                // This is a candidate, check if it's earlier than any already found
+                if (!nextFlightDetails || new Date(flightData.scheduledDepartureDateTimeUTC) < new Date(nextFlightDetails.scheduledDepartureDateTimeUTC)) {
+                  nextFlightActivity = activityData;
+                  nextFlightDetails = flightData;
+                }
+              }
+            }
+          }
+        }
+        
+        // After checking all activities for the day and future, if we found the earliest future flight, set it.
+        if (nextFlightDetails) {
+            const departureDateTime = parseISO(nextFlightDetails.scheduledDepartureDateTimeUTC);
+            // Assume reporting time is 2 hours before departure, adjust as needed
+            const reportingDateTime = subHours(departureDateTime, 2); 
+
+            setUpcomingDuty({
+              flightNumber: nextFlightDetails.flightNumber,
+              route: `${nextFlightDetails.departureAirport} - ${nextFlightDetails.arrivalAirport}`,
+              aircraft: nextFlightDetails.aircraftType,
+              reportingTime: format(reportingDateTime, "HH:mm 'UTC'"),
+              reportingDate: format(reportingDateTime, "MMM d, yyyy"),
+              reportingLocation: "Crew Report Centre", // Placeholder
+              etd: format(departureDateTime, "HH:mm 'UTC'"),
+              eta: format(parseISO(nextFlightDetails.scheduledArrivalDateTimeUTC), "HH:mm 'UTC'"), // Assuming arrival is also UTC
+              gate: "TBA", // Placeholder
+            });
+        }
+      } catch (err) {
+        console.error("Error fetching upcoming duty:", err);
+        setUpcomingDutyError("Failed to load your upcoming duty information.");
+      } finally {
+        setIsUpcomingDutyLoading(false);
+      }
+    }
+    fetchUpcomingDuty();
+  }, [user]);
 
   const safetyTips = [
     { id: 1, tip: "Always perform thorough pre-flight safety checks on all emergency equipment in your assigned zone. Verify seals and accessibility." },
@@ -289,7 +389,7 @@ export default function DashboardPage() {
     }
     switch (alert.level) {
         case "critical": return AlertTriangle;
-        case "warning": return AlertTriangle; 
+        case "warning": return AlertTriangle;
         case "info":
         default: return Info;
     }
@@ -358,16 +458,35 @@ export default function DashboardPage() {
               <PlaneTakeoff className="h-6 w-6 text-primary" />
             </CardHeader>
             <CardContent className="space-y-3">
-              <div>
-                <p className="text-2xl font-bold text-primary">{upcomingDuty.flightNumber} ({upcomingDuty.route})</p>
-                <p className="text-sm text-muted-foreground">{upcomingDuty.aircraft}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                <div><span className="font-semibold">Report:</span> {upcomingDuty.reportingTime}, {upcomingDuty.reportingDate}</div>
-                <div><span className="font-semibold">Location:</span> {upcomingDuty.reportingLocation}</div>
-                <div><span className="font-semibold">ETD:</span> {upcomingDuty.etd} (Gate: {upcomingDuty.gate})</div>
-                <div><span className="font-semibold">ETA:</span> {upcomingDuty.eta}</div>
-              </div>
+              {isUpcomingDutyLoading && (
+                <div className="flex items-center space-x-2 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Loading upcoming duty...</span>
+                </div>
+              )}
+              {upcomingDutyError && (
+                <div className="flex items-center space-x-2 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  <span>{upcomingDutyError}</span>
+                </div>
+              )}
+              {!isUpcomingDutyLoading && !upcomingDutyError && upcomingDuty && (
+                <>
+                  <div>
+                    <p className="text-2xl font-bold text-primary">{upcomingDuty.flightNumber} ({upcomingDuty.route})</p>
+                    <p className="text-sm text-muted-foreground">{upcomingDuty.aircraft}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <div><span className="font-semibold">Report:</span> {upcomingDuty.reportingTime}, {upcomingDuty.reportingDate}</div>
+                    <div><span className="font-semibold">Location:</span> {upcomingDuty.reportingLocation}</div>
+                    <div><span className="font-semibold">ETD:</span> {upcomingDuty.etd} (Gate: {upcomingDuty.gate})</div>
+                    <div><span className="font-semibold">ETA:</span> {upcomingDuty.eta}</div>
+                  </div>
+                </>
+              )}
+              {!isUpcomingDutyLoading && !upcomingDutyError && !upcomingDuty && (
+                <p className="text-sm text-muted-foreground">No upcoming flights or duties found in your schedule.</p>
+              )}
               <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
                 <Link href="/schedule">
                   View Full Roster & Details <ArrowRight className="ml-2 h-4 w-4" />
@@ -565,4 +684,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
