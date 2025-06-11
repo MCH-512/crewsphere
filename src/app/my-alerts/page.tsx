@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, Timestamp, getDocs, or, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, orderBy, Timestamp, getDocs, or, addDoc, serverTimestamp, doc, getDoc, setDoc } from "firebase/firestore"; // Added setDoc
 import { useRouter } from "next/navigation";
 import { BellRing, Loader2, AlertTriangle, RefreshCw, Info, Briefcase, GraduationCap, LucideIcon, CheckCircle } from "lucide-react";
 import { formatDistanceToNowStrict, format } from "date-fns";
@@ -58,24 +58,20 @@ export default function MyAlertsPage() {
       const alertsSnapshot = await getDocs(alertsQuery);
       const fetchedAlertsData = alertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AlertData));
 
-      // Fetch acknowledgements for these alerts by the current user
       const userAcknowledgementsMap = new Map<string, Timestamp>();
       if (fetchedAlertsData.length > 0) {
-        const alertIds = fetchedAlertsData.map(a => a.id);
-        // Firestore 'in' queries are limited to 30 items per query. For more alerts, batching would be needed.
-        // For simplicity, if more than 30 alerts, we might query all user's acks.
-        // Or, more efficiently, construct document IDs like `${user.uid}_${alertId}` and do getDoc in a loop (batched).
-        // For this example, let's assume a reasonable number of alerts or fetch all for user.
+        // Construct document IDs for acknowledgements to fetch them directly
+        const ackPromises = fetchedAlertsData.map(alert => {
+          const ackDocId = `${user.uid}_${alert.id}`;
+          return getDoc(doc(db, "alertAcknowledgements", ackDocId));
+        });
+        const ackSnaps = await Promise.all(ackPromises);
         
-        const acknowledgementsQuery = query(
-          collection(db, "alertAcknowledgements"),
-          where("userId", "==", user.uid),
-          where("alertId", "in", alertIds.length > 0 ? alertIds : ["dummyId"]) // 'in' query needs non-empty array
-        );
-        const ackSnapshot = await getDocs(acknowledgementsQuery);
-        ackSnapshot.forEach(doc => {
-          const ackData = doc.data();
-          userAcknowledgementsMap.set(ackData.alertId, ackData.acknowledgedAt as Timestamp);
+        ackSnaps.forEach((ackSnap, index) => {
+          if (ackSnap.exists()) {
+            const ackData = ackSnap.data();
+            userAcknowledgementsMap.set(fetchedAlertsData[index].id, ackData.acknowledgedAt as Timestamp);
+          }
         });
       }
       
@@ -113,26 +109,35 @@ export default function MyAlertsPage() {
     }
     setIsAcknowledging(prev => ({ ...prev, [alertId]: true }));
     try {
-      const ackDocRef = doc(db, "alertAcknowledgements", `${user.uid}_${alertId}`);
-      // Check if already acknowledged to prevent duplicate writes if UI state is slow
+      const ackDocId = `${user.uid}_${alertId}`;
+      const ackDocRef = doc(db, "alertAcknowledgements", ackDocId);
+      
       const ackSnap = await getDoc(ackDocRef);
+
       if (ackSnap.exists()) {
           toast({ title: "Already Acknowledged", description: "This alert was already marked as read.", variant: "default" });
-          // Optionally re-fetch to ensure UI consistency if local state got out of sync
-          fetchAlerts();
+          // Ensure local state is up-to-date if somehow out of sync
+          if (!alerts.find(a => a.id === alertId)?.isAcknowledged) {
+            setAlerts(prevAlerts => prevAlerts.map(alert => 
+              alert.id === alertId 
+                ? { ...alert, isAcknowledged: true, acknowledgedOn: ackSnap.data()?.acknowledgedAt as Timestamp || Timestamp.now() }
+                : alert
+            ));
+          }
           return;
       }
 
-      await addDoc(collection(db, "alertAcknowledgements"), {
+      await setDoc(ackDocRef, {
         alertId: alertId,
         userId: user.uid,
+        userEmail: user.email, // Store email for potential admin overview
         acknowledgedAt: serverTimestamp(),
+        alertTitle: alerts.find(a => a.id === alertId)?.title || "N/A" // Store title for context
       });
       
-      // Update local state
       setAlerts(prevAlerts => prevAlerts.map(alert => 
         alert.id === alertId 
-          ? { ...alert, isAcknowledged: true, acknowledgedOn: Timestamp.now() } // Use Timestamp.now() for immediate UI update
+          ? { ...alert, isAcknowledged: true, acknowledgedOn: Timestamp.now() } 
           : alert
       ));
       toast({ title: "Alert Acknowledged", description: "Marked as read.", action: <CheckCircle className="text-green-500" /> });

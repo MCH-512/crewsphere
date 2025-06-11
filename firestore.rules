@@ -9,117 +9,112 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isUser(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
     function isAdmin() {
       return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    function isRole(roleName) {
-       return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == roleName;
-    }
-
-    // USERS collection
+    // Users Collection
     match /users/{userId} {
-      allow read: if isAuthenticated(); // All authenticated users can read user profiles (e.g., for display names)
-      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid; // User can create their own doc (signup)
-                      // Ensure required fields are present at creation, and role is not admin unless by admin
-      allow update: if (isUser(userId) && 
-                        !('role' in request.resource.data && request.resource.data.role != resource.data.role) && // User cannot change their own role
-                        !('email' in request.resource.data && request.resource.data.email != resource.data.email) && // User cannot change their own email
-                        !('employeeId' in request.resource.data && request.resource.data.employeeId != resource.data.employeeId) // User cannot change their own employeeId
-                       ) || isAdmin(); // Admin can update any field
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId; // Allow user to create their own doc
+      // Allow user to update their own non-critical fields (e.g. displayName, fullName)
+      allow update: if isAuthenticated() && request.auth.uid == userId && 
+                       !(request.resource.data.role != resource.data.role) && // Role cannot be changed by user
+                       !(request.resource.data.email != resource.data.email) && // Email cannot be changed by user via this rule
+                       !(request.resource.data.uid != resource.data.uid);    // UID cannot be changed
+      // Admin can update any user document fully (including role, status)
+      allow update: if isAdmin();
+      allow delete: if isAdmin(); // Only admins can delete user documents
     }
 
-    // ALERTS collection
-    match /alerts/{alertId} {
-      allow read: if isAuthenticated(); // All authenticated users can read alerts
-      allow create, update, delete: if isAdmin(); // Only admins can manage alerts
-    }
-
-    // ALERTACKNOWLEDGEMENTS collection
-    match /alertAcknowledgements/{ackId} {
-      allow create: if isAuthenticated() && 
-                       request.resource.data.userId == request.auth.uid &&
-                       request.resource.data.alertId is string &&
-                       request.resource.data.acknowledgedAt == request.time;
-      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
-      allow update, delete: if false; // Generally, acknowledgements are immutable
-    }
-
-    // DOCUMENTS collection
+    // Documents Collection
     match /documents/{documentId} {
-      allow read: if isAuthenticated(); // All authenticated users can read documents
-      allow create, update, delete: if isAdmin(); // Only admins can manage documents
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Alerts Collection
+    match /alerts/{alertId} {
+      // Users can read alerts targeted to them or global alerts
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.userId == null);
+      allow create, update, delete: if isAdmin();
     }
     
-    // FLIGHTS collection
-    match /flights/{flightId} {
-        allow read: if isAuthenticated();
-        allow create, update, delete: if isAdmin();
+    // Alert Acknowledgements Collection
+    // Document ID is expected to be `${userId}_${alertId}`
+    match /alertAcknowledgements/{ackId} {
+        allow read: if isAuthenticated() && (ackId.split("_")[0] == request.auth.uid || isAdmin());
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && ackId == request.resource.data.userId + "_" + request.resource.data.alertId;
+        // No update/delete for acknowledgements by users, admin can delete if needed
+        allow delete: if isAdmin();
     }
-
-    // USERACTIVITIES collection (for schedule)
-    match /userActivities/{activityId} {
-        allow read, create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-        allow update, delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin(); // User can manage own, admin can manage all
-    }
-
-    // COURSES collection
+    
+    // Courses Collection
     match /courses/{courseId} {
         allow read: if isAuthenticated();
         allow create, update, delete: if isAdmin();
     }
-
-    // QUIZZES collection
+    
+    // Quizzes Collection (associated with courses)
     match /quizzes/{quizId} {
         allow read: if isAuthenticated();
         allow create, update, delete: if isAdmin();
     }
 
-    // QUESTIONS collection (for quizzes)
+    // Questions Collection (associated with quizzes)
     match /questions/{questionId} {
-        allow read: if isAuthenticated(); // Typically read as part of a quiz by users taking it
+        allow read: if isAuthenticated();
         allow create, update, delete: if isAdmin();
     }
 
-    // CERTIFICATERULES collection
+    // Certificate Rules Collection (associated with courses)
     match /certificateRules/{ruleId} {
-        allow read: if isAuthenticated(); // Users might read rules indirectly via course display
+        allow read: if isAuthenticated();
         allow create, update, delete: if isAdmin();
     }
 
-    // USERTRAININGPROGRESS collection
+    // User Training Progress Collection
+    // Document ID is expected to be `${userId}_${courseId}`
     match /userTrainingProgress/{progressId} {
-      allow read, create, update: if isAuthenticated() && 
-                                     (request.resource.data.userId == request.auth.uid || resource.data.userId == request.auth.uid); // User can manage their own progress
-                                     // Ensure userId is always set to current user on create/update by user
-                                     // Ensure only specific fields are updatable by user (e.g., contentStatus, quizStatus, quizScore)
-      allow delete: if isAdmin(); // Admin can delete progress records if necessary
+      allow read, create, update: if isAuthenticated() && request.auth.uid == progressId.split("_")[0];
+      allow delete: if isAdmin(); // Only admin can delete progress, user cannot.
     }
 
-    // PURSERREPORTS collection
+    // Flights Collection
+    match /flights/{flightId} {
+      allow read: if isAuthenticated(); // All authenticated users can read flight schedules
+      allow create, update, delete: if isAdmin(); // Only admins can modify flight schedules
+    }
+
+    // Purser Reports Collection
     match /purserReports/{reportId} {
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid; // Pursers/users create their own reports
-      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin(); // User can read their own, admin can read all
-      allow update, delete: if isAdmin(); // Only admin can modify or delete
+        // User can create if it's their own report
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        // User can read their own reports, admin can read any report
+        allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+        // Only admin can update/delete
+        allow update, delete: if isAdmin();
     }
 
-    // REQUESTS collection (user requests)
+    // User Requests Collection
     match /requests/{requestId} {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
-      allow update: if isAdmin(); // Only admins can update (e.g., status, adminResponse)
+      allow update: if isAdmin(); // Only admin can update status/response
       allow delete: if isAdmin();
     }
 
-    // SYSTEMCONFIGURATION collection
+    // User Activities (Schedule) Collection
+    match /userActivities/{activityId} {
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        allow read, update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid; // User can manage their own activities
+        allow read, update, delete: if isAdmin(); // Admin can manage all activities
+    }
+    
+    // System Configuration Collection
     match /systemConfiguration/{configId} {
-      allow read: if isAuthenticated(); // Allow authenticated users to read settings (e.g. for maintenance mode check)
-      allow write: if isAdmin(); // Only admins can write system settings
+        allow read: if isAuthenticated(); // All authenticated users can read config (e.g. for maintenance mode checks)
+        allow create, update, delete: if isAdmin(); // Only admins can modify system config
     }
 
   }
