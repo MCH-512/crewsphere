@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, Timestamp, getDocs, or, addDoc, serverTimestamp, doc, getDoc, setDoc } from "firebase/firestore"; // Added setDoc
+import { collection, query, where, orderBy, Timestamp, getDocs, or, serverTimestamp, doc, getDoc, setDoc } from "firebase/firestore"; // Removed addDoc
 import { useRouter } from "next/navigation";
 import { BellRing, Loader2, AlertTriangle, RefreshCw, Info, Briefcase, GraduationCap, LucideIcon, CheckCircle } from "lucide-react";
-import { formatDistanceToNowStrict, format } from "date-fns";
+import { formatDistanceToNowStrict } from "date-fns"; // Removed format
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority";
 import { alertVariants } from "@/components/ui/alert"; 

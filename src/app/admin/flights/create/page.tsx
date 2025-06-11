@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form"; // Removed Controller
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, Loader2, AlertTriangle, CheckCircle, PlusCircle, CalendarPlus } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle, PlusCircle, CalendarPlus } from "lucide-react"; // Removed CalendarIcon
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
