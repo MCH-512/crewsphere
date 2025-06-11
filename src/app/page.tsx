@@ -46,6 +46,7 @@ interface RecentDocument {
   lastUpdated: Timestamp;
   documentContentType?: 'file' | 'markdown' | 'fileWithMarkdown';
   downloadURL?: string;
+  fileName?: string;
 }
 
 interface Flight {
@@ -196,7 +197,7 @@ export default function DashboardPage() {
     async function fetchFeaturedTrainings() {
       if (!user) {
         setFeaturedTrainingsLoading(false);
-        setFeaturedTrainings([]);
+        setFeaturedTrainings([]); 
         return;
       }
       setFeaturedTrainingsLoading(true);
@@ -205,50 +206,53 @@ export default function DashboardPage() {
       const finalFeaturedCourses: FeaturedCourse[] = [];
 
       try {
+        
         const mandatoryQuery = query(
           collection(db, "courses"),
           where("mandatory", "==", true),
-          orderBy("title"),
-          limit(5)
+          orderBy("title"), 
+          limit(5) 
         );
         const mandatorySnapshot = await getDocs(mandatoryQuery);
         const potentialMandatoryCourses = mandatorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FeaturedCourse));
 
         for (const course of potentialMandatoryCourses) {
-          if (finalFeaturedCourses.length >= 2) break;
+          if (finalFeaturedCourses.length >= 2) break; 
           const progressDocId = `${user.uid}_${course.id}`;
           const progressSnap = await getDoc(doc(db, "userTrainingProgress", progressDocId));
           if (progressSnap.exists() && progressSnap.data().quizStatus === 'Passed') {
-            continue;
+            continue; 
           }
           finalFeaturedCourses.push(course);
         }
 
+        
         if (finalFeaturedCourses.length < 2) {
-          const existingIds = finalFeaturedCourses.map(c => c.id);
+          const existingIds = finalFeaturedCourses.map(c => c.id); 
           const generalQuery = query(
             collection(db, "courses"),
-            orderBy("category"),
+            orderBy("category"), 
             orderBy("title"),
-            limit(10)
+            limit(10) 
           );
           const generalSnapshot = await getDocs(generalQuery);
           const potentialGeneralCourses = generalSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as FeaturedCourse));
 
           for (const course of potentialGeneralCourses) {
             if (finalFeaturedCourses.length >= 2) break;
-            if (existingIds.includes(course.id)) continue;
+            if (existingIds.includes(course.id)) continue; 
 
             const progressDocId = `${user.uid}_${course.id}`;
             const progressSnap = await getDoc(doc(db, "userTrainingProgress", progressDocId));
             if (progressSnap.exists() && progressSnap.data().quizStatus === 'Passed') {
-              continue;
+              continue; 
             }
+            
             finalFeaturedCourses.push(course);
           }
         }
         
-        setFeaturedTrainings(finalFeaturedCourses.slice(0, 2));
+        setFeaturedTrainings(finalFeaturedCourses.slice(0, 2)); 
       } catch (err) {
         console.error("Error fetching featured trainings:", err);
         setFeaturedTrainingsError("Failed to load featured trainings.");
@@ -304,8 +308,8 @@ export default function DashboardPage() {
           collection(db, "userActivities"),
           where("userId", "==", user.uid),
           where("activityType", "==", "flight"),
-          where("date", ">=", Timestamp.fromDate(today)), // Only activities from today onwards
-          orderBy("date", "asc") // Order by date first
+          where("date", ">=", Timestamp.fromDate(today)), 
+          orderBy("date", "asc") 
         );
 
         const activitiesSnapshot = await getDocs(activitiesQuery);
@@ -324,9 +328,9 @@ export default function DashboardPage() {
             const flightDocSnap = await getDoc(flightDocRef);
             if (flightDocSnap.exists()) {
               const flightData = { id: flightDocSnap.id, ...flightDocSnap.data() } as Flight;
-              // Further ensure the flight's departure time is in the future
+              
               if (new Date(flightData.scheduledDepartureDateTimeUTC) > new Date()) {
-                // This is a candidate, check if it's earlier than any already found
+                
                 if (!nextFlightDetails || new Date(flightData.scheduledDepartureDateTimeUTC) < new Date(nextFlightDetails.scheduledDepartureDateTimeUTC)) {
                   nextFlightActivity = activityData;
                   nextFlightDetails = flightData;
@@ -336,10 +340,10 @@ export default function DashboardPage() {
           }
         }
         
-        // After checking all activities for the day and future, if we found the earliest future flight, set it.
+        
         if (nextFlightDetails) {
             const departureDateTime = parseISO(nextFlightDetails.scheduledDepartureDateTimeUTC);
-            // Assume reporting time is 2 hours before departure, adjust as needed
+            
             const reportingDateTime = subHours(departureDateTime, 2); 
 
             setUpcomingDuty({
@@ -348,10 +352,10 @@ export default function DashboardPage() {
               aircraft: nextFlightDetails.aircraftType,
               reportingTime: format(reportingDateTime, "HH:mm 'UTC'"),
               reportingDate: format(reportingDateTime, "MMM d, yyyy"),
-              reportingLocation: "Crew Report Centre", // Placeholder
+              reportingLocation: "Crew Report Centre", 
               etd: format(departureDateTime, "HH:mm 'UTC'"),
-              eta: format(parseISO(nextFlightDetails.scheduledArrivalDateTimeUTC), "HH:mm 'UTC'"), // Assuming arrival is also UTC
-              gate: "TBA", // Placeholder
+              eta: format(parseISO(nextFlightDetails.scheduledArrivalDateTimeUTC), "HH:mm 'UTC'"), 
+              gate: "TBA", 
             });
         }
       } catch (err) {
@@ -389,7 +393,7 @@ export default function DashboardPage() {
     }
     switch (alert.level) {
         case "critical": return AlertTriangle;
-        case "warning": return AlertTriangle;
+        case "warning": return AlertTriangle; 
         case "info":
         default: return Info;
     }
@@ -615,7 +619,7 @@ export default function DashboardPage() {
                   <h3 className="font-semibold">{doc.title}</h3>
                   <Badge variant="outline" className="text-xs mb-1">{doc.category}</Badge>
                   <p className="text-sm text-muted-foreground line-clamp-2">
-                    {doc.content || doc.description || (doc.documentContentType === 'file' ? `File: ${doc.downloadURL?.split('/').pop()?.split('?')[0].substring(14) || 'Attached File'}`: 'No preview available.')}
+                    {doc.content || doc.description || (doc.documentContentType === 'file' && doc.fileName ? `File: ${doc.fileName}` : doc.documentContentType === 'file' ? 'Attached File' : 'No preview available.')}
                   </p>
                   <p className="text-xs text-muted-foreground/80 mt-1">
                     Updated: {format(doc.lastUpdated.toDate(), "PP")}
@@ -636,47 +640,58 @@ export default function DashboardPage() {
                   <CardDescription>Mandatory &amp; recommended courses.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {featuredTrainingsLoading && (
-                  <div className="flex items-center space-x-2 text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <span>Loading featured trainings...</span>
+                {user && user.role === 'admin' ? (
+                  <div className="text-sm text-muted-foreground">
+                    <p>As an administrator, you manage training content rather than undertake it here.</p>
+                    <Button asChild variant="link" className="p-0 h-auto mt-2">
+                      <Link href="/admin/courses">Go to Course Management <ArrowRight className="ml-1 h-4 w-4" /></Link>
+                    </Button>
                   </div>
+                ) : (
+                  <>
+                    {featuredTrainingsLoading && (
+                      <div className="flex items-center space-x-2 text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span>Loading featured trainings...</span>
+                      </div>
+                    )}
+                    {featuredTrainingsError && (
+                      <div className="flex items-center space-x-2 text-destructive">
+                        <AlertTriangle className="h-5 w-5" />
+                        <span>{featuredTrainingsError}</span>
+                      </div>
+                    )}
+                    {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.length === 0 && user && (
+                      <p className="text-sm text-muted-foreground">No featured trainings for you at this time. All caught up or check the full library!</p>
+                    )}
+                    {!featuredTrainingsLoading && !featuredTrainingsError && !user && (
+                      <p className="text-sm text-muted-foreground">Log in to see featured trainings.</p>
+                    )}
+                    {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.map((course) => (
+                      <div key={course.id} className="flex items-center gap-4 p-3 border rounded-lg bg-card">
+                        <Image 
+                          src={`https://placehold.co/60x60.png`} 
+                          alt={course.title} 
+                          width={60} 
+                          height={60} 
+                          className="rounded-md" 
+                          data-ai-hint={course.imageHint || "training material"} 
+                        />
+                        <div>
+                          <h3 className="font-semibold text-sm">{course.title}</h3>
+                          <p className="text-xs text-muted-foreground truncate w-40" title={course.description}>{course.description}</p>
+                          {course.mandatory ? (
+                              <Badge variant="destructive" className="mt-1 text-xs">Mandatory</Badge>
+                          ) : (
+                              <Badge variant="outline" className="mt-1 text-xs">Recommended</Badge>
+                          )}
+                          <br/>
+                          <Button size="sm" className="mt-2 text-xs" asChild><Link href="/training">Go to Training</Link></Button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
                 )}
-                {featuredTrainingsError && (
-                  <div className="flex items-center space-x-2 text-destructive">
-                    <AlertTriangle className="h-5 w-5" />
-                    <span>{featuredTrainingsError}</span>
-                  </div>
-                )}
-                {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.length === 0 && user && (
-                  <p className="text-sm text-muted-foreground">No featured trainings available for you at this time.</p>
-                )}
-                 {!featuredTrainingsLoading && !featuredTrainingsError && !user && (
-                  <p className="text-sm text-muted-foreground">Log in to see featured trainings.</p>
-                )}
-                {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.map((course) => (
-                  <div key={course.id} className="flex items-center gap-4 p-3 border rounded-lg bg-card">
-                    <Image 
-                      src={`https://placehold.co/60x60.png`} 
-                      alt={course.title} 
-                      width={60} 
-                      height={60} 
-                      className="rounded-md" 
-                      data-ai-hint={course.imageHint || "training material"} 
-                    />
-                    <div>
-                      <h3 className="font-semibold text-sm">{course.title}</h3>
-                      <p className="text-xs text-muted-foreground truncate w-40" title={course.description}>{course.description}</p>
-                      {course.mandatory ? (
-                          <Badge variant="destructive" className="mt-1 text-xs">Mandatory</Badge>
-                      ) : (
-                          <Badge variant="outline" className="mt-1 text-xs">Recommended</Badge>
-                      )}
-                      <br/>
-                      <Button size="sm" className="mt-2 text-xs" asChild><Link href="/training">Go to Training</Link></Button>
-                    </div>
-                  </div>
-                ))}
               </CardContent>
           </Card>
         </AnimatedCard>
@@ -684,3 +699,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
