@@ -33,7 +33,7 @@ import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { addDays, addWeeks, addMonths, getDay, isBefore, isEqual, isAfter, startOfDay, parseISO, formatISO, set } from "date-fns";
+import { addDays, addMonths, getDay, isAfter, startOfDay, parseISO, formatISO } from "date-fns";
 
 const weekDays = [
   { id: 1, label: "Mon" }, { id: 2, label: "Tue" }, { id: 3, label: "Wed" },
@@ -107,65 +107,65 @@ const generateRecurrentDates = (values: FlightRecurrenceFormValues): Date[] => {
 
     if (!rawStartDate) return [];
     
-    let currentDate = startOfDay(parseISO(rawStartDate));
+    const baseStartDate = startOfDay(parseISO(rawStartDate)); 
     const limitEndDate = rawEndDate ? startOfDay(parseISO(rawEndDate)) : null;
 
     if (frequency === "once") {
-        dates.push(currentDate);
+        if (limitEndDate && isAfter(baseStartDate, limitEndDate)) return [];
+        dates.push(baseStartDate);
         return dates;
     }
     if (frequency === "custom") {
-        return customDates ? customDates.map(d => startOfDay(d)) : [];
+        return customDates 
+            ? customDates.map(d => startOfDay(d)).filter(d => !limitEndDate || !isAfter(d, limitEndDate)) 
+            : [];
     }
 
     let occurrences = 0;
     const maxOccurrences = endsOn === "afterOccurrences" ? numberOfOccurrences : Infinity;
-    const maxLoop = 366 * 2; // Limit to 2 years of generation to prevent infinite loops with "never"
+    const hardLoopLimit = 5 * 365; // Safety limit for "never" (5 years of days)
+    let iterationCount = 0;
 
-    for (let i = 0; i < maxLoop && occurrences < maxOccurrences; i++) {
-        if (limitEndDate && isAfter(currentDate, limitEndDate)) {
-            break;
-        }
+    if (frequency === "daily" || frequency === "weekly") {
+        let currentDate = new Date(baseStartDate);
+        while (occurrences < maxOccurrences && iterationCount < hardLoopLimit) {
+            iterationCount++;
+            if (limitEndDate && isAfter(currentDate, limitEndDate)) {
+                break;
+            }
 
-        if (frequency === "daily") {
-            dates.push(new Date(currentDate)); // Push a copy
-            occurrences++;
-        } else if (frequency === "weekly") {
-            if (daysOfWeek?.includes(getDay(currentDate))) {
+            let addThisDate = false;
+            if (frequency === "daily") {
+                addThisDate = true;
+            } else if (frequency === "weekly") {
+                if (daysOfWeek?.includes(getDay(currentDate))) {
+                    addThisDate = true;
+                }
+            }
+
+            if (addThisDate) {
                 dates.push(new Date(currentDate));
                 occurrences++;
             }
-        } else if (frequency === "monthly") {
-            // Simple monthly: repeats on the same day of the month as the start date
-            if (currentDate.getDate() === parseISO(rawStartDate).getDate()) {
-                 dates.push(new Date(currentDate));
-                 occurrences++;
+            
+            currentDate = addDays(currentDate, 1);
+        }
+    } else if (frequency === "monthly") {
+        // Loop by incrementing the month offset from the baseStartDate
+        for (let monthOffset = 0; occurrences < maxOccurrences && iterationCount < hardLoopLimit; monthOffset++) {
+            iterationCount++; // Increment for the hardLoopLimit check
+            const currentDate = addMonths(baseStartDate, monthOffset);
+            
+            if (limitEndDate && isAfter(currentDate, limitEndDate)) {
+                break;
             }
+            dates.push(new Date(currentDate));
+            occurrences++;
         }
-        
-        if (frequency === "daily" || frequency === "weekly") {
-          currentDate = addDays(currentDate, 1);
-        } else if (frequency === "monthly") {
-          // To correctly handle "same day of month", we advance day by day
-          // until we find the next matching day of month in the next month.
-          // Or, for simplicity, advance by 1 day and check date.
-          currentDate = addDays(currentDate,1);
-          // More robust monthly logic could be:
-          // if (currentDate.getDate() === parseISO(rawStartDate).getDate()) {
-          //   currentDate = addMonths(currentDate, 1); // Advance to next month, same day
-          // } else {
-          //    // If we are not on the target day, move to the next day
-          //    // This logic could be tricky with end of months.
-          //    // For now, the check inside the loop handles it by adding if date matches.
-          //    currentDate = addDays(currentDate,1);
-          // }
-        }
-
-
-        if (dates.length >= maxLoop && endsOn === "never") { // Safety break for "never ending"
-            console.warn("Reached generation limit for 'never ending' recurrence.");
-            break;
-        }
+    }
+    
+    if (iterationCount >= hardLoopLimit && endsOn === "never" && (frequency === "daily" || frequency === "weekly" || frequency === "monthly")) {
+        console.warn("Reached generation limit for 'never ending' recurrence (5 years).");
     }
     return dates;
 };
@@ -437,4 +437,6 @@ export default function CreateFlightPage() {
     </div>
   );
 }
+    
+
     
