@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -5,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar, type DayContentProps } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -19,7 +20,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, Timestamp, orderBy, serverTimestamp, deleteDoc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfDay, endOfDay, parseISO, setHours, setMinutes, setSeconds, setMilliseconds } from "date-fns";
+import { format, startOfDay, endOfDay, parseISO, setHours, setMinutes, setSeconds, setMilliseconds, isSameMonth } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Flight {
@@ -70,7 +71,6 @@ const activityFormSchema = z.object({
       });
     }
   } else {
-    // For non-flight activities, flightId should be empty
     if (data.flightId && data.flightId.trim() !== "") {
        ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -127,6 +127,7 @@ export default function SchedulePage() {
   const [isDeletingActivity, setIsDeletingActivity] = React.useState(false);
 
   const [activityTypeFilter, setActivityTypeFilter] = React.useState<ActivityTypeFilter>("all");
+  const [dailyActivityTypesMap, setDailyActivityTypesMap] = React.useState<Map<string, Set<string>>>(new Map());
 
 
   const activityForm = useForm<ActivityFormValues>({
@@ -155,7 +156,7 @@ export default function SchedulePage() {
     try {
       const [hours, minutes] = timeString.split(':').map(Number);
       if (isNaN(hours) || isNaN(minutes)) return null;
-      const newDate = new Date(activityBaseDate); // Use the original activity date part
+      const newDate = new Date(activityBaseDate); 
       newDate.setHours(hours, minutes, 0, 0);
       return Timestamp.fromDate(newDate);
     } catch {
@@ -252,6 +253,23 @@ export default function SchedulePage() {
       fetchAvailableFlights();
     }
   }, [user, userActivities, fetchAvailableFlights]); 
+
+  React.useEffect(() => {
+    const newMap = new Map<string, Set<string>>();
+    userActivities.forEach(activity => {
+      const dateKey = format(activity.date.toDate(), "yyyy-MM-dd");
+      if (!newMap.has(dateKey)) {
+        newMap.set(dateKey, new Set<string>());
+      }
+      const typesOnDate = newMap.get(dateKey)!; 
+      if (activity.activityType === 'flight') {
+        typesOnDate.add('flight');
+      } else {
+        typesOnDate.add('otherType');
+      }
+    });
+    setDailyActivityTypesMap(newMap);
+  }, [userActivities]);
 
 
   const handleOpenAddActivityDialog = () => {
@@ -378,20 +396,32 @@ export default function SchedulePage() {
   
   const eventsForSelectedDate = getEventsForDate(selectedDate, activityTypeFilter);
   
-  const eventModifiers = {
-    flight: userActivities
-        .filter(act => act.activityType === 'flight')
-        .map(act => act.date.toDate())
-        .filter(date => date !== null) as Date[],
-    otherActivity: userActivities
-        .filter(act => act.activityType !== 'flight')
-        .map(act => act.date.toDate())
-        .filter(date => date !== null) as Date[],
-  };
+  const CustomDayInnerContent: React.FC<DayContentProps> = (props) => {
+    const dateKey = format(props.date, "yyyy-MM-dd");
+    const activityTypesOnDate = dailyActivityTypesMap.get(dateKey);
+    const dayNumber = props.date.getDate();
 
-  const eventModifierStyles = {
-    flight: { backgroundColor: 'hsl(var(--primary)/0.8)', color: 'hsl(var(--primary-foreground))', borderRadius: '0.25rem', border: '1px solid hsl(var(--primary))' },
-    otherActivity: { backgroundColor: 'hsl(var(--accent)/0.7)', color: 'hsl(var(--accent-foreground))', borderRadius: '0.25rem', border: '1px solid hsl(var(--accent))' },
+    // Only render dots if the day is in the current displayMonth
+    // The button wrapper for the day will handle visibility for outside days.
+    // if (!isSameMonth(props.date, props.displayMonth)) {
+    //   return <div className="text-muted-foreground opacity-50">{dayNumber}</div>; 
+    // }
+  
+    return (
+      <div className="relative w-full h-full flex flex-col items-center justify-center">
+        <span>{dayNumber}</span>
+        {(activityTypesOnDate && isSameMonth(props.date, props.displayMonth)) && (
+          <div className="absolute bottom-0.5 flex space-x-0.5">
+            {activityTypesOnDate.has('flight') && (
+              <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+            )}
+            {activityTypesOnDate.has('otherType') && (
+              <div className="w-1.5 h-1.5 bg-accent rounded-full" />
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const formatEventTime = (event: UserActivity) => {
@@ -459,12 +489,15 @@ export default function SchedulePage() {
               month={month}
               onMonthChange={setMonth}
               className="rounded-md border p-4 w-full max-w-md lg:max-w-none"
-              modifiers={eventModifiers}
-              modifiersStyles={eventModifierStyles}
+              components={{ DayContent: CustomDayInnerContent }}
               footer={
                 <div className="flex flex-wrap justify-start items-center gap-x-4 gap-y-1 mt-4 pt-2 border-t">
-                  <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded-sm" style={eventModifierStyles.flight} /> Flight</div>
-                  <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded-sm" style={eventModifierStyles.otherActivity} /> Other Activity</div>
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <div className="w-2 h-2 bg-primary rounded-full" /> Flight Activity
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <div className="w-2 h-2 bg-accent rounded-full" /> Other Activity
+                  </div>
                 </div>
               }
             />
