@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -15,7 +14,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PlaneTakeoff, Briefcase, Users, MapPin, Loader2, AlertTriangle, PlusCircle, CheckCircle, CalendarPlus, ListTodo, Bed, Shield, BookOpen, CircleHelp, Trash2, Edit3 } from "lucide-react";
+import { PlaneTakeoff, Briefcase, Users, MapPin, Loader2, AlertTriangle, PlusCircle, CheckCircle, CalendarPlus, ListTodo, Bed, Shield, BookOpen, CircleHelp, Trash2, Edit3, Filter } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, Timestamp, orderBy, serverTimestamp, deleteDoc, updateDoc } from "firebase/firestore";
@@ -48,6 +47,10 @@ interface UserActivity {
 }
 
 type CombinedEvent = UserActivity;
+
+const activityTypesForFilter = ["all", "flight", "off", "standby", "leave", "sick", "training", "other"] as const;
+type ActivityTypeFilter = typeof activityTypesForFilter[number];
+
 
 const activityFormSchema = z.object({
   activityType: z.enum(["flight", "off", "standby", "leave", "sick", "training", "other"], {
@@ -122,6 +125,8 @@ export default function SchedulePage() {
 
   const [activityToDelete, setActivityToDelete] = React.useState<UserActivity | null>(null);
   const [isDeletingActivity, setIsDeletingActivity] = React.useState(false);
+
+  const [activityTypeFilter, setActivityTypeFilter] = React.useState<ActivityTypeFilter>("all");
 
 
   const activityForm = useForm<ActivityFormValues>({
@@ -229,7 +234,7 @@ export default function SchedulePage() {
 
     } catch (err) {
       console.error("Error fetching available flights:", err);
-      setError((prevError) => prevError ? `${prevError}\nFailed to load available flights.` : "Failed to load available flights.");
+      setError((prevError) => prevError ? `$\{prevError}\nFailed to load available flights.` : "Failed to load available flights.");
     } finally {
       setIsLoadingAvailableFlights(false);
     }
@@ -265,7 +270,7 @@ export default function SchedulePage() {
     setEditingActivity(activity);
     activityForm.reset({
       activityType: activity.activityType,
-      flightId: activity.flightId || "", // Should be empty for editable (non-flight) activities
+      flightId: activity.flightId || "", 
       startTime: formatTimestampToHHMM(activity.startTime),
       endTime: formatTimestampToHHMM(activity.endTime),
       comments: activity.comments || "",
@@ -303,18 +308,17 @@ export default function SchedulePage() {
         const updatePayload: Partial<Omit<UserActivity, 'id' | 'createdAt' | 'userId' | 'flightDetails'>> = {
           activityType: data.activityType,
           comments: data.comments || "",
-          flightId: data.activityType === "flight" ? data.flightId : null, // Should remain null for non-flight edits
+          flightId: data.activityType === "flight" ? data.flightId : null, 
           startTime: startTimeUTC,
           endTime: endTimeUTC,
-          // date field itself is not changed during an edit of this type
         };
         await updateDoc(doc(db, "userActivities", editingActivity.id), updatePayload);
-        toast({ title: "Activity Updated", description: `Activity on ${format(activityBaseDate, "PPP")} has been updated.`});
+        toast({ title: "Activity Updated", description: `Activity on $\{format(activityBaseDate, "PPP")} has been updated.`});
       } else {
         const activityToSave: Omit<UserActivity, 'id' | 'createdAt' | 'flightDetails'> = {
           userId: user.uid,
           activityType: data.activityType,
-          date: Timestamp.fromDate(activityBaseDate), // Save as midnight UTC of the selected day
+          date: Timestamp.fromDate(activityBaseDate), 
           comments: data.comments || "",
           flightId: data.activityType === "flight" ? data.flightId : null,
           startTime: startTimeUTC,
@@ -324,7 +328,7 @@ export default function SchedulePage() {
           ...activityToSave,
           createdAt: serverTimestamp(),
         });
-        toast({ title: "Activity Added", description: `${data.activityType} for ${format(activityBaseDate, "PPP")} has been added.`});
+        toast({ title: "Activity Added", description: `$\{data.activityType} for $\{format(activityBaseDate, "PPP")} has been added.`});
       }
       
       fetchUserActivities();
@@ -334,7 +338,7 @@ export default function SchedulePage() {
       setIsEditMode(false);
     } catch (err) {
       console.error("Error saving activity:", err);
-      toast({ title: "Save Failed", description: `Could not ${isEditMode ? 'update' : 'save'} the activity.`, variant: "destructive" });
+      toast({ title: "Save Failed", description: `Could not $\{isEditMode ? 'update' : 'save'} the activity.`, variant: "destructive" });
     } finally {
       setIsSavingActivity(false);
     }
@@ -345,7 +349,7 @@ export default function SchedulePage() {
     setIsDeletingActivity(true);
     try {
         await deleteDoc(doc(db, "userActivities", activityToDelete.id));
-        toast({ title: "Activity Deleted", description: `The activity on ${format(activityToDelete.date.toDate(), "PPP")} has been deleted.` });
+        toast({ title: "Activity Deleted", description: `The activity on $\{format(activityToDelete.date.toDate(), "PPP")} has been deleted.` });
         fetchUserActivities();
         setActivityToDelete(null);
     } catch (err) {
@@ -356,10 +360,15 @@ export default function SchedulePage() {
     }
   };
   
-  const getEventsForDate = (date: Date | undefined): CombinedEvent[] => {
+  const getEventsForDate = (date: Date | undefined, filter: ActivityTypeFilter): CombinedEvent[] => {
     if (!date) return [];
     return userActivities
-      .filter(activity => activity.date.toDate().toDateString() === date.toDateString())
+      .filter(activity => {
+        const activityDateMatches = activity.date.toDate().toDateString() === date.toDateString();
+        if (!activityDateMatches) return false;
+        if (filter === "all") return true;
+        return activity.activityType === filter;
+      })
       .sort((a, b) => {
         const aTime = a.activityType === 'flight' ? (a.flightDetails ? new Date(a.flightDetails.scheduledDepartureDateTimeUTC).getTime() : 0) : (a.startTime?.toDate().getTime() || a.date.toDate().getTime());
         const bTime = b.activityType === 'flight' ? (b.flightDetails ? new Date(b.flightDetails.scheduledDepartureDateTimeUTC).getTime() : 0) : (b.startTime?.toDate().getTime() || b.date.toDate().getTime());
@@ -367,7 +376,7 @@ export default function SchedulePage() {
       });
   };
   
-  const eventsForSelectedDate = getEventsForDate(selectedDate);
+  const eventsForSelectedDate = getEventsForDate(selectedDate, activityTypeFilter);
   
   const eventModifiers = {
     flight: userActivities
@@ -389,15 +398,15 @@ export default function SchedulePage() {
     if (event.activityType === 'flight' && event.flightDetails) {
       const depTime = format(parseISO(event.flightDetails.scheduledDepartureDateTimeUTC), "HH:mm");
       const arrTime = format(parseISO(event.flightDetails.scheduledArrivalDateTimeUTC), "HH:mm");
-      return `${depTime} - ${arrTime} UTC`;
+      return `$\{depTime} - $\{arrTime} UTC`;
     }
     if (event.startTime && event.endTime) {
       const sTime = format(event.startTime.toDate(), "HH:mm");
       const eTime = format(event.endTime.toDate(), "HH:mm");
-      return `${sTime} - ${eTime} Local`;
+      return `$\{sTime} - $\{eTime} Local`;
     }
     if (event.startTime) {
-      return `Starts ${format(event.startTime.toDate(), "HH:mm")} Local`;
+      return `Starts $\{format(event.startTime.toDate(), "HH:mm")} Local`;
     }
     return "All day";
   };
@@ -474,6 +483,21 @@ export default function SchedulePage() {
                 <CardTitle className="text-lg font-headline">
                   Events for {selectedDate ? format(selectedDate, "MMM d, yyyy") : "selected date"}
                 </CardTitle>
+                 <div className="mt-2">
+                  <Select value={activityTypeFilter} onValueChange={(value) => setActivityTypeFilter(value as ActivityTypeFilter)}>
+                    <SelectTrigger className="w-full text-xs h-8">
+                      <Filter className="mr-1.5 h-3.5 w-3.5 text-muted-foreground"/>
+                      <SelectValue placeholder="Filter by type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activityTypesForFilter.map(type => (
+                        <SelectItem key={type} value={type} className="capitalize text-xs">
+                          {type === "all" ? "All Types" : type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardHeader>
               <CardContent>
                 {isLoadingActivities ? <div className="flex justify-center items-center h-20"><Loader2 className="h-6 w-6 animate-spin" /></div> : 
@@ -487,7 +511,7 @@ export default function SchedulePage() {
                                 {getActivityIcon(event.activityType)}
                                 <h3 className="font-semibold text-sm capitalize">
                                     {event.activityType === 'flight' && event.flightDetails ? 
-                                     `${event.flightDetails.flightNumber}: ${event.flightDetails.departureAirport} - ${event.flightDetails.arrivalAirport}` : 
+                                     `$\{event.flightDetails.flightNumber}: $\{event.flightDetails.departureAirport} - $\{event.flightDetails.arrivalAirport}` : 
                                      event.activityType}
                                 </h3>
                             </div>
@@ -514,7 +538,11 @@ export default function SchedulePage() {
                     </ul>
                   </ScrollArea>
                 ) : (
-                  <p className="text-sm text-muted-foreground py-4 text-center">No activities or flights for this date.</p>
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    {activityTypeFilter === "all" 
+                      ? "No activities or flights for this date." 
+                      : `No activities of type '$\{activityTypeFilter}' for this date.`}
+                  </p>
                 )}
               </CardContent>
             </Card>
@@ -525,7 +553,7 @@ export default function SchedulePage() {
       <Dialog open={isActivityFormOpen} onOpenChange={(open) => { setIsActivityFormOpen(open); if (!open) { setEditingActivity(null); setIsEditMode(false); activityForm.reset(); }}}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{isEditMode ? "Edit Activity" : `Add Activity for ${selectedDate ? format(selectedDate, "PPP") : ""}`}</DialogTitle>
+            <DialogTitle>{isEditMode ? "Edit Activity" : `Add Activity for $\{selectedDate ? format(selectedDate, "PPP") : ""}`}</DialogTitle>
             <DialogDescription>
               {isEditMode ? "Modify the details of your activity." : "Select the type of activity and fill in the details. Times are considered local to the activity date."}
             </DialogDescription>
@@ -549,8 +577,6 @@ export default function SchedulePage() {
                             }
                         }} 
                         defaultValue={field.value}
-                        // Disable changing type to "flight" in edit mode if it wasn't originally a flight.
-                        // And disable changing from "flight" to something else (though flight editing isn't here).
                         disabled={isEditMode && (editingActivity?.activityType === 'flight' || field.value === 'flight')}
                     >
                       <FormControl>
@@ -573,7 +599,7 @@ export default function SchedulePage() {
                 )}
               />
 
-              {watchedActivityType === "flight" && !isEditMode && ( // Only show for new flight activities
+              {watchedActivityType === "flight" && !isEditMode && ( 
                 <FormField
                   control={activityForm.control}
                   name="flightId"
