@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquareWarning, Loader2, AlertTriangle, CheckCircle, Edit3 as EditIcon } from "lucide-react";
+import { MessageSquareWarning, Loader2, AlertTriangle, CheckCircle, Edit3 as EditIcon, Link as LinkIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -38,6 +38,7 @@ const alertFormSchema = z.object({
   level: z.enum(["info", "warning", "critical"], { required_error: "Please select an alert level." }),
   userId: z.string().max(50).optional().describe("Firebase UID of a specific user, or leave blank for global."),
   iconName: z.string().max(50).optional().describe("Lucide icon name (e.g., BellRing, PlaneTakeoff)."),
+  linkUrl: z.string().url({ message: "Veuillez entrer une URL valide." }).optional().or(z.literal('')),
 });
 
 type AlertFormValues = z.infer<typeof alertFormSchema>;
@@ -49,6 +50,7 @@ interface AlertDocumentForEdit {
   level: "info" | "warning" | "critical";
   userId?: string | null;
   iconName?: string | null;
+  linkUrl?: string | null;
   createdAt: Timestamp;
   createdBy: string;
 }
@@ -72,7 +74,9 @@ export default function EditAlertPage() {
       level: "info",
       userId: "",
       iconName: "",
+      linkUrl: "",
     },
+    mode: "onChange",
   });
 
   React.useEffect(() => {
@@ -101,6 +105,7 @@ export default function EditAlertPage() {
             level: alertData.level,
             userId: alertData.userId || "",
             iconName: alertData.iconName || "",
+            linkUrl: alertData.linkUrl || "",
           });
         } catch (error) {
           console.error("Error loading alert data:", error);
@@ -128,7 +133,8 @@ export default function EditAlertPage() {
         level: data.level,
         userId: data.userId || null,
         iconName: data.iconName || null,
-        updatedAt: serverTimestamp(), // Add an updatedAt field if you want to track updates
+        linkUrl: data.linkUrl || null,
+        updatedAt: serverTimestamp(),
       });
 
       toast({
@@ -250,6 +256,21 @@ export default function EditAlertPage() {
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="linkUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center"><LinkIcon className="mr-2 h-4 w-4 text-muted-foreground"/>Action Link URL (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="url" placeholder="https://example.com/more-info" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormDescription>If provided, a button/link will allow users to navigate to this URL.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <FormField
                 control={form.control}
@@ -286,3 +307,5 @@ export default function EditAlertPage() {
     </div>
   );
 }
+
+    

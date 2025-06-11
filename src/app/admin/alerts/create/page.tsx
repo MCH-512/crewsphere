@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquareWarning, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
+import { MessageSquareWarning, Loader2, AlertTriangle, CheckCircle, Link as LinkIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -38,6 +38,7 @@ const alertFormSchema = z.object({
   level: z.enum(["info", "warning", "critical"], { required_error: "Please select an alert level." }),
   userId: z.string().max(50).optional().describe("Firebase UID of a specific user, or leave blank for global."),
   iconName: z.string().max(50).optional().describe("Lucide icon name (e.g., BellRing, PlaneTakeoff)."),
+  linkUrl: z.string().url({ message: "Veuillez entrer une URL valide." }).optional().or(z.literal('')),
 });
 
 type AlertFormValues = z.infer<typeof alertFormSchema>;
@@ -48,6 +49,7 @@ const defaultValues: Partial<AlertFormValues> = {
   level: "info",
   userId: "",
   iconName: "",
+  linkUrl: "",
 };
 
 export default function CreateAlertPage() {
@@ -59,6 +61,7 @@ export default function CreateAlertPage() {
   const form = useForm<AlertFormValues>({
     resolver: zodResolver(alertFormSchema),
     defaultValues,
+    mode: "onChange",
   });
 
   React.useEffect(() => {
@@ -80,10 +83,11 @@ export default function CreateAlertPage() {
         title: data.title,
         content: data.content,
         level: data.level,
-        userId: data.userId || null, // Store as null if empty for easier querying
-        iconName: data.iconName || null, // Store as null if empty
+        userId: data.userId || null,
+        iconName: data.iconName || null,
+        linkUrl: data.linkUrl || null,
         createdAt: serverTimestamp(),
-        createdBy: user.uid, // Optional: track who created it
+        createdBy: user.uid, 
       });
 
       toast({
@@ -92,8 +96,6 @@ export default function CreateAlertPage() {
         action: <CheckCircle className="text-green-500" />,
       });
       form.reset();
-      // Optionally redirect or offer to create another
-      // router.push('/admin/alerts'); // If an alerts management page exists
     } catch (error) {
       console.error("Error creating alert in Firestore:", error);
       toast({ title: "Creation Failed", description: "Could not create the alert. Please try again.", variant: "destructive" });
@@ -198,7 +200,7 @@ export default function CreateAlertPage() {
                     <FormItem>
                       <FormLabel>Icon Name (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., BellRing, PlaneTakeoff" {...field} />
+                        <Input placeholder="e.g., BellRing, PlaneTakeoff" {...field} value={field.value || ""} />
                       </FormControl>
                       <FormDescription>Lucide icon name. Defaults by level if blank.</FormDescription>
                       <FormMessage />
@@ -209,12 +211,27 @@ export default function CreateAlertPage() {
               
               <FormField
                 control={form.control}
+                name="linkUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center"><LinkIcon className="mr-2 h-4 w-4 text-muted-foreground"/>Action Link URL (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="url" placeholder="https://example.com/more-info" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormDescription>If provided, a button/link will allow users to navigate to this URL.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="userId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Target User ID (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter specific Firebase User ID" {...field} />
+                      <Input placeholder="Enter specific Firebase User ID" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormDescription>Leave blank to send this alert to all users (global alert).</FormDescription>
                     <FormMessage />
@@ -242,3 +259,5 @@ export default function CreateAlertPage() {
     </div>
   );
 }
+
+    
