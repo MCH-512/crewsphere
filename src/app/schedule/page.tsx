@@ -10,16 +10,18 @@ import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogPrimitiveDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogPrimitiveTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PlaneTakeoff, Briefcase, Users, MapPin, Loader2, AlertTriangle, PlusCircle, CheckCircle, CalendarPlus, ListTodo, Bed, Shield, BookOpen, CircleHelp } from "lucide-react";
+import { PlaneTakeoff, Briefcase, Users, MapPin, Loader2, AlertTriangle, PlusCircle, CheckCircle, CalendarPlus, ListTodo, Bed, Shield, BookOpen, CircleHelp, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, Timestamp, orderBy, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, endOfDay, parseISO, setHours, setMinutes, setSeconds, setMilliseconds } from "date-fns";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Flight {
   id: string;
@@ -45,7 +47,7 @@ interface UserActivity {
   createdAt: Timestamp;
 }
 
-type CombinedEvent = UserActivity; // Simplified, as UserActivity now holds flightDetails if applicable
+type CombinedEvent = UserActivity;
 
 const activityFormSchema = z.object({
   activityType: z.enum(["flight", "off", "standby", "leave", "sick", "training", "other"], {
@@ -73,9 +75,26 @@ const activityFormSchema = z.object({
       });
     }
   }
-  if ((data.startTime && !data.endTime) || (!data.startTime && data.endTime)) {
-    // If one is provided, the other should be too, or handle as full day
-    // This rule can be adjusted based on desired strictness for non-flight activities
+  if (data.startTime && !data.endTime) {
+    ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "End time is required if start time is provided.",
+        path: ["endTime"],
+    });
+  }
+  if (!data.startTime && data.endTime) {
+     ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Start time is required if end time is provided.",
+        path: ["startTime"],
+    });
+  }
+  if (data.startTime && data.endTime && data.startTime >= data.endTime) {
+    ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "End time must be after start time.",
+        path: ["endTime"],
+    });
   }
 });
 type ActivityFormValues = z.infer<typeof activityFormSchema>;
@@ -97,6 +116,10 @@ export default function SchedulePage() {
 
   const [isAddActivityDialogOpen, setIsAddActivityDialogOpen] = React.useState(false);
   const [isSavingActivity, setIsSavingActivity] = React.useState(false);
+
+  const [activityToDelete, setActivityToDelete] = React.useState<UserActivity | null>(null);
+  const [isDeletingActivity, setIsDeletingActivity] = React.useState(false);
+
 
   const activityForm = useForm<ActivityFormValues>({
     resolver: zodResolver(activityFormSchema),
@@ -128,7 +151,7 @@ export default function SchedulePage() {
         where("userId", "==", user.uid),
         where("date", ">=", Timestamp.fromDate(currentMonthStart)),
         where("date", "<", Timestamp.fromDate(nextMonthStart)),
-        orderBy("date", "asc") // Ensure consistent order for the month
+        orderBy("date", "asc") 
       );
       const activitiesSnapshot = await getDocs(activitiesQuery);
       const populatedActivities: UserActivity[] = [];
@@ -170,24 +193,23 @@ export default function SchedulePage() {
       const allFlightsSnapshot = await getDocs(allFlightsQuery);
       const allFlights = allFlightsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Flight));
       
-      // Filter out flights the user is already assigned to via userActivities
       const assignedFlightIdsInActivities = userActivities
         .filter(act => act.activityType === 'flight' && act.flightId)
         .map(act => act.flightId);
 
       const filteredAvailable = allFlights.filter(f => 
         !assignedFlightIdsInActivities.includes(f.id) && 
-        new Date(f.scheduledDepartureDateTimeUTC) > new Date()
+        new Date(f.scheduledDepartureDateTimeUTC) > new Date() 
       );
       setAvailableFlightsData(filteredAvailable);
 
     } catch (err) {
       console.error("Error fetching available flights:", err);
-      setError((prevError) => prevError ? `${prevError}\nFailed to load available flights for selection.` : "Failed to load available flights for selection.");
+      setError((prevError) => prevError ? `${prevError}\nFailed to load available flights.` : "Failed to load available flights.");
     } finally {
       setIsLoadingAvailableFlights(false);
     }
-  }, [user, userActivities]); // Depends on userActivities now
+  }, [user, userActivities]); 
 
 
   React.useEffect(() => {
@@ -198,9 +220,9 @@ export default function SchedulePage() {
 
   React.useEffect(() => {
     if (user) {
-      fetchAvailableFlights(); // This will run after userActivities are fetched
+      fetchAvailableFlights();
     }
-  }, [user, userActivities, fetchAvailableFlights]); // Ensure this runs when userActivities changes
+  }, [user, userActivities, fetchAvailableFlights]); 
 
 
   const handleSaveActivity = async (data: ActivityFormValues) => {
@@ -241,7 +263,7 @@ export default function SchedulePage() {
             createdAt: serverTimestamp(),
         });
         toast({ title: "Activity Added", description: `${data.activityType} for ${format(selectedDate, "PPP")} has been added.`});
-        fetchUserActivities(); // Refresh all activities
+        fetchUserActivities();
         setIsAddActivityDialogOpen(false);
         activityForm.reset();
     } catch (err) {
@@ -249,6 +271,22 @@ export default function SchedulePage() {
         toast({ title: "Save Failed", description: "Could not save the activity.", variant: "destructive" });
     } finally {
         setIsSavingActivity(false);
+    }
+  };
+
+  const confirmDeleteActivity = async () => {
+    if (!activityToDelete) return;
+    setIsDeletingActivity(true);
+    try {
+        await deleteDoc(doc(db, "userActivities", activityToDelete.id));
+        toast({ title: "Activity Deleted", description: `The activity on ${format(activityToDelete.date.toDate(), "PPP")} has been deleted.` });
+        fetchUserActivities();
+        setActivityToDelete(null);
+    } catch (err) {
+        console.error("Error deleting activity:", err);
+        toast({ title: "Deletion Failed", description: "Could not delete the activity.", variant: "destructive" });
+    } finally {
+        setIsDeletingActivity(false);
     }
   };
   
@@ -290,10 +328,10 @@ export default function SchedulePage() {
     if (event.startTime && event.endTime) {
       const sTime = format(event.startTime.toDate(), "HH:mm");
       const eTime = format(event.endTime.toDate(), "HH:mm");
-      return `${sTime} - ${eTime} UTC`;
+      return `${sTime} - ${eTime} Local`;
     }
     if (event.startTime) {
-      return `Starts ${format(event.startTime.toDate(), "HH:mm")} UTC`;
+      return `Starts ${format(event.startTime.toDate(), "HH:mm")} Local`;
     }
     return "All day";
   };
@@ -344,9 +382,7 @@ export default function SchedulePage() {
               selected={selectedDate}
               onSelect={setSelectedDate}
               month={month}
-              onMonthChange={(newMonth) => {
-                setMonth(newMonth);
-              }}
+              onMonthChange={setMonth}
               className="rounded-md border p-4 w-full max-w-md lg:max-w-none"
               modifiers={eventModifiers}
               modifiersStyles={eventModifierStyles}
@@ -381,27 +417,40 @@ export default function SchedulePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {(isLoadingActivities) ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 
+                {isLoadingActivities ? <div className="flex justify-center items-center h-20"><Loader2 className="h-6 w-6 animate-spin" /></div> : 
                   eventsForSelectedDate.length > 0 ? (
-                  <ul className="space-y-3">
-                    {eventsForSelectedDate.map((event) => (
-                      <li key={event.id} className="p-3 rounded-md border bg-card hover:shadow-sm transition-shadow">
-                        <div className="flex items-center gap-2 mb-1">
-                            {getActivityIcon(event.activityType)}
-                            <h3 className="font-semibold text-sm capitalize">
-                                {event.activityType === 'flight' && event.flightDetails ? 
-                                 `${event.flightDetails.flightNumber}: ${event.flightDetails.departureAirport} - ${event.flightDetails.arrivalAirport}` : 
-                                 event.activityType}
-                            </h3>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{formatEventTime(event)}</p>
-                        {event.activityType === 'flight' && event.flightDetails && <Badge variant="default" className="mt-1 text-xs">{event.flightDetails.status}</Badge>}
-                        {event.comments && <p className="text-xs text-muted-foreground mt-1">Note: {event.comments}</p>}
-                      </li>
-                    ))}
-                  </ul>
+                  <ScrollArea className="h-[300px] pr-3">
+                    <ul className="space-y-3">
+                      {eventsForSelectedDate.map((event) => (
+                        <li key={event.id} className="p-3 rounded-md border bg-card hover:shadow-sm transition-shadow">
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-2 mb-1">
+                                {getActivityIcon(event.activityType)}
+                                <h3 className="font-semibold text-sm capitalize">
+                                    {event.activityType === 'flight' && event.flightDetails ? 
+                                     `${event.flightDetails.flightNumber}: ${event.flightDetails.departureAirport} - ${event.flightDetails.arrivalAirport}` : 
+                                     event.activityType}
+                                </h3>
+                            </div>
+                            {event.activityType !== 'flight' && (
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive/80" onClick={() => setActivityToDelete(event)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                </AlertDialog>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">{formatEventTime(event)}</p>
+                          {event.activityType === 'flight' && event.flightDetails && <Badge variant="default" className="mt-1 text-xs">{event.flightDetails.status}</Badge>}
+                          {event.comments && <p className="text-xs text-muted-foreground mt-1">Note: {event.comments}</p>}
+                        </li>
+                      ))}
+                    </ul>
+                  </ScrollArea>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No activities or flights for this date.</p>
+                  <p className="text-sm text-muted-foreground py-4 text-center">No activities or flights for this date.</p>
                 )}
               </CardContent>
             </Card>
@@ -414,7 +463,7 @@ export default function SchedulePage() {
           <DialogHeader>
             <DialogTitle>Add Activity for {selectedDate ? format(selectedDate, "PPP") : ""}</DialogTitle>
             <DialogDescription>
-              Select the type of activity and fill in the details.
+              Select the type of activity and fill in the details. Times are considered local to the activity date.
             </DialogDescription>
           </DialogHeader>
           <Form {...activityForm}>
@@ -429,7 +478,10 @@ export default function SchedulePage() {
                         onValueChange={(value) => {
                             field.onChange(value);
                             if (value !== 'flight') {
-                                activityForm.setValue('flightId', ''); // Clear flightId if not flight type
+                                activityForm.setValue('flightId', ''); 
+                            } else {
+                                activityForm.setValue('startTime', '');
+                                activityForm.setValue('endTime', '');
                             }
                         }} 
                         defaultValue={field.value}
@@ -473,7 +525,7 @@ export default function SchedulePage() {
                           )}
                           {availableFlightsData.map(flight => (
                             <SelectItem key={flight.id} value={flight.id}>
-                              {flight.flightNumber} ({flight.departureAirport}-{flight.arrivalAirport}) - {format(parseISO(flight.scheduledDepartureDateTimeUTC), "MMM d, HH:mm")}
+                              {flight.flightNumber} ({flight.departureAirport}-{flight.arrivalAirport}) - {format(parseISO(flight.scheduledDepartureDateTimeUTC), "MMM d, HH:mm")} UTC
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -492,7 +544,7 @@ export default function SchedulePage() {
                         name="startTime"
                         render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Start Time (UTC)</FormLabel>
+                            <FormLabel>Start Time (Local)</FormLabel>
                             <FormControl>
                             <Input type="time" {...field} />
                             </FormControl>
@@ -506,7 +558,7 @@ export default function SchedulePage() {
                         name="endTime"
                         render={({ field }) => (
                         <FormItem>
-                            <FormLabel>End Time (UTC)</FormLabel>
+                            <FormLabel>End Time (Local)</FormLabel>
                             <FormControl>
                             <Input type="time" {...field} />
                             </FormControl>
@@ -533,7 +585,7 @@ export default function SchedulePage() {
               />
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button type="button" variant="outline">Cancel</Button>
+                  <Button type="button" variant="outline" onClick={() => activityForm.reset()}>Cancel</Button>
                 </DialogClose>
                 <Button type="submit" disabled={isSavingActivity || (watchedActivityType === "flight" && isLoadingAvailableFlights)}>
                   {isSavingActivity && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -544,6 +596,27 @@ export default function SchedulePage() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {activityToDelete && (
+        <AlertDialog open={!!activityToDelete} onOpenChange={(open) => !open && setActivityToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogPrimitiveTitle>Confirm Deletion</AlertDialogPrimitiveTitle>
+                    <AlertDialogPrimitiveDescription>
+                        Are you sure you want to delete this activity: <span className="font-semibold capitalize">{activityToDelete.activityType}</span> on <span className="font-semibold">{format(activityToDelete.date.toDate(), "PPP")}</span>?
+                        This action cannot be undone.
+                    </AlertDialogPrimitiveDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setActivityToDelete(null)} disabled={isDeletingActivity}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmDeleteActivity} disabled={isDeletingActivity} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        {isDeletingActivity && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Delete
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }
