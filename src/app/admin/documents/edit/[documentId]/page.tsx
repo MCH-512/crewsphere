@@ -4,7 +4,6 @@
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -34,28 +33,8 @@ import { ref as storageRef, uploadBytesResumable, getDownloadURL, getMetadata, d
 import { Progress } from "@/components/ui/progress";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-
-const categories = [
-  "SOPs (Standard Operating Procedures)",
-  "SEP (Safety & Emergency Procedures)",
-  "CRM & FRMS",
-  "AVSEC (Aviation Security)",
-  "Cabin & Service Operations",
-  "Dangerous Goods (DGR)",
-  "Manuels",
-  "Training & Formations",
-  "Règlementation & Références"
-];
-const documentSources = [
-  "EASA",
-  "IATA",
-  "ICAO",
-  "Tunisian Authorities",
-  "Company Procedures Manuals",
-  "Other",
-];
-
-const MAX_FILE_SIZE_MB = 15;
+import { documentCategories, documentSources } from "@/config/document-options";
+import { documentFormSchema, type DocumentFormValues, MAX_FILE_SIZE_MB } from "@/schemas/document-schema";
 
 interface DocumentForEdit {
   id: string;
@@ -74,31 +53,6 @@ interface DocumentForEdit {
   uploadedBy: string;
   uploaderEmail?: string;
 }
-
-const documentFormSchema = z.object({
-  title: z.string().min(3, "Title must be at least 3 characters.").max(150),
-  category: z.string({ required_error: "Please select a category." }),
-  source: z.string({ required_error: "Please select the document source/type." }),
-  version: z.string().max(20).optional(),
-  content: z.string().max(20000, "Content is too long (max 20,000 chars).").optional(),
-  file: z.custom<FileList>().optional()
-    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE_MB * 1024 * 1024, 
-            `File size should be less than ${MAX_FILE_SIZE_MB}MB.`),
-  existingFileUrl: z.string().optional(),
-  existingFilePath: z.string().optional(),
-  existingFileName: z.string().optional(),
-}).superRefine((data, ctx) => {
-  // For edit, it's valid if there's existing content OR an existing file OR new content OR a new file.
-  if (!data.content?.trim() && (!data.file || data.file.length === 0) && !data.existingFileUrl) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Document must have content or a file. Please add content or upload a new file if removing the existing one.",
-      path: ["content"], 
-    });
-  }
-});
-
-type DocumentFormValues = z.infer<typeof documentFormSchema>;
 
 export default function EditDocumentPage() {
   const { toast } = useToast();
@@ -176,7 +130,6 @@ export default function EditDocumentPage() {
     form.setValue("existingFileUrl", "");
     form.setValue("existingFilePath", "");
     form.setValue("existingFileName", "");
-    // if fileInputRef.current { fileInputRef.current.value = ""; } // This won't work for clearing selection, handled by form state
     toast({ title: "File Marked for Removal", description: "The existing file will be removed when you save changes. You can upload a new one if needed." });
   };
 
@@ -200,8 +153,7 @@ export default function EditDocumentPage() {
     const fileToUpload = data.file?.[0];
     let newFileUploaded = false;
 
-    if (fileToUpload) { // A new file is being uploaded
-      // Delete old file if it exists and a new one is being uploaded
+    if (fileToUpload) { 
       if (data.existingFilePath) {
         try {
           const oldFileRef = storageRef(storage, data.existingFilePath);
@@ -243,9 +195,8 @@ export default function EditDocumentPage() {
           }
         );
       });
-       if (!updatePayload.downloadURL) { setIsSubmitting(false); return; } // Upload failed
+       if (!updatePayload.downloadURL) { setIsSubmitting(false); return; } 
     } else if (!data.existingFileUrl && data.existingFilePath) {
-      // No new file, and existingFileUrl is cleared, meaning user wants to delete existing file
       try {
         const oldFileRef = storageRef(storage, data.existingFilePath);
         await deleteObject(oldFileRef);
@@ -257,21 +208,13 @@ export default function EditDocumentPage() {
       } catch (e) {
         console.warn("Could not delete existing file:", e);
         toast({ title: "File Deletion Error", description: "Could not remove the existing file. Please try saving again.", variant: "warning" });
-        // Continue with other updates if file deletion fails but user wants to proceed
       }
     } else if (data.existingFileUrl) {
-        // Keep existing file details if no new file and existingFileUrl is present
         updatePayload.downloadURL = data.existingFileUrl;
         updatePayload.filePath = data.existingFilePath;
         updatePayload.fileName = data.existingFileName;
-        // fileType and size would typically remain the same for an existing file
-        // You might need to fetch them if they aren't stored in form state.
-        // For simplicity, if they are not changing, we don't need to explicitly set them here
-        // unless the document structure requires all fields.
     }
 
-
-    // Determine documentContentType
     const hasContent = !!updatePayload.content?.trim();
     const hasFile = !!updatePayload.downloadURL;
 
@@ -287,7 +230,6 @@ export default function EditDocumentPage() {
       return;
     }
     setCurrentDocumentType(updatePayload.documentContentType);
-
 
     try {
       const docRef = doc(db, "documents", documentId);
@@ -371,7 +313,7 @@ export default function EditDocumentPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categories.map(cat => (
+                          {documentCategories.map(cat => (
                             <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                           ))}
                         </SelectContent>

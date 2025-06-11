@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import ReactMarkdown from "react-markdown";
+import { documentCategories, documentSources } from "@/config/document-options";
 
 interface Document {
   id: string;
@@ -33,31 +34,11 @@ interface Document {
   lastUpdated: Timestamp | string;
   size?: string;
   downloadURL?: string;
-  fileName?: string; // Added for better display of downloaded files
+  fileName?: string; 
   fileType?: string;
-  documentContentType?: 'file' | 'markdown' | 'fileWithMarkdown'; // Updated
+  documentContentType?: 'file' | 'markdown' | 'fileWithMarkdown'; 
   content?: string;
 }
-
-const categories = [
-  "SOPs (Standard Operating Procedures)",
-  "SEP (Safety & Emergency Procedures)",
-  "CRM & FRMS",
-  "AVSEC (Aviation Security)",
-  "Cabin & Service Operations",
-  "Dangerous Goods (DGR)",
-  "Manuels",
-  "Training & Formations",
-  "Règlementation & Références"
-];
-const documentSources = [
-  "EASA",
-  "IATA",
-  "ICAO",
-  "Tunisian Authorities",
-  "Company Procedures Manuals",
-  "Other",
-];
 
 export default function DocumentsPage() {
   const [allDocuments, setAllDocuments] = React.useState<Document[]>([]);
@@ -93,7 +74,7 @@ export default function DocumentsPage() {
           downloadURL: data.downloadURL,
           fileName: data.fileName,
           fileType: data.fileType,
-          documentContentType: data.documentContentType || (data.downloadURL ? 'file' : 'markdown'), // Fallback for older docs
+          documentContentType: data.documentContentType || (data.downloadURL ? 'file' : 'markdown'), 
           content: data.content,
         } as Document;
       });
@@ -205,7 +186,7 @@ export default function DocumentsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(cat => (
+                  {documentCategories.map(cat => (
                     <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                   ))}
                 </SelectContent>
@@ -289,7 +270,7 @@ export default function DocumentsPage() {
         </Card>
       </AnimatedCard>
 
-      {selectedDocumentForView && (doc.documentContentType === 'markdown' || doc.documentContentType === 'fileWithMarkdown') && (
+      {selectedDocumentForView && (selectedDocumentForView.documentContentType === 'markdown' || selectedDocumentForView.documentContentType === 'fileWithMarkdown') && (
         <Dialog open={isViewNoteDialogOpen} onOpenChange={setIsViewNoteDialogOpen}>
           <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[80vh] flex flex-col">
             <DialogHeader>
@@ -327,8 +308,3 @@ export default function DocumentsPage() {
       )}
     </div>
   );
-    
-
-    
-
-

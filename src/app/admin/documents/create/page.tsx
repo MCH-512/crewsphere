@@ -4,7 +4,6 @@
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -33,54 +32,8 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL, getMetadata } from "firebase/storage";
 import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
-
-const categories = [
-  "SOPs (Standard Operating Procedures)",
-  "SEP (Safety & Emergency Procedures)",
-  "CRM & FRMS",
-  "AVSEC (Aviation Security)",
-  "Cabin & Service Operations",
-  "Dangerous Goods (DGR)",
-  "Manuels",
-  "Training & Formations",
-  "Règlementation & Références"
-];
-const documentSources = [
-  "EASA",
-  "IATA",
-  "ICAO",
-  "Tunisian Authorities",
-  "Company Procedures Manuals",
-  "Other",
-];
-
-const MAX_FILE_SIZE_MB = 15;
-
-const documentFormSchema = z.object({
-  title: z.string().min(3, "Title must be at least 3 characters.").max(150),
-  category: z.string({ required_error: "Please select a category." }),
-  source: z.string({ required_error: "Please select the document source/type." }),
-  version: z.string().max(20).optional(),
-  content: z.string().max(20000, "Content is too long (max 20,000 chars).").optional(),
-  file: z.custom<FileList>().optional()
-    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE_MB * 1024 * 1024, 
-            `File size should be less than ${MAX_FILE_SIZE_MB}MB.`),
-}).superRefine((data, ctx) => {
-  if (!data.content?.trim() && (!data.file || data.file.length === 0)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Either document content (Markdown) or a file attachment is required.",
-      path: ["content"], 
-    });
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "A file attachment is required if no content is provided.",
-      path: ["file"],
-    });
-  }
-});
-
-type DocumentFormValues = z.infer<typeof documentFormSchema>;
+import { documentCategories, documentSources } from "@/config/document-options";
+import { documentFormSchema, type DocumentFormValues, MAX_FILE_SIZE_MB } from "@/schemas/document-schema";
 
 export default function CreateDocumentPage() {
   const { toast } = useToast();
@@ -151,7 +104,7 @@ export default function CreateDocumentPage() {
           }
         );
       });
-      if (!fileDownloadURL) { // If upload failed and didn't resolve URL
+      if (!fileDownloadURL) { 
          setIsSubmitting(false);
          return; 
       }
@@ -164,7 +117,6 @@ export default function CreateDocumentPage() {
     } else if (data.content?.trim()) {
       documentContentType = 'markdown';
     } else {
-      // This case should be caught by Zod superRefine, but as a safeguard:
       toast({ title: "Invalid Data", description: "Document must have content or a file.", variant: "destructive" });
       setIsSubmitting(false);
       return;
@@ -274,7 +226,7 @@ export default function CreateDocumentPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categories.map(cat => (
+                          {documentCategories.map(cat => (
                             <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                           ))}
                         </SelectContent>
