@@ -56,7 +56,8 @@ import {
   Award,
   Inbox, 
   ClipboardCheck, 
-  FilePlus, 
+  FilePlus,
+  Users, // Added Users icon here
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -145,8 +146,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/admin": "Admin Console",
     "/admin/users": "User Management",
     "/admin/documents": "Document Management",
-    "/admin/documents/create": "Create New Document", // Updated
-    "/admin/documents/edit": "Edit Document", // Updated
+    "/admin/documents/create": "Create New Document", 
+    "/admin/documents/edit": "Edit Document", 
     "/admin/alerts": "All Broadcast Alerts",
     "/admin/alerts/create": "Create New Alert",
     "/admin/alerts/edit": "Edit Alert",
