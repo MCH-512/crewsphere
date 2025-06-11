@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority";
 import { alertVariants } from "@/components/ui/alert"; 
 import { useNotification } from "@/contexts/notification-context"; 
+import { cn } from "@/lib/utils";
 
 interface AlertData {
   id: string;
@@ -239,7 +240,14 @@ export default function MyAlertsPage() {
                   const timeAgo = formatDistanceToNowStrict(alert.createdAt.toDate(), { addSuffix: true });
                   
                   return (
-                  <ShadAlert key={alert.id} variant={getAlertVariant(alert.level)} className="shadow-sm">
+                  <ShadAlert 
+                    key={alert.id} 
+                    variant={getAlertVariant(alert.level)} 
+                    className={cn(
+                        "shadow-sm",
+                        alert.isAcknowledged && "bg-muted/40 border-muted/60 opacity-80 dark:bg-muted/20 dark:border-muted/30"
+                    )}
+                  >
                     <IconComponent className="h-5 w-5" /> 
                     <div className="flex justify-between items-start mb-1">
                         <ShadAlertTitle>{alert.title}</ShadAlertTitle>
