@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
-import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon } from "lucide-react";
+import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { generateDailyBriefing, type DailyBriefingOutput } from "@/ai/flows/daily-briefing-flow";
@@ -13,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, limit, getDocs, Timestamp, or, doc, getDoc } from "firebase/firestore";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatDistanceToNowStrict, format } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
@@ -36,6 +37,17 @@ interface FeaturedCourse {
   category: string;
 }
 
+interface RecentDocument {
+  id: string;
+  title: string;
+  category: string;
+  content?: string;
+  description?: string; // Assuming a short description field might exist or we use content
+  lastUpdated: Timestamp;
+  documentContentType?: 'file' | 'markdown' | 'fileWithMarkdown';
+  downloadURL?: string;
+}
+
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -52,6 +64,10 @@ export default function DashboardPage() {
   const [featuredTrainings, setFeaturedTrainings] = React.useState<FeaturedCourse[]>([]);
   const [featuredTrainingsLoading, setFeaturedTrainingsLoading] = React.useState(true);
   const [featuredTrainingsError, setFeaturedTrainingsError] = React.useState<string | null>(null);
+
+  const [recentDocuments, setRecentDocuments] = React.useState<RecentDocument[]>([]);
+  const [recentDocumentsLoading, setRecentDocumentsLoading] = React.useState(true);
+  const [recentDocumentsError, setRecentDocumentsError] = React.useState<string | null>(null);
 
 
   React.useEffect(() => {
@@ -209,6 +225,32 @@ export default function DashboardPage() {
     fetchFeaturedTrainings();
   }, [user, toast]);
 
+  React.useEffect(() => {
+    async function fetchRecentDocuments() {
+      if (!user) {
+        setRecentDocumentsLoading(false);
+        return;
+      }
+      setRecentDocumentsLoading(true);
+      setRecentDocumentsError(null);
+      try {
+        const docsQuery = query(collection(db, "documents"), orderBy("lastUpdated", "desc"), limit(3));
+        const docsSnapshot = await getDocs(docsQuery);
+        const fetchedDocs = docsSnapshot.docs.map(d => ({
+          id: d.id,
+          ...d.data(),
+        } as RecentDocument));
+        setRecentDocuments(fetchedDocs);
+      } catch (err) {
+        console.error("Error fetching recent documents:", err);
+        setRecentDocumentsError("Failed to load recent documents.");
+        toast({ title: "Documents Error", description: "Could not load recent documents.", variant: "destructive" });
+      } finally {
+        setRecentDocumentsLoading(false);
+      }
+    }
+    fetchRecentDocuments();
+  }, [user, toast]);
 
   const upcomingDuty = {
     flightNumber: "BA245",
@@ -221,12 +263,6 @@ export default function DashboardPage() {
     eta: "15:00 EST (19:00 UTC)",
     gate: "C55 (LHR)",
   };
-
-  const updates = [
-    { id: 1, title: "New In-flight Service Standards: Long Haul", content: "Updated service flow for long-haul flights effective August 1st. See DOC-SVC-LH-0724.", date: "July 28, 2024" },
-    { id: 2, title: "Security Awareness Bulletin", content: "Reminder: Report any suspicious activity immediately. See SEC-BUL-0724-02.", date: "July 26, 2024" },
-    { id: 3, title: "Welcome New Cabin Crew Class!", content: "Let's extend a warm welcome to our 15 new cabin crew members graduating today from Batch 24-C.", date: "July 22, 2024" },
-  ];
 
   const safetyTips = [
     { id: 1, tip: "Always perform thorough pre-flight safety checks on all emergency equipment in your assigned zone. Verify seals and accessibility." },
@@ -415,7 +451,7 @@ export default function DashboardPage() {
       <AnimatedCard delay={0.35}>
         <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
-              <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-green-600"/>Safety & Best Practice Tips</CardTitle>
+              <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-green-600"/>Safety &amp; Best Practice Tips</CardTitle>
               <CardDescription>Key reminders for maintaining safety and excellence.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -426,7 +462,7 @@ export default function DashboardPage() {
                   </div>
               ))}
                <Button variant="link" className="p-0 h-auto text-sm" asChild>
-                <Link href="/documents?category=safety">More Safety Information</Link>
+                <Link href={`/documents?category=${encodeURIComponent("🚨 SEP (Safety & Emergency Procedures)")}`}>More Safety Information</Link>
               </Button>
           </CardContent>
         </Card>
@@ -436,18 +472,39 @@ export default function DashboardPage() {
          <AnimatedCard delay={0.4} className="md:col-span-2">
            <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
-              <CardTitle className="font-headline">Key Updates & Announcements</CardTitle>
+              <CardTitle className="font-headline flex items-center"><BookCopy className="mr-2 h-5 w-5 text-primary"/>Key Updates &amp; Announcements</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {updates.map((update) => (
-                <div key={update.id} className="pb-3 border-b last:border-b-0">
-                  <h3 className="font-semibold">{update.title}</h3>
-                  <p className="text-sm text-muted-foreground">{update.content}</p>
-                  <p className="text-xs text-muted-foreground/80 mt-1">{update.date}</p>
+              {recentDocumentsLoading && (
+                <div className="flex items-center space-x-2 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Loading updates...</span>
+                </div>
+              )}
+              {recentDocumentsError && (
+                <ShadAlert variant="destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  <ShadAlertTitle>Error</ShadAlertTitle>
+                  <ShadAlertDescription>{recentDocumentsError}</ShadAlertDescription>
+                </ShadAlert>
+              )}
+              {!recentDocumentsLoading && !recentDocumentsError && recentDocuments.length === 0 && (
+                <p className="text-sm text-muted-foreground">No recent documents or announcements.</p>
+              )}
+              {!recentDocumentsLoading && !recentDocumentsError && recentDocuments.map((doc) => (
+                <div key={doc.id} className="pb-3 border-b last:border-b-0">
+                  <h3 className="font-semibold">{doc.title}</h3>
+                  <Badge variant="outline" className="text-xs mb-1">{doc.category}</Badge>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {doc.content || doc.description || (doc.documentContentType === 'file' ? `File: ${doc.downloadURL?.split('/').pop()?.split('?')[0].substring(14) || 'Attached File'}`: 'No preview available.')}
+                  </p>
+                  <p className="text-xs text-muted-foreground/80 mt-1">
+                    Updated: {format(doc.lastUpdated.toDate(), "PP")}
+                  </p>
                 </div>
               ))}
-               <Button variant="link" className="p-0 h-auto text-sm" asChild>
-                  <Link href="#">Read more updates</Link>
+               <Button variant="link" className="p-0 h-auto text-sm mt-2" asChild>
+                  <Link href="/documents">View All Documents</Link>
                </Button>
             </CardContent>
           </Card>
@@ -457,7 +514,7 @@ export default function DashboardPage() {
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
               <CardHeader>
                   <CardTitle className="font-headline">Featured Training</CardTitle>
-                  <CardDescription>Mandatory & recommended courses.</CardDescription>
+                  <CardDescription>Mandatory &amp; recommended courses.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {featuredTrainingsLoading && (
@@ -508,3 +565,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
