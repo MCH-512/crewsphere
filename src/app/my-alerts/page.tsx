@@ -9,13 +9,14 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, Timestamp, getDocs, or, serverTimestamp, doc, getDoc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { BellRing, Loader2, AlertTriangle, RefreshCw, Info, Briefcase, GraduationCap, LucideIcon, CheckCircle } from "lucide-react";
+import { BellRing, Loader2, AlertTriangle, RefreshCw, Info, Briefcase, GraduationCap, LucideIcon, CheckCircle, Link as LinkIcon } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns"; 
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority";
 import { alertVariants } from "@/components/ui/alert"; 
 import { useNotification } from "@/contexts/notification-context"; 
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 interface AlertData {
   id: string;
@@ -25,6 +26,7 @@ interface AlertData {
   createdAt: Timestamp;
   userId?: string | null; 
   iconName?: string | null;
+  linkUrl?: string | null; // Added linkUrl
   isAcknowledged?: boolean;
   acknowledgedOn?: Timestamp | null;
 }
@@ -257,24 +259,33 @@ export default function MyAlertsPage() {
                     {alert.userId === user?.uid && (
                         <p className="text-xs font-medium text-primary mb-2">(Personal Alert)</p>
                     )}
-
-                    {!alert.isAcknowledged ? (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleAcknowledge(alert.id)}
-                        disabled={isAcknowledging[alert.id] || isLoading}
-                        className="mt-2 w-full sm:w-auto"
-                      >
-                        {isAcknowledging[alert.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
-                        {isAcknowledging[alert.id] ? "Acknowledging..." : "Acknowledge"}
-                      </Button>
-                    ) : (
-                      <div className="flex items-center text-xs text-green-600 dark:text-green-400 mt-2">
-                        <CheckCircle className="mr-1.5 h-4 w-4" />
-                        Acknowledged {alert.acknowledgedOn ? formatDistanceToNowStrict(alert.acknowledgedOn.toDate(), { addSuffix: true }) : ''}
-                      </div>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                        {alert.linkUrl && alert.linkUrl.trim() !== "" && (
+                             <Button asChild variant="outline" size="sm">
+                                <Link href={alert.linkUrl} target="_blank" rel="noopener noreferrer">
+                                    <LinkIcon className="mr-2 h-4 w-4" />
+                                    More Info
+                                </Link>
+                            </Button>
+                        )}
+                        {!alert.isAcknowledged ? (
+                        <Button 
+                            size="sm" 
+                            variant="default" 
+                            onClick={() => handleAcknowledge(alert.id)}
+                            disabled={isAcknowledging[alert.id] || isLoading}
+                            className={cn(alert.linkUrl && alert.linkUrl.trim() !== "" ? "" : "w-full sm:w-auto")}
+                        >
+                            {isAcknowledging[alert.id] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                            {isAcknowledging[alert.id] ? "Acknowledging..." : "Acknowledge"}
+                        </Button>
+                        ) : (
+                        <div className="flex items-center text-xs text-green-600 dark:text-green-400">
+                            <CheckCircle className="mr-1.5 h-4 w-4" />
+                            Acknowledged {alert.acknowledgedOn ? formatDistanceToNowStrict(alert.acknowledgedOn.toDate(), { addSuffix: true }) : ''}
+                        </div>
+                        )}
+                    </div>
                   </ShadAlert>
                 )})}
             </div>
@@ -284,3 +295,4 @@ export default function MyAlertsPage() {
     </div>
   );
 }
+
