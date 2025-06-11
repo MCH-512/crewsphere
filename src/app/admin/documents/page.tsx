@@ -12,7 +12,7 @@ import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogPrimitiveDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogPrimitiveTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area"; 
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle, UploadCloud, StickyNote, FileEdit, BarChartHorizontalBig } from "lucide-react";
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, FilePlus, StickyNote, Layers } from "lucide-react"; // Added FilePlus, Layers
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -46,7 +46,7 @@ interface Document {
   fileType?: string; 
   uploadedBy?: string;
   uploaderEmail?: string;
-  documentContentType?: 'file' | 'text';
+  documentContentType?: 'file' | 'markdown' | 'fileWithMarkdown'; // Updated
   content?: string; 
 }
 
@@ -88,6 +88,7 @@ export default function AdminDocumentsPage() {
   const [totalDocumentsCount, setTotalDocumentsCount] = React.useState<number>(0);
   const [fileCount, setFileCount] = React.useState<number>(0);
   const [textNoteCount, setTextNoteCount] = React.useState<number>(0);
+  const [combinedCount, setCombinedCount] = React.useState<number>(0);
 
 
   const fetchDocuments = React.useCallback(async () => {
@@ -96,19 +97,23 @@ export default function AdminDocumentsPage() {
     setTotalDocumentsCount(0);
     setFileCount(0);
     setTextNoteCount(0);
+    setCombinedCount(0);
     try {
       const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc"));
       const querySnapshot = await getDocs(q);
       let tempFileCount = 0;
       let tempTextNoteCount = 0;
+      let tempCombinedCount = 0;
 
       const fetchedDocuments = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        const docContentType = data.documentContentType || 'file';
+        const docContentType = data.documentContentType || (data.downloadURL ? 'file' : 'markdown'); // Fallback for older docs
         if (docContentType === 'file') {
           tempFileCount++;
-        } else if (docContentType === 'text') {
+        } else if (docContentType === 'markdown') {
           tempTextNoteCount++;
+        } else if (docContentType === 'fileWithMarkdown') {
+          tempCombinedCount++;
         }
         return {
           id: doc.id,
@@ -131,6 +136,7 @@ export default function AdminDocumentsPage() {
       setTotalDocumentsCount(fetchedDocuments.length);
       setFileCount(tempFileCount);
       setTextNoteCount(tempTextNoteCount);
+      setCombinedCount(tempCombinedCount);
 
     } catch (err) {
       console.error("Error fetching documents:", err);
@@ -157,7 +163,7 @@ export default function AdminDocumentsPage() {
     try {
       await deleteDoc(doc(db, "documents", documentToDelete.id));
 
-      if (documentToDelete.documentContentType === 'file' && documentToDelete.filePath) {
+      if (documentToDelete.filePath && (documentToDelete.documentContentType === 'file' || documentToDelete.documentContentType === 'fileWithMarkdown')) {
         const fileRef = storageRef(storage, documentToDelete.filePath);
         await deleteObject(fileRef);
       }
@@ -174,14 +180,15 @@ export default function AdminDocumentsPage() {
   };
 
   const getIconForDocumentType = (doc: Document) => {
-    if (doc.documentContentType === 'text') {
-      return <StickyNote className="h-5 w-5 text-yellow-500" />;
+    switch (doc.documentContentType) {
+        case 'markdown': return <StickyNote className="h-5 w-5 text-yellow-500" />;
+        case 'file': return <FileTextIcon className="h-5 w-5 text-primary" />;
+        case 'fileWithMarkdown': return <Layers className="h-5 w-5 text-green-500" />; // New icon for combined
+        default: // Fallback for older documents or unspecified type
+            if (doc.downloadURL) return <FileTextIcon className="h-5 w-5 text-primary" />;
+            if (doc.content) return <StickyNote className="h-5 w-5 text-yellow-500" />;
+            return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
     }
-    if (!doc.fileType) return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
-    if (doc.fileType.includes("pdf") || doc.fileType.includes("word") || doc.fileType.includes("document") || doc.fileType.includes("excel") || doc.fileType.includes("sheet")) {
-      return <FileTextIcon className="h-5 w-5 text-primary" />;
-    }
-    return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
   };
 
   const formatDate = (dateValue: Timestamp | string) => {
@@ -203,10 +210,10 @@ export default function AdminDocumentsPage() {
   });
 
   const handleViewDocument = (doc: Document) => {
-    if (doc.documentContentType === 'text') {
+    if (doc.documentContentType === 'markdown' || doc.documentContentType === 'fileWithMarkdown') {
       setSelectedDocumentForView(doc);
-      setIsViewNoteDialogOpen(true);
-    } else if (doc.downloadURL) {
+      setIsViewNoteDialogOpen(true); // Re-use or rename dialog for combined view
+    } else if (doc.documentContentType === 'file' && doc.downloadURL) {
       window.open(doc.downloadURL, '_blank');
     } else {
       toast({ title: "View Error", description: "No content or URL available for this document.", variant: "destructive"});
@@ -242,7 +249,7 @@ export default function AdminDocumentsPage() {
               <FileTextIcon className="mr-3 h-7 w-7 text-primary" />
               Document Management
             </CardTitle>
-            <CardDescription>View, upload files, or create textual notes/procedures.</CardDescription>
+            <CardDescription>View, create, and manage documents, notes, and procedures.</CardDescription>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={fetchDocuments} disabled={isLoading} className="w-full sm:w-auto">
@@ -250,15 +257,9 @@ export default function AdminDocumentsPage() {
               Refresh
             </Button>
             <Button asChild className="w-full sm:w-auto">
-              <Link href="/admin/documents/upload">
-                <UploadCloud className="mr-2 h-4 w-4" />
-                Upload File
-              </Link>
-            </Button>
-            <Button asChild className="w-full sm:w-auto">
-              <Link href="/admin/documents/create-note">
-                <FileEdit className="mr-2 h-4 w-4" />
-                Create Note
+              <Link href="/admin/documents/create">
+                <FilePlus className="mr-2 h-4 w-4" />
+                Create Document
               </Link>
             </Button>
           </div>
@@ -269,7 +270,6 @@ export default function AdminDocumentsPage() {
         <Card className="shadow-md">
             <CardHeader>
                 <CardTitle className="text-lg font-headline flex items-center">
-                    <BarChartHorizontalBig className="mr-2 h-5 w-5 text-primary"/>
                     Document Statistics
                 </CardTitle>
             </CardHeader>
@@ -280,18 +280,22 @@ export default function AdminDocumentsPage() {
                         <p className="ml-2 text-muted-foreground">Loading statistics...</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center sm:text-left">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-center sm:text-left">
                         <div>
                             <p className="text-sm text-muted-foreground">Total Documents</p>
                             <p className="text-2xl font-bold">{totalDocumentsCount}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-muted-foreground">Uploaded Files</p>
+                            <p className="text-sm text-muted-foreground">Files Only</p>
                             <p className="text-2xl font-bold">{fileCount}</p>
                         </div>
                         <div>
-                            <p className="text-sm text-muted-foreground">Text Notes/Procedures</p>
+                            <p className="text-sm text-muted-foreground">Text Only</p>
                             <p className="text-2xl font-bold">{textNoteCount}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground">Combined (Text + File)</p>
+                            <p className="text-2xl font-bold">{combinedCount}</p>
                         </div>
                     </div>
                 )}
@@ -358,7 +362,7 @@ export default function AdminDocumentsPage() {
           )}
 
           {!isLoading && !error && filteredDocuments.length === 0 && (
-            <p className="text-muted-foreground text-center py-10">No documents found matching your criteria. Click "Upload File" or "Create Note" to add new content.</p>
+            <p className="text-muted-foreground text-center py-10">No documents found matching your criteria. Click "Create Document" to add new content.</p>
           )}
 
           {!isLoading && !error && filteredDocuments.length > 0 && (
@@ -385,14 +389,14 @@ export default function AdminDocumentsPage() {
                       <TableCell><Badge variant="outline">{doc.category}</Badge></TableCell>
                       <TableCell><Badge variant="secondary">{doc.source}</Badge></TableCell> 
                       <TableCell>{doc.version || "N/A"}</TableCell>
-                      <TableCell>{doc.documentContentType === 'text' ? "N/A" : (doc.size || "N/A")}</TableCell>
+                      <TableCell>{doc.documentContentType === 'markdown' ? "N/A" : (doc.size || "N/A")}</TableCell>
                       <TableCell className="text-xs">{doc.uploaderEmail || 'N/A'}</TableCell>
                       <TableCell className="text-xs">{formatDate(doc.lastUpdated)}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc)} aria-label={`View document: ${doc.title}`}>
                             <Eye className="h-4 w-4" />
                         </Button>
-                        {doc.documentContentType === 'file' && doc.downloadURL && (
+                        {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
                             <Button variant="ghost" size="icon" asChild aria-label={`Download document: ${doc.title}`}>
                                 <a href={doc.downloadURL} download><Download className="h-4 w-4" /></a>
                             </Button>
@@ -419,7 +423,7 @@ export default function AdminDocumentsPage() {
         </CardContent>
       </Card>
 
-      {selectedDocumentForView && selectedDocumentForView.documentContentType === 'text' && (
+      {selectedDocumentForView && (doc.documentContentType === 'markdown' || doc.documentContentType === 'fileWithMarkdown') && (
         <Dialog open={isViewNoteDialogOpen} onOpenChange={setIsViewNoteDialogOpen}>
           <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[80vh] flex flex-col">
             <DialogHeader>
@@ -430,8 +434,21 @@ export default function AdminDocumentsPage() {
               </DialogDescription>
             </DialogHeader>
             <ScrollArea className="flex-grow pr-6 -mr-6">
-                <div className="py-4 prose prose-sm max-w-none dark:prose-invert text-foreground whitespace-pre-wrap">
-                    <ReactMarkdown>{selectedDocumentForView.content || "No content available."}</ReactMarkdown>
+                <div className="py-4 prose prose-sm max-w-none dark:prose-invert text-foreground">
+                  {selectedDocumentForView.content && <ReactMarkdown>{selectedDocumentForView.content}</ReactMarkdown>}
+                  {selectedDocumentForView.documentContentType === 'fileWithMarkdown' && selectedDocumentForView.downloadURL && (
+                    <div className="mt-4 pt-4 border-t">
+                      <h4 className="font-semibold mb-2">Attached File:</h4>
+                      <Button asChild variant="outline">
+                        <a href={selectedDocumentForView.downloadURL} target="_blank" rel="noopener noreferrer">
+                          <Download className="mr-2 h-4 w-4" /> {selectedDocumentForView.fileName || "Download File"} ({selectedDocumentForView.size})
+                        </a>
+                      </Button>
+                    </div>
+                  )}
+                  {selectedDocumentForView.documentContentType === 'markdown' && !selectedDocumentForView.content && (
+                    <p className="italic">No text content available for this document.</p>
+                  )}
                 </div>
             </ScrollArea>
             <DialogFooter className="mt-auto pt-4 border-t"> 
@@ -450,7 +467,7 @@ export default function AdminDocumentsPage() {
                     <AlertDialogPrimitiveTitle>Confirm Deletion</AlertDialogPrimitiveTitle>
                     <AlertDialogPrimitiveDescription>
                         Are you sure you want to delete the document: "{documentToDelete.title}"?
-                        {documentToDelete.documentContentType === 'file' && " This will also delete the associated file from storage."}
+                        {(documentToDelete.documentContentType === 'file' || documentToDelete.documentContentType === 'fileWithMarkdown') && " This will also delete the associated file from storage."}
                         This action cannot be undone.
                     </AlertDialogPrimitiveDescription>
                 </AlertDialogHeader>
@@ -467,3 +484,4 @@ export default function AdminDocumentsPage() {
     </div>
   );
 }
+

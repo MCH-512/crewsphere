@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, StickyNote } from "lucide-react";
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, StickyNote, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,13 +33,13 @@ interface Document {
   lastUpdated: Timestamp | string;
   size?: string;
   downloadURL?: string;
+  fileName?: string; // Added for better display of downloaded files
   fileType?: string;
-  documentContentType?: 'file' | 'text';
+  documentContentType?: 'file' | 'markdown' | 'fileWithMarkdown'; // Updated
   content?: string;
 }
 
 const categories = ["Operations", "Safety", "HR", "Training", "Service", "Regulatory", "General", "Manuals", "Bulletins", "Forms", "Procedures", "Memos"];
-// Define documentSources here as well, or move to a shared constants file
 const documentSources = [
   "Operations Manual (OMA)",
   "Operations Manual (OMD)",
@@ -66,7 +66,7 @@ export default function DocumentsPage() {
 
   const [searchTerm, setSearchTerm] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
-  const [sourceFilter, setSourceFilter] = React.useState("all"); // New state for source filter
+  const [sourceFilter, setSourceFilter] = React.useState("all"); 
 
   const [selectedDocumentForView, setSelectedDocumentForView] = React.useState<Document | null>(null);
   const [isViewNoteDialogOpen, setIsViewNoteDialogOpen] = React.useState(false);
@@ -89,8 +89,9 @@ export default function DocumentsPage() {
           lastUpdated: data.lastUpdated,
           size: data.size,
           downloadURL: data.downloadURL,
+          fileName: data.fileName,
           fileType: data.fileType,
-          documentContentType: data.documentContentType || 'file',
+          documentContentType: data.documentContentType || (data.downloadURL ? 'file' : 'markdown'), // Fallback for older docs
           content: data.content,
         } as Document;
       });
@@ -118,7 +119,7 @@ export default function DocumentsPage() {
     if (categoryFilter !== "all") {
       currentDocuments = currentDocuments.filter(doc => doc.category === categoryFilter);
     }
-    if (sourceFilter !== "all") { // Apply source filter
+    if (sourceFilter !== "all") { 
       currentDocuments = currentDocuments.filter(doc => doc.source === sourceFilter);
     }
     if (searchTerm) {
@@ -132,14 +133,15 @@ export default function DocumentsPage() {
 
 
   const getIconForDocumentType = (doc: Document) => {
-    if (doc.documentContentType === 'text') {
-      return <StickyNote className="h-5 w-5 text-yellow-500" />;
+     switch (doc.documentContentType) {
+        case 'markdown': return <StickyNote className="h-5 w-5 text-yellow-500" />;
+        case 'file': return <FileTextIcon className="h-5 w-5 text-primary" />;
+        case 'fileWithMarkdown': return <Layers className="h-5 w-5 text-green-500" />;
+        default:
+             if (doc.downloadURL) return <FileTextIcon className="h-5 w-5 text-primary" />;
+             if (doc.content) return <StickyNote className="h-5 w-5 text-yellow-500" />;
+            return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
     }
-    if (!doc.fileType) return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
-    if (doc.fileType.includes("pdf")) return <FileTextIcon className="h-5 w-5 text-red-600" />;
-    if (doc.fileType.includes("word") || doc.fileType.includes("document")) return <FileTextIcon className="h-5 w-5 text-blue-600" />;
-    if (doc.fileType.includes("excel") || doc.fileType.includes("sheet")) return <FileTextIcon className="h-5 w-5 text-green-600" />;
-    return <FileTextIcon className="h-5 w-5 text-primary" />;
   };
 
   const formatDate = (dateValue: Timestamp | string) => {
@@ -158,10 +160,10 @@ export default function DocumentsPage() {
   };
 
   const handleViewDocument = (doc: Document) => {
-    if (doc.documentContentType === 'text') {
+    if (doc.documentContentType === 'markdown' || doc.documentContentType === 'fileWithMarkdown') {
       setSelectedDocumentForView(doc);
       setIsViewNoteDialogOpen(true);
-    } else if (doc.downloadURL) {
+    } else if (doc.documentContentType === 'file' && doc.downloadURL) {
       window.open(doc.downloadURL, '_blank');
     } else {
       toast({ title: "View Error", description: "No content or URL available for this document.", variant: "destructive"});
@@ -264,14 +266,14 @@ export default function DocumentsPage() {
                         <TableCell><Badge variant="secondary">{doc.source}</Badge></TableCell>
                         <TableCell>{doc.version || "N/A"}</TableCell>
                         <TableCell>{formatDate(doc.lastUpdated)}</TableCell>
-                        <TableCell>{doc.documentContentType === 'text' ? "N/A" : (doc.size || "N/A")}</TableCell>
+                        <TableCell>{doc.documentContentType === 'markdown' ? "N/A" : (doc.size || "N/A")}</TableCell>
                         <TableCell className="text-right space-x-2">
                            <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc)} aria-label={`View document: ${doc.title}`}>
                                 <Eye className="h-4 w-4" />
                             </Button>
-                          {doc.documentContentType === 'file' && doc.downloadURL && (
+                          {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
                             <Button variant="ghost" size="icon" asChild aria-label={`Download document: ${doc.title}`}>
-                                <a href={doc.downloadURL} download><Download className="h-4 w-4" /></a>
+                                <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="h-4 w-4" /></a>
                             </Button>
                           )}
                         </TableCell>
@@ -285,7 +287,7 @@ export default function DocumentsPage() {
         </Card>
       </AnimatedCard>
 
-       {selectedDocumentForView && selectedDocumentForView.documentContentType === 'text' && (
+      {selectedDocumentForView && (doc.documentContentType === 'markdown' || doc.documentContentType === 'fileWithMarkdown') && (
         <Dialog open={isViewNoteDialogOpen} onOpenChange={setIsViewNoteDialogOpen}>
           <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[80vh] flex flex-col">
             <DialogHeader>
@@ -296,8 +298,21 @@ export default function DocumentsPage() {
               </DialogDescription>
             </DialogHeader>
             <ScrollArea className="flex-grow pr-6 -mr-6">
-                <div className="py-4 prose prose-sm max-w-none dark:prose-invert text-foreground whitespace-pre-wrap">
-                    <ReactMarkdown>{selectedDocumentForView.content || "No content available."}</ReactMarkdown>
+                <div className="py-4 prose prose-sm max-w-none dark:prose-invert text-foreground">
+                  {selectedDocumentForView.content && <ReactMarkdown>{selectedDocumentForView.content}</ReactMarkdown>}
+                  {selectedDocumentForView.documentContentType === 'fileWithMarkdown' && selectedDocumentForView.downloadURL && (
+                    <div className="mt-4 pt-4 border-t">
+                      <h4 className="font-semibold mb-2">Attached File:</h4>
+                      <Button asChild variant="outline">
+                        <a href={selectedDocumentForView.downloadURL} target="_blank" rel="noopener noreferrer" download={selectedDocumentForView.fileName || selectedDocumentForView.title}>
+                          <Download className="mr-2 h-4 w-4" /> {selectedDocumentForView.fileName || "Download File"} ({selectedDocumentForView.size})
+                        </a>
+                      </Button>
+                    </div>
+                  )}
+                  {selectedDocumentForView.documentContentType === 'markdown' && !selectedDocumentForView.content && (
+                     <p className="italic">No text content available for this document.</p>
+                  )}
                 </div>
             </ScrollArea>
             <DialogFooter className="mt-auto pt-4 border-t">

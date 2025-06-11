@@ -19,9 +19,8 @@ const predefinedLabels: { [key: string]: string } = {
   admin: "Admin Console",
   users: "User Management",
   documents: "Document Library",
-  upload: "Upload Document",
+  create: "Create New", // Generic create
   alerts: "Alerts Management",
-  create: "Create New", 
   courses: "Course Library", 
   flights: "Flight Management",
   "purser-reports": "Submit Purser Report", 
@@ -39,7 +38,7 @@ const predefinedLabels: { [key: string]: string } = {
   "my-alerts": "My Alerts",
   "my-requests": "My Submitted Requests", 
   "system-settings": "System Configuration",
-  "edit": "Edit", // Generic edit label
+  "edit": "Edit", 
 };
 
 export function Breadcrumbs() {
@@ -50,10 +49,13 @@ export function Breadcrumbs() {
     return null;
   }
   
-  if (segments.length === 1 && !pathname.startsWith("/admin/edit") && !pathname.startsWith("/admin/create")) {
-      if (segments[0] !== 'admin' || (segments[0] === 'admin' && segments.length === 1)) {
-           if (segments[0] !== 'admin') return null;
-      }
+  // Avoid showing breadcrumbs like "Dashboard / Admin" if on /admin page itself
+  if (pathname === "/admin" && segments.length === 1 && segments[0] === "admin") {
+      return null;
+  }
+  // Don't show breadcrumbs for top-level non-admin pages if only one segment
+  if (segments.length === 1 && !pathname.startsWith("/admin/")) {
+      return null;
   }
 
 
@@ -75,31 +77,26 @@ export function Breadcrumbs() {
           
           let label = predefinedLabels[segment] || formatSegment(segment);
           
-          // Handle dynamic segments like [flightId]
-          if (segment.startsWith("[") && segment.endsWith("]")) {
-             // If the previous segment was 'edit' or if the segment before 'edit' was 'admin'
-             if (segments[index-1] === "edit") { 
-                label = "Edit"; // Generic "Edit" for dynamic part
-            } else if (segments[index-2] === "edit" && segments[index-1] !== "admin") { // e.g. /admin/someResource/edit/[id]
-                label = `Edit ${formatSegment(segments[index-1])}`;
-            }
-            else {
-                label = "Details"; // Fallback for other dynamic segments
-            }
+          // Specific overrides for dynamic or nested create/edit paths
+          if (pathname.includes("/admin/documents/edit/") && isLast) {
+            label = "Edit Document";
+          } else if (pathname.includes("/admin/documents/create") && isLast) {
+            label = "Create Document";
           } else if (pathname.includes("/admin/courses/edit/") && isLast) {
             label = "Edit Course";
           } else if (pathname.includes("/admin/courses/create") && isLast) {
             label = "Create Course";
-          } else if (pathname.includes("/admin/flights/edit/") && isLast) { // Specific for flight edit
+          } else if (pathname.includes("/admin/flights/edit/") && isLast) {
             label = "Edit Flight";
           } else if (pathname.includes("/admin/flights/create") && isLast) {
             label = "Add New Flight";
-          } else if (pathname.includes("/admin/purser-reports") && isLast) { 
-            label = "Submitted Purser Reports";
           } else if (pathname.includes("/admin/alerts/edit/") && isLast) {
             label = "Edit Alert";
           } else if (pathname.includes("/admin/alerts/create") && isLast) {
             label = "Create Alert";
+          } else if (segment.startsWith("[") && segment.endsWith("]") && segments[index-1] === "edit") {
+             // Generic "Edit" for dynamic part if previous was 'edit'
+             label = "Edit";
           }
 
 
@@ -127,3 +124,4 @@ export function Breadcrumbs() {
     </nav>
   );
 }
+

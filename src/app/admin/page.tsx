@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, Files, GraduationCap, ClipboardList, Plane, Settings, Loader2 } from "lucide-react";
+import { ServerCog, Users, Activity, Files, GraduationCap, ClipboardList, Plane, Settings, Loader2, FilePlus } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -58,11 +58,11 @@ export default function AdminConsolePage() {
       delay: 0.1 
     },
     { 
-      icon: Files, 
+      icon: FilePlus, 
       title: "Document Management", 
-      description: "Upload, categorize, and manage all shared documents. Upload option is available from the management page.", 
+      description: "Create, upload, categorize, and manage all shared documents, notes, and procedures.", 
       buttonText: "Manage Documents", 
-      href: "/admin/documents",
+      href: "/admin/documents", // Will link to the list page, create button will be there
       delay: 0.15
     },
     { 
@@ -112,7 +112,7 @@ export default function AdminConsolePage() {
       description: "Configure application-wide settings and integrations.", 
       buttonText: "Configure Settings", 
       href: "/admin/system-settings", 
-      disabled: false, // Enabled this section
+      disabled: false,
       delay: 0.45
     },
     { 
@@ -184,3 +184,4 @@ export default function AdminConsolePage() {
     </div>
   );
 }
+

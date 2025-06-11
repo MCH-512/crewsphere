@@ -55,7 +55,8 @@ import {
   Library, 
   Award,
   Inbox, 
-  ClipboardCheck,  
+  ClipboardCheck, 
+  FilePlus, 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -144,7 +145,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/admin": "Admin Console",
     "/admin/users": "User Management",
     "/admin/documents": "Document Management",
-    "/admin/documents/upload": "Upload New Document",
+    "/admin/documents/create": "Create New Document", // Updated
+    "/admin/documents/edit": "Edit Document", // Updated
     "/admin/alerts": "All Broadcast Alerts",
     "/admin/alerts/create": "Create New Alert",
     "/admin/alerts/edit": "Edit Alert",
@@ -170,19 +172,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         currentTitle = pageTitles[path];
       }
     } else if (pathname.startsWith(path + '/') && path !== '/') {
-       // Check if the path is a dynamic route parent like /admin/flights for /admin/flights/edit/[id]
       if (pathname.startsWith(path + "/edit/") || pathname.startsWith(path + "/create")) {
          if (path.length > longestMatch.length) {
           longestMatch = path;
           currentTitle = pageTitles[path];
         }
-      } else if (path.length > longestMatch.length) { // General case for non-dynamic children
+      } else if (path.length > longestMatch.length) { 
         longestMatch = path;
         currentTitle = pageTitles[path];
       }
     }
   }
-   // Final check for exact match if no longer prefix match was better
   if (pageTitles[pathname]) {
     currentTitle = pageTitles[pathname];
   }
@@ -215,6 +215,21 @@ function LayoutWithSidebar({ children, currentPageTitle, user, handleLogout, the
   const { isMobile } = useSidebar(); 
   const pathname = usePathname();
 
+  const adminNavItems = [
+    { href: "/admin", label: "Admin Console", icon: ServerCog },
+    { href: "/admin/users", label: "User Management", icon: Users },
+    { href: "/admin/documents", label: "Document Management", icon: FilePlus }, // Updated Icon
+    { href: "/admin/alerts", label: "Alert Management", icon: Bell },
+    { href: "/admin/courses", label: "Course Management", icon: GraduationCap },
+    { href: "/admin/user-requests", label: "User Requests", icon: ClipboardCheck },
+    { href: "/admin/purser-reports", label: "Purser Reports Review", icon: FileSignature },
+    { href: "/admin/flights", label: "Flight Management", icon: Plane },
+    { href: "/admin/system-settings", label: "System Settings", icon: Settings },
+  ];
+
+  const currentNavItems = pathname.startsWith('/admin') && user?.role === 'admin' ? adminNavItems : navItems;
+
+
   return (
     <>
       <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r">
@@ -227,12 +242,13 @@ function LayoutWithSidebar({ children, currentPageTitle, user, handleLogout, the
         <Separator />
         <SidebarContent className="p-2">
           <SidebarMenu>
-            {navItems.map((item) => {
+            {currentNavItems.map((item) => {
               if (item.type === "separator") {
-                if (item.adminOnly && user?.role !== 'admin') return null;
+                if (item.adminOnly && user?.role !== 'admin' && !pathname.startsWith('/admin')) return null; // Hide admin separator if not admin and not in admin path
                 return <Separator key={item.key} className="my-2" />;
               }
-              if (item.adminOnly && user?.role !== 'admin') { 
+              // Hide admin-only items if user is not admin, unless already in an admin path (e.g. specific link to admin page)
+              if (item.adminOnly && user?.role !== 'admin' && !pathname.startsWith('/admin')) { 
                 return null; 
               }
               const isActive = item.href && (pathname === item.href || 
@@ -297,8 +313,8 @@ function LayoutWithSidebar({ children, currentPageTitle, user, handleLogout, the
               {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </Button>
             {user && (
-              <Button variant="ghost" size="icon" aria-label="View notifications">
-                <Bell className="h-5 w-5" />
+              <Button variant="ghost" size="icon" aria-label="View notifications" asChild>
+                <Link href="/my-alerts"><Bell className="h-5 w-5" /></Link>
               </Button>
             )}
             <DropdownMenu>
