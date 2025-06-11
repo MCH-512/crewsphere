@@ -121,7 +121,7 @@ export default function AdminConsolePage() {
       description: "Review system activity, changes, and important events.", 
       buttonText: "View Logs", 
       href: "#", 
-      disabled: true,
+      disabled: false, // Changed from true to false
       delay: 0.5
     },
   ];
