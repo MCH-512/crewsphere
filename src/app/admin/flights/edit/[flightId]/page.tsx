@@ -24,13 +24,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, Loader2, AlertTriangle, CheckCircle, Save, Edit3 } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, AlertTriangle, CheckCircle, Save, Edit3, FileText, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
 import { formatISO, parseISO, format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 const flightEditFormSchema = z.object({
   flightNumber: z.string().min(3, "Flight number must be at least 3 characters.").max(10),
@@ -40,6 +41,7 @@ const flightEditFormSchema = z.object({
   scheduledArrivalDateTimeUTC: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid arrival datetime."}),
   aircraftType: z.string().min(3, "Aircraft type must be at least 3 characters.").max(50),
   status: z.enum(["Scheduled", "On Time", "Delayed", "Cancelled"], { required_error: "Please select a flight status." }),
+  // purserReportSubmitted and purserReportId are not directly editable in the form
 })
 .superRefine((data, ctx) => {
     const departureTime = new Date(data.scheduledDepartureDateTimeUTC).getTime();
@@ -64,6 +66,8 @@ interface FlightDocumentForEdit {
   scheduledArrivalDateTimeUTC: string; // Stored as ISO string
   aircraftType: string;
   status: "Scheduled" | "On Time" | "Delayed" | "Cancelled";
+  purserReportSubmitted?: boolean;
+  purserReportId?: string | null;
 }
 
 export default function EditFlightPage() {
@@ -75,6 +79,8 @@ export default function EditFlightPage() {
 
   const [isLoadingData, setIsLoadingData] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [currentFlightData, setCurrentFlightData] = React.useState<FlightDocumentForEdit | null>(null);
+
 
   const form = useForm<FlightEditFormValues>({
     resolver: zodResolver(flightEditFormSchema),
@@ -121,15 +127,16 @@ export default function EditFlightPage() {
             router.push("/admin/flights");
             return;
           }
-          const flightData = flightSnap.data() as Omit<FlightDocumentForEdit, 'id'>;
+          const flightDataFromDb = { id: flightSnap.id, ...flightSnap.data()} as FlightDocumentForEdit;
+          setCurrentFlightData(flightDataFromDb);
           form.reset({
-            flightNumber: flightData.flightNumber,
-            departureAirport: flightData.departureAirport,
-            arrivalAirport: flightData.arrivalAirport,
-            scheduledDepartureDateTimeUTC: toDatetimeLocalInputString(flightData.scheduledDepartureDateTimeUTC),
-            scheduledArrivalDateTimeUTC: toDatetimeLocalInputString(flightData.scheduledArrivalDateTimeUTC),
-            aircraftType: flightData.aircraftType,
-            status: flightData.status,
+            flightNumber: flightDataFromDb.flightNumber,
+            departureAirport: flightDataFromDb.departureAirport,
+            arrivalAirport: flightDataFromDb.arrivalAirport,
+            scheduledDepartureDateTimeUTC: toDatetimeLocalInputString(flightDataFromDb.scheduledDepartureDateTimeUTC),
+            scheduledArrivalDateTimeUTC: toDatetimeLocalInputString(flightDataFromDb.scheduledArrivalDateTimeUTC),
+            aircraftType: flightDataFromDb.aircraftType,
+            status: flightDataFromDb.status,
           });
         } catch (error) {
           console.error("Error loading flight data:", error);
@@ -144,7 +151,7 @@ export default function EditFlightPage() {
   }, [flightId, user, authLoading, router, toast, form]);
 
   async function onSubmit(data: FlightEditFormValues) {
-    if (!user || user.role !== 'admin' || !flightId) {
+    if (!user || user.role !== 'admin' || !flightId || !currentFlightData) {
       toast({ title: "Unauthorized or Missing ID", description: "Cannot update flight.", variant: "destructive" });
       return;
     }
@@ -152,9 +159,16 @@ export default function EditFlightPage() {
     try {
       const flightDocRef = doc(db, "flights", flightId);
       await updateDoc(flightDocRef, {
-        ...data,
+        flightNumber: data.flightNumber,
+        departureAirport: data.departureAirport,
+        arrivalAirport: data.arrivalAirport,
         scheduledDepartureDateTimeUTC: new Date(data.scheduledDepartureDateTimeUTC).toISOString(),
         scheduledArrivalDateTimeUTC: new Date(data.scheduledArrivalDateTimeUTC).toISOString(),
+        aircraftType: data.aircraftType,
+        status: data.status,
+        // Preserve existing purser report fields
+        purserReportSubmitted: currentFlightData.purserReportSubmitted || false,
+        purserReportId: currentFlightData.purserReportId || null,
         updatedAt: serverTimestamp(),
       });
 
@@ -220,6 +234,27 @@ export default function EditFlightPage() {
                     <FormField control={form.control} name="scheduledArrivalDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Scheduled Arrival (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormDescription>Date and Time in UTC</FormDescription><FormMessage /></FormItem>)} />
                 </div>
                 <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Status</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select flight status" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Scheduled">Scheduled</SelectItem><SelectItem value="On Time">On Time</SelectItem><SelectItem value="Delayed">Delayed</SelectItem><SelectItem value="Cancelled">Cancelled</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                
+                {currentFlightData && (
+                  <FormItem>
+                    <FormLabel>Purser Report Status</FormLabel>
+                    <div className="flex items-center gap-2">
+                      {currentFlightData.purserReportSubmitted ? (
+                        <Badge variant="success" className="bg-green-500 hover:bg-green-600">
+                          <CheckCircle className="mr-1 h-4 w-4" /> Submitted
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">
+                          <XCircle className="mr-1 h-4 w-4" /> Pending
+                        </Badge>
+                      )}
+                      {currentFlightData.purserReportId && (
+                         <p className="text-xs text-muted-foreground">(Report ID: {currentFlightData.purserReportId.substring(0,10)}...)</p>
+                      )}
+                    </div>
+                    <FormDescription>This status is updated automatically when a Purser Report is submitted for this flight.</FormDescription>
+                  </FormItem>
+                )}
               
               <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                 {isSubmitting ? (
@@ -241,3 +276,4 @@ export default function EditFlightPage() {
     </div>
   );
 }
+

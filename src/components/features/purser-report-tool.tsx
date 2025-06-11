@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, where } from "firebase/firestore"; 
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, where, doc, updateDoc } from "firebase/firestore"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO } from "date-fns";
 
@@ -323,6 +323,8 @@ export function PurserReportTool() {
       crewPerformanceNotes: crewPerformanceNotesString || undefined,
     };
 
+    let savedReportId: string | null = null;
+
     try {
       const generatedReport = await generatePurserReport(aiInput);
       setReportResult(generatedReport);
@@ -337,7 +339,17 @@ export function PurserReportTool() {
         status: "submitted",
         associatedFlightId: selectedFlightIdState || null,
       };
-      await addDoc(collection(db, "purserReports"), reportDataToSave);
+      const docRef = await addDoc(collection(db, "purserReports"), reportDataToSave);
+      savedReportId = docRef.id;
+
+      // If a flight was selected, update its purserReportSubmitted status
+      if (selectedFlightIdState && savedReportId) {
+        const flightDocRef = doc(db, "flights", selectedFlightIdState);
+        await updateDoc(flightDocRef, {
+          purserReportSubmitted: true,
+          purserReportId: savedReportId
+        });
+      }
 
       toast({ title: "Purser Report Saved", description: "Report generated and saved." });
       form.reset(); 
@@ -351,7 +363,9 @@ export function PurserReportTool() {
     } catch (error) {
       console.error("Error in Purser Report process:", error);
       let errorMessage = "An error occurred. Please try again.";
-      if (error instanceof Error) { errorMessage = reportResult ? `AI report generated, but failed to save: ${error.message}` : `Failed to generate AI Report: ${error.message}`; }
+      if (error instanceof Error) { 
+          errorMessage = reportResult ? `AI report generated, but failed to save (Report ID: ${savedReportId || 'N/A'}): ${error.message}` : `Failed to generate AI Report: ${error.message}`; 
+      }
       toast({ title: "Error", description: errorMessage, variant: "destructive" });
     } finally { setIsLoading(false); }
   }
@@ -499,4 +513,5 @@ export function PurserReportTool() {
     </div>
   );
 }
+
 

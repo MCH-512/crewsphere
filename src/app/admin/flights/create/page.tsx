@@ -242,6 +242,8 @@ export default function CreateFlightPage() {
           status: data.status,
           scheduledDepartureDateTimeUTC: departureDateTime.toISOString(),
           scheduledArrivalDateTimeUTC: arrivalDateTime.toISOString(),
+          purserReportSubmitted: false, // New field
+          purserReportId: null, // New field
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           createdBy: user.uid,

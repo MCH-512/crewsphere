@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, deleteDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle, CheckCircle, XCircle, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -35,6 +35,8 @@ interface Flight {
   scheduledArrivalDateTimeUTC: string; // Stored as ISO string
   aircraftType: string;
   status: "Scheduled" | "On Time" | "Delayed" | "Cancelled";
+  purserReportSubmitted?: boolean; // New field
+  purserReportId?: string | null; // New field
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -113,6 +115,17 @@ export default function AdminFlightsPage() {
     }
   };
 
+  const handleViewReport = (reportId: string | null | undefined) => {
+    if (reportId) {
+      // For now, just toast. Later, this could navigate to a report view page.
+      // router.push(`/admin/purser-reports/${reportId}`); // Example future navigation
+      toast({ title: "View Report", description: `Report ID: ${reportId}. Viewing specific report details is not yet implemented on this button.` });
+    } else {
+      toast({ title: "No Report", description: "No report ID associated with this flight." });
+    }
+  };
+
+
   if (authLoading || (isLoading && flights.length === 0 && !user)) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -182,6 +195,7 @@ export default function AdminFlightsPage() {
                     <TableHead>Departure (UTC)</TableHead>
                     <TableHead>Arrival (UTC)</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Purser Report</TableHead> 
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -199,6 +213,24 @@ export default function AdminFlightsPage() {
                         >
                           {flight.status}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {flight.purserReportSubmitted ? (
+                          <div className="flex items-center gap-1">
+                            <Badge variant="success" className="bg-green-500 hover:bg-green-600">
+                                <CheckCircle className="mr-1 h-3 w-3" /> Submitted
+                            </Badge>
+                            {flight.purserReportId && (
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleViewReport(flight.purserReportId)}>
+                                    <FileText className="h-4 w-4 text-primary"/>
+                                </Button>
+                            )}
+                          </div>
+                        ) : (
+                          <Badge variant="secondary">
+                            <XCircle className="mr-1 h-3 w-3" /> Pending
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" asChild aria-label={`Edit flight: ${flight.flightNumber}`}>
@@ -240,3 +272,4 @@ export default function AdminFlightsPage() {
     </div>
   );
 }
+
