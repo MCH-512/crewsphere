@@ -31,6 +31,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 const alertFormSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters.").max(100),
@@ -79,7 +80,7 @@ export default function CreateAlertPage() {
     }
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, "alerts"), {
+      const docRef = await addDoc(collection(db, "alerts"), {
         title: data.title,
         content: data.content,
         level: data.level,
@@ -88,6 +89,15 @@ export default function CreateAlertPage() {
         linkUrl: data.linkUrl || null,
         createdAt: serverTimestamp(),
         createdBy: user.uid, 
+      });
+
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "CREATE_ALERT",
+        entityType: "ALERT",
+        entityId: docRef.id,
+        details: { title: data.title, level: data.level, target: data.userId || "GLOBAL" },
       });
 
       toast({
@@ -259,5 +269,3 @@ export default function CreateAlertPage() {
     </div>
   );
 }
-
-    

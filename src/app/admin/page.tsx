@@ -62,7 +62,7 @@ export default function AdminConsolePage() {
       title: "Document Management", 
       description: "Create, upload, categorize, and manage all shared documents, notes, and procedures.", 
       buttonText: "Manage Documents", 
-      href: "/admin/documents", // Will link to the list page, create button will be there
+      href: "/admin/documents", 
       delay: 0.15
     },
     { 
@@ -120,8 +120,8 @@ export default function AdminConsolePage() {
       title: "Audit Logs", 
       description: "Review system activity, changes, and important events.", 
       buttonText: "View Logs", 
-      href: "#", 
-      disabled: false, // Changed from true to false
+      href: "/admin/audit-logs", 
+      disabled: false, 
       delay: 0.5
     },
   ];
@@ -184,4 +184,3 @@ export default function AdminConsolePage() {
     </div>
   );
 }
-
