@@ -46,19 +46,11 @@ const categories = [
   "Règlementation & Références"
 ];
 const documentSources = [
-  "Operations Manual (OMA)",
-  "Operations Manual (OMD)",
-  "Cabin Safety Manual (CSM)",
   "EASA",
   "IATA",
   "ICAO",
-  "DGAC",
-  "Cabin Procedures Manual (CPM)",
-  "Compagnie procedures",
-  "Relevant Tunisian laws",
-  "Internal Memo",
-  "Safety Bulletin",
-  "Operational Notice",
+  "Tunisian Authorities",
+  "Company Procedures Manuals",
   "Other",
 ];
 
