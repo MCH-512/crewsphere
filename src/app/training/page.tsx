@@ -14,15 +14,10 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, Timestamp, orderBy } from "firebase/firestore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
+import type { Chapter } from "@/schemas/course-schema"; // Import Chapter type
+import ChapterDisplay from "@/components/features/course-chapter-display"; // Import ChapterDisplay
 
-interface ModuleData {
-  moduleCode?: string;
-  moduleTitle: string;
-  moduleObjectives: string;
-  durationMinutes: number;
-  linkedQuizId?: string;
-}
-
+// Interface CourseData now uses chapters instead of modules
 interface CourseData {
   id: string; 
   title: string;
@@ -32,7 +27,7 @@ interface CourseData {
   quizId: string;
   quizTitle: string; 
   mandatory: boolean;
-  modules?: ModuleData[];
+  chapters?: Chapter[]; // Changed from modules
   duration?: string; 
   fileURL?: string; 
   certificateRuleId?: string;
@@ -69,10 +64,10 @@ export default function TrainingPage() {
 
   const [selectedCourseForQuiz, setSelectedCourseForQuiz] = React.useState<CombinedCourse | null>(null);
   const [selectedCourseForContent, setSelectedCourseForContent] = React.useState<CombinedCourse | null>(null);
-  const [selectedCourseForCertDialog, setSelectedCourseForCertDialog] = React.useState<CombinedCourse | null>(null); // Renamed to avoid conflict if cert page also uses selectedCourseForCert
+  const [selectedCourseForCertDialog, setSelectedCourseForCertDialog] = React.useState<CombinedCourse | null>(null);
   const [isQuizDialogOpen, setIsQuizDialogOpen] = React.useState(false);
   const [isContentDialogOpen, setIsContentDialogOpen] = React.useState(false);
-  const [isCertDialogOpen, setIsCertDialogOpen] = React.useState(false); // For this page's cert dialog
+  const [isCertDialogOpen, setIsCertDialogOpen] = React.useState(false);
   const [isUpdating, setIsUpdating] = React.useState(false);
 
   const fetchTrainingData = React.useCallback(async () => {
@@ -151,8 +146,6 @@ export default function TrainingPage() {
     if (!course) return;
 
     if (course.progress?.quizStatus === 'Passed' && course.progress?.certificateDetails) {
-        // This case should ideally not happen on this page if it's filtered out
-        // But if it does, prepare for cert dialog
         setSelectedCourseForCertDialog(course);
         setIsCertDialogOpen(true);
     } else if (course.progress?.contentStatus !== 'Completed') {
@@ -327,7 +320,7 @@ export default function TrainingPage() {
 
               const CourseActionIcon = contentStatus !== 'Completed' ? ChevronRight : 
                                        quizStatus === 'NotTaken' ? HelpCircle : 
-                                       quizStatus === 'Failed' ? XCircle : PlayCircle; // Should mostly be PlayCircle (retake/take)
+                                       quizStatus === 'Failed' ? XCircle : PlayCircle;
               
               let actionButtonLabel = "View Course Material";
               if (contentStatus === 'Completed') {
@@ -338,7 +331,7 @@ export default function TrainingPage() {
                 }
               } else if (contentStatus === 'NotStarted') {
                 actionButtonLabel = "Start Course";
-              } else { // InProgress
+              } else { 
                 actionButtonLabel = "Continue Course";
               }
 
@@ -364,9 +357,10 @@ export default function TrainingPage() {
                     </p>
                     {course.duration && <p className="text-xs text-muted-foreground mb-3">Est. Duration: {course.duration}</p>}
                     
-                    {(course.modules && course.modules.length > 0) && (
+                    {/* Display chapter count instead of module count */}
+                    {(course.chapters && course.chapters.length > 0) && (
                       <div className="mb-3">
-                        <p className="text-xs font-medium text-muted-foreground">Modules: {course.modules.length}</p>
+                        <p className="text-xs font-medium text-muted-foreground">Chapters: {course.chapters.length}</p>
                       </div>
                     )}
 
@@ -397,7 +391,7 @@ export default function TrainingPage() {
 
       {selectedCourseForContent && (
         <Dialog open={isContentDialogOpen} onOpenChange={setIsContentDialogOpen}>
-            <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[90vh] flex flex-col">
+            <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>{selectedCourseForContent.title}</DialogTitle>
                     <DialogDescription>
@@ -407,32 +401,31 @@ export default function TrainingPage() {
                 </DialogHeader>
                 <ScrollArea className="flex-grow pr-6 -mr-6">
                     <div className="py-4 space-y-4">
-                        <p className="text-sm text-muted-foreground">{selectedCourseForContent.description}</p>
+                        <p className="text-sm text-muted-foreground mb-4">{selectedCourseForContent.description}</p>
                         
                         {selectedCourseForContent.fileURL && (
-                            <Button asChild variant="outline">
+                            <Button asChild variant="outline" className="mb-4">
                                 <a href={selectedCourseForContent.fileURL} target="_blank" rel="noopener noreferrer">
-                                    <FileTextIcon className="mr-2 h-4 w-4"/> View Associated Material
+                                    <FileTextIcon className="mr-2 h-4 w-4"/> View Main Course Document
                                 </a>
                             </Button>
                         )}
 
-                        {selectedCourseForContent.modules && selectedCourseForContent.modules.length > 0 && (
+                        {selectedCourseForContent.chapters && selectedCourseForContent.chapters.length > 0 ? (
                             <div className="mt-4">
-                                <h3 className="font-semibold mb-2 flex items-center"><List className="mr-2 h-5 w-5 text-primary"/>Course Modules:</h3>
+                                <h3 className="font-semibold mb-2 flex items-center"><List className="mr-2 h-5 w-5 text-primary"/>Course Content:</h3>
                                 <div className="space-y-3">
-                                {selectedCourseForContent.modules.map((module, index) => (
-                                    <Card key={index} className="p-3 bg-secondary/50">
-                                        <CardTitle className="text-md font-medium">{module.moduleTitle} {module.moduleCode && `(${module.moduleCode})`}</CardTitle>
-                                        <CardDescription className="text-xs">Duration: {module.durationMinutes} mins</CardDescription>
-                                        <p className="text-sm mt-1 text-muted-foreground whitespace-pre-line">{module.moduleObjectives}</p>
-                                    </Card>
+                                {selectedCourseForContent.chapters.map((chapter, index) => (
+                                    <ChapterDisplay
+                                      key={chapter.id || `chapter-${index}`}
+                                      chapter={chapter}
+                                      level={0}
+                                    />
                                 ))}
                                 </div>
                             </div>
-                        )}
-                         {!selectedCourseForContent.modules && (!selectedCourseForContent.fileURL || selectedCourseForContent.fileURL === "") &&(
-                            <p className="text-sm italic text-muted-foreground">No specific modules or downloadable content. Review the description above.</p>
+                        ) : (
+                            <p className="text-sm italic text-muted-foreground">No specific chapters or downloadable content. Review the description above.</p>
                          )}
                     </div>
                 </ScrollArea>
@@ -524,4 +517,3 @@ export default function TrainingPage() {
     </div>
   );
 }
-
