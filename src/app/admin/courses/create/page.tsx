@@ -336,15 +336,12 @@ export default function CreateComprehensiveCoursePage() {
                   <FormField control={form.control} name={`modules.${index}.moduleObjectives`} render={({ field }) => (
                     <FormItem><FormLabel>Module Objectives*</FormLabel><FormControl><Textarea placeholder="List key learning objectives for this module..." className="min-h-[80px]" {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name={`modules.${index}.moduleCode`} render={({ field }) => (
                       <FormItem><FormLabel>Module Code</FormLabel><FormControl><Input placeholder="e.g., CRM-001" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name={`modules.${index}.durationMinutes`} render={({ field }) => (
                       <FormItem><FormLabel>Duration (minutes)*</FormLabel><FormControl><Input type="number" placeholder="30" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name={`modules.${index}.linkedQuizId`} render={({ field }) => (
-                      <FormItem><FormLabel>Linked Quiz ID</FormLabel><FormControl><Input placeholder="e.g., QUIZ-CRM-001" {...field} /></FormControl><FormDescription>Optional external ID</FormDescription><FormMessage /></FormItem>
                     )} />
                   </div>
                 </Card>

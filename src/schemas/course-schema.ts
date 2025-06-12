@@ -13,16 +13,16 @@ export const moduleSchema = z.object({
   moduleTitle: z.string().min(3, "Module title is required and must be at least 3 characters."),
   moduleObjectives: z.string().min(10, "Module objectives are required and must be at least 10 characters."),
   durationMinutes: z.coerce.number().int().min(1, "Duration must be at least 1 minute."),
-  linkedQuizId: z.string().optional(),
+  // linkedQuizId: z.string().optional(), // Removed
 });
 
 export const questionSchema = z.object({
   id: z.string().optional(), // For identifying existing questions during edit
   text: z.string().min(5, "Question text must be at least 5 characters."),
   questionType: z.enum(["mcq", "tf", "short"], { required_error: "Please select a question type." }),
-  options: z.array(mcqOptionSchema).optional(), 
-  correctAnswerBoolean: z.boolean().optional(), 
-  correctAnswerText: z.string().optional(), 
+  options: z.array(mcqOptionSchema).optional(),
+  correctAnswerBoolean: z.boolean().optional(),
+  correctAnswerText: z.string().optional(),
   weight: z.coerce.number().min(1, "Weight must be at least 1.").default(1),
 });
 
@@ -47,11 +47,11 @@ export const courseFormSchema = z.object({
   quizTitle: z.string().min(5, "Quiz Title must be at least 5 characters.").max(100),
   questions: z.array(questionSchema).min(1, "At least one question is required for the quiz."),
   randomizeQuestions: z.boolean().default(false),
-  randomizeAnswers: z.boolean().default(false), 
+  randomizeAnswers: z.boolean().default(false),
 
   // Certification Rules
   passingThreshold: z.coerce.number().min(0).max(100, "Threshold must be between 0 and 100.").default(80),
-  certificateExpiryDays: z.coerce.number().int().min(0, "Expiry days must be 0 or more (0 for no expiry).").default(365), 
+  certificateExpiryDays: z.coerce.number().int().min(0, "Expiry days must be 0 or more (0 for no expiry).").default(365),
   certificateLogoUrl: z.string().url("Must be a valid URL or leave empty.").optional().or(z.literal("")),
   certificateSignature: z.string().min(2, "Signature text/URL is required.").default("Express Airline Training Department"),
 });
@@ -59,17 +59,15 @@ export const courseFormSchema = z.object({
 export type CourseFormValues = z.infer<typeof courseFormSchema>;
 
 // Default values for array fields
-export const defaultModuleValue: z.infer<typeof moduleSchema> = {
-  // id will be undefined for new modules
+export const defaultModuleValue: Omit<z.infer<typeof moduleSchema>, 'id'> = { // Ensure id is not part of default value if it's truly optional only for existing
   moduleCode: "",
   moduleTitle: "",
   moduleObjectives: "",
   durationMinutes: 30,
-  linkedQuizId: "",
+  // linkedQuizId: "", // Removed
 };
 
-export const defaultQuestionValue: z.infer<typeof questionSchema> = {
-  // id will be undefined for new questions
+export const defaultQuestionValue: Omit<z.infer<typeof questionSchema>, 'id'> = {
   text: "",
   questionType: "mcq",
   options: [{ text: "", isCorrect: false }, { text: "", isCorrect: false }],
@@ -94,6 +92,6 @@ export const defaultValues: Partial<CourseFormValues> = {
   randomizeAnswers: false,
   passingThreshold: 80,
   certificateExpiryDays: 365,
-  certificateLogoUrl: "https://placehold.co/150x50.png", 
+  certificateLogoUrl: "https://placehold.co/150x50.png",
   certificateSignature: "Express Airline Training Department",
 };

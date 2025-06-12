@@ -35,18 +35,18 @@ import { Progress } from "@/components/ui/progress";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import { 
-  courseCategories, 
-  courseTypes, 
-  questionTypes, 
-  referenceBodyOptions, 
-  courseDurationOptions 
+  courseCategories,
+  courseTypes,
+  referenceBodyOptions,
+  courseDurationOptions,
+  questionTypes, // Added questionTypes
 } from "@/config/course-options";
 import { 
-  courseFormSchema, 
-  type CourseFormValues, 
-  defaultModuleValue, 
-  defaultQuestionValue, 
-  defaultValues as initialFormDefaultValues // Use a different name to avoid conflict with form.reset
+  courseFormSchema,
+  type CourseFormValues,
+  defaultModuleValue, // Renamed defaultChapterValue to defaultModuleValue
+  defaultQuestionValue, // Added defaultQuestionValue
+  defaultValues as initialFormDefaultValues 
 } from "@/schemas/course-schema";
 
 export default function EditComprehensiveCoursePage() {
@@ -65,7 +65,7 @@ export default function EditComprehensiveCoursePage() {
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
-    defaultValues: initialFormDefaultValues, // Use imported defaultValues for initial form structure
+    defaultValues: initialFormDefaultValues, 
     mode: "onBlur",
   });
 
@@ -131,7 +131,6 @@ export default function EditComprehensiveCoursePage() {
             mandatory: courseData.mandatory || false,
             imageHint: courseData.imageHint || "",
             existingFileUrl: courseData.fileURL || "",
-            // associatedFile is not reset here, it's for new uploads
             modules: courseData.modules && courseData.modules.length > 0 ? courseData.modules : [defaultModuleValue],
             quizTitle: quizData?.title || "",
             questions: questionsData.length > 0 ? questionsData : [defaultQuestionValue],
@@ -142,8 +141,6 @@ export default function EditComprehensiveCoursePage() {
             certificateLogoUrl: certRuleData?.logoURL || "https://placehold.co/150x50.png",
             certificateSignature: certRuleData?.signatureTextOrURL || "Express Airline Training Department",
           });
-          // `replaceModules` and `replaceQuestions` might be redundant if form.reset works as expected for field arrays.
-          // However, keeping them ensures the field array state is correctly initialized.
           replaceModules(courseData.modules && courseData.modules.length > 0 ? courseData.modules : [defaultModuleValue]);
           replaceQuestions(questionsData.length > 0 ? questionsData.map(q => ({...q})) : [defaultQuestionValue]);
 
@@ -394,15 +391,12 @@ export default function EditComprehensiveCoursePage() {
                   <FormField control={form.control} name={`modules.${index}.moduleObjectives`} render={({ field }) => (
                     <FormItem><FormLabel>Module Objectives*</FormLabel><FormControl><Textarea placeholder="List key learning objectives for this module..." className="min-h-[80px]" {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name={`modules.${index}.moduleCode`} render={({ field }) => (
                       <FormItem><FormLabel>Module Code</FormLabel><FormControl><Input placeholder="e.g., CRM-001" {...field} value={field.value || ""} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name={`modules.${index}.durationMinutes`} render={({ field }) => (
                       <FormItem><FormLabel>Duration (minutes)*</FormLabel><FormControl><Input type="number" placeholder="30" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name={`modules.${index}.linkedQuizId`} render={({ field }) => (
-                      <FormItem><FormLabel>Linked Quiz ID</FormLabel><FormControl><Input placeholder="e.g., QUIZ-CRM-001" {...field} value={field.value || ""} /></FormControl><FormDescription>Optional external ID</FormDescription><FormMessage /></FormItem>
                     )} />
                   </div>
                 </Card>
