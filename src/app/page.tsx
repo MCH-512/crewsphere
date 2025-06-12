@@ -118,6 +118,7 @@ export default function DashboardPage() {
     async function fetchBriefing() {
       if (!user) {
         setIsBriefingLoading(false);
+        setBriefingError("Please log in to view your briefing.");
         return;
       }
       setIsBriefingLoading(true);
@@ -145,6 +146,7 @@ export default function DashboardPage() {
     async function fetchAlerts() {
       if (!user) {
         setAlertsLoading(false);
+        setAlertsError("Please log in to view alerts.");
         return;
       }
       setAlertsLoading(true);
@@ -198,6 +200,7 @@ export default function DashboardPage() {
       if (!user) {
         setFeaturedTrainingsLoading(false);
         setFeaturedTrainings([]); 
+        setFeaturedTrainingsError("Please log in to view featured trainings.");
         return;
       }
       setFeaturedTrainingsLoading(true);
@@ -268,6 +271,7 @@ export default function DashboardPage() {
     async function fetchRecentDocuments() {
       if (!user) {
         setRecentDocumentsLoading(false);
+        setRecentDocumentsError("Please log in to view recent documents.");
         return;
       }
       setRecentDocumentsLoading(true);
@@ -296,6 +300,7 @@ export default function DashboardPage() {
       if (!user) {
         setIsUpcomingDutyLoading(false);
         setUpcomingDuty(null);
+        setUpcomingDutyError("Please log in to view upcoming duty.");
         return;
       }
       setIsUpcomingDutyLoading(true);
@@ -431,11 +436,12 @@ export default function DashboardPage() {
                 <span>Generating your briefing...</span>
               </div>
             )}
-            {briefingError && (
-               <div className="flex items-center space-x-2 text-destructive">
-                <AlertTriangle className="h-5 w-5" />
-                <span>{briefingError}</span>
-              </div>
+            {briefingError && !isBriefingLoading && (
+               <ShadAlert variant="destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  <ShadAlertTitle>Briefing Error</ShadAlertTitle>
+                  <ShadAlertDescription>{briefingError}</ShadAlertDescription>
+                </ShadAlert>
             )}
             {dailyBriefing && !isBriefingLoading && !briefingError && (
               <div
@@ -444,7 +450,7 @@ export default function DashboardPage() {
                 <ReactMarkdown>{dailyBriefing.briefingMarkdown}</ReactMarkdown>
               </div>
             )}
-            {!user && !isBriefingLoading && (
+            {!user && !isBriefingLoading && !briefingError && (
                <div className="flex items-center space-x-2 text-muted-foreground">
                 <Info className="h-5 w-5" />
                 <span>Log in to receive your personalized daily briefing.</span>
@@ -463,16 +469,17 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {isUpcomingDutyLoading && (
-                <div className="flex items-center space-x-2 text-muted-foreground">
+                <div className="flex items-center space-x-2 text-muted-foreground py-4">
                   <Loader2 className="h-5 w-5 animate-spin" />
                   <span>Loading upcoming duty...</span>
                 </div>
               )}
-              {upcomingDutyError && (
-                <div className="flex items-center space-x-2 text-destructive">
+              {upcomingDutyError && !isUpcomingDutyLoading && (
+                <ShadAlert variant="destructive">
                   <AlertTriangle className="h-5 w-5" />
-                  <span>{upcomingDutyError}</span>
-                </div>
+                  <ShadAlertTitle>Upcoming Duty Error</ShadAlertTitle>
+                  <ShadAlertDescription>{upcomingDutyError}</ShadAlertDescription>
+                </ShadAlert>
               )}
               {!isUpcomingDutyLoading && !upcomingDutyError && upcomingDuty && (
                 <>
@@ -489,7 +496,7 @@ export default function DashboardPage() {
                 </>
               )}
               {!isUpcomingDutyLoading && !upcomingDutyError && !upcomingDuty && (
-                <p className="text-sm text-muted-foreground">No upcoming flights or duties found in your schedule.</p>
+                <p className="text-sm text-muted-foreground py-4">No upcoming flights or duties found in your schedule.</p>
               )}
               <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
                 <Link href="/schedule">
@@ -531,20 +538,20 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               {alertsLoading && (
-                <div className="flex items-center space-x-2 text-muted-foreground">
+                <div className="flex items-center space-x-2 text-muted-foreground py-4">
                   <Loader2 className="h-5 w-5 animate-spin" />
                   <span>Loading alerts...</span>
                 </div>
               )}
-              {alertsError && (
+              {alertsError && !alertsLoading && (
                 <ShadAlert variant="destructive" className="mb-4">
                     <AlertTriangle className="h-5 w-5" />
-                    <ShadAlertTitle>Error</ShadAlertTitle>
+                    <ShadAlertTitle>Alerts Error</ShadAlertTitle>
                     <ShadAlertDescription>{alertsError}</ShadAlertDescription>
                 </ShadAlert>
               )}
               {!alertsLoading && !alertsError && alerts.length === 0 && (
-                <p className="text-sm text-muted-foreground">No new alerts at this time.</p>
+                <p className="text-sm text-muted-foreground py-4">No new alerts at this time.</p>
               )}
               {!alertsLoading && !alertsError && alerts.length > 0 && (
                 <div className="space-y-3">
@@ -599,20 +606,20 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {recentDocumentsLoading && (
-                <div className="flex items-center space-x-2 text-muted-foreground">
+                <div className="flex items-center space-x-2 text-muted-foreground py-4">
                   <Loader2 className="h-5 w-5 animate-spin" />
                   <span>Loading updates...</span>
                 </div>
               )}
-              {recentDocumentsError && (
+              {recentDocumentsError && !recentDocumentsLoading && (
                 <ShadAlert variant="destructive">
                   <AlertTriangle className="h-5 w-5" />
-                  <ShadAlertTitle>Error</ShadAlertTitle>
+                  <ShadAlertTitle>Updates Error</ShadAlertTitle>
                   <ShadAlertDescription>{recentDocumentsError}</ShadAlertDescription>
                 </ShadAlert>
               )}
               {!recentDocumentsLoading && !recentDocumentsError && recentDocuments.length === 0 && (
-                <p className="text-sm text-muted-foreground">No recent documents or announcements.</p>
+                <p className="text-sm text-muted-foreground py-4">No recent documents or announcements.</p>
               )}
               {!recentDocumentsLoading && !recentDocumentsError && recentDocuments.map((doc) => (
                 <div key={doc.id} className="pb-3 border-b last:border-b-0">
@@ -650,22 +657,23 @@ export default function DashboardPage() {
                 ) : (
                   <>
                     {featuredTrainingsLoading && (
-                      <div className="flex items-center space-x-2 text-muted-foreground">
+                      <div className="flex items-center space-x-2 text-muted-foreground py-4">
                         <Loader2 className="h-5 w-5 animate-spin" />
                         <span>Loading featured trainings...</span>
                       </div>
                     )}
-                    {featuredTrainingsError && (
-                      <div className="flex items-center space-x-2 text-destructive">
+                    {featuredTrainingsError && !featuredTrainingsLoading && (
+                      <ShadAlert variant="destructive">
                         <AlertTriangle className="h-5 w-5" />
-                        <span>{featuredTrainingsError}</span>
-                      </div>
+                        <ShadAlertTitle>Training Error</ShadAlertTitle>
+                        <ShadAlertDescription>{featuredTrainingsError}</ShadAlertDescription>
+                      </ShadAlert>
                     )}
                     {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.length === 0 && user && (
-                      <p className="text-sm text-muted-foreground">No featured trainings for you at this time. All caught up or check the full library!</p>
+                      <p className="text-sm text-muted-foreground py-4">No featured trainings for you at this time. All caught up or check the full library!</p>
                     )}
                     {!featuredTrainingsLoading && !featuredTrainingsError && !user && (
-                      <p className="text-sm text-muted-foreground">Log in to see featured trainings.</p>
+                      <p className="text-sm text-muted-foreground py-4">Log in to see featured trainings.</p>
                     )}
                     {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.map((course) => (
                       <div key={course.id} className="flex items-center gap-4 p-3 border rounded-lg bg-card">
