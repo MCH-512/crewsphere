@@ -19,13 +19,17 @@ import { storage } from '@/lib/firebase';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Progress } from "@/components/ui/progress";
 import 'react-quill/dist/quill.snow.css';
-import type { Chapter } from '@/schemas/course-schema';
+import type { Chapter, Resource } from '@/schemas/course-schema'; // Assuming Resource is also in course-schema
+import type { ReactQuillProps } from 'react-quill';
 
-// Dynamically import ReactQuill, relying on next/dynamic to handle default export.
-const ReactQuill = dynamic(() => import('react-quill'), {
-  ssr: false,
-  loading: () => <div className="p-2 border rounded-md min-h-[200px] bg-muted animate-pulse">Loading editor...</div>,
-});
+// Dynamically import ReactQuill, explicitly handling the default export
+const ReactQuill = dynamic<ReactQuillProps>(
+  () => import('react-quill').then((mod) => mod.default || mod),
+  {
+    ssr: false,
+    loading: () => <div className="p-2 border rounded-md min-h-[200px] bg-muted animate-pulse">Loading editor...</div>,
+  }
+);
 
 interface CourseContentBlockProps {
   name: string;
@@ -87,7 +91,7 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
         setValue(`${currentBlockPath}.resources.${resourceIndex}.url`, downloadURL);
         setValue(`${currentBlockPath}.resources.${resourceIndex}.filename`, file.name);
         const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'file';
-        let resourceType = 'file';
+        let resourceType: Resource['type'] = 'file';
         if (['pdf'].includes(fileExtension)) resourceType = 'pdf';
         else if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) resourceType = 'image';
         else if (['mp4', 'mov', 'webm'].includes(fileExtension)) resourceType = 'video';
@@ -257,7 +261,7 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
                     </Button>
                 </div>
             ))}
-            <Button type="button" variant="outline" size="sm" onClick={() => appendResource({ url: '', type: 'file', filename: '' })} disabled={uploadStatus.isLoading}>
+            <Button type="button" variant="outline" size="sm" onClick={() => appendResource({ url: '', type: 'file', filename: '' } as Resource)} disabled={uploadStatus.isLoading}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Resource
             </Button>
         </div>
