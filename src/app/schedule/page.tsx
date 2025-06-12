@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogPrimitiveDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogPrimitiveTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Added for inline error display
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -71,13 +72,15 @@ const activityFormSchema = z.object({
       });
     }
   } else {
-    if (data.flightId && data.flightId.trim() !== "") {
-       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Flight ID should only be provided for 'Flight' activity type.",
-        path: ["flightId"],
-      });
-    }
+    // For non-flight activities, flightId should be empty.
+    // This check might be too strict if flightId is reset elsewhere, but good for validation.
+    // if (data.flightId && data.flightId.trim() !== "") {
+    //    ctx.addIssue({
+    //     code: z.ZodIssueCode.custom,
+    //     message: "Flight ID should only be provided for 'Flight' activity type.",
+    //     path: ["flightId"],
+    //   });
+    // }
   }
   if (data.startTime && !data.endTime) {
     ctx.addIssue({
@@ -157,7 +160,7 @@ export default function SchedulePage() {
       const [hours, minutes] = timeString.split(':').map(Number);
       if (isNaN(hours) || isNaN(minutes)) return null;
       const newDate = new Date(activityBaseDate); 
-      newDate.setHours(hours, minutes, 0, 0);
+      newDate.setUTCHours(hours, minutes, 0, 0); // Assuming timeString is local, convert to UTC based on activityBaseDate's local components
       return Timestamp.fromDate(newDate);
     } catch {
       return null;
@@ -205,7 +208,7 @@ export default function SchedulePage() {
       setUserActivities(populatedActivities);
     } catch (err) {
       console.error("Error fetching user activities:", err);
-      setError("Failed to load your activities.");
+      setError("Failed to load your activities. Please try again.");
     } finally {
       setIsLoadingActivities(false);
     }
@@ -229,7 +232,7 @@ export default function SchedulePage() {
 
       const filteredAvailable = allFlights.filter(f => 
         !assignedFlightIdsInActivities.includes(f.id) && 
-        new Date(f.scheduledDepartureDateTimeUTC) > new Date() 
+        new Date(f.scheduledDepartureDateTimeUTC) >= startOfDay(new Date()) // Only future or today's flights
       );
       setAvailableFlightsData(filteredAvailable);
 
@@ -277,18 +280,18 @@ export default function SchedulePage() {
     }
 
     const startOfSelectedDayUTC = Date.UTC(
-        selectedDate.getFullYear(),
-        selectedDate.getMonth(),
-        selectedDate.getDate(),
+        selectedDate.getUTCFullYear(),
+        selectedDate.getUTCMonth(),
+        selectedDate.getUTCDate(),
         0, 0, 0, 0
     );
     const endOfSelectedDayUTC = Date.UTC(
-        selectedDate.getFullYear(),
-        selectedDate.getMonth(),
-        selectedDate.getDate() + 1, 
+        selectedDate.getUTCFullYear(),
+        selectedDate.getUTCMonth(),
+        selectedDate.getUTCDate() + 1, 
         0, 0, 0, 0
     );
-
+    
     return availableFlightsData.filter(flight => {
         try {
             const flightDepartureTimestamp = parseISO(flight.scheduledDepartureDateTimeUTC).getTime();
@@ -346,7 +349,7 @@ export default function SchedulePage() {
       let startTimeUTC: Timestamp | null = null;
       let endTimeUTC: Timestamp | null = null;
 
-      if (data.activityType !== "flight") {
+      if (data.activityType !== "flight") { // Times are only for non-flight activities
         startTimeUTC = combineDateAndTime(activityBaseDate, data.startTime);
         endTimeUTC = combineDateAndTime(activityBaseDate, data.endTime);
       }
@@ -355,9 +358,11 @@ export default function SchedulePage() {
         const updatePayload: Partial<Omit<UserActivity, 'id' | 'createdAt' | 'userId' | 'flightDetails'>> = {
           activityType: data.activityType,
           comments: data.comments || "",
-          flightId: data.activityType === "flight" ? data.flightId : null, 
+          // flightId is only set if type is flight, and cannot be changed in edit mode for flights
+          flightId: data.activityType === "flight" ? (editingActivity.flightId || data.flightId) : null, 
           startTime: startTimeUTC,
           endTime: endTimeUTC,
+          // date is not changed in edit mode
         };
         await updateDoc(doc(db, "userActivities", editingActivity.id), updatePayload);
         toast({ title: "Activity Updated", description: `Activity on ${format(activityBaseDate, "PPP")} has been updated.`});
@@ -367,7 +372,7 @@ export default function SchedulePage() {
           activityType: data.activityType,
           date: Timestamp.fromDate(activityBaseDate), 
           comments: data.comments || "",
-          flightId: data.activityType === "flight" ? data.flightId : null,
+          flightId: data.activityType === "flight" ? (data.flightId || null) : null,
           startTime: startTimeUTC,
           endTime: endTimeUTC,
         };
@@ -385,7 +390,7 @@ export default function SchedulePage() {
       setIsEditMode(false);
     } catch (err) {
       console.error("Error saving activity:", err);
-      toast({ title: "Save Failed", description: `Could not ${isEditMode ? 'update' : 'save'} the activity.`, variant: "destructive" });
+      toast({ title: "Save Failed", description: `Could not ${isEditMode ? 'update' : 'save'} the activity. Please try again.`, variant: "destructive" });
     } finally {
       setIsSavingActivity(false);
     }
@@ -556,8 +561,18 @@ export default function SchedulePage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {isLoadingActivities ? <div className="flex justify-center items-center h-20"><Loader2 className="h-6 w-6 animate-spin" /></div> : 
-                  eventsForSelectedDate.length > 0 ? (
+                {isLoadingActivities ? (
+                    <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                        <p>Loading activities...</p>
+                    </div>
+                ) : error ? (
+                    <Alert variant="destructive" className="my-4">
+                        <AlertTriangle className="h-5 w-5" />
+                        <AlertTitle>Failed to Load Activities</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                ) : eventsForSelectedDate.length > 0 ? (
                   <ScrollArea className="h-[300px] pr-3">
                     <ul className="space-y-3">
                       {eventsForSelectedDate.map((event) => (
@@ -632,8 +647,8 @@ export default function SchedulePage() {
                                 activityForm.setValue('endTime', '');
                             }
                         }} 
-                        defaultValue={field.value}
-                        disabled={isEditMode && (editingActivity?.activityType === 'flight' || field.value === 'flight')}
+                        value={field.value} // Use value directly
+                        disabled={isEditMode && editingActivity?.activityType === 'flight'} // Disable type change if editing a flight activity
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -655,45 +670,66 @@ export default function SchedulePage() {
                 )}
               />
 
-              {watchedActivityType === "flight" && !isEditMode && ( 
-                <FormField
-                  control={activityForm.control}
-                  name="flightId"
-                  render={({ field }) => (
+              {watchedActivityType === "flight" && (
+                isEditMode && editingActivity?.activityType === 'flight' && editingActivity.flightDetails ? (
                     <FormItem>
-                      <FormLabel>Select Flight</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingAvailableFlights || !selectedDate}>
+                        <FormLabel>Flight Assignment (Locked)</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue 
-                                placeholder={
-                                    isLoadingAvailableFlights ? "Loading flights..." : 
-                                    !selectedDate ? "Select a date first" :
-                                    flightsForDialogOnSelectedDate.length === 0 ? `No flights for ${selectedDate ? format(selectedDate, "PPP") : ""}` :
-                                    "Choose a flight"
-                                } 
-                            />
-                          </SelectTrigger>
+                        <Input 
+                            value={editingActivity.flightDetails ? 
+                                `${editingActivity.flightDetails.flightNumber}: ${editingActivity.flightDetails.departureAirport} - ${editingActivity.flightDetails.arrivalAirport} (${format(parseISO(editingActivity.flightDetails.scheduledDepartureDateTimeUTC), "HH:mm")} UTC)` :
+                                "Flight details unavailable"
+                            } 
+                            disabled 
+                            className="bg-muted/50"
+                        />
                         </FormControl>
-                        <SelectContent>
-                          {isLoadingAvailableFlights ? (
-                             <div className="p-2 text-sm text-muted-foreground flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</div>
-                          ) : flightsForDialogOnSelectedDate.length === 0 ? (
-                            <div className="p-2 text-sm text-muted-foreground">No flights available for {selectedDate ? format(selectedDate, "PPP") : "the selected date"}.</div>
-                          ) : (
-                            flightsForDialogOnSelectedDate.map(flight => (
-                                <SelectItem key={flight.id} value={flight.id}>
-                                {flight.flightNumber} ({flight.departureAirport}-{flight.arrivalAirport}) - {format(parseISO(flight.scheduledDepartureDateTimeUTC), "HH:mm")} UTC
-                                </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>Showing flights departing on {selectedDate ? format(selectedDate, "PPP") : "the selected date"} that you are not yet assigned to.</FormDescription>
-                      <FormMessage />
+                        <FormDescription>Flight details are locked for existing flight activities. To change the flight, delete this activity and add a new one.</FormDescription>
                     </FormItem>
-                  )}
-                />
+                ) : (
+                    <FormField
+                    control={activityForm.control}
+                    name="flightId"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Select Available Flight</FormLabel>
+                        <Select 
+                            onValueChange={field.onChange} 
+                            value={field.value || ""}
+                            disabled={isLoadingAvailableFlights || !selectedDate}
+                        >
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue 
+                                placeholder={
+                                    isLoadingAvailableFlights ? "Loading available flights..." : 
+                                    !selectedDate ? "Select a date on calendar first" :
+                                    flightsForDialogOnSelectedDate.length === 0 ? `No flights for ${selectedDate ? format(selectedDate, "PPP") : "selected date"}` :
+                                    "Choose a flight for this activity"
+                                } 
+                                />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {isLoadingAvailableFlights ? (
+                                <div className="p-2 text-sm text-muted-foreground flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</div>
+                            ) : flightsForDialogOnSelectedDate.length === 0 ? (
+                                <div className="p-2 text-sm text-muted-foreground">No flights available for {selectedDate ? format(selectedDate, "PPP") : "the selected date"}.</div>
+                            ) : (
+                                flightsForDialogOnSelectedDate.map(flight => (
+                                    <SelectItem key={flight.id} value={flight.id}>
+                                    {flight.flightNumber} ({flight.departureAirport}-{flight.arrivalAirport}) - Dep: {format(parseISO(flight.scheduledDepartureDateTimeUTC), "HH:mm")} UTC
+                                    </SelectItem>
+                                ))
+                            )}
+                            </SelectContent>
+                        </Select>
+                        <FormDescription>Showing flights departing on {selectedDate ? format(selectedDate, "PPP") : "the selected date"} that you are not yet assigned to.</FormDescription>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                )
               )}
               
               {watchedActivityType !== "flight" && (
@@ -746,7 +782,7 @@ export default function SchedulePage() {
                 <DialogClose asChild>
                   <Button type="button" variant="outline">Cancel</Button>
                 </DialogClose>
-                <Button type="submit" disabled={isSavingActivity || (watchedActivityType === "flight" && isLoadingAvailableFlights && !isEditMode)}>
+                <Button type="submit" disabled={isSavingActivity || (watchedActivityType === "flight" && !isEditMode && isLoadingAvailableFlights)}>
                   {isSavingActivity && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isEditMode ? "Update Activity" : "Save Activity"}
                 </Button>
