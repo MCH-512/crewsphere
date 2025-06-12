@@ -70,10 +70,10 @@ Key Guidelines for Your Response:
     *   **Personalization & Context**: Insights should feel highly personalized and contextualized. Invent plausible details (e.g., "On your recent flight AX456 to CDG...", "Following the debrief on the DKR rotation...", "Passenger feedback from last week highlighted..."). This makes the insights feel real, even though the data is simulated for this exercise.
     *   **Variety**: Cover different categories: "safety", "wellbeing", "teamwork", "service", "growth", "feedback".
     *   **Actionability**: Insights should be practical and lead to potential actions or reflections.
-    *   **Priority**: Assign a `priority` ("high", "medium", "low"). "High" should be reserved for safety-critical items or significant positive/negative feedback needing attention. Most wellbeing and growth tips would be "medium" or "low".
-    *   **Actionable Link**: For some insights (especially "safety", "growth", or specific feedback), suggest an `actionableLink`. The `text` should be a call to action (e.g., "Review Emergency Procedures", "Explore Communication Course", "See Full Report (Simulated)"). The `href` can be a placeholder internal link (e.g., "/documents?category=Safety", "/training?module=communication", "/reports/flight-XY123-feedback") or a generic external link if appropriate.
-    *   **Context Hint**: For each insight, provide a brief `contextHint` (e.g., "Based on passenger feedback analysis", "From recent crew incident reports (simulated)", "Derived from operational safety data trends"). This helps the user understand the (simulated) basis of the insight.
-    *   **Emoji & Category Icon**: Include a relevant `emoji`. Also, suggest a `categoryIcon` (a Lucide icon name like 'ShieldCheck', 'Users', 'Leaf', 'Star', 'TrendingUp', 'MessageSquare') that visually represents the insight's theme or category.
+    *   **Priority**: Assign a 'priority' ("high", "medium", "low"). "High" should be reserved for safety-critical items or significant positive/negative feedback needing attention. Most wellbeing and growth tips would be "medium" or "low".
+    *   **Actionable Link**: For some insights (especially "safety", "growth", or specific feedback), suggest an \`actionableLink\`. The \`text\` should be a call to action (e.g., "Review Emergency Procedures", "Explore Communication Course", "See Full Report (Simulated)"). The \`href\` can be a placeholder internal link (e.g., "/documents?category=Safety", "/training?module=communication", "/reports/flight-XY123-feedback") or a generic external link if appropriate.
+    *   **Context Hint**: For each insight, provide a brief \`contextHint\` (e.g., "Based on passenger feedback analysis", "From recent crew incident reports (simulated)", "Derived from operational safety data trends"). This helps the user understand the (simulated) basis of the insight.
+    *   **Emoji & Category Icon**: Include a relevant \`emoji\`. Also, suggest a \`categoryIcon\` (a Lucide icon name like 'ShieldCheck', 'Users', 'Leaf', 'Star', 'TrendingUp', 'MessageSquare') that visually represents the insight's theme or category.
     *   **Role Adaptation**: Where appropriate, subtly tailor insights or their phrasing to the user's role ({{userRole}}). For example, a Purser might get insights related to team leadership, while a new Cabin Crew member might get tips on specific procedures.
 4.  **Motivational Quote**: If possible, select a quote that aligns with a theme from the insights or the overall sentiment of the day.
 
@@ -113,7 +113,7 @@ Example of a "teamwork" (simulated positive feedback):
 }
 
 Generate varied and insightful content. Ensure descriptions are detailed enough to be useful and always maintain that supportive, empathetic coaching voice. Do not sound like a generic AI.
-`,
+\`,
 });
 
 const operationalInsightsFlow = ai.defineFlow(
@@ -140,5 +140,4 @@ const operationalInsightsFlow = ai.defineFlow(
     return output;
   }
 );
-
     
