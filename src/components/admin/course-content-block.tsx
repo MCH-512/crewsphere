@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import { useFormContext, useFieldArray, Controller } from 'react-hook-form';
 import {
@@ -7,39 +8,41 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Trash2, UploadCloud, FileText as FileTextIcon } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PlusCircle, Trash2, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Input } from '@/components/ui/input'; // Keep Input for title
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ReactQuill from 'react-quill';
 import { storage } from '@/lib/firebase';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { Input } from '@/components/ui/input'; // Keep Input for title
-import ReactQuill from 'react-quill';
-  // 'name' prop is required for useFieldArray in the parent
-  name: string; 
-  index: number;
+import { Progress } from "@/components/ui/progress";
+import 'react-quill/dist/quill.snow.css';
+import type { Chapter } from '@/schemas/course-schema'; // Import Chapter type
+
+interface CourseContentBlockProps {
+  name: string; // Path to the array this block belongs to (e.g., "chapters" or "chapters.0.children")
+  index: number; // Index of this block within its parent array
   removeSelf: () => void;
   level: number; // 0 for main chapters, 1 for sub-chapters, etc.
+  control: any; // Pass control from the main form
 }
 
-import 'react-quill/dist/quill.snow.css'; // Styles de l'éditeur
 const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
   name,
- index,
+  index,
   removeSelf,
   level,
+  control, // Receive control as a prop
 }) => {
-  const { control, formState, watch, setValue } = useFormContext();
+  const { watch, setValue, getValues } = useFormContext(); // getValues can be used to get form state for complex logic
   const { toast } = useToast();
   const fileInputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
 
-  const [uploadStatus, setUploadStatus] = React.useState<{ index: number | null; progress: number | null; isLoading: boolean }>({ index: null, progress: null, isLoading: false });
+  const [uploadStatus, setUploadStatus] = React.useState<{ resourceIndex: number | null; progress: number | null; isLoading: boolean }>({ resourceIndex: null, progress: null, isLoading: false });
 
-
+  const currentBlockPath = `${name}.${index}`;
 
   const {
     fields: resourceFields,
@@ -47,11 +50,11 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
     remove: removeResource,
   } = useFieldArray({
     control,
-    name: `${name}.resources` as `chapters.${number}.resources`, // Type assertion for nested field array
+    name: `${currentBlockPath}.resources` as any, // Correct path for resources array
   });
 
   const handleFileUpload = async (resourceIndex: number, file: File) => {
-    setUploadStatus({ index: resourceIndex, progress: 0, isLoading: true });
+    setUploadStatus({ resourceIndex, progress: 0, isLoading: true });
 
     const uniqueFileName = `${new Date().getTime()}-${file.name.replace(/\s+/g, '_')}`;
     const fileStoragePath = `courseResources/${uniqueFileName}`;
@@ -66,21 +69,23 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
       (error) => {
         console.error("Upload failed:", error);
         toast({ title: "File Upload Failed", description: error.message, variant: "destructive" });
-        setUploadStatus({ index: null, progress: null, isLoading: false });
+        setUploadStatus({ resourceIndex: null, progress: null, isLoading: false });
       },
       async () => {
         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        setValue(`${name}.resources.${resourceIndex}.url`, downloadURL);
-        setValue(`${name}.resources.${resourceIndex}.filename`, file.name);
-        // Attempt to guess type based on extension (basic)
+        setValue(`${currentBlockPath}.resources.${resourceIndex}.url`, downloadURL);
+        setValue(`${currentBlockPath}.resources.${resourceIndex}.filename`, file.name);
         const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'file';
         let resourceType = 'file';
         if (['pdf'].includes(fileExtension)) resourceType = 'pdf';
         else if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) resourceType = 'image';
-        else if (['mp4', 'mov', webm].includes(fileExtension)) resourceType = 'video';
-        setValue(`${name}.resources.${resourceIndex}.type`, resourceType);
+        else if (['mp4', 'mov', 'webm'].includes(fileExtension)) resourceType = 'video';
+        setValue(`${currentBlockPath}.resources.${resourceIndex}.type`, resourceType);
         
-        setUploadStatus({ index: null, progress: null, isLoading: false });
+        setUploadStatus({ resourceIndex: null, progress: null, isLoading: false });
+        if (fileInputRefs.current[resourceIndex]) {
+            fileInputRefs.current[resourceIndex]!.value = ""; // Reset file input
+        }
       }
     );
   };
@@ -91,55 +96,53 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
     remove: removeChild,
   } = useFieldArray({
     control,
-    name: `${name}.${index}.children` as 'chapters.0.children', // Adjust type based on your form structure
+    name: `${currentBlockPath}.children` as any, // Correct path for children array
   });
 
-  const indentation = level * 20; // Adjust as needed for visual spacing
+  const indentation = level * 24; // Adjust as needed for visual spacing (e.g., 1.5rem per level)
 
-  // Watch the children array length to conditionally show remove button
-  const watchedChildren = watch(`${name}.${index}.children`);
-  const canRemove = level === 0 ? (formState.defaultValues as any)?.chapters?.length > 1 || watchedChildren?.length > 0 : true; // Allow removing child block if not the last main chapter or if it has children
+  const watchedChapters = watch(name.split('.')[0]); // Watch the top-level chapters array
+  const mainChaptersLength = Array.isArray(watchedChapters) ? watchedChapters.length : 0;
+
 
   return (
-    <Card style={{ marginLeft: `${indentation}px` }} className={`mb-4 ${level > 0 ? 'border-l-2 border-primary/50 pl-4' : ''}`}>
-      <CardHeader className="flex flex-row justify-between items-center py-3 pr-3 pl-0">
+    <Card style={{ marginLeft: `${indentation}px` }} className={`mb-4 ${level > 0 ? 'border-l-4 border-primary/30 pl-4' : ''} bg-card`}>
+      <CardHeader className="flex flex-row justify-between items-center py-3 px-4">
         <CardTitle className="text-lg font-semibold flex items-center">
-            {level === 0 ? `Chapter ${index + 1}` : `Section ${index + 1}`}
+            {level === 0 ? `Chapter ${index + 1}` : `Section ${level}.${index + 1}`}
         </CardTitle>
         <div className="flex gap-2">
-            {/* Button to add a sub-block (child) */}
             <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => appendChild({ title: '', content: '', resources: [], children: [] })}
+                onClick={() => appendChild({ title: '', content: '', resources: [], children: [] } as Chapter)} // Ensure correct type for append
                 className="flex items-center"
             >
                 <PlusCircle className="mr-1 h-4 w-4" /> Add Sub-section
             </Button>
-            {/* Button to remove the current block */}
             <Button
                 type="button"
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={() => {
-                  if (level === 0 && (formState.defaultValues as any)?.chapters?.length <= 1 && childrenFields.length === 0) {
+                  if (level === 0 && mainChaptersLength <= 1) {
                      toast({ title: "Cannot Remove", description: "Course must have at least one main chapter.", variant: "destructive" });
                      return;
                   }
                   removeSelf();
                 }}  
-                className="text-destructive hover:text-destructive/80"
-                disabled={level === 0 && (formState.defaultValues as any)?.chapters?.length <= 1 && childrenFields.length === 0}
+                className="text-destructive hover:text-destructive/80 h-8 w-8"
+                disabled={level === 0 && mainChaptersLength <= 1}
             >
-                <Trash2 className="h-4 w-4" /> Remove {level === 0 ? 'Chapter' : 'Section'}
+                <Trash2 className="h-4 w-4" />
+                <span className="sr-only">Remove {level === 0 ? 'Chapter' : 'Section'}</span>
             </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Title Field */}
+      <CardContent className="space-y-4 pt-0 px-4 pb-4">
         <FormField
-          name={`${name}.${index}.title`}
+          name={`${currentBlockPath}.title`}
           control={control}
           render={({ field }) => (
             <FormItem>
@@ -151,25 +154,22 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
             </FormItem>
           )}
         />
-
-        {/* Content Field */}
         <FormField
-          name={`${name}.${index}.content`}
-          control={control} // Make sure control is passed correctly from the parent
+          name={`${currentBlockPath}.content`}
+          control={control}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Content (Text/HTML/Markdown)</FormLabel>
+              <FormLabel>Content</FormLabel>
               <FormControl>
                 <ReactQuill
-                  theme="snow" // or "bubble"
-                  value={field.value}
+                  theme="snow" 
+                  value={field.value || ""}
                   onChange={field.onChange}
                   modules={{
-                    toolbar: [['bold', 'italic', 'underline'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'image'], ['clean']],
+                    toolbar: [['bold', 'italic', 'underline', 'strike'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'image', 'video'], ['clean'], [{ 'header': [1, 2, 3, 4, 5, 6, false] }], [{ 'align': [] }]],
                   }}
                   placeholder={`Enter content for ${level === 0 ? 'chapter' : 'section'} ${index + 1}...`}
-                  className="min-h-[150px]"
-                  {...field}
+                  className="min-h-[200px] bg-background" 
                 />
               </FormControl>
               <FormMessage />
@@ -177,30 +177,22 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
           )}
         />
 
-        {/* Resources Section */}
         <div className="border-t pt-4 mt-4 space-y-4">
             <FormLabel className="text-md font-medium">Resources</FormLabel>
             {resourceFields.map((resourceItem, resourceIndex) => (
-                <div key={resourceItem.id} className="flex items-start gap-3 p-3 border rounded-md">
-                    <div className="flex-grow grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Resource Type */}
+                <div key={resourceItem.id} className="flex flex-col md:flex-row items-start gap-3 p-3 border rounded-md bg-muted/30">
+                    <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                         <FormField
-                            name={`${name}.resources.${resourceIndex}.type` as `chapters.${number}.resources.${number}.type`}
+                            name={`${currentBlockPath}.resources.${resourceIndex}.type`}
                             control={control}
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="sr-only">Type</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select type" />
-                                            </SelectTrigger>
-                                        </FormControl>
+                                    <FormLabel className="text-xs">Type</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value || "file"}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            <SelectItem value="file">Generic File</SelectItem>
-                                            <SelectItem value="pdf">PDF</SelectItem>
-                                            <SelectItem value="image">Image</SelectItem>
-                                            <SelectItem value="video">Video</SelectItem>
+                                            <SelectItem value="file">Generic File</SelectItem><SelectItem value="pdf">PDF</SelectItem>
+                                            <SelectItem value="image">Image</SelectItem><SelectItem value="video">Video</SelectItem>
                                             <SelectItem value="link">Link/URL</SelectItem>
                                         </SelectContent>
                                     </Select>
@@ -208,54 +200,43 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
                                 </FormItem>
                             )}
                         />
-                        {/* Resource URL/Upload */}
                         <FormField
-                            name={`${name}.resources.${resourceIndex}.url` as `chapters.${number}.resources.${number}.url`}
+                            name={`${currentBlockPath}.resources.${resourceIndex}.url`}
                             control={control}
                             render={({ field }) => (
-                                <FormItem className="md:col-span-2">
-                                    <FormLabel className="sr-only">URL</FormLabel>
-                                    <FormControl>
-                                        <div className="flex gap-2">
-                                             <Input placeholder="Enter URL or Upload File" {...field} disabled={uploadStatus.isLoading && uploadStatus.index === resourceIndex} />
-                                             <input
-                                                type="file"
-                                                ref={el => fileInputRefs.current[resourceIndex] = el}
-                                                className="hidden"
-                                                onChange={(e) => {
-                                                    if (e.target.files?.[0]) {
-                                                        handleFileUpload(resourceIndex, e.target.files[0]);
-                                                    }
-                                                }}
-                                                disabled={uploadStatus.isLoading}
-                                            />
-                                             <Button type="button" variant="outline" size="sm" onClick={() => fileInputRefs.current[resourceIndex]?.click()} disabled={uploadStatus.isLoading}><UploadCloud className="h-4 w-4" /></Button>
-                                        </div>
-                                    </FormControl>
-                                    {uploadStatus.isLoading && uploadStatus.index === resourceIndex && uploadStatus.progress !== null && (
-                                        <Progress value={uploadStatus.progress} className="w-full mt-1" />
+                                <FormItem>
+                                    <FormLabel className="text-xs">URL / File</FormLabel>
+                                    <div className="flex gap-2">
+                                        <Input placeholder="Enter URL or Upload" {...field} value={field.value || ""} disabled={uploadStatus.isLoading && uploadStatus.resourceIndex === resourceIndex} />
+                                        <input type="file" ref={el => fileInputRefs.current[resourceIndex] = el} className="hidden"
+                                            onChange={(e) => { if (e.target.files?.[0]) { handleFileUpload(resourceIndex, e.target.files[0]); } }}
+                                            disabled={uploadStatus.isLoading} />
+                                        <Button type="button" variant="outline" size="icon" onClick={() => fileInputRefs.current[resourceIndex]?.click()} disabled={uploadStatus.isLoading} className="h-10 w-10">
+                                            <UploadCloud className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    {uploadStatus.isLoading && uploadStatus.resourceIndex === resourceIndex && uploadStatus.progress !== null && (
+                                        <Progress value={uploadStatus.progress} className="w-full h-1.5 mt-1" />
                                     )}
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
-                        {/* Optional Filename Display/Field */}
-                         <FormField
-                            name={`${name}.resources.${resourceIndex}.filename` as `chapters.${number}.resources.${number}.filename`}
+                        <FormField
+                            name={`${currentBlockPath}.resources.${resourceIndex}.filename`}
                             control={control}
                              render={({ field }) => (
-                                <FormItem className="md:col-span-3">
-                                    <FormLabel className="sr-only">Filename</FormLabel>
-                                     <FormControl>
-                                         <Input placeholder="Filename (auto-filled on upload)" {...field} disabled />
-                                     </FormControl>
+                                <FormItem className="sm:col-span-2">
+                                    <FormLabel className="text-xs">Display Filename (Optional)</FormLabel>
+                                     <FormControl><Input placeholder="Filename (auto-filled on upload)" {...field} value={field.value || ""} /></FormControl>
                                      <FormMessage />
                                 </FormItem>
                              )}
                          />
                     </div>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => removeResource(resourceIndex)} className="text-destructive hover:text-destructive/80" disabled={uploadStatus.isLoading}>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => removeResource(resourceIndex)} className="text-destructive hover:text-destructive/80 mt-2 md:mt-0 md:self-center h-8 w-8 shrink-0" disabled={uploadStatus.isLoading}>
                         <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Remove Resource</span>
                     </Button>
                 </div>
             ))}
@@ -264,14 +245,14 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
             </Button>
         </div>
 
-        {/* Recursive Rendering of Children Blocks */}
         {childrenFields.map((childField, childIndex) => (
           <CourseContentBlock
             key={childField.id}
-            name={`${name}.${index}.children`} // Pass the nested name
+            control={control} // Pass control down
+            name={`${currentBlockPath}.children`}
             index={childIndex}
             removeSelf={() => removeChild(childIndex)}
-            level={level + 1} // Increase level for children
+            level={level + 1}
           />
         ))}
       </CardContent>

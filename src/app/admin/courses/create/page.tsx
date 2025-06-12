@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -25,7 +25,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpenCheck, Loader2, AlertTriangle, CheckCircle, PlusCircle, Trash2, Edit3, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, CheckSquare } from "lucide-react";
+import { BookOpenCheck, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
@@ -37,17 +37,16 @@ import Image from "next/image";
 import { 
   courseCategories, 
   courseTypes, 
-  questionTypes, 
   referenceBodyOptions, 
   courseDurationOptions 
 } from "@/config/course-options";
 import { 
   courseFormSchema, 
   type CourseFormValues, 
-  defaultModuleValue, 
-  defaultQuestionValue, 
+  defaultChapterValue, 
   defaultValues 
 } from "@/schemas/course-schema";
+import CourseContentBlock from "@/components/admin/course-content-block"; // Import the new component
 
 export default function CreateComprehensiveCoursePage() {
   const { toast } = useToast();
@@ -59,18 +58,13 @@ export default function CreateComprehensiveCoursePage() {
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
-    defaultValues, // Use imported defaultValues
+    defaultValues,
     mode: "onBlur",
   });
 
-  const { fields: moduleFields, append: appendModule, remove: removeModule } = useFieldArray({
+  const { fields: chapterFields, append: appendChapter, remove: removeChapter } = useFieldArray({
     control: form.control,
-    name: "modules",
-  });
-
-  const { fields: questionFields, append: appendQuestion, remove: removeQuestion } = useFieldArray({
-    control: form.control,
-    name: "questions",
+    name: "chapters",
   });
 
   const watchedFormValues = form.watch();
@@ -81,21 +75,6 @@ export default function CreateComprehensiveCoursePage() {
       toast({ title: "Access Denied", description: "You need admin privileges to access this page.", variant: "destructive"});
     }
   }, [user, authLoading, router, toast]);
-
-  const handleAddMcqOption = (questionIndex: number) => {
-    const currentOptions = form.getValues(`questions.${questionIndex}.options`) || [];
-    form.setValue(`questions.${questionIndex}.options`, [...currentOptions, { text: "", isCorrect: false }]);
-  };
-
-  const handleRemoveMcqOption = (questionIndex: number, optionIndex: number) => {
-    const currentOptions = form.getValues(`questions.${questionIndex}.options`) || [];
-    if (currentOptions.length > 2) { 
-      const newOptions = currentOptions.filter((_, idx) => idx !== optionIndex);
-      form.setValue(`questions.${questionIndex}.options`, newOptions);
-    } else {
-      toast({ title: "Cannot Remove", description: "MCQ questions must have at least two options.", variant: "destructive" });
-    }
-  };
 
   async function onSubmit(data: CourseFormValues) {
     if (!user || user.role !== 'admin') {
@@ -138,7 +117,6 @@ export default function CreateComprehensiveCoursePage() {
 
     try {
       const batch = writeBatch(db);
-
       const courseRef = doc(collection(db, "courses"));
       batch.set(courseRef, {
         title: data.title,
@@ -148,9 +126,9 @@ export default function CreateComprehensiveCoursePage() {
         description: data.description,
         duration: data.duration,
         mandatory: data.mandatory,
-        fileURL: fileDownloadURL,
+        fileURL: fileDownloadURL, // Main course file URL
         imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
-        modules: data.modules || [], // Ensure modules array is not undefined
+        chapters: data.chapters || [], // Save hierarchical chapters
         published: false, 
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -167,23 +145,7 @@ export default function CreateComprehensiveCoursePage() {
       });
       batch.update(courseRef, { quizId: quizRef.id }); 
 
-      data.questions.forEach(q => {
-        const questionRef = doc(collection(db, "questions"));
-        const questionData: any = {
-          quizId: quizRef.id,
-          text: q.text,
-          questionType: q.questionType,
-          weight: q.weight,
-        };
-        if (q.questionType === 'mcq') {
-          questionData.options = q.options?.map(opt => ({ text: opt.text, isCorrect: opt.isCorrect })) || [];
-        } else if (q.questionType === 'tf') {
-          questionData.correctAnswerBoolean = q.correctAnswerBoolean || false;
-        } else if (q.questionType === 'short') {
-          questionData.correctAnswerText = q.correctAnswerText || "";
-        }
-        batch.set(questionRef, questionData);
-      });
+      // Questions are no longer manually created here. They would be AI-generated.
 
       const certRuleRef = doc(collection(db, "certificateRules"));
       batch.set(certRuleRef, {
@@ -200,10 +162,10 @@ export default function CreateComprehensiveCoursePage() {
 
       toast({
         title: "Course Created Successfully!",
-        description: `Course "${data.title}" with its quiz and certification rules has been saved.`,
+        description: `Course "${data.title}" with its content and certification rules has been saved. Quiz questions will be managed separately or AI-generated.`,
         action: <CheckCircle className="text-green-500" />,
       });
-      form.reset(defaultValues); // Use imported defaultValues for reset
+      form.reset(defaultValues);
       if (fileInputRef.current) fileInputRef.current.value = ""; 
       router.push('/admin/courses');
     } catch (error) {
@@ -239,7 +201,7 @@ export default function CreateComprehensiveCoursePage() {
             Create Comprehensive Training Course
           </CardTitle>
           <CardDescription>
-            Define all aspects of your new training course, including modules, quiz, and certification.
+            Define all aspects of your new training course, including hierarchical content, quiz settings, and certification.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -277,7 +239,7 @@ export default function CreateComprehensiveCoursePage() {
                     </FormItem>
                 )} />
                  <FormField control={form.control} name="imageHint" render={({ field }) => (
-                  <FormItem><FormLabel>Course Image Hint (Optional)</FormLabel><FormControl><Input placeholder="e.g., emergency exit, first aid" {...field} /></FormControl><FormDescription>Keywords for course image (e.g., cockpit, safety vest).</FormDescription><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Course Image Hint (Optional)</FormLabel><FormControl><Input placeholder="e.g., emergency exit, first aid" {...field} value={field.value || ""} /></FormControl><FormDescription>Keywords for course image (e.g., cockpit, safety vest).</FormDescription><FormMessage /></FormItem>
               )} />
               </div>
               <FormField control={form.control} name="description" render={({ field }) => (
@@ -290,24 +252,17 @@ export default function CreateComprehensiveCoursePage() {
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
                       <FormLabel>Is this course mandatory?</FormLabel>
-                      <FormDescription>
-                        Indicates if completion is required for personnel.
-                      </FormDescription>
+                      <FormDescription>Indicates if completion is required for personnel.</FormDescription>
                     </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
+                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                   </FormItem>
                 )}
               />
               <FormField control={form.control} name="associatedFile" render={({ field: { onChange, value, ...rest }}) => (
                 <FormItem>
-                  <FormLabel className="flex items-center"><UploadCloud className="mr-2 h-5 w-5" />Associated Material (Optional)</FormLabel>
+                  <FormLabel className="flex items-center"><UploadCloud className="mr-2 h-5 w-5" />Main Course Material (Optional)</FormLabel>
                   <FormControl><Input type="file" {...rest} onChange={(e) => onChange(e.target.files)} ref={fileInputRef} className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" /></FormControl>
-                  <FormDescription>Upload PDF, video, or other course material (max 10MB).</FormDescription>
+                  <FormDescription>Upload a global PDF, video, or other material if applicable (max 10MB). Chapter-specific resources can be added below.</FormDescription>
                   {uploadProgress !== null && <Progress value={uploadProgress} className="w-full mt-2" />}
                   <FormMessage />
                 </FormItem>
@@ -315,37 +270,30 @@ export default function CreateComprehensiveCoursePage() {
             </CardContent>
           </Card>
           
-          {/* Section 1.5: Course Modules */}
+          {/* Section 1.5: Course Content (Chapters) */}
           <Card className="shadow-lg">
             <CardHeader>
-                <CardTitle className="text-xl font-semibold flex items-center"><LayoutList className="mr-2 h-5 w-5 text-primary" /> Course Modules</CardTitle>
-                <CardDescription>Define the individual modules or sections of this course.</CardDescription>
+                <CardTitle className="text-xl font-semibold flex items-center"><LayoutList className="mr-2 h-5 w-5 text-primary" /> Course Content (Chapters)</CardTitle>
+                <CardDescription>Define the hierarchical structure of your course content.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {moduleFields.map((moduleItem, index) => (
-                <Card key={moduleItem.id} className="p-4 space-y-4 border-dashed">
-                  <div className="flex justify-between items-center">
-                    <FormLabel className="text-md font-medium">Module {index + 1}</FormLabel>
-                    <Button type="button" variant="ghost" size="icon" onClick={() => moduleFields.length > 1 ? removeModule(index) : toast({title: "Cannot Remove", description:"Course must have at least one module.", variant:"destructive"})} className="text-destructive hover:text-destructive/80">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <FormField control={form.control} name={`modules.${index}.moduleTitle`} render={({ field }) => (
-                    <FormItem><FormLabel>Module Title*</FormLabel><FormControl><Input placeholder="e.g., Introduction to CRM Principles" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name={`modules.${index}.moduleObjectives`} render={({ field }) => (
-                    <FormItem><FormLabel>Module Objectives*</FormLabel><FormControl><Textarea placeholder="List key learning objectives for this module..." className="min-h-[80px]" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </Card>
+              {chapterFields.map((chapterItem, index) => (
+                <CourseContentBlock
+                  key={chapterItem.id}
+                  control={form.control} // Pass control
+                  name="chapters"         // Pass the name of the field array
+                  index={index}            // Pass the index of this specific chapter
+                  removeSelf={() => chapterFields.length > 1 ? removeChapter(index) : toast({title: "Cannot Remove", description:"Course must have at least one chapter.", variant:"destructive"})}
+                  level={0}                // Top-level chapters are level 0
+                />
               ))}
-              <Button type="button" variant="outline" onClick={() => appendModule(defaultModuleValue)}><PlusCircle className="mr-2 h-4 w-4" />Add Module</Button>
+              <Button type="button" variant="outline" onClick={() => appendChapter(defaultChapterValue)}><PlusCircle className="mr-2 h-4 w-4" />Add Chapter</Button>
             </CardContent>
           </Card>
 
-
-          {/* Section 2: Quiz Builder */}
+          {/* Section 2: Quiz Settings */}
           <Card className="shadow-lg">
-            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><CheckSquare className="mr-2 h-5 w-5 text-primary" /> Main Course Quiz Builder</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><FileTextIcon className="mr-2 h-5 w-5 text-primary" /> Main Course Quiz Settings</CardTitle><CardDescription>Configure the main quiz. Questions will be AI-generated based on course content or managed externally.</CardDescription></CardHeader>
             <CardContent className="space-y-6">
               <FormField control={form.control} name="quizTitle" render={({ field }) => (
                 <FormItem><FormLabel>Quiz Title*</FormLabel><FormControl><Input placeholder="e.g., Final Assessment for Advanced First Aid" {...field} /></FormControl><FormMessage /></FormItem>
@@ -358,72 +306,7 @@ export default function CreateComprehensiveCoursePage() {
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><FormLabel>Randomize Answer Order (for MCQs)?</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                 )} />
               </div>
-
-              {questionFields.map((questionItem, index) => (
-                <Card key={questionItem.id} className="p-4 space-y-4 border-dashed">
-                  <div className="flex justify-between items-center">
-                    <FormLabel className="text-md font-medium">Question {index + 1}</FormLabel>
-                    <Button type="button" variant="ghost" size="icon" onClick={() => questionFields.length > 1 ? removeQuestion(index) : toast({title: "Cannot Remove", description:"Quiz must have at least one question.", variant:"destructive"})} className="text-destructive hover:text-destructive/80">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <FormField control={form.control} name={`questions.${index}.text`} render={({ field }) => (
-                    <FormItem><FormLabel>Question Text*</FormLabel><FormControl><Textarea placeholder="Enter the question..." {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name={`questions.${index}.questionType`} render={({ field }) => (
-                      <FormItem><FormLabel>Question Type*</FormLabel>
-                        <Select onValueChange={(value) => {
-                            field.onChange(value);
-                            form.setValue(`questions.${index}.options`, value === 'mcq' ? [{text: "", isCorrect: false},{text: "", isCorrect: false}] : undefined);
-                            form.setValue(`questions.${index}.correctAnswerBoolean`, value === 'tf' ? false : undefined);
-                            form.setValue(`questions.${index}.correctAnswerText`, value === 'short' ? "" : undefined);
-                        }} defaultValue={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
-                          <SelectContent>{questionTypes.map(type => (<SelectItem key={type} value={type}>{type.toUpperCase()}</SelectItem>))}</SelectContent>
-                        </Select><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name={`questions.${index}.weight`} render={({ field }) => (
-                      <FormItem><FormLabel>Weight*</FormLabel><FormControl><Input type="number" placeholder="1" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  </div>
-
-                  {form.watch(`questions.${index}.questionType`) === 'mcq' && (
-                    <div className="space-y-3">
-                      <FormLabel>MCQ Options* (Select correct answer/s)</FormLabel>
-                      {form.watch(`questions.${index}.options`)?.map((optionItem, optionIndex) => (
-                        <div key={optionIndex} className="flex items-center gap-2 p-2 border rounded-md">
-                           <FormField control={form.control} name={`questions.${index}.options.${optionIndex}.isCorrect`} render={({ field }) => (
-                            <FormItem className="flex items-center"><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="mr-2 data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-muted" /></FormControl></FormItem>
-                          )} />
-                          <FormField control={form.control} name={`questions.${index}.options.${optionIndex}.text`} render={({ field }) => (
-                            <FormItem className="flex-grow"><FormControl><Input placeholder={`Option ${optionIndex + 1}`} {...field} /></FormControl><FormMessage /></FormItem>
-                          )} />
-                          <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveMcqOption(index, optionIndex)} className="text-muted-foreground hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button type="button" variant="outline" size="sm" onClick={() => handleAddMcqOption(index)}><PlusCircle className="mr-2 h-4 w-4" />Add Option</Button>
-                    </div>
-                  )}
-                  {form.watch(`questions.${index}.questionType`) === 'tf' && (
-                    <FormField control={form.control} name={`questions.${index}.correctAnswerBoolean`} render={({ field }) => (
-                      <FormItem><FormLabel>Correct Answer*</FormLabel>
-                        <Select onValueChange={(val) => field.onChange(val === 'true')} value={String(field.value)}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select True or False" /></SelectTrigger></FormControl>
-                          <SelectContent><SelectItem value="true">True</SelectItem><SelectItem value="false">False</SelectItem></SelectContent>
-                        </Select><FormMessage /></FormItem>
-                    )} />
-                  )}
-                  {form.watch(`questions.${index}.questionType`) === 'short' && (
-                    <FormField control={form.control} name={`questions.${index}.correctAnswerText`} render={({ field }) => (
-                      <FormItem><FormLabel>Correct Answer Text* (Case-sensitive)</FormLabel><FormControl><Input placeholder="Enter exact answer" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  )}
-                </Card>
-              ))}
-              <Button type="button" variant="outline" onClick={() => appendQuestion(defaultQuestionValue)}><PlusCircle className="mr-2 h-4 w-4" />Add Question</Button>
+              <FormDescription>Note: Specific quiz questions are no longer managed here. They will be linked via the Quiz ID generated or handled by an AI generation process.</FormDescription>
             </CardContent>
           </Card>
 
@@ -440,7 +323,7 @@ export default function CreateComprehensiveCoursePage() {
                 )} />
               </div>
               <FormField control={form.control} name="certificateLogoUrl" render={({ field }) => (
-                <FormItem><FormLabel>Certificate Logo URL (Optional)</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormDescription>Link to your airline's logo. Default placeholder will be used if empty.</FormDescription><FormMessage /></FormItem>
+                <FormItem><FormLabel>Certificate Logo URL (Optional)</FormLabel><FormControl><Input placeholder="https://..." {...field} value={field.value || ""} /></FormControl><FormDescription>Link to your airline's logo. Default placeholder will be used if empty.</FormDescription><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="certificateSignature" render={({ field }) => (
                 <FormItem><FormLabel>Certificate Signature Text/Authority*</FormLabel><FormControl><Input placeholder="Express Airline Training Department" {...field} /></FormControl><FormDescription>Text to display as the issuing authority or signature.</FormDescription><FormMessage /></FormItem>
@@ -458,8 +341,7 @@ export default function CreateComprehensiveCoursePage() {
                         <li>Course Title: {watchedFormValues.title || "Not set"}</li>
                         <li>Category: {watchedFormValues.category || "Not set"}</li>
                         <li>Mandatory: {watchedFormValues.mandatory ? "Yes" : "No"}</li>
-                        <li>Modules: {watchedFormValues.modules?.length || 0}</li>
-                        <li>Main Quiz Questions: {watchedFormValues.questions?.length || 0}</li>
+                        <li>Chapters: {watchedFormValues.chapters?.length || 0}</li>
                         <li>Passing Score: {watchedFormValues.passingThreshold}%</li>
                         <li>Certificate Valid For: {watchedFormValues.certificateExpiryDays === 0 ? "No Expiry" : `${watchedFormValues.certificateExpiryDays} days`}</li>
                     </ul>
@@ -497,4 +379,3 @@ export default function CreateComprehensiveCoursePage() {
     </div>
   );
 }
-    
