@@ -14,12 +14,19 @@ import { PlusCircle, Trash2, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import ReactQuill from 'react-quill';
+// import ReactQuill from 'react-quill'; // Original import
+import dynamic from 'next/dynamic';
 import { storage } from '@/lib/firebase';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Progress } from "@/components/ui/progress";
 import 'react-quill/dist/quill.snow.css';
 import type { Chapter } from '@/schemas/course-schema'; // Import Chapter type
+
+// Dynamically import ReactQuill
+const ReactQuill = dynamic(() => import('react-quill'), { 
+  ssr: false,
+  loading: () => <p>Loading editor...</p> 
+});
 
 interface CourseContentBlockProps {
   name: string; // Path to the array this block belongs to (e.g., "chapters" or "chapters.0.children")
