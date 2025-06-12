@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -37,8 +36,8 @@ service cloud.firestore {
 
     // Alerts Collection
     match /alerts/{alertId} {
-      // Users can read global alerts or alerts targeted to them.
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.userId == null);
+      // Users can read global alerts or alerts targeted to them. Admins can read all alerts.
+      allow read: if isAuthenticated() && (isAdmin() || resource.data.userId == request.auth.uid || resource.data.userId == null);
       allow create, update, delete: if isAdmin();
     }
 
