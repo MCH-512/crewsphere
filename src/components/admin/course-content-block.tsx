@@ -21,7 +21,7 @@ import { Progress } from "@/components/ui/progress";
 import 'react-quill/dist/quill.snow.css';
 import type { Chapter } from '@/schemas/course-schema';
 
-// Dynamically import ReactQuill
+// Dynamically import ReactQuill, relying on next/dynamic to handle default export.
 const ReactQuill = dynamic(() => import('react-quill'), {
   ssr: false,
   loading: () => <div className="p-2 border rounded-md min-h-[200px] bg-muted animate-pulse">Loading editor...</div>,
@@ -185,7 +185,7 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
                   />
                 ) : (
                   <div className="p-2 border rounded-md min-h-[200px] bg-muted animate-pulse flex items-center justify-center">
-                    Loading editor...
+                    Initializing editor...
                   </div>
                 )}
               </FormControl>
@@ -278,5 +278,3 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
 };
 
 export default CourseContentBlock;
-
-    
