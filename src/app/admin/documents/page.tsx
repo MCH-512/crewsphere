@@ -12,7 +12,7 @@ import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogPrimitiveDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogPrimitiveTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area"; 
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, FilePlus, StickyNote, Layers } from "lucide-react"; // Added FilePlus, Layers
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, FilePlus, StickyNote, Layers, Edit, Trash2 } from "lucide-react"; // Added FilePlus, Layers, Edit, Trash2
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
