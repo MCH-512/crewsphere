@@ -9,11 +9,8 @@ export const mcqOptionSchema = z.object({
 
 export const moduleSchema = z.object({
   id: z.string().optional(), // For identifying existing modules during edit
-  moduleCode: z.string().optional(),
   moduleTitle: z.string().min(3, "Module title is required and must be at least 3 characters."),
   moduleObjectives: z.string().min(10, "Module objectives are required and must be at least 10 characters."),
-  durationMinutes: z.coerce.number().int().min(1, "Duration must be at least 1 minute."),
-  // linkedQuizId: z.string().optional(), // Removed
 });
 
 export const questionSchema = z.object({
@@ -60,11 +57,8 @@ export type CourseFormValues = z.infer<typeof courseFormSchema>;
 
 // Default values for array fields
 export const defaultModuleValue: Omit<z.infer<typeof moduleSchema>, 'id'> = { // Ensure id is not part of default value if it's truly optional only for existing
-  moduleCode: "",
   moduleTitle: "",
   moduleObjectives: "",
-  durationMinutes: 30,
-  // linkedQuizId: "", // Removed
 };
 
 export const defaultQuestionValue: Omit<z.infer<typeof questionSchema>, 'id'> = {

@@ -44,8 +44,8 @@ import {
 import { 
   courseFormSchema,
   type CourseFormValues,
-  defaultModuleValue, // Renamed defaultChapterValue to defaultModuleValue
-  defaultQuestionValue, // Added defaultQuestionValue
+  defaultModuleValue, 
+  defaultQuestionValue, 
   defaultValues as initialFormDefaultValues 
 } from "@/schemas/course-schema";
 
@@ -391,14 +391,6 @@ export default function EditComprehensiveCoursePage() {
                   <FormField control={form.control} name={`modules.${index}.moduleObjectives`} render={({ field }) => (
                     <FormItem><FormLabel>Module Objectives*</FormLabel><FormControl><Textarea placeholder="List key learning objectives for this module..." className="min-h-[80px]" {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name={`modules.${index}.moduleCode`} render={({ field }) => (
-                      <FormItem><FormLabel>Module Code</FormLabel><FormControl><Input placeholder="e.g., CRM-001" {...field} value={field.value || ""} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name={`modules.${index}.durationMinutes`} render={({ field }) => (
-                      <FormItem><FormLabel>Duration (minutes)*</FormLabel><FormControl><Input type="number" placeholder="30" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  </div>
                 </Card>
               ))}
               <Button type="button" variant="outline" onClick={() => appendModule(defaultModuleValue)}><PlusCircle className="mr-2 h-4 w-4" />Add Module</Button>
