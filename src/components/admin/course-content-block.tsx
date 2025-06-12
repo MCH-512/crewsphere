@@ -1,6 +1,6 @@
 
 import * as React from 'react';
-import { useFormContext, useFieldArray, Controller } from 'react-hook-form';
+import { useFormContext, useFieldArray } from 'react-hook-form';
 import {
   FormControl,
   FormField,
@@ -14,26 +14,25 @@ import { PlusCircle, Trash2, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-// import ReactQuill from 'react-quill'; // Original import
 import dynamic from 'next/dynamic';
 import { storage } from '@/lib/firebase';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Progress } from "@/components/ui/progress";
 import 'react-quill/dist/quill.snow.css';
-import type { Chapter } from '@/schemas/course-schema'; // Import Chapter type
+import type { Chapter } from '@/schemas/course-schema';
 
 // Dynamically import ReactQuill
-const ReactQuill = dynamic(() => import('react-quill'), { 
+const ReactQuill = dynamic(() => import('react-quill'), {
   ssr: false,
-  loading: () => <p>Loading editor...</p> 
+  loading: () => <div className="p-2 border rounded-md min-h-[200px] bg-muted animate-pulse">Loading editor...</div>,
 });
 
 interface CourseContentBlockProps {
-  name: string; // Path to the array this block belongs to (e.g., "chapters" or "chapters.0.children")
-  index: number; // Index of this block within its parent array
+  name: string;
+  index: number;
   removeSelf: () => void;
-  level: number; // 0 for main chapters, 1 for sub-chapters, etc.
-  control: any; // Pass control from the main form
+  level: number;
+  control: any;
 }
 
 const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
@@ -41,11 +40,16 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
   index,
   removeSelf,
   level,
-  control, // Receive control as a prop
+  control,
 }) => {
-  const { watch, setValue, getValues } = useFormContext(); // getValues can be used to get form state for complex logic
+  const { watch, setValue } = useFormContext();
   const { toast } = useToast();
   const fileInputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const [uploadStatus, setUploadStatus] = React.useState<{ resourceIndex: number | null; progress: number | null; isLoading: boolean }>({ resourceIndex: null, progress: null, isLoading: false });
 
@@ -57,7 +61,7 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
     remove: removeResource,
   } = useFieldArray({
     control,
-    name: `${currentBlockPath}.resources` as any, // Correct path for resources array
+    name: `${currentBlockPath}.resources` as any,
   });
 
   const handleFileUpload = async (resourceIndex: number, file: File) => {
@@ -91,7 +95,7 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
         
         setUploadStatus({ resourceIndex: null, progress: null, isLoading: false });
         if (fileInputRefs.current[resourceIndex]) {
-            fileInputRefs.current[resourceIndex]!.value = ""; // Reset file input
+            fileInputRefs.current[resourceIndex]!.value = "";
         }
       }
     );
@@ -103,12 +107,12 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
     remove: removeChild,
   } = useFieldArray({
     control,
-    name: `${currentBlockPath}.children` as any, // Correct path for children array
+    name: `${currentBlockPath}.children` as any,
   });
 
-  const indentation = level * 24; // Adjust as needed for visual spacing (e.g., 1.5rem per level)
+  const indentation = level * 24;
 
-  const watchedChapters = watch(name.split('.')[0]); // Watch the top-level chapters array
+  const watchedChapters = watch(name.split('.')[0]);
   const mainChaptersLength = Array.isArray(watchedChapters) ? watchedChapters.length : 0;
 
 
@@ -123,7 +127,7 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => appendChild({ title: '', content: '', resources: [], children: [] } as Chapter)} // Ensure correct type for append
+                onClick={() => appendChild({ title: '', content: '', resources: [], children: [] } as Chapter)}
                 className="flex items-center"
             >
                 <PlusCircle className="mr-1 h-4 w-4" /> Add Sub-section
@@ -168,16 +172,22 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
             <FormItem>
               <FormLabel>Content</FormLabel>
               <FormControl>
-                <ReactQuill
-                  theme="snow" 
-                  value={field.value || ""}
-                  onChange={field.onChange}
-                  modules={{
-                    toolbar: [['bold', 'italic', 'underline', 'strike'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'image', 'video'], ['clean'], [{ 'header': [1, 2, 3, 4, 5, 6, false] }], [{ 'align': [] }]],
-                  }}
-                  placeholder={`Enter content for ${level === 0 ? 'chapter' : 'section'} ${index + 1}...`}
-                  className="min-h-[200px] bg-background" 
-                />
+                {isClient ? (
+                  <ReactQuill
+                    theme="snow"
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    modules={{
+                      toolbar: [['bold', 'italic', 'underline', 'strike'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'image', 'video'], ['clean'], [{ 'header': [1, 2, 3, 4, 5, 6, false] }], [{ 'align': [] }]],
+                    }}
+                    placeholder={`Enter content for ${level === 0 ? 'chapter' : 'section'} ${index + 1}...`}
+                    className="min-h-[200px] bg-background" 
+                  />
+                ) : (
+                  <div className="p-2 border rounded-md min-h-[200px] bg-muted animate-pulse flex items-center justify-center">
+                    Loading editor...
+                  </div>
+                )}
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -255,7 +265,7 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
         {childrenFields.map((childField, childIndex) => (
           <CourseContentBlock
             key={childField.id}
-            control={control} // Pass control down
+            control={control}
             name={`${currentBlockPath}.children`}
             index={childIndex}
             removeSelf={() => removeChild(childIndex)}
@@ -268,3 +278,5 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
 };
 
 export default CourseContentBlock;
+
+    
