@@ -10,7 +10,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod'; // Corrected import
 
 const OperationalInsightsInputSchema = z.object({
   userName: z.string().describe('The name of the crew member for whom to generate insights.'),
@@ -113,7 +113,7 @@ Example of a "teamwork" (simulated positive feedback):
 }
 
 Generate varied and insightful content. Ensure descriptions are detailed enough to be useful and always maintain that supportive, empathetic coaching voice. Do not sound like a generic AI.
-\`,
+\`
 });
 
 const operationalInsightsFlow = ai.defineFlow(
