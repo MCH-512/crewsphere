@@ -12,7 +12,7 @@ import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogPrimitiveDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogPrimitiveTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area"; 
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, FilePlus, StickyNote, Layers } from "lucide-react"; // Added FilePlus, Layers
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, FilePlus, StickyNote, Layers } from "lucide-react"; // Added FilePlus, Layers
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -45,6 +45,7 @@ interface Document {
   size?: string;
   downloadURL?: string; 
   filePath?: string; 
+  fileName?: string; 
   fileType?: string; 
   uploadedBy?: string;
   uploaderEmail?: string;
@@ -484,6 +485,3 @@ export default function AdminDocumentsPage() {
     </div>
   );
 }
-
-
-    
