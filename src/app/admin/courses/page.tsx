@@ -8,11 +8,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc, deleteDoc, where, writeBatch } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { BookOpen, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, CheckCircle, XCircle, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Course {
   id: string;
@@ -22,6 +33,7 @@ interface Course {
   description?: string;
   duration?: string;
   quizId?: string;
+  certificateRuleId?: string; // Added for more complete deletion
   published?: boolean;
   createdAt?: Timestamp;
   createdBy?: string;
@@ -40,6 +52,8 @@ export default function AdminCoursesPage() {
   const [courses, setCourses] = React.useState<Course[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [courseToDelete, setCourseToDelete] = React.useState<Course | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const fetchCourses = React.useCallback(async () => {
     setIsLoading(true);
@@ -87,6 +101,49 @@ export default function AdminCoursesPage() {
       }
     }
   }, [user, authLoading, router, fetchCourses]);
+
+  const handleDeleteCourse = async () => {
+    if (!courseToDelete) return;
+    setIsDeleting(true);
+    const batch = writeBatch(db);
+
+    try {
+      // Delete the course document
+      const courseRef = doc(db, "courses", courseToDelete.id);
+      batch.delete(courseRef);
+
+      // Delete associated quiz if quizId exists
+      if (courseToDelete.quizId) {
+        const quizRef = doc(db, "quizzes", courseToDelete.quizId);
+        batch.delete(quizRef);
+
+        // Delete questions associated with this quiz
+        const questionsQuery = query(collection(db, "questions"), where("quizId", "==", courseToDelete.quizId));
+        const questionsSnap = await getDocs(questionsQuery);
+        questionsSnap.forEach(qDoc => batch.delete(qDoc.ref));
+      }
+
+      // Delete associated certificate rule if certificateRuleId exists
+      if (courseToDelete.certificateRuleId) {
+        const certRuleRef = doc(db, "certificateRules", courseToDelete.certificateRuleId);
+        batch.delete(certRuleRef);
+      }
+      
+      // Note: Deleting user progress would be more complex and might require Cloud Functions for larger scale
+      // For now, we leave user progress, it just won't link to a course anymore.
+
+      await batch.commit();
+      toast({ title: "Course Deleted", description: `Course "${courseToDelete.title}" and its associated quiz/questions have been deleted.` });
+      fetchCourses(); 
+    } catch (error) {
+      console.error("Error deleting course and associated data:", error);
+      toast({ title: "Deletion Failed", description: "Could not delete the course. Please try again.", variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+      setCourseToDelete(null);
+    }
+  };
+
 
   if (authLoading || (isLoading && courses.length === 0 && !user)) {
     return (
@@ -183,9 +240,28 @@ export default function AdminCoursesPage() {
                             <Edit className="mr-1 h-4 w-4" /> Edit
                           </Link>
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80" onClick={() => toast({ title: "Delete Course", description: "Deletion functionality coming soon!"})} disabled aria-label={`Delete course: ${course.title}`}>
-                          <Trash2 className="mr-1 h-4 w-4" /> Delete
-                        </Button>
+                         <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                           <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80" onClick={() => setCourseToDelete(course)} aria-label={`Delete course: ${course.title}`}>
+                            <Trash2 className="mr-1 h-4 w-4" /> Delete
+                          </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete the course: "{courseToDelete?.title}"? This will also delete its associated quiz, questions, and certificate rule. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={() => setCourseToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDeleteCourse} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Delete Course
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     </TableRow>
                   ))}
