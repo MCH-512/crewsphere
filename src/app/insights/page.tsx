@@ -2,14 +2,14 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Brain, Sparkles, Loader2, AlertTriangle, ShieldCheck, Leaf, Users, Star, TrendingUp,
   MessageSquare, RefreshCw, Quote, Info, Link as LinkIcon, MessageCirclePlus
 } from "lucide-react";
-import { generateOperationalInsights, type OperationalInsightsOutput, type IndividualInsight, type OperationalInsightsInput } from "@/ai/flows/operational-insights"; // Import OperationalInsightsInput
+import { generateOperationalInsights, type OperationalInsightsOutput, type IndividualInsight, type OperationalInsightsInput } from "@/ai/flows/operational-insights"; 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import ReactMarkdown from "react-markdown";
@@ -73,7 +73,8 @@ export default function InsightsPage() {
           case "other": schemaCompliantRole = "Other"; break;
           default:
             // Check if authRole is already a valid capitalized enum value
-            if (["Admin", "Purser", "Cabin Crew", "Instructor", "Pilot", "Other"].includes(authRole)) {
+            const validRoles: Array<OperationalInsightsInput['userRole']> = ["Admin", "Purser", "Cabin Crew", "Instructor", "Pilot", "Other"];
+            if (validRoles.includes(authRole as OperationalInsightsInput['userRole'])) {
               schemaCompliantRole = authRole as OperationalInsightsInput['userRole'];
             } else {
               console.warn(`Unrecognized role "${authRole}" from auth context. Defaulting to "Cabin Crew" for insights.`);
@@ -277,4 +278,3 @@ export default function InsightsPage() {
     </div>
   );
 }
-
