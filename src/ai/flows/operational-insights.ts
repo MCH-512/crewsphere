@@ -10,7 +10,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod'; // Ensured correct import
+import {z} from 'zod'; 
 
 const OperationalInsightsInputSchema = z.object({
   userName: z.string().describe('The name of the crew member for whom to generate insights.'),
@@ -26,7 +26,7 @@ const InsightSchema = z.object({
   priority: z.enum(["high", "medium", "low"]).optional().describe("The urgency or importance of the insight. High for critical items like safety."),
   actionableLink: z.object({
     text: z.string().describe("The text for the action button/link, e.g., 'Review Safety Procedures', 'Access Wellbeing Module'."),
-    href: z.string().url().or(z.string().startsWith('/')).describe("The URL or internal path for the action. E.g., '/documents?category=Safety' or 'https://example.com/wellbeing-guide'.")
+    href: z.string().describe("The URL (e.g., https://example.com/resource) or internal path (e.g., /documents?category=Safety) for the action.")
   }).optional().describe("A link to a relevant resource or action."),
   contextHint: z.string().optional().describe("A brief hint about the (simulated) data source or context for this insight, e.g., 'From recent long-haul flight reports', 'Based on passenger feedback for flight XY123'."),
   categoryIcon: z.string().optional().describe("A suggested Lucide icon name (e.g., 'ShieldCheck', 'Users', 'TrendingUp') relevant to the category or insight theme."),
@@ -71,7 +71,7 @@ Key Guidelines for Your Response:
     *   **Variety**: Cover different categories: "safety", "wellbeing", "teamwork", "service", "growth", "feedback".
     *   **Actionability**: Insights should be practical and lead to potential actions or reflections.
     *   **Priority**: Assign a 'priority' ("high", "medium", "low"). "High" should be reserved for safety-critical items or significant positive/negative feedback needing attention. Most wellbeing and growth tips would be "medium" or "low".
-    *   **Actionable Link**: For some insights (especially "safety", "growth", or specific feedback), suggest an \`actionableLink\`. The \`text\` should be a call to action (e.g., "Review Emergency Procedures", "Explore Communication Course", "See Full Report (Simulated)"). The \`href\` can be a placeholder internal link (e.g., "/documents?category=Safety", "/training?module=communication", "/reports/flight-XY123-feedback") or a generic external link if appropriate.
+    *   **Actionable Link**: For some insights (especially "safety", "growth", or specific feedback), suggest an \`actionableLink\`. The \`text\` should be a call to action (e.g., "Review Emergency Procedures", "Explore Communication Course", "See Full Report (Simulated)"). The \`href\` should be a string representing a full URL or an internal path (e.g., "/documents?category=Safety", "/training?module=communication", "/reports/flight-XY123-feedback").
     *   **Context Hint**: For each insight, provide a brief \`contextHint\` (e.g., "Based on passenger feedback analysis", "From recent crew incident reports (simulated)", "Derived from operational safety data trends"). This helps the user understand the (simulated) basis of the insight.
     *   **Emoji & Category Icon**: Include a relevant \`emoji\`. Also, suggest a \`categoryIcon\` (a Lucide icon name like 'ShieldCheck', 'Users', 'Leaf', 'Star', 'TrendingUp', 'MessageSquare') that visually represents the insight's theme or category.
     *   **Role Adaptation**: Where appropriate, subtly tailor insights or their phrasing to the user's role ({{userRole}}). For example, a Purser might get insights related to team leadership, while a new Cabin Crew member might get tips on specific procedures.
