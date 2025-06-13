@@ -154,7 +154,7 @@ export default function AdminUserRequestsPage() {
         adminResponse: adminResponseText || null,
         updatedAt: serverTimestamp(),
        });
-      toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. Response saved.` });
+      toast({ title: "Request Updated", description: \`Request status changed to \${newStatus}. Response saved.\` });
       fetchRequests(); 
       setIsManageDialogOpen(false);
     } catch (err) {
@@ -202,7 +202,7 @@ export default function AdminUserRequestsPage() {
       <div className="flex items-center gap-1">
         {label}
         {sortColumn === column && (
-          <ArrowUpDown className={`h-3 w-3 ${sortDirection === "desc" ? "" : "rotate-180"}`} />
+          <ArrowUpDown className={\`h-3 w-3 \${sortDirection === "desc" ? "" : "rotate-180"}\`} />
         )}
       </div>
     </TableHead>
@@ -242,7 +242,7 @@ export default function AdminUserRequestsPage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={fetchRequests} disabled={isLoading} className="w-full sm:w-auto">
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={\`mr-2 h-4 w-4 \${isLoading ? 'animate-spin' : ''}\`} />
               Refresh
             </Button>
           </div>
@@ -284,7 +284,7 @@ export default function AdminUserRequestsPage() {
             </div>
           )}
           {!isLoading && filteredAndSortedRequests.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">No user requests found{statusFilter !== "all" ? ` for status: ${statusFilter}` : ""}{searchTerm ? ` matching "${searchTerm}"` : ""}.</p>
+            <p className="text-muted-foreground text-center py-8">No user requests found{statusFilter !== "all" ? \` for status: \${statusFilter}\` : ""}{searchTerm ? \` matching "\${searchTerm}"\` : ""}.</p>
           )}
           {filteredAndSortedRequests.length > 0 && (
             <div className="rounded-md border">
@@ -404,4 +404,3 @@ export default function AdminUserRequestsPage() {
   );
 }
     
-
