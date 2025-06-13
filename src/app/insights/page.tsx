@@ -7,15 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Brain, Sparkles, Loader2, AlertTriangle, ShieldCheck, Leaf, Users, Star, TrendingUp,
-  MessageSquare, RefreshCw, Quote, Info, Link as LinkIcon, MessageCirclePlus // Added MessageCirclePlus
+  MessageSquare, RefreshCw, Quote, Info, Link as LinkIcon, MessageCirclePlus
 } from "lucide-react";
-import { generateOperationalInsights, type OperationalInsightsOutput, type IndividualInsight } from "@/ai/flows/operational-insights";
+import { generateOperationalInsights, type OperationalInsightsOutput, type IndividualInsight, type OperationalInsightsInput } from "@/ai/flows/operational-insights"; // Import OperationalInsightsInput
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import ReactMarkdown from "react-markdown";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
-import Link from "next/link"; // Added Link for actionableLink
+import Link from "next/link";
 
 const defaultCategoryIcons: Record<IndividualInsight['category'], React.ElementType> = {
   safety: ShieldCheck,
@@ -59,8 +59,32 @@ export default function InsightsPage() {
     setError(null);
     try {
       const userName = user.displayName || user.email || "Crew Member";
-      const userRole = user.role || "Cabin Crew"; // Default role if not specified
-      const result = await generateOperationalInsights({ userName, userRole: userRole as OperationalInsightsInput['userRole'] });
+      const authRole = user.role;
+
+      let schemaCompliantRole: OperationalInsightsInput['userRole'];
+
+      if (authRole) {
+        switch (authRole) {
+          case "admin": schemaCompliantRole = "Admin"; break;
+          case "purser": schemaCompliantRole = "Purser"; break;
+          case "cabin crew": schemaCompliantRole = "Cabin Crew"; break;
+          case "instructor": schemaCompliantRole = "Instructor"; break;
+          case "pilote": schemaCompliantRole = "Pilot"; break;
+          case "other": schemaCompliantRole = "Other"; break;
+          default:
+            // Check if authRole is already a valid capitalized enum value
+            if (["Admin", "Purser", "Cabin Crew", "Instructor", "Pilot", "Other"].includes(authRole)) {
+              schemaCompliantRole = authRole as OperationalInsightsInput['userRole'];
+            } else {
+              console.warn(`Unrecognized role "${authRole}" from auth context. Defaulting to "Cabin Crew" for insights.`);
+              schemaCompliantRole = "Cabin Crew"; // Default if unrecognized
+            }
+        }
+      } else {
+        schemaCompliantRole = "Cabin Crew"; // Default if user.role was null/undefined
+      }
+      
+      const result = await generateOperationalInsights({ userName, userRole: schemaCompliantRole });
       setInsightsData(result);
     } catch (apiError) {
       console.error("Error generating insights:", apiError);
@@ -254,5 +278,3 @@ export default function InsightsPage() {
   );
 }
 
-
-    
