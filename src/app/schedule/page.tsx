@@ -71,16 +71,6 @@ const activityFormSchema = z.object({
         path: ["flightId"],
       });
     }
-  } else {
-    // For non-flight activities, flightId should be empty.
-    // This check might be too strict if flightId is reset elsewhere, but good for validation.
-    // if (data.flightId && data.flightId.trim() !== "") {
-    //    ctx.addIssue({
-    //     code: z.ZodIssueCode.custom,
-    //     message: "Flight ID should only be provided for 'Flight' activity type.",
-    //     path: ["flightId"],
-    //   });
-    // }
   }
   if (data.startTime && !data.endTime) {
     ctx.addIssue({
@@ -159,9 +149,10 @@ export default function SchedulePage() {
     try {
       const [hours, minutes] = timeString.split(':').map(Number);
       if (isNaN(hours) || isNaN(minutes)) return null;
-      const newDate = new Date(activityBaseDate); 
-      newDate.setUTCHours(hours, minutes, 0, 0); // Assuming timeString is local, convert to UTC based on activityBaseDate's local components
-      return Timestamp.fromDate(newDate);
+      // Create a new date object from the activityBaseDate to ensure we're using its date part correctly
+      const localDate = new Date(activityBaseDate.getFullYear(), activityBaseDate.getMonth(), activityBaseDate.getDate());
+      localDate.setHours(hours, minutes, 0, 0); // Set as local time on that day
+      return Timestamp.fromDate(localDate); // Convert this local date-time to a Firestore Timestamp (which will be UTC)
     } catch {
       return null;
     }
@@ -358,11 +349,9 @@ export default function SchedulePage() {
         const updatePayload: Partial<Omit<UserActivity, 'id' | 'createdAt' | 'userId' | 'flightDetails'>> = {
           activityType: data.activityType,
           comments: data.comments || "",
-          // flightId is only set if type is flight, and cannot be changed in edit mode for flights
           flightId: data.activityType === "flight" ? (editingActivity.flightId || data.flightId) : null, 
           startTime: startTimeUTC,
           endTime: endTimeUTC,
-          // date is not changed in edit mode
         };
         await updateDoc(doc(db, "userActivities", editingActivity.id), updatePayload);
         toast({ title: "Activity Updated", description: `Activity on ${format(activityBaseDate, "PPP")} has been updated.`});
@@ -647,8 +636,8 @@ export default function SchedulePage() {
                                 activityForm.setValue('endTime', '');
                             }
                         }} 
-                        value={field.value} // Use value directly
-                        disabled={isEditMode && editingActivity?.activityType === 'flight'} // Disable type change if editing a flight activity
+                        value={field.value} 
+                        disabled={isEditMode && editingActivity?.activityType === 'flight'}
                     >
                       <FormControl>
                         <SelectTrigger>

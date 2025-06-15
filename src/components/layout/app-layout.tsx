@@ -66,6 +66,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { useNotification } from "@/contexts/notification-context"; 
 import { Breadcrumbs } from "./breadcrumbs"; 
+import Image from "next/image"; // Added Image import
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -421,3 +422,4 @@ function LayoutWithSidebar({
     </>
   );
 }
+

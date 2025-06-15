@@ -102,8 +102,6 @@ export default function CertificatesPage() {
                 currentQuizTitle = "Course Quiz"; 
             }
             
-            // Certificate details (logoURL, signatureTextOrURL, provider) should now be complete from `simulateQuiz`
-            // Provide fallbacks if they are somehow missing (e.g., older data)
             const finalProgressData = { ...progressData };
             if (finalProgressData.certificateDetails) {
                 finalProgressData.certificateDetails.logoURL = finalProgressData.certificateDetails.logoURL || "https://placehold.co/150x50.png";

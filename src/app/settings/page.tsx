@@ -15,6 +15,7 @@ import { updateProfile as updateAuthProfile } from "firebase/auth"; // Renamed t
 import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { format } from "date-fns";
+import Image from "next/image"; // Added Image import
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -120,6 +121,17 @@ export default function SettingsPage() {
           <CardTitle className="flex items-center gap-2"><User className="w-5 h-5 text-primary" /> Profile Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex items-center gap-4 mb-6">
+            <Image 
+              src={user?.photoURL || "https://placehold.co/100x100.png"} 
+              alt="User Avatar" 
+              width={80} 
+              height={80} 
+              className="rounded-full" 
+              data-ai-hint="user avatar"
+            />
+            <Button variant="outline" disabled>Change Avatar (coming soon)</Button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="displayName">Display Name</Label>
@@ -256,3 +268,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

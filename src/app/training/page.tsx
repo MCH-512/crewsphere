@@ -357,7 +357,6 @@ export default function TrainingPage() {
                     </p>
                     {course.duration && <p className="text-xs text-muted-foreground mb-3">Est. Duration: {course.duration}</p>}
                     
-                    {/* Display chapter count instead of module count */}
                     {(course.chapters && course.chapters.length > 0) && (
                       <div className="mb-3">
                         <p className="text-xs font-medium text-muted-foreground">Chapters: {course.chapters.length}</p>
@@ -517,3 +516,4 @@ export default function TrainingPage() {
     </div>
   );
 }
+
