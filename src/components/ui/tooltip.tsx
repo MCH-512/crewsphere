@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -7,7 +8,14 @@ import { cn } from "@/lib/utils"
 
 const TooltipProvider = TooltipPrimitive.Provider
 
-const Tooltip = TooltipPrimitive.Root
+const Tooltip = React.forwardRef<
+  React.ElementRef<typeof TooltipPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>
+>(({ delayDuration = 300, ...props }, ref) => (
+  <TooltipPrimitive.Root ref={ref} delayDuration={delayDuration} {...props} />
+));
+Tooltip.displayName = TooltipPrimitive.Root.displayName;
+
 
 const TooltipTrigger = TooltipPrimitive.Trigger
 
@@ -28,3 +36,4 @@ const TooltipContent = React.forwardRef<
 TooltipContent.displayName = TooltipPrimitive.Content.displayName
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+    

@@ -12,7 +12,7 @@ import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogPrimitiveDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogPrimitiveTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area"; 
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, FilePlus, StickyNote, Layers, Edit, Trash2 } from "lucide-react"; // Added FilePlus, Layers, Edit, Trash2
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, FilePlus, StickyNote, Layers, Edit, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,6 +34,7 @@ import ReactMarkdown from "react-markdown";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { documentCategories, documentSources } from "@/config/document-options";
 import { logAuditEvent } from "@/lib/audit-logger";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"; // Import Tooltip components
 
 interface Document {
   id: string;
@@ -53,7 +54,7 @@ interface Document {
   content?: string; 
 }
 
-const categories = documentCategories; // Use imported categories
+const categories = documentCategories; 
 
 export default function AdminDocumentsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -148,18 +149,15 @@ export default function AdminDocumentsPage() {
     if (!documentToDelete || !user) return;
     setIsDeleting(true);
     try {
-      // Delete Firestore document
       await deleteDoc(doc(db, "documents", documentToDelete.id));
 
-      // Delete file from Firebase Storage if filePath exists
       if (documentToDelete.filePath && (documentToDelete.documentContentType === 'file' || documentToDelete.documentContentType === 'fileWithMarkdown')) {
         const fileRef = storageRef(storage, documentToDelete.filePath);
         try {
             await deleteObject(fileRef);
         } catch (storageError: any) {
-            // Log storage error but proceed if Firestore deletion was successful
             console.warn(`Could not delete file ${documentToDelete.filePath} from storage:`, storageError);
-            if (storageError.code !== 'storage/object-not-found') { // Don't toast if file was already gone
+            if (storageError.code !== 'storage/object-not-found') {
                  toast({ title: "File Deletion Warning", description: `Document record deleted, but associated file could not be removed from storage: ${storageError.message}`, variant: "warning" });
             }
         }
@@ -247,6 +245,7 @@ export default function AdminDocumentsPage() {
   }
 
   return (
+    <TooltipProvider>
     <div className="space-y-6">
       <Card className="shadow-lg">
         <CardHeader className="flex flex-col sm:flex-row justify-between items-start gap-2">
@@ -399,25 +398,45 @@ export default function AdminDocumentsPage() {
                       <TableCell className="text-xs">{doc.uploaderEmail || 'N/A'}</TableCell>
                       <TableCell className="text-xs">{formatDate(doc.lastUpdated)}</TableCell>
                       <TableCell className="text-right space-x-1">
-                        <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc)} aria-label={`View document: ${doc.title}`}>
-                            <Eye className="h-4 w-4" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc)} aria-label={`View document: ${doc.title}`}>
+                                <Eye className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>View Document</p></TooltipContent>
+                        </Tooltip>
                         {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
-                            <Button variant="ghost" size="icon" asChild aria-label={`Download document: ${doc.title}`}>
-                                <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="h-4 w-4" /></a>
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" asChild aria-label={`Download document: ${doc.title}`}>
+                                    <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="h-4 w-4" /></a>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Download File</p></TooltipContent>
+                            </Tooltip>
                         )}
-                        <Button variant="ghost" size="icon" asChild aria-label={`Edit document: ${doc.title}`}>
-                          <Link href={`/admin/documents/edit/${doc.id}`}>
-                            <Edit className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80" aria-label={`Delete document: ${doc.title}`} onClick={() => setDocumentToDelete(doc)}>
-                              <Trash2 className="h-4 w-4" />
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" asChild aria-label={`Edit document: ${doc.title}`}>
+                            <Link href={`/admin/documents/edit/${doc.id}`}>
+                                <Edit className="h-4 w-4" />
+                            </Link>
                             </Button>
-                          </AlertDialogTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Edit Document</p></TooltipContent>
+                        </Tooltip>
+                        <AlertDialog>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80" aria-label={`Delete document: ${doc.title}`} onClick={() => setDocumentToDelete(doc)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Delete Document</p></TooltipContent>
+                          </Tooltip>
                           <AlertDialogContent>
                             <AlertDialogHeader>
                                 <AlertDialogPrimitiveTitle>Confirm Deletion</AlertDialogPrimitiveTitle>
@@ -483,5 +502,7 @@ export default function AdminDocumentsPage() {
         </Dialog>
       )}
     </div>
+    </TooltipProvider>
   );
 }
+    

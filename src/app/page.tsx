@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
-import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon } from "lucide-react";
+import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, ListChecks } from "lucide-react"; // Added ListChecks
 import Image from "next/image";
 import Link from "next/link";
 import { generateDailyBriefing, type DailyBriefingOutput } from "@/ai/flows/daily-briefing-flow";
@@ -17,6 +17,7 @@ import { collection, query, where, orderBy, limit, getDocs, Timestamp, or, doc, 
 import { formatDistanceToNowStrict, format, parseISO, addHours, subHours, startOfDay } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import { AnimatedCard } from "@/components/motion/animated-card";
+import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
 
 interface Alert {
   id: string;
@@ -430,27 +431,27 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isBriefingLoading && (
-              <div className="flex items-center space-x-2 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Generating your briefing...</span>
+            {isBriefingLoading ? (
+              <div className="space-y-2 py-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-4 w-full mt-2" />
+                <Skeleton className="h-4 w-1/2" />
               </div>
-            )}
-            {briefingError && !isBriefingLoading && (
+            ) : briefingError ? (
                <ShadAlert variant="destructive">
                   <AlertTriangle className="h-5 w-5" />
                   <ShadAlertTitle>Briefing Error</ShadAlertTitle>
                   <ShadAlertDescription>{briefingError}</ShadAlertDescription>
                 </ShadAlert>
-            )}
-            {dailyBriefing && !isBriefingLoading && !briefingError && (
+            ) : dailyBriefing ? (
               <div
                 className="prose prose-sm max-w-none dark:prose-invert text-foreground"
               >
                 <ReactMarkdown>{dailyBriefing.briefingMarkdown}</ReactMarkdown>
               </div>
-            )}
-            {!user && !isBriefingLoading && !briefingError && (
+            ) : (
                <div className="flex items-center space-x-2 text-muted-foreground">
                 <Info className="h-5 w-5" />
                 <span>Log in to receive your personalized daily briefing.</span>
@@ -468,20 +469,25 @@ export default function DashboardPage() {
               <PlaneTakeoff className="h-6 w-6 text-primary" />
             </CardHeader>
             <CardContent className="space-y-3">
-              {isUpcomingDutyLoading && (
-                <div className="flex items-center space-x-2 text-muted-foreground py-4">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Loading upcoming duty...</span>
+              {isUpcomingDutyLoading ? (
+                <div className="space-y-3 py-2">
+                  <Skeleton className="h-8 w-3/4" /> {/* Flight Number & Route */}
+                  <Skeleton className="h-4 w-1/2" /> {/* Aircraft */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2">
+                    <Skeleton className="h-4 w-full" /> {/* Report Time */}
+                    <Skeleton className="h-4 w-full" /> {/* Location */}
+                    <Skeleton className="h-4 w-full" /> {/* ETD */}
+                    <Skeleton className="h-4 w-full" /> {/* ETA */}
+                  </div>
+                  <Skeleton className="h-9 w-full mt-3" /> {/* Button */}
                 </div>
-              )}
-              {upcomingDutyError && !isUpcomingDutyLoading && (
+              ) : upcomingDutyError ? (
                 <ShadAlert variant="destructive">
                   <AlertTriangle className="h-5 w-5" />
                   <ShadAlertTitle>Upcoming Duty Error</ShadAlertTitle>
                   <ShadAlertDescription>{upcomingDutyError}</ShadAlertDescription>
                 </ShadAlert>
-              )}
-              {!isUpcomingDutyLoading && !upcomingDutyError && upcomingDuty && (
+              ) : upcomingDuty ? (
                 <>
                   <div>
                     <p className="text-2xl font-bold text-primary">{upcomingDuty.flightNumber} ({upcomingDuty.route})</p>
@@ -493,16 +499,23 @@ export default function DashboardPage() {
                     <div><span className="font-semibold">ETD:</span> {upcomingDuty.etd} (Gate: {upcomingDuty.gate})</div>
                     <div><span className="font-semibold">ETA:</span> {upcomingDuty.eta}</div>
                   </div>
+                   <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
+                    <Link href="/schedule">
+                        View Full Roster & Details <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                    </Button>
                 </>
+              ) : (
+                <div className="text-center py-4">
+                  <ClockIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">No upcoming flights or duties found in your schedule.</p>
+                  <Button variant="link" size="sm" className="mt-2" asChild>
+                    <Link href="/schedule">
+                      Check Full Schedule <ArrowRight className="ml-1 h-3 w-3" />
+                    </Link>
+                  </Button>
+                </div>
               )}
-              {!isUpcomingDutyLoading && !upcomingDutyError && !upcomingDuty && (
-                <p className="text-sm text-muted-foreground py-4">No upcoming flights or duties found in your schedule.</p>
-              )}
-              <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
-                <Link href="/schedule">
-                  View Full Roster & Details <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
             </CardContent>
           </Card>
         </AnimatedCard>
@@ -519,11 +532,14 @@ export default function DashboardPage() {
                   <Button variant="outline" className="w-full justify-start" asChild>
                     <Link href="/schedule"><CalendarClock className="mr-2 h-4 w-4"/>View Full Roster</Link>
                   </Button>
-                  <Button variant="outline" className="w-full justify-start" asChild>
-                    <Link href="/documents"><BookOpen className="mr-2 h-4 w-4"/>Access Flight Docs</Link>
-                  </Button>
                    <Button variant="outline" className="w-full justify-start" asChild>
                     <Link href="/requests"><ArrowRight className="mr-2 h-4 w-4"/>Make a Request</Link>
+                  </Button>
+                   <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link href="/documents"><BookOpen className="mr-2 h-4 w-4"/>Access Documents</Link>
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link href="/training"><ListChecks className="mr-2 h-4 w-4"/>My Trainings</Link>
                   </Button>
               </CardContent>
           </Card>
@@ -537,23 +553,24 @@ export default function DashboardPage() {
               <BellRing className="h-5 w-5 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              {alertsLoading && (
-                <div className="flex items-center space-x-2 text-muted-foreground py-4">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Loading alerts...</span>
-                </div>
-              )}
-              {alertsError && !alertsLoading && (
+              {alertsLoading ? (
+                 <div className="space-y-3 py-2">
+                    <div className="flex items-start space-x-3"><Skeleton className="h-5 w-5 rounded-full mt-1" /><div className="space-y-1 flex-1"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-8 w-full" /></div></div>
+                    <div className="flex items-start space-x-3"><Skeleton className="h-5 w-5 rounded-full mt-1" /><div className="space-y-1 flex-1"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-8 w-full" /></div></div>
+                 </div>
+              ) : alertsError ? (
                 <ShadAlert variant="destructive" className="mb-4">
                     <AlertTriangle className="h-5 w-5" />
                     <ShadAlertTitle>Alerts Error</ShadAlertTitle>
                     <ShadAlertDescription>{alertsError}</ShadAlertDescription>
                 </ShadAlert>
-              )}
-              {!alertsLoading && !alertsError && alerts.length === 0 && (
-                <p className="text-sm text-muted-foreground py-4">No new alerts at this time.</p>
-              )}
-              {!alertsLoading && !alertsError && alerts.length > 0 && (
+              ) : alerts.length === 0 ? (
+                <div className="text-center py-6">
+                  <CheckCircle className="h-10 w-10 mx-auto text-green-500 mb-2" />
+                  <p className="text-base text-muted-foreground">All clear! No new critical alerts.</p>
+                  <p className="text-sm text-muted-foreground mt-1">You're up-to-date.</p>
+                </div>
+              ) : (
                 <div className="space-y-3">
                   {alerts.map((alert) => {
                     const IconComponent = getIconForAlert(alert);
@@ -605,23 +622,27 @@ export default function DashboardPage() {
               <CardTitle className="font-headline flex items-center"><BookCopy className="mr-2 h-5 w-5 text-primary"/>Key Updates &amp; Announcements</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {recentDocumentsLoading && (
-                <div className="flex items-center space-x-2 text-muted-foreground py-4">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Loading updates...</span>
-                </div>
-              )}
-              {recentDocumentsError && !recentDocumentsLoading && (
+              {recentDocumentsLoading ? (
+                 <div className="space-y-3 py-2">
+                    {[1,2,3].map(i => (
+                      <div key={i} className="pb-3 border-b last:border-b-0">
+                        <Skeleton className="h-5 w-3/4 mb-1" />
+                        <Skeleton className="h-3 w-1/4 mb-2" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-5/6 mt-1" />
+                        <Skeleton className="h-3 w-1/3 mt-2" />
+                      </div>
+                    ))}
+                 </div>
+              ) : recentDocumentsError ? (
                 <ShadAlert variant="destructive">
                   <AlertTriangle className="h-5 w-5" />
                   <ShadAlertTitle>Updates Error</ShadAlertTitle>
                   <ShadAlertDescription>{recentDocumentsError}</ShadAlertDescription>
                 </ShadAlert>
-              )}
-              {!recentDocumentsLoading && !recentDocumentsError && recentDocuments.length === 0 && (
+              ) : recentDocuments.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4">No recent documents or announcements.</p>
-              )}
-              {!recentDocumentsLoading && !recentDocumentsError && recentDocuments.map((doc) => (
+              ) : recentDocuments.map((doc) => (
                 <div key={doc.id} className="pb-3 border-b last:border-b-0">
                   <h3 className="font-semibold">{doc.title}</h3>
                   <Badge variant="outline" className="text-xs mb-1">{doc.category}</Badge>
@@ -656,26 +677,31 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <>
-                    {featuredTrainingsLoading && (
-                      <div className="flex items-center space-x-2 text-muted-foreground py-4">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span>Loading featured trainings...</span>
+                    {featuredTrainingsLoading ? (
+                      <div className="space-y-4">
+                        {[1,2].map(i => (
+                          <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
+                            <Skeleton className="h-16 w-16 rounded-md" />
+                            <div className="space-y-2 flex-1">
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-3 w-1/2" />
+                                <Skeleton className="h-3 w-1/4 mb-1" />
+                                <Skeleton className="h-7 w-24" />
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                    {featuredTrainingsError && !featuredTrainingsLoading && (
+                    ) : featuredTrainingsError ? (
                       <ShadAlert variant="destructive">
                         <AlertTriangle className="h-5 w-5" />
                         <ShadAlertTitle>Training Error</ShadAlertTitle>
                         <ShadAlertDescription>{featuredTrainingsError}</ShadAlertDescription>
                       </ShadAlert>
-                    )}
-                    {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.length === 0 && user && (
+                    ) : featuredTrainings.length === 0 && user ? (
                       <p className="text-sm text-muted-foreground py-4">No featured trainings for you at this time. All caught up or check the full library!</p>
-                    )}
-                    {!featuredTrainingsLoading && !featuredTrainingsError && !user && (
+                    ) : !user ? (
                       <p className="text-sm text-muted-foreground py-4">Log in to see featured trainings.</p>
-                    )}
-                    {!featuredTrainingsLoading && !featuredTrainingsError && featuredTrainings.map((course) => (
+                    ) : featuredTrainings.map((course) => (
                       <div key={course.id} className="flex items-center gap-4 p-3 border rounded-lg bg-card">
                         <Image 
                           src={`https://placehold.co/60x60.png`} 
@@ -707,5 +733,4 @@ export default function DashboardPage() {
     </div>
   );
 }
-
     
