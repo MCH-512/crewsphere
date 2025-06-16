@@ -202,39 +202,37 @@ export default function MyPurserReportsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Your Submitted Input Details:</h3>
-                  <Card className="bg-background/50">
-                    <CardContent className="pt-4 space-y-3 text-sm">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Your Submitted Input Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
                        <p><strong>Flight Number:</strong> {selectedReport.reportInput.flightNumber}</p>
                        <p><strong>Date:</strong> {format(new Date(selectedReport.reportInput.flightDate), "PPP")}</p>
                        <p><strong>Route:</strong> {selectedReport.reportInput.departureAirport} - {selectedReport.reportInput.arrivalAirport}</p>
                        <p><strong>Aircraft:</strong> {selectedReport.reportInput.aircraftTypeRegistration}</p>
                        <p><strong>Passenger Load:</strong> Total: {selectedReport.reportInput.passengerLoad.total}, Adults: {selectedReport.reportInput.passengerLoad.adults}, Children: {selectedReport.reportInput.passengerLoad.children}, Infants: {selectedReport.reportInput.passengerLoad.infants}</p>
-                       <div>
-                         <p><strong>Crew Members:</strong></p>
-                         <pre className="text-xs bg-muted p-2 rounded-md whitespace-pre-wrap">{selectedReport.reportInput.crewMembers}</pre>
-                       </div>
-                       <div className="border-t pt-2 mt-2">
-                           <Label className="font-medium">General Flight Summary:</Label>
-                           <p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.generalFlightSummary}</p>
-                       </div>
-                      
-                       {Object.entries(selectedReport.reportInput).map(([key, value]) => {
-                         if (typeof value === 'string' && value.trim() !== "" && !['flightNumber', 'flightDate', 'departureAirport', 'arrivalAirport', 'aircraftTypeRegistration', 'crewMembers', 'generalFlightSummary'].includes(key) && value !== undefined && value !== null) {
-                           const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                           return (
-                             <div key={key} className="border-t pt-2 mt-2">
-                               <Label className="font-medium">{label}:</Label>
-                               <p className="text-muted-foreground whitespace-pre-wrap">{value}</p>
-                             </div>
-                           );
-                         }
-                         return null;
-                       })}
-                    </CardContent>
-                  </Card>
-                </div>
+                    </div>
+                    <div>
+                      <p><strong>Crew Members:</strong></p>
+                      <pre className="text-xs bg-muted p-2 rounded-md whitespace-pre-wrap">{selectedReport.reportInput.crewMembers}</pre>
+                    </div>
+                    <div className="border-t pt-2 mt-2">
+                       <Label className="font-medium">General Flight Summary:</Label>
+                       <p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.generalFlightSummary}</p>
+                    </div>
+                   
+                    {selectedReport.reportInput.safetyIncidents && <div className="border-t pt-2 mt-2"><Label className="font-medium">Safety Incidents:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.safetyIncidents}</p></div>}
+                    {selectedReport.reportInput.securityIncidents && <div className="border-t pt-2 mt-2"><Label className="font-medium">Security Incidents:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.securityIncidents}</p></div>}
+                    {selectedReport.reportInput.medicalIncidents && <div className="border-t pt-2 mt-2"><Label className="font-medium">Medical Incidents:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.medicalIncidents}</p></div>}
+                    {selectedReport.reportInput.passengerFeedback && <div className="border-t pt-2 mt-2"><Label className="font-medium">Passenger Feedback:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.passengerFeedback}</p></div>}
+                    {selectedReport.reportInput.cateringNotes && <div className="border-t pt-2 mt-2"><Label className="font-medium">Catering Notes:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.cateringNotes}</p></div>}
+                    {selectedReport.reportInput.maintenanceIssues && <div className="border-t pt-2 mt-2"><Label className="font-medium">Maintenance Issues:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.maintenanceIssues}</p></div>}
+                    {selectedReport.reportInput.otherObservations && <div className="border-t pt-2 mt-2"><Label className="font-medium">Other Observations:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.otherObservations}</p></div>}
+                    {selectedReport.reportInput.crewPerformanceNotes && <div className="border-t pt-2 mt-2"><Label className="font-medium">Crew Performance Notes:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.crewPerformanceNotes}</p></div>}
+                  </CardContent>
+                </Card>
               </div>
             </ScrollArea>
             <DialogFooter className="mt-auto pt-4 border-t">
