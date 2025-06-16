@@ -37,7 +37,6 @@ import {
   LayoutDashboard,
   FileText,
   CalendarDays,
-  Brain,
   GraduationCap,
   Settings,
   LogOut,
@@ -85,7 +84,7 @@ const navItems = [
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/purser-reports", label: "Submit Purser Report", icon: FileSignature },
   { href: "/my-purser-reports", label: "My Purser Reports", icon: ClipboardCheck }, 
-  { href: "/insights", label: "AI Insights", icon: Brain },
+  // { href: "/insights", label: "AI Insights", icon: Brain }, // Removed AI Insights link
   { type: "separator", key: "sep3", adminOnly: true },
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];
@@ -140,7 +139,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/flight-duty-calculator": "Flight Duty Calculator",
     "/purser-reports": "Submit Purser Report",
     "/my-purser-reports": "My Purser Reports", 
-    "/insights": "AI-Driven Operational Insights",
+    // "/insights": "AI-Driven Operational Insights", // Removed page title
     "/training": "Training Hub",
     "/courses": "Course Library",
     "/quizzes": "My Quizzes", 
@@ -422,4 +421,3 @@ function LayoutWithSidebar({
     </>
   );
 }
-

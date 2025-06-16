@@ -9,7 +9,7 @@ import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitl
 import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, ListChecks } from "lucide-react"; // Added ListChecks
 import Image from "next/image";
 import Link from "next/link";
-import { generateDailyBriefing, type DailyBriefingOutput } from "@/ai/flows/daily-briefing-flow";
+import { generateDailyBriefing, type DailyBriefingOutput, type DailyBriefingInput } from "@/ai/flows/daily-briefing-flow";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -126,7 +126,36 @@ export default function DashboardPage() {
       setBriefingError(null);
       try {
         const nameForBriefing = user.displayName || user.email || "Crew Member";
-        const briefingData = await generateDailyBriefing({ userName: nameForBriefing });
+        const authRole = user.role;
+        let schemaCompliantRole: DailyBriefingInput['userRole'];
+
+        if (authRole) {
+            switch (authRole) {
+            case "admin": schemaCompliantRole = "Admin"; break;
+            case "purser": schemaCompliantRole = "Purser"; break;
+            case "cabin crew": schemaCompliantRole = "Cabin Crew"; break;
+            case "instructor": schemaCompliantRole = "Instructor"; break;
+            case "pilote": schemaCompliantRole = "Pilot"; break; // Corrected from 'pilote' to 'Pilot' for schema
+            case "other": schemaCompliantRole = "Other"; break;
+            default:
+                const validRoles: Array<DailyBriefingInput['userRole']> = ["Admin", "Purser", "Cabin Crew", "Instructor", "Pilot", "Other"];
+                if (validRoles.includes(authRole as DailyBriefingInput['userRole'])) {
+                    schemaCompliantRole = authRole as DailyBriefingInput['userRole'];
+                } else {
+                    console.warn(`Unrecognized role "${authRole}" for briefing. Defaulting to "Other".`);
+                    schemaCompliantRole = "Other";
+                }
+            }
+        } else {
+            schemaCompliantRole = "Other"; 
+        }
+        
+        const briefingInput: DailyBriefingInput = { userName: nameForBriefing };
+        if (schemaCompliantRole) {
+            briefingInput.userRole = schemaCompliantRole;
+        }
+
+        const briefingData = await generateDailyBriefing(briefingInput);
         setDailyBriefing(briefingData);
       } catch (error) {
         console.error("Failed to load daily briefing:", error);
@@ -380,11 +409,12 @@ export default function DashboardPage() {
     { id: 3, tip: "Maintain situational awareness at all times, especially during critical phases like boarding, takeoff, sterile flight deck, and landing." },
   ];
 
-  const getAlertVariant = (level: Alert["level"]): "default" | "destructive" => {
+  const getAlertVariant = (level: Alert["level"]): "default" | "destructive" | "success" | "warning" | null | undefined => {
     switch (level) {
       case 'critical':
         return 'destructive';
       case 'warning':
+        return 'warning';
       case 'info':
       default:
         return 'default';
@@ -565,7 +595,7 @@ export default function DashboardPage() {
                     <ShadAlertDescription>{alertsError}</ShadAlertDescription>
                 </ShadAlert>
               ) : alerts.length === 0 ? (
-                <div className="text-center py-6">
+                 <div className="text-center py-6">
                   <CheckCircle className="h-10 w-10 mx-auto text-green-500 mb-2" />
                   <p className="text-base text-muted-foreground">All clear! No new critical alerts.</p>
                   <p className="text-sm text-muted-foreground mt-1">You're up-to-date.</p>
@@ -733,4 +763,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-    
