@@ -16,11 +16,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, PlusCircle, XCircle, Clock, AlertTriangle } from "lucide-react";
+import { Loader2, Sparkles, PlusCircle, XCircle, Clock, AlertTriangle, Users, Shield, Info } from "lucide-react";
 import { calculateFlightDuty, type FlightDutyOutput, type FlightDutyInput } from "@/ai/flows/flight-duty-calculator-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert";
 
 const flightSegmentSchema = z.object({
   departureAirport: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars").toUpperCase(),
@@ -31,8 +39,11 @@ const flightSegmentSchema = z.object({
 
 const FormSchema = z.object({
   flightSegments: z.array(flightSegmentSchema).min(1, "At least one flight segment is required."),
-  preFlightBriefingHours: z.coerce.number().min(0, "Min 0 hours").max(5, "Max 5 hours"),
-  postFlightDebriefingHours: z.coerce.number().min(0, "Min 0 hours").max(5, "Max 5 hours"),
+  reportTimeOffsetHours: z.coerce.number().min(0, "Min 0 hours").max(5, "Max 5 hours"),
+  postDutyActivitiesHours: z.coerce.number().min(0, "Min 0 hours").max(5, "Max 5 hours"),
+  numberOfCrew: z.coerce.number().int().min(1, "Min 1 crew member").max(25, "Max 25 crew members"),
+  crewType: z.enum(["PNT", "PNC"], { required_error: "Crew type is required."}),
+  acclimatizationStatus: z.enum(["Acclimaté", "Non Acclimaté", "Inconnu"], { required_error: "Acclimatization status is required."}),
 });
 
 type FlightDutyFormValues = z.infer<typeof FormSchema>;
@@ -56,8 +67,11 @@ export function FlightDutyCalculatorTool() {
       flightSegments: [
         { departureAirport: "KJFK", arrivalAirport: "EGLL", departureTimeUTC: defaultSegmentTime(), arrivalTimeUTC: defaultSegmentTime() },
       ],
-      preFlightBriefingHours: 1,
-      postFlightDebriefingHours: 0.5,
+      reportTimeOffsetHours: 1,
+      postDutyActivitiesHours: 0.5,
+      numberOfCrew: 2,
+      crewType: "PNT",
+      acclimatizationStatus: "Acclimaté",
     },
   });
 
@@ -76,8 +90,11 @@ export function FlightDutyCalculatorTool() {
             departureTimeUTC: new Date(segment.departureTimeUTC).toISOString(),
             arrivalTimeUTC: new Date(segment.arrivalTimeUTC).toISOString(),
         })),
-        preFlightBriefingHours: data.preFlightBriefingHours,
-        postFlightDebriefingHours: data.postFlightDebriefingHours,
+        reportTimeOffsetHours: data.reportTimeOffsetHours,
+        postDutyActivitiesHours: data.postDutyActivitiesHours,
+        numberOfCrew: data.numberOfCrew,
+        crewType: data.crewType,
+        acclimatizationStatus: data.acclimatizationStatus,
       };
       const result = await calculateFlightDuty(input);
       setDutyResult(result);
@@ -105,6 +122,92 @@ export function FlightDutyCalculatorTool() {
     <div className="space-y-6">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* Crew and General Duty Parameters */}
+          <Card>
+            <CardHeader>
+                <CardTitle className="text-lg font-semibold">Crew & Duty Parameters</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <FormField
+                        control={form.control}
+                        name="crewType"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Crew Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select crew type" /></SelectTrigger></FormControl>
+                            <SelectContent>
+                                <SelectItem value="PNT">PNT (Flight Crew)</SelectItem>
+                                <SelectItem value="PNC">PNC (Cabin Crew)</SelectItem>
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="numberOfCrew"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Number of Crew</FormLabel>
+                            <FormControl><Input type="number" {...field} /></FormControl>
+                            <FormDescription>Total in this group.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="acclimatizationStatus"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Acclimatization</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
+                            <SelectContent>
+                                <SelectItem value="Acclimaté">Acclimaté</SelectItem>
+                                <SelectItem value="Non Acclimaté">Non Acclimaté</SelectItem>
+                                <SelectItem value="Inconnu">Inconnu</SelectItem>
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    <FormField
+                    control={form.control}
+                    name="reportTimeOffsetHours"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Report Time / Pre-Flight Duties (Hours)</FormLabel>
+                        <FormControl><Input type="number" step="0.1" {...field} /></FormControl>
+                        <FormDescription>Time before first departure.</FormDescription>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="postDutyActivitiesHours"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Post-Flight Duties (Hours)</FormLabel>
+                        <FormControl><Input type="number" step="0.1" {...field} /></FormControl>
+                        <FormDescription>Time after last arrival.</FormDescription>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
+            </CardContent>
+          </Card>
+          
+          <Separator />
+
           <div>
             <FormLabel className="text-lg font-semibold">Flight Segments</FormLabel>
             <FormDescription className="mb-4">Add one or more flight segments. All times must be in UTC.</FormDescription>
@@ -193,41 +296,8 @@ export function FlightDutyCalculatorTool() {
               <PlusCircle className="mr-2 h-4 w-4" /> Add Flight Segment
             </Button>
           </div>
-
-          <Separator />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="preFlightBriefingHours"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-md font-semibold">Pre-Flight Briefing (Hours)</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.1" {...field} />
-                  </FormControl>
-                  <FormDescription>Duration before first departure.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="postFlightDebriefingHours"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-md font-semibold">Post-Flight Debriefing (Hours)</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.1" {...field} />
-                  </FormControl>
-                  <FormDescription>Duration after last arrival.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
           
-          <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+          <Button type="submit" disabled={isLoading || !form.formState.isValid} className="w-full sm:w-auto">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -240,6 +310,7 @@ export function FlightDutyCalculatorTool() {
               </>
             )}
           </Button>
+          {!form.formState.isValid && (<p className="text-sm text-destructive mt-2">Please fill all required fields correctly.</p>)}
         </form>
       </Form>
 
@@ -248,11 +319,11 @@ export function FlightDutyCalculatorTool() {
           <CardHeader>
             <CardTitle className="text-xl font-headline flex items-center">
               <Sparkles className="mr-2 h-6 w-6 text-primary" />
-              AI-Calculated Flight Duty
+              AI-Calculated Flight Duty Analysis
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
               <div>
                 <p className="font-semibold">Duty Period Start (UTC):</p>
                 <p className="text-primary">{new Date(dutyResult.dutyPeriodStartUTC).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })} UTC</p>
@@ -261,24 +332,48 @@ export function FlightDutyCalculatorTool() {
                 <p className="font-semibold">Duty Period End (UTC):</p>
                 <p className="text-primary">{new Date(dutyResult.dutyPeriodEndUTC).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })} UTC</p>
               </div>
-              <div>
-                <p className="font-semibold">Total Duty Time:</p>
-                <p><Clock className="inline h-4 w-4 mr-1" />{dutyResult.totalDutyTimeHours.toFixed(2)} hours</p>
+              <div className="flex items-center gap-1">
+                <Clock className="inline h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold">Total Duty Time:</span> {dutyResult.totalDutyTimeHours.toFixed(2)} hours
               </div>
-              <div>
-                <p className="font-semibold">Total Flight Time:</p>
-                <p><Clock className="inline h-4 w-4 mr-1" />{dutyResult.totalFlightTimeHours.toFixed(2)} hours</p>
+              <div className="flex items-center gap-1">
+                 <Clock className="inline h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold">Total Flight Time:</span> {dutyResult.totalFlightTimeHours.toFixed(2)} hours
+              </div>
+              <div className="flex items-center gap-1">
+                <Shield className="inline h-4 w-4 text-muted-foreground" />
+                <span className="font-semibold">Est. Max Duty Time:</span> {dutyResult.maxDutyTimeHours.toFixed(2)} hours
               </div>
             </div>
-             {dutyResult.maxFlightTimeExceeded && (
-              <div className="p-3 rounded-md border border-destructive/50 bg-destructive/10 text-destructive flex items-center gap-2">
+            
+            {dutyResult.dutyTimeExceeded && (
+              <Alert variant="destructive">
                 <AlertTriangle className="h-5 w-5" />
-                <p className="font-semibold">Potential Max Flight Time Exceeded based on generic rules.</p>
-              </div>
+                <AlertTitle>Potential Duty Time Exceeded</AlertTitle>
+                <ShadAlertDescription>
+                  The calculated total duty time ({dutyResult.totalDutyTimeHours.toFixed(2)} hrs) exceeds the AI's estimated maximum allowable duty time ({dutyResult.maxDutyTimeHours.toFixed(2)} hrs).
+                </ShadAlertDescription>
+              </Alert>
             )}
+
+            <div className="space-y-3">
+                <div>
+                    <h4 className="font-semibold text-md flex items-center gap-1"><Info className="h-4 w-4 text-primary"/>Flight Time Compliance Notes:</h4>
+                    <p className="text-xs text-muted-foreground whitespace-pre-wrap p-2 border-l-2 border-primary/30 bg-card rounded-r-md">{dutyResult.flightTimeComplianceNotes}</p>
+                </div>
+                <div>
+                    <h4 className="font-semibold text-md flex items-center gap-1"><Info className="h-4 w-4 text-primary"/>Duty Time Compliance Notes:</h4>
+                    <p className="text-xs text-muted-foreground whitespace-pre-wrap p-2 border-l-2 border-primary/30 bg-card rounded-r-md">{dutyResult.dutyTimeComplianceNotes}</p>
+                </div>
+                <div>
+                    <h4 className="font-semibold text-md flex items-center gap-1"><Info className="h-4 w-4 text-primary"/>Rest Requirements Notes:</h4>
+                    <p className="text-xs text-muted-foreground whitespace-pre-wrap p-2 border-l-2 border-primary/30 bg-card rounded-r-md">{dutyResult.restRequirementsNotes}</p>
+                </div>
+            </div>
+            
             <Separator />
             <div>
-              <p className="font-semibold mb-1">Summary & Compliance Notes:</p>
+              <p className="font-semibold mb-1">Overall Summary:</p>
               <div className="prose prose-sm max-w-none dark:prose-invert text-foreground">
                 <p className="whitespace-pre-wrap">{dutyResult.summary}</p>
               </div>
@@ -289,4 +384,3 @@ export function FlightDutyCalculatorTool() {
     </div>
   );
 }
-
