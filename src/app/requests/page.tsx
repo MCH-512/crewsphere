@@ -411,11 +411,12 @@ export default function RequestsPage() {
             <AlertDialogDescription>
               Are you sure you want to submit this request?
               {formDataToSubmit && (
-                <div className="mt-2 text-sm text-muted-foreground space-y-1">
+                <div className="mt-4 text-sm text-left space-y-1 border p-3 rounded-md bg-muted/50">
                   <p><strong>Category:</strong> {formDataToSubmit.requestCategory}</p>
                   {formDataToSubmit.specificRequestType && <p><strong>Type:</strong> {formDataToSubmit.specificRequestType}</p>}
                   <p><strong>Urgency:</strong> {formDataToSubmit.urgencyLevel}</p>
                   <p><strong>Subject:</strong> {formDataToSubmit.subject}</p>
+                  {formDataToSubmit.details && <p><strong>Details (start):</strong> {formDataToSubmit.details.substring(0, 100)}{formDataToSubmit.details.length > 100 ? "..." : ""}</p>}
                 </div>
               )}
             </AlertDialogDescription>

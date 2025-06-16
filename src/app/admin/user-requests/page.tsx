@@ -15,10 +15,11 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown } from "lucide-react";
+import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown, Info } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority"; 
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface UserRequest {
   id: string;
@@ -68,7 +69,7 @@ export default function AdminUserRequestsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const q = query(collection(db, "requests"), orderBy("createdAt", "desc")); // Always fetch all, sorting/filtering done client-side
+      const q = query(collection(db, "requests"), orderBy("createdAt", "desc")); 
       const querySnapshot = await getDocs(q);
       const fetchedRequests = querySnapshot.docs.map(doc => ({
         id: doc.id,
@@ -97,21 +98,20 @@ export default function AdminUserRequestsPage() {
   React.useEffect(() => {
     let processedRequests = [...allRequests];
 
-    // Apply status filter
     if (statusFilter !== "all") {
       processedRequests = processedRequests.filter(request => request.status === statusFilter);
     }
 
-    // Apply search term filter
     if (searchTerm !== "") {
       const lowercasedFilter = searchTerm.toLowerCase();
       processedRequests = processedRequests.filter(request =>
         request.subject.toLowerCase().includes(lowercasedFilter) ||
-        request.userEmail.toLowerCase().includes(lowercasedFilter)
+        request.userEmail.toLowerCase().includes(lowercasedFilter) ||
+        request.requestType.toLowerCase().includes(lowercasedFilter) ||
+        (request.specificRequestType || "").toLowerCase().includes(lowercasedFilter)
       );
     }
 
-    // Apply sorting
     processedRequests.sort((a, b) => {
       let comparison = 0;
       if (sortColumn === "createdAt") {
@@ -154,7 +154,7 @@ export default function AdminUserRequestsPage() {
         adminResponse: adminResponseText || null,
         updatedAt: serverTimestamp(),
        });
-      toast({ title: "Request Updated", description: \`Request status changed to \${newStatus}. Response saved.\` });
+      toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. Response saved.` });
       fetchRequests(); 
       setIsManageDialogOpen(false);
     } catch (err) {
@@ -193,7 +193,7 @@ export default function AdminUserRequestsPage() {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortColumn(column);
-      setSortDirection(column === "createdAt" ? "desc" : "asc"); // Default desc for date, asc for others
+      setSortDirection(column === "createdAt" ? "desc" : "asc"); 
     }
   };
 
@@ -202,7 +202,7 @@ export default function AdminUserRequestsPage() {
       <div className="flex items-center gap-1">
         {label}
         {sortColumn === column && (
-          <ArrowUpDown className={\`h-3 w-3 \${sortDirection === "desc" ? "" : "rotate-180"}\`} />
+          <ArrowUpDown className={`h-3 w-3 ${sortDirection === "desc" ? "" : "rotate-180"}`} />
         )}
       </div>
     </TableHead>
@@ -242,7 +242,7 @@ export default function AdminUserRequestsPage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={fetchRequests} disabled={isLoading} className="w-full sm:w-auto">
-              <RefreshCw className={\`mr-2 h-4 w-4 \${isLoading ? 'animate-spin' : ''}\`} />
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </div>
@@ -253,7 +253,7 @@ export default function AdminUserRequestsPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search by subject or email..."
+                placeholder="Search by subject, email, category..."
                 className="pl-8 w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -284,7 +284,7 @@ export default function AdminUserRequestsPage() {
             </div>
           )}
           {!isLoading && filteredAndSortedRequests.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">No user requests found{statusFilter !== "all" ? \` for status: \${statusFilter}\` : ""}{searchTerm ? \` matching "\${searchTerm}"\` : ""}.</p>
+            <p className="text-muted-foreground text-center py-8">No user requests found{statusFilter !== "all" ? ` for status: ${statusFilter}` : ""}{searchTerm ? ` matching "${searchTerm}"` : ""}.</p>
           )}
           {filteredAndSortedRequests.length > 0 && (
             <div className="rounded-md border">
@@ -294,7 +294,6 @@ export default function AdminUserRequestsPage() {
                     <SortableHeader column="createdAt" label="Submitted" />
                     <TableHead>User Email</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead>Specific Type</TableHead>
                     <TableHead>Subject</TableHead>
                     <SortableHeader column="urgencyLevel" label="Urgency" />
                     <SortableHeader column="status" label="Status" />
@@ -304,21 +303,20 @@ export default function AdminUserRequestsPage() {
                 <TableBody>
                   {filteredAndSortedRequests.map((request) => (
                     <TableRow key={request.id}>
-                      <TableCell>
+                      <TableCell className="text-xs">
                         {request.createdAt ? format(request.createdAt.toDate(), "PPp") : 'N/A'}
                       </TableCell>
-                      <TableCell className="font-medium">{request.userEmail}</TableCell>
-                      <TableCell>{request.requestType}</TableCell>
-                      <TableCell>{request.specificRequestType || 'N/A'}</TableCell>
-                      <TableCell>{request.subject}</TableCell>
+                      <TableCell className="font-medium text-xs">{request.userEmail}</TableCell>
+                      <TableCell className="text-xs">{request.requestType}</TableCell>
+                      <TableCell className="text-xs max-w-[200px] truncate" title={request.subject}>{request.subject}</TableCell>
                       <TableCell>
-                        <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize flex items-center gap-1">
+                        <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize flex items-center gap-1 text-xs px-1.5 py-0.5">
                             {request.urgencyLevel === "Critical" && <Zap className="h-3 w-3" />}
                             {request.urgencyLevel || "N/A"}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getStatusBadgeVariant(request.status)} className="capitalize">
+                        <Badge variant={getStatusBadgeVariant(request.status)} className="capitalize text-xs px-1.5 py-0.5">
                           {request.status}
                         </Badge>
                       </TableCell>
@@ -338,31 +336,39 @@ export default function AdminUserRequestsPage() {
 
       {selectedRequest && (
         <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Manage Request: {selectedRequest.subject}</DialogTitle>
               <DialogDescription>Review details, update status, and add response notes.</DialogDescription>
             </DialogHeader>
-            <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">User: <span className="text-muted-foreground">{selectedRequest.userEmail}</span></p>
-                <p className="text-sm font-medium">Category: <span className="text-muted-foreground">{selectedRequest.requestType}</span></p>
-                {selectedRequest.specificRequestType && <p className="text-sm font-medium">Specific Type: <span className="text-muted-foreground">{selectedRequest.specificRequestType}</span></p>}
-                <p className="text-sm font-medium">Urgency: 
-                  <Badge variant={getUrgencyBadgeVariant(selectedRequest.urgencyLevel)} className="capitalize ml-1 px-1.5 py-0.5 text-xs">
-                    {selectedRequest.urgencyLevel === "Critical" && <Zap className="h-3 w-3 mr-1" />}
-                    {selectedRequest.urgencyLevel || "N/A"}
-                  </Badge>
-                </p>
-                <p className="text-sm font-medium">Submitted: <span className="text-muted-foreground">{format(selectedRequest.createdAt.toDate(), "PPpp")}</span></p>
-                {selectedRequest.updatedAt && selectedRequest.updatedAt.toMillis() !== selectedRequest.createdAt.toMillis() && <p className="text-sm font-medium">Last Updated: <span className="text-muted-foreground">{format(selectedRequest.updatedAt.toDate(), "PPpp")}</span></p>}
-              </div>
-              <div className="space-y-1">
-                <Label className="text-sm font-medium">Details:</Label>
-                <p className="text-sm text-muted-foreground p-2 border rounded-md bg-secondary/30 max-h-40 overflow-y-auto">{selectedRequest.details}</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status-select">Update Status</Label>
+            <ScrollArea className="max-h-[60vh] pr-4">
+            <div className="py-4 space-y-4">
+              <Card className="bg-muted/30">
+                <CardHeader className="pb-2 pt-4 px-4">
+                    <CardTitle className="text-base font-semibold">Submitted Details</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm space-y-2 px-4 pb-4">
+                    <p><strong>User:</strong> <span className="text-muted-foreground">{selectedRequest.userEmail}</span></p>
+                    <p><strong>Category:</strong> <span className="text-muted-foreground">{selectedRequest.requestType}</span></p>
+                    {selectedRequest.specificRequestType && <p><strong>Specific Type:</strong> <span className="text-muted-foreground">{selectedRequest.specificRequestType}</span></p>}
+                    <p><strong>Urgency:</strong> <Badge variant={getUrgencyBadgeVariant(selectedRequest.urgencyLevel)} className="capitalize ml-1 px-1.5 py-0.5 text-xs">{selectedRequest.urgencyLevel === "Critical" && <Zap className="h-3 w-3 mr-1" />}{selectedRequest.urgencyLevel || "N/A"}</Badge></p>
+                    <p><strong>Submitted:</strong> <span className="text-muted-foreground">{format(selectedRequest.createdAt.toDate(), "PPpp")}</span></p>
+                    {selectedRequest.updatedAt && selectedRequest.updatedAt.toMillis() !== selectedRequest.createdAt.toMillis() && <p><strong>Last Updated:</strong> <span className="text-muted-foreground">{format(selectedRequest.updatedAt.toDate(), "PPpp")}</span></p>}
+                    <div className="space-y-1 pt-1">
+                        <Label className="font-medium">Details Submitted:</Label>
+                        <p className="text-muted-foreground p-2 border rounded-md bg-background max-h-32 overflow-y-auto whitespace-pre-wrap">{selectedRequest.details}</p>
+                    </div>
+                    {selectedRequest.adminResponse && (
+                      <div className="space-y-1 pt-2 border-t mt-3">
+                        <Label className="font-medium text-primary">Previous Admin Response:</Label>
+                        <p className="text-muted-foreground p-2 border border-primary/30 rounded-md bg-primary/5 max-h-28 overflow-y-auto whitespace-pre-wrap">{selectedRequest.adminResponse}</p>
+                      </div>
+                    )}
+                </CardContent>
+              </Card>
+              
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="status-select" className="font-semibold">Update Status</Label>
                 <Select 
                   value={newStatus || ""}
                   onValueChange={(value) => setNewStatus(value as UserRequest["status"])}
@@ -378,16 +384,18 @@ export default function AdminUserRequestsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="admin-response">Admin Response / Notes</Label>
+                <Label htmlFor="admin-response" className="font-semibold">Admin Response / Notes</Label>
                 <Textarea
                   id="admin-response"
-                  placeholder="Add your response or internal notes here..."
+                  placeholder="Add or update your response/notes here..."
                   value={adminResponseText}
                   onChange={(e) => setAdminResponseText(e.target.value)}
                   className="min-h-[100px]"
                 />
+                 <p className="text-xs text-muted-foreground">This response will be visible to the user.</p>
               </div>
             </div>
+            </ScrollArea>
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancel</Button>
@@ -403,4 +411,3 @@ export default function AdminUserRequestsPage() {
     </div>
   );
 }
-    

@@ -8,12 +8,12 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ListTodo, Loader2, AlertTriangle, Inbox, MessageSquareText, CalendarCheck2, Zap } from "lucide-react";
+import { ListTodo, Loader2, AlertTriangle, Inbox, MessageSquareText, CalendarCheck2, Zap, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Shadcn Alert
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
 
 interface UserRequestForDisplay {
   id: string;
@@ -100,6 +100,14 @@ export default function MyRequestsPage() {
     }
   };
 
+  const getAdminResponseAlertVariant = (status: UserRequestForDisplay["status"]): VariantProps<typeof Alert>["variant"] => {
+    switch (status) {
+      case "approved": return "success";
+      case "rejected": return "destructive";
+      default: return "default";
+    }
+  };
+
 
   if (authLoading || (isLoading && !user)) {
     return (
@@ -168,9 +176,9 @@ export default function MyRequestsPage() {
                         {request.status}
                     </Badge>
                 </div>
-                 <div className="text-xs text-muted-foreground space-x-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span>Category: {request.requestType}</span>
-                    {request.specificRequestType && <span>| Type: {request.specificRequestType}</span>}
+                 <div className="text-xs text-muted-foreground space-x-2 flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                    <span>Category: <Badge variant="outline" className="px-1.5 py-0.5 text-xs">{request.requestType}</Badge></span>
+                    {request.specificRequestType && <span>| Type: <Badge variant="outline" className="px-1.5 py-0.5 text-xs">{request.specificRequestType}</Badge></span>}
                     <span>
                       | Urgency: 
                       <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize px-1.5 py-0.5 text-xs ml-1">
@@ -184,7 +192,7 @@ export default function MyRequestsPage() {
                 <div className="text-sm text-muted-foreground mb-3">
                   Submitted: {request.createdAt ? format(request.createdAt.toDate(), "PPp") : 'N/A'}
                   {request.updatedAt && request.updatedAt.toMillis() !== request.createdAt.toMillis() && (
-                    <span className="ml-2 italic">(Last updated: {format(request.updatedAt.toDate(), "PPp")})</span>
+                    <span className="ml-2 italic">(Last updated: {format(request.updatedAt.toDate(), "PPpp")})</span>
                   )}
                 </div>
                 
@@ -204,7 +212,9 @@ export default function MyRequestsPage() {
                         </span>
                       </AccordionTrigger>
                       <AccordionContent className="pt-2">
-                        <Alert variant={request.status === 'approved' ? 'default' : request.status === 'rejected' ? 'destructive' : 'default'} className="bg-primary/5 border-primary/20">
+                        <Alert variant={getAdminResponseAlertVariant(request.status)}>
+                            {request.status === "approved" && <CheckCircle className="h-4 w-4" />}
+                            {request.status === "rejected" && <AlertTriangle className="h-4 w-4" />}
                             <AlertTitle className="font-semibold">Response from Admin:</AlertTitle>
                             <AlertDescription className="whitespace-pre-wrap text-foreground/90">{request.adminResponse}</AlertDescription>
                         </Alert>
@@ -220,5 +230,3 @@ export default function MyRequestsPage() {
     </div>
   );
 }
-
-    
