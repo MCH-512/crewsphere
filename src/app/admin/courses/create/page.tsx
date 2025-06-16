@@ -4,6 +4,7 @@
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -25,7 +26,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpenCheck, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList } from "lucide-react";
+import { BookOpenCheck, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, Wand2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
@@ -46,7 +47,21 @@ import {
   defaultChapterValue, 
   defaultValues 
 } from "@/schemas/course-schema";
-import CourseContentBlock from "@/components/admin/course-content-block"; // Import the new component
+import CourseContentBlock from "@/components/admin/course-content-block";
+import { generateCourseOutline, type CourseGenerationInput, type CourseGenerationOutput } from "@/ai/flows/course-generator-flow";
+import ReactMarkdown from "react-markdown";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert";
+
+
+const aiCourseGeneratorFormSchema = z.object({
+  aiCourseTopic: z.string().min(5, "Course topic must be at least 5 characters.").max(150, "Topic too long"),
+  aiTargetAudience: z.enum(["Cabin Crew", "Pilot", "Ground Staff", "All Crew", "Other"]).default("All Crew"),
+  aiNumberOfChapters: z.coerce.number().int().min(1).max(10).default(5),
+  aiDetailLevel: z.enum(["overview", "standard", "detailed"]).default("standard"),
+});
+type AICourseGeneratorFormValues = z.infer<typeof aiCourseGeneratorFormSchema>;
+
 
 export default function CreateComprehensiveCoursePage() {
   const { toast } = useToast();
@@ -56,15 +71,29 @@ export default function CreateComprehensiveCoursePage() {
   const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  const [isAiGenerating, setIsAiGenerating] = React.useState(false);
+  const [aiGeneratedCourse, setAiGeneratedCourse] = React.useState<CourseGenerationOutput | null>(null);
+  const [aiGenerationError, setAiGenerationError] = React.useState<string | null>(null);
+
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
     defaultValues,
     mode: "onBlur",
   });
 
-  const { fields: chapterFields, append: appendChapter, remove: removeChapter } = useFieldArray({
+  const { fields: chapterFields, append: appendChapter, remove: removeChapter, replace: replaceChapters } = useFieldArray({
     control: form.control,
     name: "chapters",
+  });
+
+  const aiForm = useForm<AICourseGeneratorFormValues>({
+    resolver: zodResolver(aiCourseGeneratorFormSchema),
+    defaultValues: {
+      aiCourseTopic: "",
+      aiTargetAudience: "All Crew",
+      aiNumberOfChapters: 5,
+      aiDetailLevel: "standard",
+    },
   });
 
   const watchedFormValues = form.watch();
@@ -75,6 +104,62 @@ export default function CreateComprehensiveCoursePage() {
       toast({ title: "Access Denied", description: "You need admin privileges to access this page.", variant: "destructive"});
     }
   }, [user, authLoading, router, toast]);
+
+  async function handleAiGenerateSubmit(data: AICourseGeneratorFormValues) {
+    if (!user) {
+      toast({ title: "Authentication Required", description: "Please log in to use the course generator.", variant: "destructive" });
+      return;
+    }
+    setIsAiGenerating(true);
+    setAiGeneratedCourse(null);
+    setAiGenerationError(null);
+    try {
+      const input: CourseGenerationInput = {
+        courseTopic: data.aiCourseTopic,
+        targetAudience: data.aiTargetAudience,
+        numberOfChapters: data.aiNumberOfChapters,
+        detailLevel: data.aiDetailLevel,
+      };
+      const result = await generateCourseOutline(input);
+      setAiGeneratedCourse(result);
+      toast({ title: "AI Course Outline Generated!", description: "Review the AI-suggested course structure below." });
+    } catch (error) {
+      console.error("Error generating AI course outline:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+      setAiGenerationError(errorMessage);
+      toast({ title: "AI Generation Failed", description: errorMessage, variant: "destructive" });
+    } finally {
+      setIsAiGenerating(false);
+    }
+  }
+
+  const handleApplyAiOutline = () => {
+    if (!aiGeneratedCourse) {
+      toast({ title: "No AI Outline", description: "Please generate an outline first.", variant: "default" });
+      return;
+    }
+    form.setValue("title", aiGeneratedCourse.courseTitle);
+    form.setValue("description", aiGeneratedCourse.description);
+    // Smart category setting: if AI category exists in options, set it. Otherwise, set to "" or a default.
+    const aiCategory = aiGeneratedCourse.suggestedCategory;
+    if (courseCategories.includes(aiCategory)) {
+      form.setValue("category", aiCategory);
+    } else {
+      form.setValue("category", ""); // Or a default like "General Information"
+      toast({ title: "Category Note", description: `AI suggested category "${aiCategory}" is not standard. Please select one.`, variant: "default" });
+    }
+    
+    const newChapters = aiGeneratedCourse.chapters.map(ch => ({
+      title: ch.title,
+      content: ch.content || "",
+      resources: [], // Start with empty resources
+      children: [],   // Start with empty sub-chapters
+    }));
+    replaceChapters(newChapters.length > 0 ? newChapters : [defaultChapterValue]);
+
+    toast({ title: "AI Outline Applied", description: "Form fields have been pre-filled with the AI generated outline." });
+  };
+
 
   async function onSubmit(data: CourseFormValues) {
     if (!user || user.role !== 'admin') {
@@ -126,9 +211,9 @@ export default function CreateComprehensiveCoursePage() {
         description: data.description,
         duration: data.duration,
         mandatory: data.mandatory,
-        fileURL: fileDownloadURL, // Main course file URL
+        fileURL: fileDownloadURL, 
         imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
-        chapters: data.chapters || [], // Save hierarchical chapters
+        chapters: data.chapters || [], 
         published: false, 
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -145,8 +230,6 @@ export default function CreateComprehensiveCoursePage() {
       });
       batch.update(courseRef, { quizId: quizRef.id }); 
 
-      // Questions are no longer manually created here. They would be AI-generated.
-
       const certRuleRef = doc(collection(db, "certificateRules"));
       batch.set(certRuleRef, {
         courseId: courseRef.id,
@@ -162,10 +245,12 @@ export default function CreateComprehensiveCoursePage() {
 
       toast({
         title: "Course Created Successfully!",
-        description: `Course "${data.title}" with its content and certification rules has been saved. Quiz questions will be managed separately or AI-generated.`,
+        description: `Course "${data.title}" with its content and certification rules has been saved.`,
         action: <CheckCircle className="text-green-500" />,
       });
       form.reset(defaultValues);
+      aiForm.reset(); // Reset AI form as well
+      setAiGeneratedCourse(null); // Clear AI generated content
       if (fileInputRef.current) fileInputRef.current.value = ""; 
       router.push('/admin/courses');
     } catch (error) {
@@ -201,10 +286,110 @@ export default function CreateComprehensiveCoursePage() {
             Create Comprehensive Training Course
           </CardTitle>
           <CardDescription>
-            Define all aspects of your new training course, including hierarchical content, quiz settings, and certification.
+            Define all aspects of your new training course. Optionally, use the AI assistant to generate an initial outline.
           </CardDescription>
         </CardHeader>
       </Card>
+      
+      {/* AI Course Outline Generator Section */}
+      <Accordion type="single" collapsible className="w-full">
+        <AccordionItem value="ai-generator">
+          <AccordionTrigger>
+            <div className="flex items-center text-lg font-semibold">
+              <Wand2 className="mr-2 h-5 w-5 text-primary" /> AI Course Outline Generator (Optional)
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="pt-2">
+            <Card className="shadow-md border-primary/30">
+              <CardHeader>
+                <CardTitle className="text-xl">Generate Outline with AI</CardTitle>
+                <CardDescription>
+                  Describe your course, and let AI draft an initial outline including chapters and content suggestions.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...aiForm}>
+                  <form onSubmit={aiForm.handleSubmit(handleAiGenerateSubmit)} className="space-y-6">
+                    <FormField
+                      control={aiForm.control} name="aiCourseTopic"
+                      render={({ field }) => (
+                        <FormItem><FormLabel>Course Topic</FormLabel>
+                          <FormControl><Input placeholder="e.g., Advanced CRM Techniques" {...field} /></FormControl>
+                          <FormDescription>What is the main subject of the course?</FormDescription><FormMessage />
+                        </FormItem>)}
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField control={aiForm.control} name="aiTargetAudience"
+                        render={({ field }) => (
+                          <FormItem><FormLabel>Target Audience</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl><SelectTrigger><SelectValue placeholder="Select audience" /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                <SelectItem value="Cabin Crew">Cabin Crew</SelectItem><SelectItem value="Pilot">Pilot</SelectItem>
+                                <SelectItem value="Ground Staff">Ground Staff</SelectItem><SelectItem value="All Crew">All Crew</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                              </SelectContent></Select><FormMessage />
+                          </FormItem>)}
+                      />
+                      <FormField control={aiForm.control} name="aiNumberOfChapters"
+                        render={({ field }) => (
+                          <FormItem><FormLabel>Number of Chapters</FormLabel>
+                            <FormControl><Input type="number" min="1" max="10" {...field} /></FormControl>
+                            <FormDescription>(1-10)</FormDescription><FormMessage />
+                          </FormItem>)}
+                      />
+                      <FormField control={aiForm.control} name="aiDetailLevel"
+                        render={({ field }) => (
+                          <FormItem><FormLabel>Detail Level</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl><SelectTrigger><SelectValue placeholder="Select detail level" /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                <SelectItem value="overview">Overview</SelectItem><SelectItem value="standard">Standard</SelectItem>
+                                <SelectItem value="detailed">Detailed</SelectItem>
+                              </SelectContent></Select><FormMessage />
+                          </FormItem>)}
+                      />
+                    </div>
+                    <Button type="submit" disabled={isAiGenerating} className="w-full sm:w-auto">
+                      {isAiGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>) : (<><Sparkles className="mr-2 h-4 w-4" /> Generate AI Outline</>)}
+                    </Button>
+                  </form>
+                </Form>
+
+                {aiGenerationError && !isAiGenerating && (
+                  <Alert variant="destructive" className="mt-4">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>AI Generation Error</AlertTitle><ShadAlertDescription>{aiGenerationError}</ShadAlertDescription>
+                  </Alert>
+                )}
+
+                {aiGeneratedCourse && !isAiGenerating && (
+                  <div className="mt-6 space-y-4 p-4 border rounded-md bg-muted/50">
+                    <h3 className="text-lg font-semibold flex items-center"><Sparkles className="mr-2 h-5 w-5 text-primary" />AI-Generated Outline Preview</h3>
+                    <p><strong>Title:</strong> {aiGeneratedCourse.courseTitle}</p>
+                    <p><strong>Category Suggestion:</strong> {aiGeneratedCourse.suggestedCategory}</p>
+                    <p><strong>Description:</strong> {aiGeneratedCourse.description}</p>
+                    <Accordion type="multiple" className="w-full space-y-1">
+                      {aiGeneratedCourse.chapters.map((chapter, index) => (
+                        <AccordionItem value={`ai-chapter-${index}`} key={`ai-ch-${index}`} className="border bg-card rounded-md">
+                          <AccordionTrigger className="px-3 py-2 text-sm">Chapter {index + 1}: {chapter.title}</AccordionTrigger>
+                          <AccordionContent className="px-3 pb-2 pt-0">
+                            <div className="prose prose-sm max-w-none dark:prose-invert text-foreground"><ReactMarkdown>{chapter.content}</ReactMarkdown></div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                    <Button onClick={handleApplyAiOutline} variant="outline" className="mt-3 w-full sm:w-auto">
+                      <CheckCircle className="mr-2 h-4 w-4" /> Apply AI Outline to Form Below
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
@@ -217,7 +402,7 @@ export default function CreateComprehensiveCoursePage() {
                   <FormItem><FormLabel>Course Title*</FormLabel><FormControl><Input placeholder="e.g., Advanced First Aid Onboard" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="category" render={({ field }) => (
-                  <FormItem><FormLabel>Category*</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course category" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Category*</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course category" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
                 )} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -280,11 +465,11 @@ export default function CreateComprehensiveCoursePage() {
               {chapterFields.map((chapterItem, index) => (
                 <CourseContentBlock
                   key={chapterItem.id}
-                  control={form.control} // Pass control
-                  name="chapters"         // Pass the name of the field array
-                  index={index}            // Pass the index of this specific chapter
+                  control={form.control} 
+                  name="chapters"         
+                  index={index}            
                   removeSelf={() => chapterFields.length > 1 ? removeChapter(index) : toast({title: "Cannot Remove", description:"Course must have at least one chapter.", variant:"destructive"})}
-                  level={0}                // Top-level chapters are level 0
+                  level={0}                
                 />
               ))}
               <Button type="button" variant="outline" onClick={() => appendChapter(defaultChapterValue)}><PlusCircle className="mr-2 h-4 w-4" />Add Chapter</Button>
@@ -380,3 +565,4 @@ export default function CreateComprehensiveCoursePage() {
   );
 }
 
+    

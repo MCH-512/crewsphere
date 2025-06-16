@@ -59,7 +59,7 @@ import {
   ClipboardCheck, 
   FilePlus,
   Users,
-  Wand2, // Added Wand2 for AI Course Generator
+  Wand2, 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -76,9 +76,9 @@ const navItems = [
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
   { type: "separator", key: "sep1" },
-  { href: "/training", label: "AI Course Generator", icon: Wand2 }, // Changed label and icon
+  { href: "/training", label: "Training Hub", icon: ListChecks }, // Restored "Training Hub"
   { href: "/courses", label: "Course Library", icon: Library },
-  { href: "/quizzes", label: "My Quizzes", icon: ListChecks },
+  { href: "/quizzes", label: "My Quizzes", icon: ListChecks }, // Could be changed if redundant with Training Hub
   { href: "/certificates", label: "My Certificates", icon: Award },
   { type: "separator", key: "sep2" },
   { href: "/airport-briefings", label: "Airport Briefings", icon: Navigation },
@@ -139,7 +139,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/flight-duty-calculator": "Flight Duty Calculator",
     "/purser-reports": "Submit Purser Report",
     "/my-purser-reports": "My Purser Reports", 
-    "/training": "AI Course Generator", // Changed title
+    "/training": "Training Hub", // Updated title
     "/courses": "Course Library",
     "/quizzes": "My Quizzes", 
     "/certificates": "My Certificates",
@@ -420,3 +420,5 @@ function LayoutWithSidebar({
     </>
   );
 }
+
+    
