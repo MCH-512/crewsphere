@@ -14,20 +14,21 @@ import { PlusCircle, Trash2, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import dynamic from 'next/dynamic';
+import { Textarea } from '@/components/ui/textarea'; // Import Textarea
 import { storage } from '@/lib/firebase';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Progress } from "@/components/ui/progress";
-import 'react-quill/dist/quill.snow.css';
+// import 'react-quill/dist/quill.snow.css'; // No longer needed if ReactQuill is removed
 import type { Chapter, Resource } from '@/schemas/course-schema';
 
-const ReactQuill = dynamic(
-  () => import('react-quill'),
-  {
-    ssr: false,
-    loading: () => <div className="p-2 border rounded-md min-h-[200px] bg-muted animate-pulse flex items-center justify-center">Loading editor...</div>,
-  }
-);
+// ReactQuill is removed, so dynamic import is no longer needed for it.
+// const ReactQuill = dynamic(
+//   () => import('react-quill'),
+//   {
+//     ssr: false,
+//     loading: () => <div className="p-2 border rounded-md min-h-[200px] bg-muted animate-pulse flex items-center justify-center">Loading editor...</div>,
+//   }
+// );
 
 interface CourseContentBlockProps {
   name: string;
@@ -169,15 +170,11 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
             <FormItem>
               <FormLabel>Content</FormLabel>
               <FormControl>
-                <ReactQuill
-                  theme="snow"
+                <Textarea // Replaced ReactQuill with Textarea
+                  placeholder={`Enter content for ${level === 0 ? 'chapter' : 'section'} ${index + 1}... (Markdown supported for display)`}
+                  className="min-h-[200px] bg-background" 
                   value={field.value || ""}
                   onChange={field.onChange}
-                  modules={{
-                    toolbar: [['bold', 'italic', 'underline', 'strike'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'image', 'video'], ['clean'], [{ 'header': [1, 2, 3, 4, 5, 6, false] }], [{ 'align': [] }]],
-                  }}
-                  placeholder={`Enter content for ${level === 0 ? 'chapter' : 'section'} ${index + 1}...`}
-                  className="min-h-[200px] bg-background" 
                 />
               </FormControl>
               <FormMessage />
