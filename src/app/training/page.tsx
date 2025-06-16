@@ -404,7 +404,7 @@ export default function TrainingHubPage() {
                         {selectedCourseForContent.mandatory && <Badge variant="destructive" className="ml-2">Mandatory</Badge>}
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="flex-grow pr-6 -mr-6">
+                <ScrollArea className="flex-grow">
                     <div className="py-4 space-y-4">
                         <p className="text-sm text-muted-foreground mb-4">{selectedCourseForContent.description}</p>
                         
