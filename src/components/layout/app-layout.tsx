@@ -76,9 +76,9 @@ const navItems = [
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
   { type: "separator", key: "sep1" },
-  { href: "/training", label: "Training Hub", icon: ListChecks }, // Restored "Training Hub"
+  { href: "/training", label: "My Active & Required Training", icon: GraduationCap },
   { href: "/courses", label: "Course Library", icon: Library },
-  { href: "/quizzes", label: "My Quizzes", icon: ListChecks }, // Could be changed if redundant with Training Hub
+  { href: "/quizzes", label: "My Quizzes", icon: ListChecks },
   { href: "/certificates", label: "My Certificates", icon: Award },
   { type: "separator", key: "sep2" },
   { href: "/airport-briefings", label: "Airport Briefings", icon: Navigation },
@@ -139,7 +139,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/flight-duty-calculator": "Flight Duty Calculator",
     "/purser-reports": "Submit Purser Report",
     "/my-purser-reports": "My Purser Reports", 
-    "/training": "Training Hub", // Updated title
+    "/training": "My Active & Required Training",
     "/courses": "Course Library",
     "/quizzes": "My Quizzes", 
     "/certificates": "My Certificates",
@@ -420,5 +420,3 @@ function LayoutWithSidebar({
     </>
   );
 }
-
-    

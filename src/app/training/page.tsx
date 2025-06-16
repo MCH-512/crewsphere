@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2, ListChecks, List } from "lucide-react";
+import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2, GraduationCap, List } from "lucide-react"; // Changed icon
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
@@ -293,8 +293,8 @@ export default function TrainingHubPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="text-2xl font-headline flex items-center">
-            <ListChecks className="mr-3 h-7 w-7 text-primary" />
-            My Training Hub
+            <GraduationCap className="mr-3 h-7 w-7 text-primary" />
+            My Active & Required Training
           </CardTitle>
           <CardDescription>
             Your central place to complete mandatory trainings, continue active courses, and track your progress.
@@ -308,7 +308,7 @@ export default function TrainingHubPage() {
       </Card>
 
       <section>
-        <h2 className="text-xl font-semibold mb-4">My Active & Required Training</h2>
+        <h2 className="text-xl font-semibold mb-4">My Training Tasks</h2>
         {trainingCourses.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {trainingCourses.map((course) => {
@@ -318,7 +318,7 @@ export default function TrainingHubPage() {
 
               let actionLabel = "View Course";
               let ActionIcon = BookOpen;
-              if (quizStatus === 'Passed' && course.mandatory) { // Only show cert for mandatory if it's passed
+              if (quizStatus === 'Passed' && course.mandatory) { 
                 actionLabel = "View Certificate";
                 ActionIcon = Award;
               } else if (contentStatus !== 'Completed') {
@@ -373,7 +373,7 @@ export default function TrainingHubPage() {
           </div>
         ) : (
            <Card className="text-muted-foreground p-6 text-center shadow-md">
-            <ListChecks className="mx-auto h-12 w-12 text-primary mb-4" />
+            <GraduationCap className="mx-auto h-12 w-12 text-primary mb-4" />
             <p className="font-semibold">No active or required trainings for you at this time.</p>
             <p className="text-sm">Visit the <Link href="/courses" className="text-primary hover:underline">Course Library</Link> to find new courses or check <Link href="/certificates" className="text-primary hover:underline">My Certificates</Link> for completed ones.</p>
           </Card>
@@ -500,5 +500,3 @@ export default function TrainingHubPage() {
     </div>
   );
 }
-
-    
