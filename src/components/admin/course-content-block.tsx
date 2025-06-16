@@ -14,21 +14,11 @@ import { PlusCircle, Trash2, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea'; // Import Textarea
+import { Textarea } from '@/components/ui/textarea';
 import { storage } from '@/lib/firebase';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Progress } from "@/components/ui/progress";
-// import 'react-quill/dist/quill.snow.css'; // No longer needed if ReactQuill is removed
 import type { Chapter, Resource } from '@/schemas/course-schema';
-
-// ReactQuill is removed, so dynamic import is no longer needed for it.
-// const ReactQuill = dynamic(
-//   () => import('react-quill'),
-//   {
-//     ssr: false,
-//     loading: () => <div className="p-2 border rounded-md min-h-[200px] bg-muted animate-pulse flex items-center justify-center">Loading editor...</div>,
-//   }
-// );
 
 interface CourseContentBlockProps {
   name: string;
@@ -125,7 +115,7 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => appendChild({ title: '', content: '', resources: [], children: [] } as Chapter)}
+                onClick={() => appendChild({ title: '', description: '', content: '', resources: [], children: [] } as Chapter)}
                 className="flex items-center"
             >
                 <PlusCircle className="mr-1 h-4 w-4" /> Add Sub-section
@@ -164,14 +154,32 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
           )}
         />
         <FormField
+          name={`${currentBlockPath}.description`}
+          control={control}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{level === 0 ? 'Chapter' : 'Section'} Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder={`Brief overview/objectives for ${level === 0 ? 'chapter' : 'section'} ${index + 1}... (1-2 sentences)`}
+                  className="min-h-[80px] bg-background" 
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
           name={`${currentBlockPath}.content`}
           control={control}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Content</FormLabel>
+              <FormLabel>Detailed Content / Key Points</FormLabel>
               <FormControl>
-                <Textarea // Replaced ReactQuill with Textarea
-                  placeholder={`Enter content for ${level === 0 ? 'chapter' : 'section'} ${index + 1}... (Markdown supported for display)`}
+                <Textarea 
+                  placeholder={`Enter detailed content for ${level === 0 ? 'chapter' : 'section'} ${index + 1}... (Markdown supported for display)`}
                   className="min-h-[200px] bg-background" 
                   value={field.value || ""}
                   onChange={field.onChange}

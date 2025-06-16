@@ -15,6 +15,7 @@ export type Resource = z.infer<typeof resourceSchema>;
 const baseChapterSchema = z.object({
   id: z.string().optional(), // For existing chapters during edit
   title: z.string().min(1, "Chapter/Section title cannot be empty."),
+  description: z.string().optional().describe("A brief overview of this chapter's specific learning objectives and what key topics it covers."),
   content: z.string().optional().describe("HTML or Markdown content for this chapter/section."),
   resources: z.array(resourceSchema).optional(),
 });
@@ -74,6 +75,7 @@ export const defaultResourceValue: Resource = {
 
 export const defaultChapterValue: Chapter = { 
   title: "",
+  description: "",
   content: "",
   resources: [],
   children: [],
@@ -106,4 +108,3 @@ export const defaultValues: CourseFormValues = {
   certificateLogoUrl: "https://placehold.co/150x50.png",
   certificateSignature: "Express Airline Training Department",
 };
-

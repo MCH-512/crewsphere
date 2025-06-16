@@ -45,23 +45,15 @@ import {
   courseFormSchema, 
   type CourseFormValues, 
   defaultChapterValue, 
-  defaultValues as initialDefaultValues // Renamed to avoid conflict with defaultValues for AI section
+  defaultValues as initialDefaultValues
 } from "@/schemas/course-schema";
 import CourseContentBlock from "@/components/admin/course-content-block";
 import { generateCourseOutline, type CourseGenerationInput, type CourseGenerationOutput } from "@/ai/flows/course-generator-flow";
-import ReactMarkdown from "react-markdown";
+// Removed ReactMarkdown as it's not used directly for display in this form
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-
-
-// Schema for AI Input fields within the main form (can be a subset or different structure if needed)
-const aiInputFieldsSchema = z.object({
-  targetAudience: z.enum(["Cabin Crew", "Pilot", "Ground Staff", "All Crew", "Other"]).default("All Crew"),
-  numberOfChapters: z.coerce.number().int().min(1).max(10).default(5),
-  detailLevel: z.enum(["overview", "standard", "detailed"]).default("standard"),
-});
-type AIInputFieldsValues = z.infer<typeof aiInputFieldsSchema>;
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 
 export default function CreateComprehensiveCoursePage() {
@@ -73,12 +65,12 @@ export default function CreateComprehensiveCoursePage() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const [isAiGenerating, setIsAiGenerating] = React.useState(false);
-  const [aiGeneratedCourse, setAiGeneratedCourse] = React.useState<CourseGenerationOutput | null>(null); // To display preview
+  const [aiGeneratedCourse, setAiGeneratedCourse] = React.useState<CourseGenerationOutput | null>(null); 
   const [aiGenerationError, setAiGenerationError] = React.useState<string | null>(null);
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
-    defaultValues: initialDefaultValues, // Use renamed initial default values
+    defaultValues: initialDefaultValues,
     mode: "onBlur",
   });
 
@@ -96,32 +88,52 @@ export default function CreateComprehensiveCoursePage() {
     }
   }, [user, authLoading, router, toast]);
 
-  async function handleAiGenerateAndPrefill(aiInputs: AIInputFieldsValues) {
+  async function handleAiGenerateAndPrefill() {
     if (!user) {
       toast({ title: "Authentication Required", description: "Please log in to use the course generator.", variant: "destructive" });
       return;
     }
-    const courseTopicFromForm = form.getValues("title");
-    if (!courseTopicFromForm || courseTopicFromForm.trim().length < 5) {
+    const { title, category, courseType, referenceBody, duration, targetAudience, numberOfChapters, detailLevel } = form.getValues();
+    
+    if (!title || title.trim().length < 5) {
         toast({ title: "Course Title Required", description: "Please enter a valid Course Title (min 5 chars) before generating with AI.", variant: "destructive" });
         form.setFocus("title");
         return;
     }
+    if (!category) {
+      toast({ title: "Category Required", description: "Please select a Course Category before generating with AI.", variant: "destructive" });
+      form.setFocus("category");
+      return;
+    }
+     if (!courseType) {
+      toast({ title: "Course Type Required", description: "Please select a Course Type before generating with AI.", variant: "destructive" });
+      form.setFocus("courseType");
+      return;
+    }
+    if (!duration) {
+      toast({ title: "Duration Required", description: "Please select an Estimated Duration before generating with AI.", variant: "destructive" });
+      form.setFocus("duration");
+      return;
+    }
+
 
     setIsAiGenerating(true);
     setAiGeneratedCourse(null);
     setAiGenerationError(null);
     try {
       const input: CourseGenerationInput = {
-        courseTopic: courseTopicFromForm,
-        targetAudience: aiInputs.targetAudience,
-        numberOfChapters: aiInputs.numberOfChapters,
-        detailLevel: aiInputs.detailLevel,
+        courseTopic: title,
+        courseCategory: category,
+        courseType: courseType,
+        referenceDocuments: referenceBody || undefined,
+        durationEstimate: duration || undefined,
+        targetAudience: targetAudience,
+        numberOfChapters: numberOfChapters,
+        detailLevel: detailLevel,
       };
       const result = await generateCourseOutline(input);
       
-      // Pre-fill form fields
-      form.setValue("title", result.courseTitle, { shouldValidate: true }); // AI might refine the title
+      form.setValue("title", result.courseTitle, { shouldValidate: true });
       form.setValue("description", result.description, { shouldValidate: true });
       
       if (courseCategories.includes(result.suggestedCategory)) {
@@ -131,8 +143,9 @@ export default function CreateComprehensiveCoursePage() {
       }
       
       const newChapters = result.chapters.map(ch => ({
-        id: ch.id || `gen_ch_${Math.random().toString(36).substr(2, 9)}`, // Ensure ID for keys
+        id: ch.id || `gen_ch_${Math.random().toString(36).substr(2, 9)}`,
         title: ch.title,
+        description: ch.description || "", // Added description
         content: ch.content || "",
         resources: [], 
         children: [],   
@@ -141,8 +154,8 @@ export default function CreateComprehensiveCoursePage() {
 
       form.setValue("quizTitle", `Final Assessment for ${result.courseTitle}`, { shouldValidate: true });
       
-      setAiGeneratedCourse(result); // Store for preview if needed, though direct prefill is main goal
-      toast({ title: "AI Draft Generated & Form Pre-filled!", description: "Review and complete the remaining details." });
+      setAiGeneratedCourse(result); 
+      toast({ title: "AI Draft Generated & Form Pre-filled!", description: "Review and complete the remaining details. AI suggestions for Quiz & Certificate are below." });
     } catch (error) {
       console.error("Error generating AI course outline:", error);
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -206,7 +219,7 @@ export default function CreateComprehensiveCoursePage() {
         mandatory: data.mandatory,
         fileURL: fileDownloadURL, 
         imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
-        chapters: data.chapters || [], 
+        chapters: data.chapters.map(ch => ({...ch, description: ch.description || ""})) || [], // Ensure description is saved
         published: false, 
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -278,14 +291,14 @@ export default function CreateComprehensiveCoursePage() {
             Create Comprehensive Training Course
           </CardTitle>
           <CardDescription>
-            Define initial course parameters, then use AI to generate a draft for description, chapters, and quiz title. Review and complete the rest.
+            Define initial course parameters, then use AI to generate a draft for description, chapters, quiz title, and more. Review and complete the rest.
           </CardDescription>
         </CardHeader>
       </Card>
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
-          {/* Section 0: AI Generation Inputs (now integrated before main details) */}
+
           <Card className="shadow-lg border-primary/50">
             <CardHeader>
               <CardTitle className="text-xl font-semibold flex items-center">
@@ -293,20 +306,40 @@ export default function CreateComprehensiveCoursePage() {
                 Step 1: Define Course Blueprint & Generate with AI
               </CardTitle>
               <CardDescription>
-                Provide the core details for your course. The AI will use these to draft the description, chapters, and quiz title.
+                Provide the core details for your course. The AI will use these to draft the title, description, chapters, quiz, and certificate settings.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Title and Category are part of the main form but crucial for AI */}
               <FormField control={form.control} name="title" render={({ field }) => (
                 <FormItem><FormLabel>Course Title / Topic (for AI)*</FormLabel><FormControl><Input placeholder="e.g., Advanced CRM Techniques for International Flights" {...field} /></FormControl><FormDescription>This will be used as the primary topic for AI generation.</FormDescription><FormMessage /></FormItem>
               )} />
-              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField control={form.control} name="category" render={({ field }) => (
+                  <FormItem><FormLabel>Course Category*</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course category" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="courseType" render={({ field }) => (
+                  <FormItem><FormLabel>Course Type*</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course type" /></SelectTrigger></FormControl><SelectContent>{courseTypes.map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+                )} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField control={form.control} name="referenceBody" render={({ field }) => (
+                  <FormItem><FormLabel>Reference Document/Body</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select reference body" /></SelectTrigger></FormControl><SelectContent>{referenceBodyOptions.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent></Select><FormDescription>Optional. Main reference for content generation.</FormDescription><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="duration" render={({ field }) => (
+                    <FormItem><FormLabel>Estimated Duration*</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select estimated duration" /></SelectTrigger></FormControl>
+                            <SelectContent>{courseDurationOptions.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent>
+                        </Select>
+                    <FormMessage />
+                    </FormItem>
+                )} />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField control={form.control} name="targetAudience"
-                  render={({ field }) => ( // Assuming targetAudience, numberOfChapters, detailLevel are temporarily added to form for this button, or use separate state
+                  render={({ field }) => (
                     <FormItem><FormLabel>Target Audience (for AI)*</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value as AIInputFieldsValues['targetAudience'] || "All Crew"}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select audience" /></SelectTrigger></FormControl>
                         <SelectContent>
                           <SelectItem value="Cabin Crew">Cabin Crew</SelectItem><SelectItem value="Pilot">Pilot</SelectItem>
@@ -319,8 +352,7 @@ export default function CreateComprehensiveCoursePage() {
                   render={({ field }) => (
                     <FormItem><FormLabel>Number of Chapters (for AI)*</FormLabel>
                       <FormControl><Input type="number" min="1" max="10" {...field} 
-                        // Ensure field.value is correctly typed; if not directly in CourseFormValues, manage via local state or sub-form
-                        value={field.value as number || 5} 
+                        value={field.value}
                         onChange={e => field.onChange(parseInt(e.target.value,10) || 1)}
                       /></FormControl>
                       <FormDescription>(1-10)</FormDescription><FormMessage />
@@ -329,7 +361,7 @@ export default function CreateComprehensiveCoursePage() {
                 <FormField control={form.control} name="detailLevel"
                   render={({ field }) => (
                     <FormItem><FormLabel>Detail Level (for AI)*</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value as AIInputFieldsValues['detailLevel'] || "standard"}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select detail level" /></SelectTrigger></FormControl>
                         <SelectContent>
                           <SelectItem value="overview">Overview</SelectItem><SelectItem value="standard">Standard</SelectItem>
@@ -338,14 +370,7 @@ export default function CreateComprehensiveCoursePage() {
                     </FormItem>)}
                 />
               </div>
-              <Button type="button" onClick={() => {
-                  const aiParams: AIInputFieldsValues = {
-                      targetAudience: form.getValues("targetAudience") as AIInputFieldsValues['targetAudience'] || "All Crew",
-                      numberOfChapters: form.getValues("numberOfChapters") as number || 5,
-                      detailLevel: form.getValues("detailLevel") as AIInputFieldsValues['detailLevel'] || "standard",
-                  };
-                  handleAiGenerateAndPrefill(aiParams);
-              }} disabled={isAiGenerating} className="w-full sm:w-auto">
+              <Button type="button" onClick={handleAiGenerateAndPrefill} disabled={isAiGenerating} className="w-full sm:w-auto">
                 {isAiGenerating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating & Pre-filling...</>) : (<><Sparkles className="mr-2 h-4 w-4" /> Generate Draft with AI</>)}
               </Button>
               {aiGenerationError && !isAiGenerating && (
@@ -363,57 +388,38 @@ export default function CreateComprehensiveCoursePage() {
                  Step 2: Review AI Draft & Complete Course Details
             </CardTitle>
             <CardDescription>
-                The AI has pre-filled the Course Title, Description, Chapters, and Quiz Title below. Review, edit, and complete the remaining sections.
+                The AI has pre-filled the Course Title, Description, Chapters, and Quiz Title below. Review, edit, and complete the remaining sections. AI suggestions for specific quiz questions and certificate settings are available below for your reference.
             </CardDescription>
           </CardHeader>
 
 
-          {/* Section 1: Course Details */}
+          {/* Section 1: Course Details (Main form, now pre-filled by AI) */}
           <Card className="shadow-lg">
-            <CardHeader><CardTitle className="text-xl font-semibold">1. Course Details</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-xl font-semibold">1. Course Details (Review & Finalize)</CardTitle></CardHeader>
             <CardContent className="space-y-6">
-              {/* Title is now above AI section for input */}
-              <FormField control={form.control} name="category" render={({ field }) => (
-                <FormItem><FormLabel>Category*</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course category" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-              )} />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField control={form.control} name="courseType" render={({ field }) => (
-                  <FormItem><FormLabel>Course Type*</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course type" /></SelectTrigger></FormControl><SelectContent>{courseTypes.map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="referenceBody" render={({ field }) => (
-                  <FormItem><FormLabel>Reference Document/Body</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select reference body" /></SelectTrigger></FormControl><SelectContent>{referenceBodyOptions.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent></Select><FormDescription>Optional. Specify the main reference document or body.</FormDescription><FormMessage /></FormItem>
-                )} />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField control={form.control} name="duration" render={({ field }) => (
-                    <FormItem><FormLabel>Estimated Duration*</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select estimated duration" /></SelectTrigger></FormControl>
-                            <SelectContent>{courseDurationOptions.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent>
-                        </Select>
-                    <FormMessage />
-                    </FormItem>
-                )} />
-                 <FormField control={form.control} name="imageHint" render={({ field }) => (
-                  <FormItem><FormLabel>Course Image Hint (Optional)</FormLabel><FormControl><Input placeholder="e.g., emergency exit, first aid" {...field} value={field.value || ""} /></FormControl><FormDescription>Keywords for course image (e.g., cockpit, safety vest).</FormDescription><FormMessage /></FormItem>
-              )} />
-              </div>
+              {/* Title, Category, CourseType, ReferenceBody, Duration are now part of Step 1 for AI input */}
+              {/* Description will be pre-filled by AI */}
               <FormField control={form.control} name="description" render={({ field }) => (
                 <FormItem><FormLabel>Description (AI Pre-filled)*</FormLabel><FormControl><Textarea placeholder="AI will generate this. Review and edit as needed..." className="min-h-[120px]" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
-              <FormField
-                control={form.control}
-                name="mandatory"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <FormLabel>Is this course mandatory?</FormLabel>
-                      <FormDescription>Indicates if completion is required for personnel.</FormDescription>
-                    </div>
-                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                  </FormItem>
-                )}
-              />
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField control={form.control} name="imageHint" render={({ field }) => (
+                    <FormItem><FormLabel>Course Image Hint (Optional)</FormLabel><FormControl><Input placeholder="e.g., emergency exit, first aid" {...field} value={field.value || ""} /></FormControl><FormDescription>Keywords for course image (e.g., cockpit, safety vest).</FormDescription><FormMessage /></FormItem>
+                )} />
+                <FormField
+                    control={form.control}
+                    name="mandatory"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                        <FormLabel>Is this course mandatory?</FormLabel>
+                        <FormDescription>Indicates if completion is required for personnel.</FormDescription>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                    )}
+                />
+               </div>
               <FormField control={form.control} name="associatedFile" render={({ field: { onChange, value, ...rest }}) => (
                 <FormItem>
                   <FormLabel className="flex items-center"><UploadCloud className="mr-2 h-5 w-5" />Main Course Material (Optional)</FormLabel>
@@ -428,8 +434,8 @@ export default function CreateComprehensiveCoursePage() {
           
           <Card className="shadow-lg">
             <CardHeader>
-                <CardTitle className="text-xl font-semibold flex items-center"><LayoutList className="mr-2 h-5 w-5 text-primary" /> Course Content (AI Pre-filled Chapters)</CardTitle>
-                <CardDescription>Review and edit the chapters generated by AI. Add resources and sub-sections as needed.</CardDescription>
+                <CardTitle className="text-xl font-semibold flex items-center"><LayoutList className="mr-2 h-5 w-5 text-primary" /> Course Content (AI Pre-filled Chapters - Review & Finalize)</CardTitle>
+                <CardDescription>Review and edit the chapters generated by AI. Each chapter now has a title, description, and detailed content. Add resources and sub-sections as needed.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {chapterFields.map((chapterItem, index) => (
@@ -447,7 +453,7 @@ export default function CreateComprehensiveCoursePage() {
           </Card>
 
           <Card className="shadow-lg">
-            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><FileTextIcon className="mr-2 h-5 w-5 text-primary" /> Main Course Quiz Settings</CardTitle><CardDescription>Configure the main quiz. The title is pre-filled based on the AI-generated course title.</CardDescription></CardHeader>
+            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><FileTextIcon className="mr-2 h-5 w-5 text-primary" /> Main Course Quiz Settings (Review & Finalize)</CardTitle><CardDescription>Configure the main quiz. The title is pre-filled based on the AI-generated course title. AI suggestions for questions are below.</CardDescription></CardHeader>
             <CardContent className="space-y-6">
               <FormField control={form.control} name="quizTitle" render={({ field }) => (
                 <FormItem><FormLabel>Quiz Title (AI Pre-filled)*</FormLabel><FormControl><Input placeholder="AI will generate this. Review and edit as needed." {...field} /></FormControl><FormMessage /></FormItem>
@@ -460,12 +466,12 @@ export default function CreateComprehensiveCoursePage() {
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><FormLabel>Randomize Answer Order (for MCQs)?</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                 )} />
               </div>
-              <FormDescription>Note: Specific quiz questions are managed separately after course creation or via an AI generation process if implemented.</FormDescription>
+              <FormDescription>Note: Specific quiz questions are managed separately after course creation. Use AI suggestions below as a guide.</FormDescription>
             </CardContent>
           </Card>
 
           <Card className="shadow-lg">
-            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><Award className="mr-2 h-5 w-5 text-primary" /> Certification Rules</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><Award className="mr-2 h-5 w-5 text-primary" /> Certification Rules (Review & Finalize)</CardTitle><CardDescription>AI suggestions for certification are below.</CardDescription></CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField control={form.control} name="passingThreshold" render={({ field }) => (
@@ -483,6 +489,56 @@ export default function CreateComprehensiveCoursePage() {
               )} />
             </CardContent>
           </Card>
+
+          {/* Display AI Suggestions for Quiz & Certificate */}
+          {aiGeneratedCourse && (aiGeneratedCourse.mainQuiz || aiGeneratedCourse.certificateSettings) && (
+            <Accordion type="single" collapsible className="w-full mt-6" defaultValue="ai-suggestions">
+              <AccordionItem value="ai-suggestions">
+                <AccordionTrigger>
+                  <div className="flex items-center text-lg font-semibold">
+                    <Sparkles className="mr-2 h-5 w-5 text-blue-500" /> AI Suggestions for Quiz &amp; Certificate (Reference Only)
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Card className="shadow-none border-0">
+                    <CardContent className="pt-4 space-y-4">
+                      {aiGeneratedCourse.mainQuiz && aiGeneratedCourse.mainQuiz.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold mb-2 text-md">Suggested Quiz Questions ({aiGeneratedCourse.mainQuiz.length}):</h4>
+                          <ScrollArea className="h-[250px] p-3 border rounded-md bg-muted/20">
+                            {aiGeneratedCourse.mainQuiz.map((q, i) => (
+                              <div key={i} className="mb-3 pb-2 border-b last:border-b-0 text-sm">
+                                <p className="font-medium">Q{i + 1} ({q.type.toUpperCase()}): <span className="font-normal">{q.question}</span></p>
+                                {q.options && q.options.length > 0 && (
+                                  <ul className="list-disc list-inside pl-5 text-xs mt-1">
+                                    {q.options.map((opt, oi) => <li key={oi}>{opt}</li>)}
+                                  </ul>
+                                )}
+                                <p className="text-xs text-green-700 dark:text-green-400 mt-1">Correct Answer: {q.correctAnswer}</p>
+                              </div>
+                            ))}
+                          </ScrollArea>
+                        </div>
+                      )}
+                      {aiGeneratedCourse.certificateSettings && (
+                        <div className="mt-4">
+                          <h4 className="font-semibold mb-2 text-md">Suggested Certificate Settings:</h4>
+                          <div className="text-sm space-y-1 p-3 border rounded-md bg-muted/20">
+                            <p><strong>Passing Score:</strong> {aiGeneratedCourse.certificateSettings.passingScore}%</p>
+                            <p><strong>Expiry Days:</strong> {aiGeneratedCourse.certificateSettings.expiryDays === 0 ? "No Expiry" : `${aiGeneratedCourse.certificateSettings.expiryDays} days`}</p>
+                            <p><strong>Issuing Authority:</strong> {aiGeneratedCourse.certificateSettings.issuingAuthority}</p>
+                          </div>
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-4">
+                        Note: These are AI suggestions. You will need to configure the quiz questions (via the quiz management interface for this course) and certificate rules manually using these ideas.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
           
           <Card className="shadow-lg">
             <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><Eye className="mr-2 h-5 w-5 text-primary" /> Summary & Certificate Preview</CardTitle></CardHeader>
