@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Sparkles, Search } from "lucide-react";
+import { Loader2, Sparkles, Search, Copy, CheckCircle } from "lucide-react"; // Added Copy, CheckCircle
 import { generateAirportBriefing, type AirportBriefingOutput } from "@/ai/flows/airport-briefing-flow";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
@@ -34,6 +34,7 @@ export function AirportBriefingTool() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [briefing, setBriefing] = React.useState<AirportBriefingOutput | null>(null);
   const { toast } = useToast();
+  const [copied, setCopied] = React.useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -45,6 +46,7 @@ export function AirportBriefingTool() {
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     setIsLoading(true);
     setBriefing(null);
+    setCopied(false);
     try {
       const result = await generateAirportBriefing({ airportIdentifier: data.airportIdentifier.toUpperCase() });
       setBriefing(result);
@@ -78,6 +80,21 @@ export function AirportBriefingTool() {
       setIsLoading(false);
     }
   }
+
+  const handleCopyToClipboard = () => {
+    if (briefing && briefing.briefing) {
+      navigator.clipboard.writeText(briefing.briefing)
+        .then(() => {
+          setCopied(true);
+          toast({ title: "Copied to Clipboard", description: "Briefing content copied." });
+          setTimeout(() => setCopied(false), 2000); // Reset copied state after 2 seconds
+        })
+        .catch(err => {
+          console.error('Failed to copy briefing: ', err);
+          toast({ title: "Copy Failed", description: "Could not copy briefing to clipboard.", variant: "destructive" });
+        });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -124,11 +141,15 @@ export function AirportBriefingTool() {
 
       {briefing && (
         <Card className="mt-8 shadow-md bg-card border">
-          <CardHeader>
+          <CardHeader className="flex flex-row justify-between items-center">
             <CardTitle className="text-xl font-headline flex items-center">
               <Sparkles className="mr-2 h-6 w-6 text-primary" />
               AI-Generated Briefing for {form.getValues("airportIdentifier").toUpperCase()}
             </CardTitle>
+            <Button variant="outline" size="sm" onClick={handleCopyToClipboard} disabled={copied}>
+              {copied ? <CheckCircle className="mr-2 h-4 w-4 text-green-500" /> : <Copy className="mr-2 h-4 w-4" />}
+              {copied ? "Copied!" : "Copy Briefing"}
+            </Button>
           </CardHeader>
           <CardContent>
             <div

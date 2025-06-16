@@ -80,7 +80,7 @@ Please provide a briefing that includes the following sections, using Markdown h
 
 6.  **## 🛂 Visa & Immigration Notes**
     *   **General Entry Requirements:** (Brief note on general passport/visa policies if widely known for the country. e.g., "Schengen Area entry rules apply.")
-    *   **Visa Regulations for Tunisian Nationals:** (Provide a general overview of visa requirements or arrangements for Tunisian nationals entering the country of the specified airport. If specific information is not readily available from general knowledge, state "Visa requirements for Tunisian nationals should be verified via official consular websites or the respective embassy.")
+    *   **Notes for Crew:** (Mention any widely known, general visa considerations or common advice for international flight crew, if applicable. Emphasize that official sources must always be consulted for specific nationalities and current regulations.)
     *   **Customs & Quarantine:** (Brief notes on any particularly notable customs or quarantine regulations for arriving crews/passengers if widely known.)
 
 7.  **## 🧑‍✈️ Crew Information**
