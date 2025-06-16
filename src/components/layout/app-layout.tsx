@@ -84,7 +84,6 @@ const navItems = [
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/purser-reports", label: "Submit Purser Report", icon: FileSignature },
   { href: "/my-purser-reports", label: "My Purser Reports", icon: ClipboardCheck }, 
-  // { href: "/insights", label: "AI Insights", icon: Brain }, // Removed AI Insights link
   { type: "separator", key: "sep3", adminOnly: true },
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];
@@ -139,7 +138,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/flight-duty-calculator": "Flight Duty Calculator",
     "/purser-reports": "Submit Purser Report",
     "/my-purser-reports": "My Purser Reports", 
-    // "/insights": "AI-Driven Operational Insights", // Removed page title
     "/training": "Training Hub",
     "/courses": "Course Library",
     "/quizzes": "My Quizzes", 
@@ -266,7 +264,7 @@ function LayoutWithSidebar({
       <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r">
         <SidebarHeader className="h-16 flex items-center justify-center">
           <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
-            <Plane className="w-8 h-8 text-primary" />
+            <Plane className="w-8 h-8 text-sidebar-primary" /> {/* Changed to text-sidebar-primary */}
             <span className="font-bold text-xl group-data-[collapsible=icon]:hidden">AirCrew Hub</span>
           </Link>
         </SidebarHeader>

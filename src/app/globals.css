@@ -42,13 +42,13 @@ body {
     --radius: 0.5rem;
 
     /* Sidebar specific colors */
-    --sidebar-background: 207 45% 28%; /* Darker blue shade */
+    --sidebar-background: 207 45% 38%; /* Lighter blue shade - Original: 207 45% 28% */
     --sidebar-foreground: 207 50% 92%; /* Light text for dark sidebar */
     --sidebar-primary: 207 51% 75%; /* Lighter primary for active items */
     --sidebar-primary-foreground: 207 45% 20%; /* Darker text for active items */
-    --sidebar-accent: 207 51% 40%; /* Accent for hover states */
+    --sidebar-accent: 207 51% 45%; /* Accent for hover states - Original: 207 51% 40% */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 207 45% 25%;
+    --sidebar-border: 207 45% 33%; /* Adjusted border - Original: 207 45% 25% */
     --sidebar-ring: 207 51% 65%;
   }
 
@@ -86,13 +86,13 @@ body {
     --chart-5: 27 75% 60%;
 
     /* Sidebar specific colors for dark mode */
-    --sidebar-background: 210 20% 10%; /* Even darker for sidebar */
+    --sidebar-background: 210 20% 18%; /* Lighter dark - Original: 210 20% 10% */
     --sidebar-foreground: 207 40% 80%;
     --sidebar-primary: 207 51% 55%;
     --sidebar-primary-foreground: 210 20% 5%;
-    --sidebar-accent: 207 51% 25%;
+    --sidebar-accent: 207 51% 30%; /* Adjusted dark accent - Original: 207 51% 25% */
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 210 20% 15%;
+    --sidebar-border: 210 20% 23%; /* Adjusted dark border - Original: 210 20% 15% */
     --sidebar-ring: 207 51% 50%;
   }
 }
