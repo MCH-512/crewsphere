@@ -23,7 +23,7 @@ const GeneratedChapterSchema = z.object({
   // Children chapters can be a follow-up or manual step.
 });
 
-export const CourseGenerationInputSchema = z.object({
+const CourseGenerationInputSchema = z.object({
   courseTopic: z.string().min(5, "Course topic must be at least 5 characters.").describe("The main topic or subject of the course to be generated."),
   targetAudience: z.enum(["Cabin Crew", "Pilot", "Ground Staff", "All Crew", "Other"]).default("All Crew").describe("The primary audience for this course."),
   numberOfChapters: z.coerce.number().int().min(1, "Minimum 1 chapter.").max(10, "Maximum 10 chapters.").default(5).describe("Approximate number of chapters desired."),
@@ -31,7 +31,7 @@ export const CourseGenerationInputSchema = z.object({
 });
 export type CourseGenerationInput = z.infer<typeof CourseGenerationInputSchema>;
 
-export const CourseGenerationOutputSchema = z.object({
+const CourseGenerationOutputSchema = z.object({
   courseTitle: z.string().describe("A concise and relevant title for the generated course."),
   suggestedCategory: z.string().describe("A suggested category for this course (e.g., Safety, CRM, Aircraft Systems)."),
   description: z.string().describe("A brief overview of the course content and objectives."),
