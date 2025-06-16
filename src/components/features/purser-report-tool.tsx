@@ -69,6 +69,23 @@ interface AddedCrewEvaluation {
     evaluation: string;
 }
 
+const passengerLoadSchema = z.object({
+  total: z.coerce.number().int().min(0, "Min 0 passengers"),
+  adults: z.coerce.number().int().min(0, "Min 0 adults"),
+  children: z.coerce.number().int().min(0, "Min 0 children"),
+  infants: z.coerce.number().int().min(0, "Min 0 infants"),
+}).superRefine((data, ctx) => {
+  const sumOfParts = data.adults + data.children + data.infants;
+  if (data.total < sumOfParts) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Total (${data.total}) cannot be less than the sum of Adults, Children, and Infants (${sumOfParts}).`,
+      path: ["total"],
+    });
+  }
+});
+
+
 const purserReportFormSchema = z.object({
   flightNumber: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars"),
   flightDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format. Use YYYY-MM-DD." }),
@@ -84,12 +101,7 @@ const purserReportFormSchema = z.object({
   cabinCrewR2: z.string().optional(),
   otherCrewMembers: z.string().optional(),
 
-  passengerLoad: z.object({
-    total: z.coerce.number().int().min(0, "Min 0 passengers"),
-    adults: z.coerce.number().int().min(0, "Min 0 adults"),
-    children: z.coerce.number().int().min(0, "Min 0 children"),
-    infants: z.coerce.number().int().min(0, "Min 0 infants"),
-  }),
+  passengerLoad: passengerLoadSchema, 
   generalFlightSummary: z.string().min(10, "Min 10 characters for summary."),
 });
 
@@ -143,14 +155,14 @@ export function PurserReportTool() {
       passengerLoad: { total: 0, adults: 0, children: 0, infants: 0 },
       generalFlightSummary: "",
     },
-    mode: "onChange", // Ensure dynamic validation
+    mode: "onChange", 
   });
 
   React.useEffect(() => {
     const fetchInitialFlights = async () => {
       setIsLoadingFlights(true);
       try {
-        // Fetch recent/upcoming flights, adjust limit as needed
+        
         const flightsQuery = query(collection(db, "flights"), orderBy("scheduledDepartureDateTimeUTC", "desc"), limit(50)); 
         const querySnapshot = await getDocs(flightsQuery);
         const fetchedFlightsData: FlightForSelection[] = [];
@@ -191,11 +203,11 @@ export function PurserReportTool() {
         let rolesToQuery: string[] = [];
 
         if (Array.isArray(roles) && roles.includes("purser") && roles.includes("instructor")) {
-            rolesToQuery = ["purser", "Purser", "instructor", "Instructor"]; // Case-insensitive for specific roles
+            rolesToQuery = ["purser", "Purser", "instructor", "Instructor"]; 
         } else if (typeof roles === 'string') {
-            rolesToQuery = [roles]; // If it's a single string role
+            rolesToQuery = [roles, roles.charAt(0).toUpperCase() + roles.slice(1)]; 
         } else if (Array.isArray(roles)) {
-            rolesToQuery = roles; // If it's already an array of specific roles
+            rolesToQuery = roles.flatMap(role => [role, role.charAt(0).toUpperCase() + role.slice(1)]);
         }
         
         q = query(usersCollectionRef, where("role", "in", rolesToQuery), where("accountStatus", "==", "active"));
@@ -226,7 +238,7 @@ export function PurserReportTool() {
   const handleFlightSelection = (flightId: string) => {
     if (flightId === "_MANUAL_ENTRY_") {
         form.reset({
-            ...form.getValues(), // Keep other form values
+            ...form.getValues(), 
             flightNumber: "", flightDate: defaultDate(), departureAirport: "", 
             arrivalAirport: "", aircraftTypeRegistration: "" 
         });
@@ -239,7 +251,7 @@ export function PurserReportTool() {
         form.setValue("flightDate", new Date(selectedFlight.scheduledDepartureDateTimeUTC).toISOString().split('T')[0]);
         form.setValue("departureAirport", selectedFlight.departureAirport);
         form.setValue("arrivalAirport", selectedFlight.arrivalAirport);
-        form.setValue("aircraftTypeRegistration", selectedFlight.aircraftType); // Use aircraftType from flight record
+        form.setValue("aircraftTypeRegistration", selectedFlight.aircraftType); 
         setSelectedFlightIdState(flightId);
     }
   };
@@ -342,7 +354,6 @@ export function PurserReportTool() {
       const docRef = await addDoc(collection(db, "purserReports"), reportDataToSave);
       savedReportId = docRef.id;
 
-      // If a flight was selected, update its purserReportSubmitted status
       if (selectedFlightIdState && savedReportId) {
         const flightDocRef = doc(db, "flights", selectedFlightIdState);
         await updateDoc(flightDocRef, {
@@ -376,16 +387,17 @@ export function PurserReportTool() {
   if (form.getValues('cabinCrewR2') && form.getValues('cabinCrewR2') !== PLACEHOLDER_NONE_VALUE) availableEvalRoles.push({label: `R2: ${form.getValues('cabinCrewR2')}`, value: 'R2'});
 
   const purserSelectPlaceholder = isLoadingSupervisingCrew
-    ? "Loading..."
+    ? "Loading Supervising Crew..."
     : supervisingCrewList.length === 0
-    ? "No supervising crew available"
+    ? "No Supervising Crew Available"
     : "Select Purser/Instructor";
 
   const purserDisabledItemText = isLoadingSupervisingCrew
     ? "Loading..."
     : supervisingCrewList.length === 0
-    ? "No supervising crew available"
+    ? "No Supervising Crew Available"
     : "Select Supervising Crew";
+
 
   return (
     <div className="space-y-6">
@@ -461,12 +473,12 @@ export function PurserReportTool() {
                 <FormField control={form.control} name="cabinCrewR1" render={({ field }) => (<FormItem><FormLabel>Cabin Crew (R1)</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingCabinCrew}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingCabinCrew ? "Loading..." : "Select R1"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{cabinCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="cabinCrewL2" render={({ field }) => (<FormItem><FormLabel>Cabin Crew (L2)</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingCabinCrew}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingCabinCrew ? "Loading..." : "Select L2"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{cabinCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="cabinCrewR2" render={({ field }) => (<FormItem><FormLabel>Cabin Crew (R2)</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingCabinCrew}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingCabinCrew ? "Loading..." : "Select R2"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{cabinCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
-            </div><FormField control={form.control} name="otherCrewMembers" render={({ field }) => (<FormItem><FormLabel>Other Crew / Notes</FormLabel><FormControl><Textarea placeholder="Additional crew or notes..." {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
+            </div><FormField control={form.control} name="otherCrewMembers" render={({ field }) => (<FormItem><FormLabel>Other Crew / Notes</FormLabel><FormControl><Textarea placeholder="Names and roles of other crew members, or notes on general crew matters..." {...field} /></FormControl><FormDescription>E.g., Relief crew, trainees, or notes on teamwork, communication, etc.</FormDescription><FormMessage /></FormItem>)} />
             </CardContent></Card>
 
           <Card className="shadow-sm"><CardHeader><CardTitle className="text-xl">Passenger Load</CardTitle><CardDescription>Passenger count by category.</CardDescription></CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <FormField control={form.control} name="passengerLoad.total" render={({ field }) => (<FormItem><FormLabel>Total</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="passengerLoad.total" render={({ field }) => (<FormItem><FormLabel>Total Passengers</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="passengerLoad.adults" render={({ field }) => (<FormItem><FormLabel>Adults</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="passengerLoad.children" render={({ field }) => (<FormItem><FormLabel>Children</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="passengerLoad.infants" render={({ field }) => (<FormItem><FormLabel>Infants</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -474,7 +486,7 @@ export function PurserReportTool() {
             
           <Card className="shadow-sm"><CardHeader><CardTitle className="text-xl">Report Sections</CardTitle><CardDescription>Details for each relevant section.</CardDescription></CardHeader>
             <CardContent className="space-y-6">
-              <FormField control={form.control} name="generalFlightSummary" render={({ field }) => (<FormItem><FormLabel>General Flight Summary</FormLabel><FormControl><Textarea placeholder="Overall flight conduct..." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="generalFlightSummary" render={({ field }) => (<FormItem><FormLabel>General Flight Summary</FormLabel><FormControl><Textarea placeholder="Overall flight conduct, punctuality, atmosphere, IFE status, any general incidents or positive feedback..." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <Separator />
               <div className="space-y-4 p-4 border rounded-md"><h3 className="text-md font-semibold">Add Report Section</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                   <FormItem><FormLabel>Section Type</FormLabel><Select value={currentSectionType} onValueChange={(v) => setCurrentSectionType(v as ReportSectionType)}><FormControl><SelectTrigger><SelectValue placeholder="Select section type" /></SelectTrigger></FormControl><SelectContent>{reportSectionTypes.map(t => (<SelectItem key={t} value={t}>{t}</SelectItem>))}</SelectContent></Select></FormItem>
@@ -514,4 +526,4 @@ export function PurserReportTool() {
   );
 }
 
-
+    
