@@ -20,13 +20,12 @@ import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebas
 import { Progress } from "@/components/ui/progress";
 import 'react-quill/dist/quill.snow.css';
 import type { Chapter, Resource } from '@/schemas/course-schema';
-import type { ReactQuillProps } from 'react-quill';
 
 const ReactQuill = dynamic(
   () => import('react-quill'),
   {
     ssr: false,
-    loading: () => <div className="p-2 border rounded-md min-h-[200px] bg-muted animate-pulse">Loading editor...</div>,
+    loading: () => <div className="p-2 border rounded-md min-h-[200px] bg-muted animate-pulse flex items-center justify-center">Loading editor...</div>,
   }
 );
 
@@ -48,11 +47,6 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
   const { watch, setValue } = useFormContext();
   const { toast } = useToast();
   const fileInputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
-  const [isClient, setIsClient] = React.useState(false);
-
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const [uploadStatus, setUploadStatus] = React.useState<{ resourceIndex: number | null; progress: number | null; isLoading: boolean }>({ resourceIndex: null, progress: null, isLoading: false });
 
@@ -175,22 +169,16 @@ const CourseContentBlock: React.FC<CourseContentBlockProps> = ({
             <FormItem>
               <FormLabel>Content</FormLabel>
               <FormControl>
-                {isClient ? (
-                  <ReactQuill
-                    theme="snow"
-                    value={field.value || ""}
-                    onChange={field.onChange}
-                    modules={{
-                      toolbar: [['bold', 'italic', 'underline', 'strike'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'image', 'video'], ['clean'], [{ 'header': [1, 2, 3, 4, 5, 6, false] }], [{ 'align': [] }]],
-                    }}
-                    placeholder={`Enter content for ${level === 0 ? 'chapter' : 'section'} ${index + 1}...`}
-                    className="min-h-[200px] bg-background" 
-                  />
-                ) : (
-                  <div className="p-2 border rounded-md min-h-[200px] bg-muted animate-pulse flex items-center justify-center">
-                    Initializing editor...
-                  </div>
-                )}
+                <ReactQuill
+                  theme="snow"
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  modules={{
+                    toolbar: [['bold', 'italic', 'underline', 'strike'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'image', 'video'], ['clean'], [{ 'header': [1, 2, 3, 4, 5, 6, false] }], [{ 'align': [] }]],
+                  }}
+                  placeholder={`Enter content for ${level === 0 ? 'chapter' : 'section'} ${index + 1}...`}
+                  className="min-h-[200px] bg-background" 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
