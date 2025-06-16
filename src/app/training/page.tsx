@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2, GraduationCap, List } from "lucide-react"; // Changed icon
+import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2, GraduationCap, List, Download, Link as LinkIcon, ImageIcon, Video } from "lucide-react"; // Changed icon
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
@@ -129,7 +129,6 @@ export default function TrainingHubPage() {
         const isMandatoryNotPassed = courseData.mandatory && userProgress.quizStatus !== 'Passed';
         const isInProgress = userProgress.contentStatus === 'InProgress' || userProgress.quizStatus === 'Attempted' || userProgress.quizStatus === 'Failed';
         
-        // Only include courses that are mandatory and not passed, OR are in progress
         if (isMandatoryNotPassed || isInProgress) {
             relevantCourses.push({ ...courseData, quizTitle: currentQuizTitle, progress: userProgress });
         }
