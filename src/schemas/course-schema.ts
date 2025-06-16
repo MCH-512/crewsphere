@@ -31,22 +31,27 @@ export type Chapter = z.infer<typeof chapterSchema>;
 
 // Main Course Form Schema
 export const courseFormSchema = z.object({
-  // Course Details
+  // Course Details (some used as AI input)
   title: z.string().min(5, "Title must be at least 5 characters.").max(150),
   category: z.string({ required_error: "Please select a course category." }),
   courseType: z.string({ required_error: "Please select a course type." }),
   referenceBody: z.string().optional(),
-  description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
+  description: z.string().min(10, "Description must be at least 10 characters.").max(1000), // AI will pre-fill
   duration: z.string({ required_error: "Please select an estimated duration." }),
   mandatory: z.boolean().default(false),
-  associatedFile: z.custom<FileList>().optional().describe("Main course file like a global PDF if any."), // This might be deprecated if resources per chapter cover all needs.
+  associatedFile: z.custom<FileList>().optional().describe("Main course file like a global PDF if any."),
   imageHint: z.string().max(50).optional().describe("Keywords for course image (e.g., emergency exit)"),
-  existingFileUrl: z.string().optional(), // For edit form, if `associatedFile` is kept.
+  existingFileUrl: z.string().optional(), 
 
-  // Hierarchical Chapters/Content Structure
+  // AI Generation Inputs (part of the form, but distinctly for AI config)
+  targetAudience: z.enum(["Cabin Crew", "Pilot", "Ground Staff", "All Crew", "Other"]).default("All Crew"),
+  numberOfChapters: z.coerce.number().int().min(1).max(10).default(5),
+  detailLevel: z.enum(["overview", "standard", "detailed"]).default("standard"),
+
+  // Hierarchical Chapters/Content Structure (AI will pre-fill)
   chapters: z.array(chapterSchema).min(1, "Course must have at least one chapter."),
 
-  // Quiz title (quiz questions will be AI generated later or managed separately)
+  // Quiz title (AI will pre-fill based on course title)
   quizTitle: z.string().min(5, "Quiz Title must be at least 5 characters.").max(100),
   randomizeQuestions: z.boolean().default(false).describe("AI generated quiz - randomize question order?"),
   randomizeAnswers: z.boolean().default(false).describe("AI generated quiz - randomize MCQ answer order?"),
@@ -67,7 +72,7 @@ export const defaultResourceValue: Resource = {
   filename: "",
 };
 
-export const defaultChapterValue: Chapter = { // Ensure it matches Chapter type
+export const defaultChapterValue: Chapter = { 
   title: "",
   content: "",
   resources: [],
@@ -80,14 +85,20 @@ export const defaultValues: CourseFormValues = {
   category: "",
   courseType: "Initial Training",
   referenceBody: "",
-  description: "",
+  description: "", // Will be AI-filled
   duration: "1 hour",
   mandatory: false,
   imageHint: "",
   existingFileUrl: "",
-  associatedFile: undefined, // Make sure to initialize optional fields for react-hook-form
-  chapters: [defaultChapterValue],
-  quizTitle: "Final Assessment",
+  associatedFile: undefined, 
+  
+  // AI Input Defaults
+  targetAudience: "All Crew",
+  numberOfChapters: 5,
+  detailLevel: "standard",
+
+  chapters: [defaultChapterValue], // Will be AI-filled
+  quizTitle: "", // Will be AI-filled
   randomizeQuestions: false,
   randomizeAnswers: false,
   passingThreshold: 80,
@@ -95,3 +106,4 @@ export const defaultValues: CourseFormValues = {
   certificateLogoUrl: "https://placehold.co/150x50.png",
   certificateSignature: "Express Airline Training Department",
 };
+
