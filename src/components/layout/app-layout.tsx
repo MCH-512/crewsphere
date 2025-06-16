@@ -58,14 +58,15 @@ import {
   Inbox, 
   ClipboardCheck, 
   FilePlus,
-  Users, 
+  Users,
+  Wand2, // Added Wand2 for AI Course Generator
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
 import { useToast } from "@/hooks/use-toast";
 import { useNotification } from "@/contexts/notification-context"; 
 import { Breadcrumbs } from "./breadcrumbs"; 
-import Image from "next/image"; // Added Image import
+import Image from "next/image";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -75,7 +76,7 @@ const navItems = [
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
   { type: "separator", key: "sep1" },
-  { href: "/training", label: "Training Hub", icon: GraduationCap },
+  { href: "/training", label: "AI Course Generator", icon: Wand2 }, // Changed label and icon
   { href: "/courses", label: "Course Library", icon: Library },
   { href: "/quizzes", label: "My Quizzes", icon: ListChecks },
   { href: "/certificates", label: "My Certificates", icon: Award },
@@ -138,7 +139,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/flight-duty-calculator": "Flight Duty Calculator",
     "/purser-reports": "Submit Purser Report",
     "/my-purser-reports": "My Purser Reports", 
-    "/training": "Training Hub",
+    "/training": "AI Course Generator", // Changed title
     "/courses": "Course Library",
     "/quizzes": "My Quizzes", 
     "/certificates": "My Certificates",
@@ -264,7 +265,7 @@ function LayoutWithSidebar({
       <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r">
         <SidebarHeader className="h-16 flex items-center justify-center">
           <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
-            <Plane className="w-8 h-8 text-sidebar-primary" /> {/* Changed to text-sidebar-primary */}
+            <Plane className="w-8 h-8 text-sidebar-primary" />
             <span className="font-bold text-xl group-data-[collapsible=icon]:hidden">AirCrew Hub</span>
           </Link>
         </SidebarHeader>
