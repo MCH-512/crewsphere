@@ -85,7 +85,12 @@ Please generate the following in valid JSON format conforming to the output sche
 4.  **chapters**: An array of approximately {{numberOfChapters}} chapters. Each chapter object *must* have:
     *   **title**: A specific and descriptive title for the chapter.
     *   **description**: A brief (1-2 sentences) overview of this chapter's specific learning objectives and what key topics it covers.
-    *   **content**: Detailed pedagogical content. This should include key learning points, procedures, best practices, examples, or case studies. Use Markdown for formatting (bullet points, bolding, etc.). If 'detailed', provide substantial content. If 'standard', provide key points and summaries. If 'overview', provide high-level summaries. Focus on practical application and operational relevance for {{targetAudience}}.
+    *   **content**: Detailed pedagogical content. This should include key learning points, procedures, best practices, examples, or case studies.
+        Use Markdown for general formatting (like **bolding** for emphasis).
+        For lists of items:
+        - If the list represents steps in a procedure or a sequence, use numbered lists (e.g., \`1. First step\`, \`2. Second step\`).
+        - For other types of lists, consider using relevant emojis as list markers (e.g., \`✅ Key takeaway\`, \`✈️ Flight-specific detail\`, \`💡 Important note\`) for better visual appeal and readability, instead of plain dashes or asterisks.
+        If the detail level is 'detailed', provide substantial content. If 'standard', provide key points and summaries. If 'overview', provide high-level summaries. Focus on practical application and operational relevance for {{targetAudience}}.
 5.  **mainQuiz** (Optional but highly recommended): An array of 3-5 sample quiz questions to assess understanding of the core concepts. Each question object should have:
     *   **question**: The full text of the question.
     *   **type**: The question type (must be one of "mcq", "tf", "short").
@@ -103,7 +108,7 @@ Example chapter structure:
 {
   "title": "Chapter X: Handling In-flight Medical Emergencies",
   "description": "This chapter covers the assessment of medical situations, communication protocols with ground medical support, and the use of onboard medical kits for {{targetAudience}}.",
-  "content": "- Initial assessment: DRSABCD protocol.\n- Utilizing MedLink/StatMD: Information to provide.\n- Overview of First Aid Kit (FAK) and Emergency Medical Kit (EMK) contents and usage for common scenarios (e.g., fainting, minor burns, allergic reactions).\n- Documentation and reporting procedures post-incident."
+  "content": "1. Initial assessment: DRSABCD protocol.\n➡️ Utilizing MedLink/StatMD: Information to provide.\n✅ Overview of First Aid Kit (FAK) and Emergency Medical Kit (EMK) contents and usage for common scenarios (e.g., fainting, minor burns, allergic reactions).\n- Documentation and reporting procedures post-incident."
 }
 
 Ensure the output is valid JSON and all specified fields are present as described in the output schema.
@@ -132,3 +137,4 @@ const courseGeneratorFlow = ai.defineFlow(
     return { ...output, chapters: chaptersWithIds };
   }
 );
+
