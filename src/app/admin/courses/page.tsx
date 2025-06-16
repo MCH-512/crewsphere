@@ -33,7 +33,7 @@ interface Course {
   description?: string;
   duration?: string;
   quizId?: string;
-  certificateRuleId?: string; // Added for more complete deletion
+  certificateRuleId?: string; 
   published?: boolean;
   createdAt?: Timestamp;
   createdBy?: string;
@@ -129,9 +129,6 @@ export default function AdminCoursesPage() {
         batch.delete(certRuleRef);
       }
       
-      // Note: Deleting user progress would be more complex and might require Cloud Functions for larger scale
-      // For now, we leave user progress, it just won't link to a course anymore.
-
       await batch.commit();
       toast({ title: "Course Deleted", description: `Course "${courseToDelete.title}" and its associated quiz/questions have been deleted.` });
       fetchCourses(); 

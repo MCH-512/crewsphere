@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -25,11 +25,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit3 as EditIcon, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList } from "lucide-react";
+import { Edit3 as EditIconMain, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, HelpCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
-import { collection, doc, getDoc, writeBatch, serverTimestamp, query, where, getDocs, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDoc, writeBatch, serverTimestamp, query, where, getDocs, deleteDoc, addDoc, Timestamp } from "firebase/firestore";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { Progress } from "@/components/ui/progress";
 import { useRouter, useParams } from "next/navigation";
@@ -46,7 +46,17 @@ import {
   defaultChapterValue, 
   defaultValues as initialFormDefaultValues 
 } from "@/schemas/course-schema";
-import CourseContentBlock from "@/components/admin/course-content-block"; // Import the new component
+import CourseContentBlock from "@/components/admin/course-content-block";
+import { 
+  questionFormSchema, 
+  type QuestionFormValues, 
+  defaultQuestionFormValues,
+  defaultQuestionOptionValue,
+  type QuestionType,
+  type StoredQuestion,
+  questionTypes as qTypesList
+} from "@/schemas/quiz-question-schema";
+import { Separator } from "@/components/ui/separator";
 
 export default function EditComprehensiveCoursePage() {
   const { toast } = useToast();
@@ -62,16 +72,64 @@ export default function EditComprehensiveCoursePage() {
   const [initialQuizId, setInitialQuizId] = React.useState<string | null>(null);
   const [initialCertRuleId, setInitialCertRuleId] = React.useState<string | null>(null);
 
-  const form = useForm<CourseFormValues>({
+  const [quizQuestions, setQuizQuestions] = React.useState<StoredQuestion[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = React.useState(false);
+  const [isAddingQuestion, setIsAddingQuestion] = React.useState(false);
+
+  const courseEditForm = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
     defaultValues: initialFormDefaultValues, 
     mode: "onBlur",
   });
 
   const { fields: chapterFields, append: appendChapter, remove: removeChapter, replace: replaceChapters } = useFieldArray({
-    control: form.control,
+    control: courseEditForm.control,
     name: "chapters",
   });
+
+  const addQuestionForm = useForm<QuestionFormValues>({
+    resolver: zodResolver(questionFormSchema),
+    defaultValues: defaultQuestionFormValues,
+    mode: "onChange",
+  });
+
+  const { fields: mcqOptionFields, append: appendMcqOption, remove: removeMcqOption } = useFieldArray({
+    control: addQuestionForm.control,
+    name: "options",
+  });
+  
+  const watchedQuestionType = addQuestionForm.watch("questionType");
+
+  React.useEffect(() => {
+    if (watchedQuestionType === "tf") {
+      addQuestionForm.setValue("options", [{ text: "True" }, { text: "False" }]);
+      addQuestionForm.setValue("correctAnswer", "True");
+    } else if (watchedQuestionType === "mcq") {
+      if (!addQuestionForm.getValues("options") || addQuestionForm.getValues("options")?.length === 0) {
+        addQuestionForm.setValue("options", [defaultQuestionOptionValue, defaultQuestionOptionValue]);
+      }
+    } else if (watchedQuestionType === "short") {
+      addQuestionForm.setValue("options", []);
+    }
+  }, [watchedQuestionType, addQuestionForm]);
+
+
+  const fetchQuizQuestions = React.useCallback(async (quizId: string) => {
+    if (!quizId) return;
+    setIsLoadingQuestions(true);
+    try {
+      const q = query(collection(db, "questions"), where("quizId", "==", quizId), orderBy("createdAt", "asc"));
+      const querySnapshot = await getDocs(q);
+      const questions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredQuestion));
+      setQuizQuestions(questions);
+    } catch (error) {
+      console.error("Error fetching quiz questions:", error);
+      toast({ title: "Error", description: "Could not load quiz questions.", variant: "destructive" });
+    } finally {
+      setIsLoadingQuestions(false);
+    }
+  }, [toast]);
+
 
   React.useEffect(() => {
     if (!authLoading && (!user || user.role !== 'admin')) {
@@ -100,6 +158,7 @@ export default function EditComprehensiveCoursePage() {
           if (courseData.quizId) {
             const quizSnap = await getDoc(doc(db, "quizzes", courseData.quizId));
             if (quizSnap.exists()) quizData = quizSnap.data();
+            fetchQuizQuestions(courseData.quizId); // Fetch questions after getting quizId
           }
           
           let certRuleData = null;
@@ -108,7 +167,7 @@ export default function EditComprehensiveCoursePage() {
             if (certRuleSnap.exists()) certRuleData = certRuleSnap.data();
           }
 
-          form.reset({
+          courseEditForm.reset({
             title: courseData.title || "",
             category: courseData.category || "",
             courseType: courseData.courseType || "Initial Training",
@@ -124,7 +183,7 @@ export default function EditComprehensiveCoursePage() {
             randomizeAnswers: quizData?.randomizeAnswers || false,
             passingThreshold: certRuleData?.passingThreshold || 80,
             certificateExpiryDays: certRuleData?.expiryDurationDays !== undefined ? certRuleData.expiryDurationDays : 365,
-            certificateLogoUrl: certRuleData?.logoURL || "https://placehold.co/150x50.png",
+            certificateLogoUrl: certRuleData?.certificateLogoUrl || "https://placehold.co/150x50.png",
             certificateSignature: certRuleData?.signatureTextOrURL || "Express Airline Training Department",
           });
           replaceChapters(courseData.chapters && courseData.chapters.length > 0 ? courseData.chapters.map((ch: any) => ({...ch})) : [defaultChapterValue]);
@@ -138,9 +197,9 @@ export default function EditComprehensiveCoursePage() {
       };
       loadCourseData();
     }
-  }, [courseId, user, authLoading, router, toast, form, replaceChapters]);
+  }, [courseId, user, authLoading, router, toast, courseEditForm, replaceChapters, fetchQuizQuestions]);
 
-  async function onSubmit(data: CourseFormValues) {
+  async function onCourseSubmit(data: CourseFormValues) {
     if (!user || user.role !== 'admin' || !courseId || !initialQuizId || !initialCertRuleId) {
       toast({ title: "Error", description: "Missing required information to update course.", variant: "destructive" });
       return;
@@ -194,10 +253,6 @@ export default function EditComprehensiveCoursePage() {
         title: data.quizTitle, randomizeQuestions: data.randomizeQuestions, randomizeAnswers: data.randomizeAnswers,
       });
 
-      // For simplicity, we remove all old questions and add new ones if the quiz structure was part of this form.
-      // However, since questions are now separate, we only update quiz title/options.
-      // If question management were part of this, we'd need to handle question updates more granularly.
-
       const certRuleDocRef = doc(db, "certificateRules", initialCertRuleId);
       batch.update(certRuleDocRef, {
         passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays,
@@ -218,8 +273,36 @@ export default function EditComprehensiveCoursePage() {
       setUploadProgress(null);
     }
   }
+
+  const handleAddQuestion = async (data: QuestionFormValues) => {
+    if (!user || !initialQuizId) {
+      toast({ title: "Error", description: "Cannot add question. Quiz ID or user missing.", variant: "destructive" });
+      return;
+    }
+    setIsAddingQuestion(true);
+    try {
+      const questionPayload = {
+        quizId: initialQuizId,
+        questionText: data.questionText,
+        questionType: data.questionType,
+        options: data.options ? data.options.map(opt => opt.text) : [],
+        correctAnswer: data.correctAnswer,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      await addDoc(collection(db, "questions"), questionPayload);
+      toast({ title: "Question Added", description: "New question saved successfully." });
+      addQuestionForm.reset(defaultQuestionFormValues);
+      fetchQuizQuestions(initialQuizId); // Refresh the list
+    } catch (error) {
+      console.error("Error adding question:", error);
+      toast({ title: "Failed to Add Question", description: "Could not save the question.", variant: "destructive" });
+    } finally {
+      setIsAddingQuestion(false);
+    }
+  };
   
-  const watchedFormValues = form.watch();
+  const watchedFormValues = courseEditForm.watch();
 
   if (authLoading || isLoadingData) {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> <p className="ml-3">Loading course data...</p></div>;
@@ -241,39 +324,39 @@ export default function EditComprehensiveCoursePage() {
       <Card className="shadow-xl">
         <CardHeader>
           <CardTitle className="text-3xl font-headline flex items-center">
-            <EditIcon className="mr-3 h-8 w-8 text-primary" />
+            <EditIconMain className="mr-3 h-8 w-8 text-primary" />
             Edit Comprehensive Training Course
           </CardTitle>
           <CardDescription>
-            Modify the details of the training course, its hierarchical content, quiz settings, and certification rules.
+            Modify the details of the training course, its content, quiz settings, and certification rules.
           </CardDescription>
         </CardHeader>
       </Card>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
+      <Form {...courseEditForm}>
+        <form onSubmit={courseEditForm.handleSubmit(onCourseSubmit)} className="space-y-10">
           {/* Section 1: Course Details */}
           <Card className="shadow-lg">
             <CardHeader><CardTitle className="text-xl font-semibold">1. Course Details</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField control={form.control} name="title" render={({ field }) => (
+                <FormField control={courseEditForm.control} name="title" render={({ field }) => (
                   <FormItem><FormLabel>Course Title*</FormLabel><FormControl><Input placeholder="e.g., Advanced First Aid Onboard" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <FormField control={form.control} name="category" render={({ field }) => (
+                <FormField control={courseEditForm.control} name="category" render={({ field }) => (
                   <FormItem><FormLabel>Category*</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course category" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
                 )} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField control={form.control} name="courseType" render={({ field }) => (
+                <FormField control={courseEditForm.control} name="courseType" render={({ field }) => (
                   <FormItem><FormLabel>Course Type*</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course type" /></SelectTrigger></FormControl><SelectContent>{courseTypes.map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
                 )} />
-                <FormField control={form.control} name="referenceBody" render={({ field }) => (
+                <FormField control={courseEditForm.control} name="referenceBody" render={({ field }) => (
                   <FormItem><FormLabel>Reference Document/Body</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select reference body" /></SelectTrigger></FormControl><SelectContent>{referenceBodyOptions.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent></Select><FormDescription>Optional. Specify the main reference document or body.</FormDescription><FormMessage /></FormItem>
                 )} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField control={form.control} name="duration" render={({ field }) => (
+                <FormField control={courseEditForm.control} name="duration" render={({ field }) => (
                     <FormItem><FormLabel>Estimated Duration*</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Select estimated duration" /></SelectTrigger></FormControl>
@@ -282,15 +365,15 @@ export default function EditComprehensiveCoursePage() {
                     <FormMessage />
                     </FormItem>
                 )} />
-                <FormField control={form.control} name="imageHint" render={({ field }) => (
+                <FormField control={courseEditForm.control} name="imageHint" render={({ field }) => (
                   <FormItem><FormLabel>Course Image Hint (Optional)</FormLabel><FormControl><Input placeholder="e.g., emergency exit, first aid" {...field} value={field.value || ""} /></FormControl><FormDescription>Keywords for course image (e.g., cockpit, safety vest).</FormDescription><FormMessage /></FormItem>
               )} />
               </div>
-              <FormField control={form.control} name="description" render={({ field }) => (
+              <FormField control={courseEditForm.control} name="description" render={({ field }) => (
                 <FormItem><FormLabel>Description*</FormLabel><FormControl><Textarea placeholder="Detailed overview of the course..." className="min-h-[120px]" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField
-                control={form.control}
+                control={courseEditForm.control}
                 name="mandatory"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
@@ -302,7 +385,7 @@ export default function EditComprehensiveCoursePage() {
                   </FormItem>
                 )}
               />
-              <FormField control={form.control} name="associatedFile" render={({ field: { onChange, value, ...rest }}) => (
+              <FormField control={courseEditForm.control} name="associatedFile" render={({ field: { onChange, value, ...rest }}) => (
                 <FormItem>
                   <FormLabel className="flex items-center"><UploadCloud className="mr-2 h-5 w-5" />Main Course Material (Optional)</FormLabel>
                    {watchedFormValues.existingFileUrl && (
@@ -329,7 +412,7 @@ export default function EditComprehensiveCoursePage() {
               {chapterFields.map((chapterItem, index) => (
                 <CourseContentBlock
                   key={chapterItem.id}
-                  control={form.control}
+                  control={courseEditForm.control}
                   name="chapters"
                   index={index}
                   removeSelf={() => chapterFields.length > 1 ? removeChapter(index) : toast({title: "Cannot Remove", description:"Course must have at least one chapter.", variant:"destructive"})}
@@ -342,39 +425,177 @@ export default function EditComprehensiveCoursePage() {
 
           {/* Section 2: Quiz Settings */}
           <Card className="shadow-lg">
-            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><FileTextIcon className="mr-2 h-5 w-5 text-primary" /> Main Course Quiz Settings</CardTitle><CardDescription>Configure the main quiz. Questions will be AI-generated based on course content or managed externally.</CardDescription></CardHeader>
+            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><FileTextIcon className="mr-2 h-5 w-5 text-primary" /> Main Course Quiz Settings</CardTitle><CardDescription>Configure the main quiz parameters.</CardDescription></CardHeader>
             <CardContent className="space-y-6">
-              <FormField control={form.control} name="quizTitle" render={({ field }) => (
+              <FormField control={courseEditForm.control} name="quizTitle" render={({ field }) => (
                 <FormItem><FormLabel>Quiz Title*</FormLabel><FormControl><Input placeholder="e.g., Final Assessment for Advanced First Aid" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <div className="space-y-2">
-                <FormField control={form.control} name="randomizeQuestions" render={({ field }) => (
+                <FormField control={courseEditForm.control} name="randomizeQuestions" render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><FormLabel>Randomize Question Order?</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                 )} />
-                <FormField control={form.control} name="randomizeAnswers" render={({ field }) => (
+                <FormField control={courseEditForm.control} name="randomizeAnswers" render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><FormLabel>Randomize Answer Order (for MCQs)?</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                 )} />
               </div>
-              <FormDescription>Note: Specific quiz questions are no longer managed here.</FormDescription>
             </CardContent>
           </Card>
+          
+          {/* Section 2.5: Manage Quiz Questions */}
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold flex items-center">
+                <HelpCircle className="mr-2 h-5 w-5 text-primary" /> Manage Quiz Questions
+              </CardTitle>
+              <CardDescription>Add, view, (and soon edit/delete) questions for this course's quiz.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Form {...addQuestionForm}>
+                <form onSubmit={addQuestionForm.handleSubmit(handleAddQuestion)} className="space-y-4 p-4 border rounded-md">
+                  <h4 className="text-md font-medium mb-2">Add New Question</h4>
+                  <FormField
+                    control={addQuestionForm.control}
+                    name="questionText"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Question Text</FormLabel>
+                        <FormControl><Textarea placeholder="Enter the question..." {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={addQuestionForm.control}
+                    name="questionType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Question Type</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {qTypesList.map(type => <SelectItem key={type} value={type}>{type.toUpperCase()}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {watchedQuestionType === 'mcq' && (
+                    <div className="space-y-2">
+                      <FormLabel>Options (MCQ)</FormLabel>
+                      {mcqOptionFields.map((optionField, optIndex) => (
+                        <div key={optionField.id} className="flex items-center gap-2">
+                          <FormField
+                            control={addQuestionForm.control}
+                            name={`options.${optIndex}.text`}
+                            render={({ field }) => (
+                              <FormItem className="flex-grow">
+                                <FormControl><Input placeholder={`Option ${optIndex + 1}`} {...field} /></FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button type="button" variant="ghost" size="icon" onClick={() => mcqOptionFields.length > 2 && removeMcqOption(optIndex)} disabled={mcqOptionFields.length <= 2}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button type="button" variant="outline" size="sm" onClick={() => appendMcqOption(defaultQuestionOptionValue)}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Option
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <FormField
+                    control={addQuestionForm.control}
+                    name="correctAnswer"
+                    render={({ field }) => {
+                      if (watchedQuestionType === 'tf') {
+                        return (
+                          <FormItem>
+                            <FormLabel>Correct Answer (True/False)</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || "True"}>
+                              <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                              <SelectContent><SelectItem value="True">True</SelectItem><SelectItem value="False">False</SelectItem></SelectContent>
+                            </Select><FormMessage />
+                          </FormItem>
+                        );
+                      }
+                      if (watchedQuestionType === 'mcq') {
+                        const options = addQuestionForm.getValues("options")?.map(opt => opt.text).filter(Boolean) || [];
+                        return (
+                          <FormItem>
+                            <FormLabel>Correct Answer (MCQ)</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl><SelectTrigger>
+                                <SelectValue placeholder={options.length > 0 ? "Select correct option" : "Add options first"}/>
+                              </SelectTrigger></FormControl>
+                              <SelectContent>
+                                {options.map((optText, i) => <SelectItem key={i} value={optText}>{optText}</SelectItem>)}
+                              </SelectContent>
+                            </Select><FormMessage />
+                          </FormItem>
+                        );
+                      }
+                      // Default for "short" answer
+                      return (
+                        <FormItem>
+                          <FormLabel>Correct Answer (Short Answer)</FormLabel>
+                          <FormControl><Input placeholder="Enter the exact correct answer" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                  <Button type="submit" disabled={isAddingQuestion} size="sm">
+                    {isAddingQuestion && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Add Question to Quiz
+                  </Button>
+                </form>
+              </Form>
+              <Separator className="my-6"/>
+              <div>
+                <h4 className="text-md font-medium mb-3">Existing Questions ({quizQuestions.length})</h4>
+                {isLoadingQuestions ? (
+                  <div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /><p className="ml-2 text-sm text-muted-foreground">Loading questions...</p></div>
+                ) : quizQuestions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No questions added to this quiz yet.</p>
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                    {quizQuestions.map((q, index) => (
+                      <Card key={q.id} className="p-3 bg-muted/40 text-sm">
+                        <p className="font-medium truncate">Q{index + 1}: {q.questionText}</p>
+                        <p className="text-xs text-muted-foreground">Type: {q.questionType.toUpperCase()} | Answer: <span className="font-mono text-primary">{q.correctAnswer}</span></p>
+                        {q.questionType === 'mcq' && q.options && q.options.length > 0 && (
+                          <p className="text-xs text-muted-foreground">Options: {q.options.join('; ')}</p>
+                        )}
+                        {/* Add Edit/Delete buttons here in future */}
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
 
           {/* Section 3: Certification Rules */}
           <Card className="shadow-lg">
             <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><Award className="mr-2 h-5 w-5 text-primary" /> Certification Rules</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField control={form.control} name="passingThreshold" render={({ field }) => (
+                <FormField control={courseEditForm.control} name="passingThreshold" render={({ field }) => (
                   <FormItem><FormLabel>Passing Threshold (%)*</FormLabel><FormControl><Input type="number" placeholder="80" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <FormField control={form.control} name="certificateExpiryDays" render={({ field }) => (
+                <FormField control={courseEditForm.control} name="certificateExpiryDays" render={({ field }) => (
                   <FormItem><FormLabel>Certificate Expiry (days)*</FormLabel><FormControl><Input type="number" placeholder="365" {...field} /></FormControl><FormDescription>0 for no expiry.</FormDescription><FormMessage /></FormItem>
                 )} />
               </div>
-              <FormField control={form.control} name="certificateLogoUrl" render={({ field }) => (
+              <FormField control={courseEditForm.control} name="certificateLogoUrl" render={({ field }) => (
                 <FormItem><FormLabel>Certificate Logo URL (Optional)</FormLabel><FormControl><Input placeholder="https://..." {...field} value={field.value || ""} /></FormControl><FormDescription>Link to your airline's logo. Default placeholder will be used if empty.</FormDescription><FormMessage /></FormItem>
               )} />
-              <FormField control={form.control} name="certificateSignature" render={({ field }) => (
+              <FormField control={courseEditForm.control} name="certificateSignature" render={({ field }) => (
                 <FormItem><FormLabel>Certificate Signature Text/Authority*</FormLabel><FormControl><Input placeholder="Express Airline Training Department" {...field} /></FormControl><FormDescription>Text to display as the issuing authority or signature.</FormDescription><FormMessage /></FormItem>
               )} />
             </CardContent>
@@ -412,7 +633,7 @@ export default function EditComprehensiveCoursePage() {
           </Card>
 
           <div className="flex justify-end pt-6">
-            <Button type="submit" size="lg" disabled={isSubmitting || !form.formState.isValid || isLoadingData} className="min-w-[180px]">
+            <Button type="submit" size="lg" disabled={isSubmitting || !courseEditForm.formState.isValid || isLoadingData} className="min-w-[180px]">
               {isSubmitting ? (
                 <> <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Updating... </>
               ) : (
@@ -420,7 +641,7 @@ export default function EditComprehensiveCoursePage() {
               )}
             </Button>
           </div>
-          {!form.formState.isValid && isSubmitting === false && (
+          {!courseEditForm.formState.isValid && isSubmitting === false && (
             <p className="text-sm text-destructive text-right mt-2">Please fill all required fields and correct any errors before updating.</p>
           )}
         </form>
@@ -428,4 +649,3 @@ export default function EditComprehensiveCoursePage() {
     </div>
   );
 }
-
