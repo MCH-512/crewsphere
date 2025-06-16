@@ -274,7 +274,7 @@ export default function QuizzesPage() {
               </CardHeader>
               <CardContent className="flex-grow flex flex-col justify-between">
                 <div>
-                    <p className="text-sm text-muted-foreground mb-3 h-12 overflow-hidden" title={quizItem.description}>
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-4" title={quizItem.description}>
                       {quizItem.description}
                     </p>
                     <div className="text-xs text-muted-foreground mb-3">
@@ -311,3 +311,4 @@ export default function QuizzesPage() {
   );
 }
 
+    

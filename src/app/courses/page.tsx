@@ -337,7 +337,7 @@ export default function CoursesLibraryPage() {
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1 h-12 overflow-hidden" title={course.description}>
+                    <p className="text-sm text-muted-foreground mb-1 line-clamp-4" title={course.description}>
                       {course.description}
                     </p>
                     {course.duration && <p className="text-xs text-muted-foreground mb-3">Est. Duration: {course.duration}</p>}
@@ -493,3 +493,4 @@ export default function CoursesLibraryPage() {
   );
 }
 
+    
