@@ -6,15 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2, Library, List } from "lucide-react";
+import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2, Library, List, Download, Link as LinkIcon, Image as ImageIcon, Video } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, doc, getDoc, setDoc, updateDoc, Timestamp, orderBy } from "firebase/firestore";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Chapter } from "@/schemas/course-schema"; // Import Chapter type
+import type { Chapter, Resource } from "@/schemas/course-schema"; // Import Chapter type
 import ChapterDisplay from "@/components/features/course-chapter-display"; // Import ChapterDisplay
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import ReactMarkdown from "react-markdown";
 
 // Interface CourseData now uses chapters instead of modules
 interface CourseData {
@@ -52,6 +54,18 @@ interface UserProgressData {
 interface CombinedCourse extends CourseData {
   progress?: UserProgressData; 
 }
+
+const getResourceIconDialog = (type?: Resource['type']) => {
+  switch (type) {
+    case "pdf": return <FileTextIcon className="h-4 w-4 mr-2 flex-shrink-0 text-primary" />;
+    case "image": return <ImageIcon className="h-4 w-4 mr-2 flex-shrink-0 text-primary" />;
+    case "video": return <Video className="h-4 w-4 mr-2 flex-shrink-0 text-primary" />;
+    case "link": return <LinkIcon className="h-4 w-4 mr-2 flex-shrink-0 text-primary" />;
+    case "file":
+    default: return <FileTextIcon className="h-4 w-4 mr-2 flex-shrink-0 text-primary" />;
+  }
+};
+
 
 export default function CoursesLibraryPage() {
   const { toast } = useToast();
@@ -397,15 +411,60 @@ export default function CoursesLibraryPage() {
                         {selectedCourseForContent.chapters && selectedCourseForContent.chapters.length > 0 ? (
                             <div className="mt-4">
                                 <h3 className="font-semibold mb-2 flex items-center"><List className="mr-2 h-5 w-5 text-primary"/>Course Content:</h3>
-                                <div className="space-y-3">
-                                {selectedCourseForContent.chapters.map((chapter, index) => (
-                                    <ChapterDisplay
-                                      key={chapter.id || `chapter-${index}`}
-                                      chapter={chapter}
-                                      level={0}
-                                    />
-                                ))}
-                                </div>
+                                 <Accordion type="single" collapsible className="w-full">
+                                    {selectedCourseForContent.chapters.map((chapter, index) => (
+                                        <AccordionItem value={`chapter-${index}`} key={chapter.id || index}>
+                                            <AccordionTrigger className="text-base hover:no-underline">
+                                                {chapter.title}
+                                            </AccordionTrigger>
+                                            <AccordionContent className="space-y-3 pt-2">
+                                                {chapter.description && (
+                                                    <p className="text-sm text-muted-foreground italic mb-2">{chapter.description}</p>
+                                                )}
+                                                {chapter.content && (
+                                                    <div className="prose prose-sm max-w-none dark:prose-invert text-foreground">
+                                                        <ReactMarkdown>{chapter.content}</ReactMarkdown>
+                                                    </div>
+                                                )}
+                                                {chapter.resources && chapter.resources.length > 0 && (
+                                                  <div className="mt-3 pt-3 border-t">
+                                                    <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-1.5">Chapter Resources:</h4>
+                                                    <ul className="space-y-1">
+                                                      {chapter.resources.map((resource, rIndex) => (
+                                                        <li key={rIndex}>
+                                                          <Button
+                                                            variant="link"
+                                                            asChild
+                                                            className="p-0 h-auto text-sm text-primary hover:underline flex items-center justify-start text-left"
+                                                          >
+                                                            <a href={resource.url} target="_blank" rel="noopener noreferrer">
+                                                              {getResourceIconDialog(resource.type)}
+                                                              <span className="truncate">{resource.filename || resource.url}</span>
+                                                              {resource.type === 'link' && <LinkIcon className="h-3 w-3 ml-1.5 flex-shrink-0" />}
+                                                              {resource.type !== 'link' && <Download className="h-3 w-3 ml-1.5 flex-shrink-0" />}
+                                                            </a>
+                                                          </Button>
+                                                        </li>
+                                                      ))}
+                                                    </ul>
+                                                  </div>
+                                                )}
+                                                {chapter.children && chapter.children.length > 0 && (
+                                                    <div className="mt-4">
+                                                        {/* Using ChapterDisplay for nested children */}
+                                                        {chapter.children.map((childChapter, childIndex) => (
+                                                            <ChapterDisplay
+                                                                key={childChapter.id || `child-${index}-${childIndex}`}
+                                                                chapter={childChapter}
+                                                                level={1} 
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    ))}
+                                </Accordion>
                             </div>
                         ) : (
                             <p className="text-sm italic text-muted-foreground">No specific chapters or downloadable content. Review the description above.</p>
