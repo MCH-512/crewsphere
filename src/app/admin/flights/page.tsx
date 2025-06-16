@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Flight {
   id: string;
@@ -147,129 +148,146 @@ export default function AdminFlightsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="shadow-lg">
-        <CardHeader className="flex flex-row justify-between items-start">
-          <div>
-            <CardTitle className="text-2xl font-headline flex items-center">
-              <Plane className="mr-3 h-7 w-7 text-primary" />
-              Manage Flights
-            </CardTitle>
-            <CardDescription>View all scheduled and active flights in the system.</CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={fetchFlights} disabled={isLoading}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh Flights
-            </Button>
-            <Button asChild>
-              <Link href="/admin/flights/create">
-                <PlusCircle className="mr-2 h-4 w-4" /> Create New Flight
-              </Link>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" /> {error}
+    <TooltipProvider>
+      <div className="space-y-6">
+        <Card className="shadow-lg">
+          <CardHeader className="flex flex-row justify-between items-start">
+            <div>
+              <CardTitle className="text-2xl font-headline flex items-center">
+                <Plane className="mr-3 h-7 w-7 text-primary" />
+                Manage Flights
+              </CardTitle>
+              <CardDescription>View all scheduled and active flights in the system.</CardDescription>
             </div>
-          )}
-          {isLoading && flights.length === 0 && (
-             <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="ml-3 text-muted-foreground">Loading flight list...</p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={fetchFlights} disabled={isLoading}>
+                <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh Flights
+              </Button>
+              <Button asChild>
+                <Link href="/admin/flights/create">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Create New Flight
+                </Link>
+              </Button>
             </div>
-          )}
-          {!isLoading && flights.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">No flights found. Click the "Create New Flight" button to add one.</p>
-          )}
-          {flights.length > 0 && (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Flight No.</TableHead>
-                    <TableHead>Route</TableHead>
-                    <TableHead>Aircraft</TableHead>
-                    <TableHead>Departure (UTC)</TableHead>
-                    <TableHead>Arrival (UTC)</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Purser Report</TableHead> 
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {flights.map((flight) => (
-                    <TableRow key={flight.id}>
-                      <TableCell className="font-medium">{flight.flightNumber}</TableCell>
-                      <TableCell>{flight.departureAirport} - {flight.arrivalAirport}</TableCell>
-                      <TableCell>{flight.aircraftType}</TableCell>
-                      <TableCell>{formatDateTime(flight.scheduledDepartureDateTimeUTC)}</TableCell>
-                      <TableCell>{formatDateTime(flight.scheduledArrivalDateTimeUTC)}</TableCell>
-                      <TableCell>
-                        <Badge 
-                            variant={getStatusBadgeVariant(flight.status)}
-                        >
-                          {flight.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {flight.purserReportSubmitted ? (
-                          <div className="flex items-center gap-1">
-                            <Badge variant="success" className="bg-green-500 hover:bg-green-600">
-                                <CheckCircle className="mr-1 h-3 w-3" /> Submitted
-                            </Badge>
-                            {flight.purserReportId && (
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleViewReport(flight.purserReportId)}>
-                                    <FileText className="h-4 w-4 text-primary"/>
-                                </Button>
-                            )}
-                          </div>
-                        ) : (
-                          <Badge variant="secondary">
-                            <XCircle className="mr-1 h-3 w-3" /> Pending
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="sm" asChild aria-label={`Edit flight: ${flight.flightNumber}`}>
-                          <Link href={`/admin/flights/edit/${flight.id}`}>
-                            <Edit className="mr-1 h-4 w-4" /> Edit
-                          </Link>
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                           <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80" onClick={() => setFlightToDelete(flight)} aria-label={`Delete flight: ${flight.flightNumber}`}>
-                            <Trash2 className="mr-1 h-4 w-4" /> Delete
-                          </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete flight {flightToDelete?.flightNumber} ({flightToDelete?.departureAirport} - {flightToDelete?.arrivalAirport})? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel onClick={() => setFlightToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={handleDeleteFlight} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" /> {error}
+              </div>
+            )}
+            {isLoading && flights.length === 0 && (
+               <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="ml-3 text-muted-foreground">Loading flight list...</p>
+              </div>
+            )}
+            {!isLoading && flights.length === 0 && !error && (
+              <p className="text-muted-foreground text-center py-8">No flights found. Click the "Create New Flight" button to add one.</p>
+            )}
+            {flights.length > 0 && (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Flight No.</TableHead>
+                      <TableHead>Route</TableHead>
+                      <TableHead>Aircraft</TableHead>
+                      <TableHead>Departure (UTC)</TableHead>
+                      <TableHead>Arrival (UTC)</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Purser Report</TableHead> 
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                  </TableHeader>
+                  <TableBody>
+                    {flights.map((flight) => (
+                      <TableRow key={flight.id}>
+                        <TableCell className="font-medium">{flight.flightNumber}</TableCell>
+                        <TableCell>{flight.departureAirport} - {flight.arrivalAirport}</TableCell>
+                        <TableCell>{flight.aircraftType}</TableCell>
+                        <TableCell>{formatDateTime(flight.scheduledDepartureDateTimeUTC)}</TableCell>
+                        <TableCell>{formatDateTime(flight.scheduledArrivalDateTimeUTC)}</TableCell>
+                        <TableCell>
+                          <Badge 
+                              variant={getStatusBadgeVariant(flight.status)}
+                          >
+                            {flight.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {flight.purserReportSubmitted ? (
+                            <div className="flex items-center gap-1">
+                              <Badge variant="success" className="bg-green-500 hover:bg-green-600">
+                                  <CheckCircle className="mr-1 h-3 w-3" /> Submitted
+                              </Badge>
+                              {flight.purserReportId && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleViewReport(flight.purserReportId)}>
+                                        <FileText className="h-4 w-4 text-primary"/>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>View Submitted Report</p></TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                          ) : (
+                            <Badge variant="secondary">
+                              <XCircle className="mr-1 h-3 w-3" /> Pending
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="sm" asChild aria-label={`Edit flight: ${flight.flightNumber}`}>
+                                <Link href={`/admin/flights/edit/${flight.id}`}>
+                                  <Edit className="mr-1 h-4 w-4" /> Edit
+                                </Link>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Edit details for flight {flight.flightNumber}</p></TooltipContent>
+                          </Tooltip>
+                          <AlertDialog>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <AlertDialogTrigger asChild>
+                                 <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80" onClick={() => setFlightToDelete(flight)} aria-label={`Delete flight: ${flight.flightNumber}`}>
+                                  <Trash2 className="mr-1 h-4 w-4" /> Delete
+                                </Button>
+                                </AlertDialogTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Delete flight {flight.flightNumber}</p></TooltipContent>
+                            </Tooltip>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete flight {flightToDelete?.flightNumber} ({flightToDelete?.departureAirport} - {flightToDelete?.arrivalAirport})? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setFlightToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteFlight} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </TooltipProvider>
   );
 }
 

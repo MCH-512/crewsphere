@@ -17,8 +17,8 @@ const badgeVariants = cva(
         outline: "text-foreground",
         success:
           "border-success-border bg-success text-success-foreground hover:bg-success/80",
-        warning: // New variant
-          "border-warning-border bg-warning-background text-warning-foreground hover:bg-warning-background/80",
+        warning:
+          "border-[hsl(var(--warning-border))] bg-[hsl(var(--warning-background))] text-[hsl(var(--warning-foreground))] hover:bg-[hsl(var(--warning-background))]/80",
       },
     },
     defaultVariants: {
@@ -28,12 +28,12 @@ const badgeVariants = cva(
 )
 
 export interface BadgeProps
-  extends React.HTMLAttributes<HTMLSpanElement>, // Changed from HTMLDivElement
+  extends React.HTMLAttributes<HTMLSpanElement>, 
     VariantProps<typeof badgeVariants> {}
 
 function Badge({ className, variant, ...props }: BadgeProps) {
   return (
-    <span className={cn(badgeVariants({ variant }), className)} {...props} /> // Changed from div to span
+    <span className={cn(badgeVariants({ variant }), className)} {...props} />
   )
 }
 
