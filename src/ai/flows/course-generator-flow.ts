@@ -67,11 +67,12 @@ const courseGeneratorPrompt = ai.definePrompt({
   output: {schema: CourseGenerationOutputSchema},
   prompt: `You are an expert instructional designer and Senior Cabin Crew Instructor, specializing in creating comprehensive and engaging training programs for airline personnel, specifically for {{targetAudience}}.
 Your task is to generate a detailed course structure based on the provided inputs. The output must be practical, realistic, and ready for an LMS (Learning Management System).
+If reference documents are provided ({{{referenceDocuments}}}), consider them as primary sources. If not, base your content on general EASA/ICAO/IATA best practices and standard operational knowledge for {{targetAudience}}.
 
 Course Topic/Title Idea: "{{courseTopic}}"
 Intended Category: {{courseCategory}}
 Intended Type: {{courseType}}
-Reference Documents/Body: {{#if referenceDocuments}}{{{referenceDocuments}}}{{else}}Not specified{{/if}}
+Reference Documents/Body: {{#if referenceDocuments}}{{{referenceDocuments}}}{{else}}General Aviation Best Practices{{/if}}
 Estimated Duration: {{#if durationEstimate}}{{{durationEstimate}}}{{else}}Not specified{{/if}}
 
 The course should have approximately {{numberOfChapters}} chapters.
@@ -80,41 +81,44 @@ The level of detail for each chapter's content should be: {{detailLevel}}.
 Please generate the following in valid JSON format conforming to the output schema:
 
 1.  **courseTitle**: A clear, engaging, and professional title for the course (you may refine the initial courseTopic).
-2.  **suggestedCategory**: Re-evaluate the "Intended Category" and confirm or suggest a more appropriate training category (e.g., Safety Equipment, Emergency Procedures, CRM, Aircraft Type Rating, Dangerous Goods, Service Excellence).
-3.  **description**: A concise (2-4 sentences) overall description of the course, outlining its main objectives, target audience relevance, and expected learning outcomes.
+2.  **suggestedCategory**: Re-evaluate the "Intended Category" and confirm or suggest a more appropriate training category (e.g., Safety Equipment, Emergency Procedures, CRM, Aircraft Type Rating, Dangerous Goods, Service Excellence, First Aid, AVSEC).
+3.  **description**: A concise (2-4 sentences) overall description of the course, outlining its main objectives, target audience relevance, and expected learning outcomes (think Competency-Based Training and Assessment - CBTA principles).
 4.  **chapters**: An array of approximately {{numberOfChapters}} chapters. Each chapter object *must* have:
     *   **title**: A specific and descriptive title for the chapter.
-    *   **description**: A brief (1-2 sentences) overview of this chapter's specific learning objectives and what key topics it covers.
-    *   **content**: Detailed pedagogical content. This should include key learning points, procedures, best practices, examples, or case studies.
-        Use Markdown for general formatting (like **bolding** for emphasis).
-        For lists of items:
-        - If the list represents steps in a procedure or a sequence, use numbered lists (e.g., \`1. First step\`, \`2. Second step\`).
-        - For other types of lists, consider using relevant emojis as list markers (e.g., \`✅ Key takeaway\`, \`✈️ Flight-specific detail\`, \`💡 Important note\`) for better visual appeal and readability, instead of plain dashes or asterisks.
-        If the detail level is 'detailed', provide substantial content. If 'standard', provide key points and summaries. If 'overview', provide high-level summaries. Focus on practical application and operational relevance for {{targetAudience}}.
-5.  **mainQuiz** (Optional but highly recommended): An array of 3-5 sample quiz questions to assess understanding of the core concepts. Each question object should have:
+    *   **description**: A brief (1-2 sentences) overview of this chapter's specific learning objectives. What should the {{targetAudience}} be able to do or know after completing this chapter?
+    *   **content**: Detailed pedagogical content. This should include:
+        *   Key learning points, procedures, best practices.
+        *   Where appropriate, include examples, brief case studies (e.g., based on anonymized incident reports if relevant to the topic), or scenarios for {{targetAudience}}.
+        *   Use Markdown for general formatting (like **bolding** for emphasis).
+        *   For lists of items:
+            - If the list represents steps in a procedure or a sequence, use numbered lists (e.g., \`1. First step\`, \`2. Second step\`).
+            - For other types of lists (e.g., key takeaways, equipment features), consider using relevant emojis as list markers (e.g., \`✅ Key takeaway\`, \`✈️ Flight-specific detail\`, \`💡 Important note\`, \`⚠️ Caution\`) for better visual appeal and readability, instead of plain dashes or asterisks.
+        *   If the detail level is 'detailed', provide substantial content. If 'standard', provide key points and summaries. If 'overview', provide high-level summaries.
+        *   Focus on practical application and operational relevance.
+5.  **mainQuiz** (Optional but highly recommended): An array of 3-5 sample quiz questions to assess understanding of the core concepts from the generated chapters. Each question object should have:
     *   **question**: The full text of the question.
     *   **type**: The question type (must be one of "mcq", "tf", "short").
-        *   For "mcq" (Multiple Choice Question): provide 3-4 string \`options\` and a string \`correctAnswer\` (matching one of the options).
+        *   For "mcq" (Multiple Choice Question): provide 3-4 string \`options\` and a string \`correctAnswer\` (matching one of the options). Ensure distractors are plausible.
         *   For "tf" (True/False): \`options\` should be an array like ["True", "False"], and \`correctAnswer\` is "True" or "False".
         *   For "short" (Short Answer): \`options\` can be omitted or an empty array. \`correctAnswer\` should be a concise example of an acceptable answer.
     *   **options**: An array of strings for MCQ/TF options.
     *   **correctAnswer**: The correct answer string.
+    *   Ensure questions cover diverse aspects of the generated chapter content.
 6.  **certificateSettings** (Optional): Suggested settings for the course certificate.
     *   **passingScore**: A suggested passing score for the quiz as a number (e.g., 80).
     *   **expiryDays**: Suggested validity period for the certificate in days as a number (e.g., 365 for 1 year, 730 for 2 years, 0 for no expiry).
-    *   **issuingAuthority**: Suggested text for the issuing authority as a string (e.g., "AirCrew Hub Training Department").
+    *   **issuingAuthority**: Suggested text for the issuing authority as a string (e.g., "AirCrew Hub Training Department", "\[Nom de la compagnie] ATO").
 
-Example chapter structure:
+Example chapter structure for {{targetAudience}}:
 {
   "title": "Chapter X: Handling In-flight Medical Emergencies",
-  "description": "This chapter covers the assessment of medical situations, communication protocols with ground medical support, and the use of onboard medical kits for {{targetAudience}}.",
-  "content": "1. Initial assessment: DRSABCD protocol.\n➡️ Utilizing MedLink/StatMD: Information to provide.\n✅ Overview of First Aid Kit (FAK) and Emergency Medical Kit (EMK) contents and usage for common scenarios (e.g., fainting, minor burns, allergic reactions).\n- Documentation and reporting procedures post-incident."
+  "description": "This chapter equips {{targetAudience}} to assess medical situations, utilize MedLink, and administer first aid using onboard kits, adhering to established protocols.",
+  "content": "1. **Initial Assessment**: Follow DRSABCD protocol (Danger, Response, Send for help, Airways, Breathing, CPR, Defibrillation).\n   - ✈️ Specific considerations for aircraft environment (limited space, resources).\n2. **Utilizing MedLink/StatMD**: \n   - ✅ Information to gather *before* contact: passenger details, symptoms, vital signs (if obtainable).\n   - 💡 Communication best practices: be clear, concise, use standard terminology.\n3. **Onboard Medical Kits**: \n   - 📦 Overview of First Aid Kit (FAK) contents.\n   - 📦 Overview of Emergency Medical Kit (EMK/Doctors Kit) contents and authorized users.\n   - ⚠️ Procedures for common scenarios: fainting, minor burns, allergic reactions, cardiac events (basic life support).\n4. **Documentation**: \n   - 📝 Importance of accurate and timely reporting post-incident using company forms."
 }
 
 Ensure the output is valid JSON and all specified fields are present as described in the output schema.
-The chapter content should be operationally relevant and avoid overly academic or theoretical language unless essential for {{targetAudience}}.
+The chapter content should be operationally relevant and avoid overly academic or theoretical language unless essential.
 Prioritize safety, efficiency, and passenger care in all relevant content.
-If generating a quiz, ensure questions cover diverse aspects of the generated chapter content.
 `,
 });
 
