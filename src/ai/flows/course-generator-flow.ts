@@ -61,8 +61,8 @@ Please generate the following:
 2.  **suggestedCategory**: Suggest a relevant training category (e.g., Safety Equipment, Emergency Procedures, CRM, Aircraft Type Rating, Dangerous Goods, Service Excellence).
 3.  **description**: A concise (2-3 sentences) description of what the course will cover and its learning objectives.
 4.  **chapters**: An array of {{numberOfChapters}} chapters. Each chapter object must have:
-    *   `title`: A specific title for the chapter.
-    *   `content`: A paragraph or a few bullet points outlining the key topics, concepts, or procedures to be covered in this chapter. Use Markdown for formatting if appropriate (e.g., for lists). If the detail level is 'detailed', provide more depth. If 'overview', keep it high-level.
+    *   title: A specific title for the chapter.
+    *   content: A paragraph or a few bullet points outlining the key topics, concepts, or procedures to be covered in this chapter. Use Markdown for formatting if appropriate (e.g., for lists). If the detail level is 'detailed', provide more depth. If 'overview', keep it high-level.
     *   Keep the content practical and relevant to {{targetAudience}}.
 
 Example chapter content for a "Fire Fighting" chapter (standard detail):
@@ -92,3 +92,4 @@ const courseGeneratorFlow = ai.defineFlow(
     return { ...output, chapters: chaptersWithIds };
   }
 );
+
