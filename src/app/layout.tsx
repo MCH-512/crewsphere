@@ -1,7 +1,6 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
-// import { SidebarProvider } from '@/components/ui/sidebar'; // Removed SidebarProvider from here
 import { AppLayout } from '@/components/layout/app-layout';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/contexts/auth-context';
@@ -37,3 +36,4 @@ export default function RootLayout({
     </html>
   );
 }
+
