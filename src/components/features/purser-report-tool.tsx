@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, where, doc, updateDoc } from "firebase/firestore"; 
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, where, doc, getDoc, updateDoc } from "firebase/firestore"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { format, parseISO } from "date-fns";
@@ -41,7 +41,24 @@ interface FlightForSelection {
   arrivalAirport: string;
   scheduledDepartureDateTimeUTC: string; // ISO string
   aircraftType: string;
+  // Potential future fields for crew UIDs if available directly in list:
+  // assignedCaptainUid?: string;
+  // assignedPurserUid?: string;
+  // ... etc.
 }
+
+// Define a more detailed flight document structure, assuming these fields exist in Firestore for a single flight.
+// This is a SUPPOSITION for the pre-filling logic.
+interface FullFlightData extends FlightForSelection {
+    assignedCaptainUid?: string;
+    assignedFirstOfficerUid?: string;
+    assignedPurserUid?: string;
+    assignedCabinCrewR1Uid?: string;
+    assignedCabinCrewL2Uid?: string;
+    assignedCabinCrewR2Uid?: string;
+    // other flight details...
+}
+
 
 const PLACEHOLDER_NONE_VALUE = "_NONE_"; 
 
@@ -224,21 +241,87 @@ export function PurserReportTool() {
     }
   }, [toast, user]);
 
-  const handleFlightSelection = (flightId: string) => {
+  const handleFlightSelection = async (flightId: string) => {
     if (flightId === "_MANUAL_ENTRY_") {
-        form.reset({ ...form.getValues(), flightNumber: "", flightDate: defaultDate(), departureAirport: "", arrivalAirport: "", aircraftTypeRegistration: "" });
-        setSelectedFlightIdState(null); return;
+        form.reset({ 
+            ...form.getValues(), 
+            flightNumber: "", 
+            flightDate: defaultDate(), 
+            departureAirport: "", 
+            arrivalAirport: "", 
+            aircraftTypeRegistration: "",
+            captainName: PLACEHOLDER_NONE_VALUE,
+            firstOfficerName: PLACEHOLDER_NONE_VALUE,
+            purserName: PLACEHOLDER_NONE_VALUE,
+            cabinCrewR1: PLACEHOLDER_NONE_VALUE,
+            cabinCrewL2: PLACEHOLDER_NONE_VALUE,
+            cabinCrewR2: PLACEHOLDER_NONE_VALUE,
+        });
+        setSelectedFlightIdState(null); 
+        return;
     }
-    const selectedFlight = availableFlights.find(f => f.id === flightId);
-    if (selectedFlight) {
-        form.setValue("flightNumber", selectedFlight.flightNumber);
-        form.setValue("flightDate", new Date(selectedFlight.scheduledDepartureDateTimeUTC).toISOString().split('T')[0]);
-        form.setValue("departureAirport", selectedFlight.departureAirport);
-        form.setValue("arrivalAirport", selectedFlight.arrivalAirport);
-        form.setValue("aircraftTypeRegistration", selectedFlight.aircraftType); 
+    const selectedFlightBasic = availableFlights.find(f => f.id === flightId);
+    if (selectedFlightBasic) {
+        // Pre-fill basic flight info
+        form.setValue("flightNumber", selectedFlightBasic.flightNumber);
+        form.setValue("flightDate", new Date(selectedFlightBasic.scheduledDepartureDateTimeUTC).toISOString().split('T')[0]);
+        form.setValue("departureAirport", selectedFlightBasic.departureAirport);
+        form.setValue("arrivalAirport", selectedFlightBasic.arrivalAirport);
+        form.setValue("aircraftTypeRegistration", selectedFlightBasic.aircraftType); 
         setSelectedFlightIdState(flightId);
+
+        // Attempt to pre-fill crew info by fetching full flight document
+        // This assumes the flight document in Firestore contains assignedXxxUid fields
+        try {
+            const flightDocRef = doc(db, "flights", flightId);
+            const flightSnap = await getDoc(flightDocRef);
+            if (flightSnap.exists()) {
+                const fullFlightData = flightSnap.data() as FullFlightData;
+
+                const findAndSetCrew = (uid: string | undefined, list: CrewUser[], fieldName: keyof PurserReportFormValues) => {
+                    if (uid) {
+                        const crewMember = list.find(member => member.uid === uid);
+                        if (crewMember) {
+                            form.setValue(fieldName, crewMember.name);
+                        } else {
+                            form.setValue(fieldName, PLACEHOLDER_NONE_VALUE);
+                        }
+                    } else {
+                        form.setValue(fieldName, PLACEHOLDER_NONE_VALUE);
+                    }
+                };
+                
+                findAndSetCrew(fullFlightData.assignedCaptainUid, pilotsList, 'captainName');
+                findAndSetCrew(fullFlightData.assignedFirstOfficerUid, pilotsList, 'firstOfficerName');
+                findAndSetCrew(fullFlightData.assignedPurserUid, supervisingCrewList, 'purserName');
+                findAndSetCrew(fullFlightData.assignedCabinCrewR1Uid, cabinCrewList, 'cabinCrewR1');
+                findAndSetCrew(fullFlightData.assignedCabinCrewL2Uid, cabinCrewList, 'cabinCrewL2');
+                findAndSetCrew(fullFlightData.assignedCabinCrewR2Uid, cabinCrewList, 'cabinCrewR2');
+            } else {
+                // Reset crew fields if full flight data not found, keeping basic flight info
+                form.setValue('captainName', PLACEHOLDER_NONE_VALUE);
+                form.setValue('firstOfficerName', PLACEHOLDER_NONE_VALUE);
+                form.setValue('purserName', PLACEHOLDER_NONE_VALUE);
+                form.setValue('cabinCrewR1', PLACEHOLDER_NONE_VALUE);
+                form.setValue('cabinCrewL2', PLACEHOLDER_NONE_VALUE);
+                form.setValue('cabinCrewR2', PLACEHOLDER_NONE_VALUE);
+            }
+        } catch (error) {
+            console.error("Error fetching full flight data for crew pre-fill:", error);
+            toast({title: "Crew Pre-fill Incomplete", description: "Could not fetch detailed crew assignments for this flight. Please select manually.", variant: "default"});
+             // Reset crew fields on error as well
+            form.setValue('captainName', PLACEHOLDER_NONE_VALUE);
+            form.setValue('firstOfficerName', PLACEHOLDER_NONE_VALUE);
+            form.setValue('purserName', PLACEHOLDER_NONE_VALUE);
+            form.setValue('cabinCrewR1', PLACEHOLDER_NONE_VALUE);
+            form.setValue('cabinCrewL2', PLACEHOLDER_NONE_VALUE);
+            form.setValue('cabinCrewR2', PLACEHOLDER_NONE_VALUE);
+        }
+    } else {
+         setSelectedFlightIdState(null);
     }
   };
+
 
   const handleAddSection = () => {
     if (!currentSectionType) { toast({ title: "Missing Type", description: "Please select a section type.", variant: "destructive" }); return; }
@@ -340,6 +423,7 @@ export function PurserReportTool() {
       }
   }
 
+
   return (
     <div className="space-y-6">
       <Form {...form}>
@@ -361,7 +445,7 @@ export function PurserReportTool() {
                         {availableFlights.map(flight => (<SelectItem key={flight.id} value={flight.id}>{flight.flightNumber}: {flight.departureAirport} to {flight.arrivalAirport} ({format(parseISO(flight.scheduledDepartureDateTimeUTC), "MMM d, yyyy HH:mm")} UTC)</SelectItem>))}
                       </SelectContent>
                     </Select>
-                    <FormDescription>Choosing a flight will pre-fill the fields below.</FormDescription>
+                    <FormDescription>Choosing a flight will pre-fill the fields below. Assigned crew may also be pre-filled if available in flight data.</FormDescription>
                   </FormItem>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input placeholder="e.g., BA245" {...field} /></FormControl><FormMessage /></FormItem>)} />
