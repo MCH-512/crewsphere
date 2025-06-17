@@ -165,8 +165,8 @@ export default function AdminPurserReportsPage() {
 
       {selectedReport && (
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] flex flex-col">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] grid grid-rows-[auto_minmax(0,1fr)_auto] p-0">
+            <DialogHeader className="p-6 pb-0"> {/* Adjust padding for header */}
               <DialogTitle>
                 Purser Report: {selectedReport.reportInput.flightNumber} ({selectedReport.reportInput.departureAirport} - {selectedReport.reportInput.arrivalAirport})
               </DialogTitle>
@@ -174,8 +174,8 @@ export default function AdminPurserReportsPage() {
                 Submitted by: {selectedReport.userEmail} on {format(selectedReport.createdAt.toDate(), "PPpp")}
               </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="flex-1 min-h-0"> {/* Changed flex-grow to flex-1 */}
-              <div className="p-4 space-y-6">
+            <ScrollArea className="min-h-0"> {/* ScrollArea is the 1fr part */}
+              <div className="p-6 space-y-6"> {/* Add padding to the content wrapper */}
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Key Highlights (AI Generated):</h3>
                   {selectedReport.reportOutput.keyHighlights && selectedReport.reportOutput.keyHighlights.length > 0 ? (
@@ -229,7 +229,7 @@ export default function AdminPurserReportsPage() {
                 </Card>
               </div>
             </ScrollArea>
-            <DialogFooter className="mt-auto pt-4 border-t">
+            <DialogFooter className="p-6 pt-0"> {/* Adjust padding for footer */}
               <DialogClose asChild>
                 <Button variant="outline">Close</Button>
               </DialogClose>
