@@ -289,13 +289,18 @@ export function PurserReportTool() {
         }
     });
     const crewPerformanceNotesString = addedCrewEvaluations.map(ev => `Evaluation for ${ev.crewMemberRole} (${ev.crewMemberName}):\n${ev.evaluation}`).join("\n\n---\n\n");
+    
     const baseAiInput: PurserReportInput = {
       flightNumber: data.flightNumber, flightDate: new Date(data.flightDate).toISOString().split('T')[0], departureAirport: data.departureAirport, arrivalAirport: data.arrivalAirport,
       aircraftTypeRegistration: data.aircraftTypeRegistration, crewMembers: crewMembersString, passengerLoad: { total: Number(data.passengerLoad.total), adults: Number(data.passengerLoad.adults), children: Number(data.passengerLoad.children), infants: Number(data.passengerLoad.infants) },
       generalFlightSummary: data.generalFlightSummary, ...dynamicSections,
     };
+
     const aiInput: PurserReportInput = { ...baseAiInput };
-    if (crewPerformanceNotesString) { aiInput.crewPerformanceNotes = crewPerformanceNotesString; }
+    if (crewPerformanceNotesString) {
+      aiInput.crewPerformanceNotes = crewPerformanceNotesString;
+    }
+
     let savedReportId: string | null = null;
     try {
       const generatedReport = await generatePurserReport(aiInput);
@@ -326,15 +331,26 @@ export function PurserReportTool() {
   const purserSelectPlaceholder = isLoadingSupervisingCrew ? "Loading Supervising Crew..." : supervisingCrewList.length === 0 ? "No Supervising Crew Available" : "Select Purser/Instructor";
   const purserDisabledItemText = isLoadingSupervisingCrew ? "Loading..." : supervisingCrewList.length === 0 ? "No Supervising Crew Available" : "Select Supervising Crew";
 
+  const roleForEval = currentEvalCrewMemberRole;
+  let nameOfCrewBeingEvaluated: string | null = null;
+  if (roleForEval) {
+      const fieldName = roleForEval === 'R1' ? 'cabinCrewR1' : roleForEval === 'L2' ? 'cabinCrewL2' : 'cabinCrewR2';
+      const name = form.getValues(fieldName as keyof PurserReportFormValues) as string;
+      if (name && name !== PLACEHOLDER_NONE_VALUE) {
+          nameOfCrewBeingEvaluated = name;
+      }
+  }
+
   return (
     <div className="space-y-6">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Accordion type="single" collapsible defaultValue="flight-info" className="w-full space-y-4">
             
-            <AccordionItem value="flight-info">
-              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
+            <AccordionItem value="flight-info" className="border-none">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm [&[data-state=open]>svg]:rotate-180">
                 <div className="flex items-center"><PlaneTakeoff className="mr-2 h-5 w-5 text-primary"/>Flight Information</div>
+                <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200" />
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
                 <div className="space-y-4">
@@ -360,9 +376,10 @@ export function PurserReportTool() {
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="crew-info">
-              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
+            <AccordionItem value="crew-info" className="border-none">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm [&[data-state=open]>svg]:rotate-180">
                 <div className="flex items-center"><Users className="mr-2 h-5 w-5 text-primary" />Crew Information</div>
+                 <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200" />
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
                 <div className="space-y-4">
@@ -381,9 +398,10 @@ export function PurserReportTool() {
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="passenger-load">
-              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
+            <AccordionItem value="passenger-load" className="border-none">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm [&[data-state=open]>svg]:rotate-180">
                 <div className="flex items-center"><Users className="mr-2 h-5 w-5 text-primary" />Passenger Load</div>
+                <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200" />
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -395,18 +413,20 @@ export function PurserReportTool() {
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="general-summary">
-              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
+            <AccordionItem value="general-summary" className="border-none">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm [&[data-state=open]>svg]:rotate-180">
                 <div className="flex items-center"><ClipboardList className="mr-2 h-5 w-5 text-primary"/>General Flight Summary</div>
+                 <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200" />
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
                  <FormField control={form.control} name="generalFlightSummary" render={({ field }) => (<FormItem><FormLabel>Summary Content</FormLabel><FormControl><Textarea placeholder="Overall flight conduct, punctuality, atmosphere, IFE status, any general incidents or positive feedback..." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="report-sections">
-              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
+            <AccordionItem value="report-sections" className="border-none">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm [&[data-state=open]>svg]:rotate-180">
                 <div className="flex items-center"><ClipboardList className="mr-2 h-5 w-5 text-primary"/>Specific Report Sections</div>
+                 <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200" />
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm space-y-6">
                 <div className="space-y-4 p-4 border rounded-md"><h3 className="text-md font-semibold">Add Report Section</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
@@ -417,20 +437,34 @@ export function PurserReportTool() {
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="crew-evaluations">
-              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
+            <AccordionItem value="crew-evaluations" className="border-none">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm [&[data-state=open]>svg]:rotate-180">
                 <div className="flex items-center"><MessageSquareQuote className="mr-2 h-5 w-5 text-primary"/>Crew Performance Evaluation</div>
+                <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200" />
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm space-y-6">
-                 <div className="space-y-4 p-4 border rounded-md"><h3 className="text-md font-semibold">Add Crew Evaluation</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                    <FormItem><FormLabel>Crew Member Role</FormLabel>
-                      <Select value={currentEvalCrewMemberRole} onValueChange={(v) => setCurrentEvalCrewMemberRole(v as CrewRoleForEval)} disabled={availableEvalRoles.length === 0}>
-                        <FormControl><SelectTrigger><SelectValue placeholder={availableEvalRoles.length === 0 ? "Assign R1/L2/R2 first" : "Select crew role"} /></SelectTrigger></FormControl>
-                        <SelectContent>{availableEvalRoles.map(r => (<SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>))}</SelectContent>
-                      </Select>
+                 <div className="space-y-4 p-4 border rounded-md">
+                    <h3 className="text-md font-semibold">Add Crew Evaluation</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                        <FormItem>
+                            <FormLabel>Crew Member Role</FormLabel>
+                            <Select value={currentEvalCrewMemberRole} onValueChange={(v) => setCurrentEvalCrewMemberRole(v as CrewRoleForEval)} disabled={availableEvalRoles.length === 0}>
+                                <FormControl><SelectTrigger><SelectValue placeholder={availableEvalRoles.length === 0 ? "Assign R1/L2/R2 first" : "Select crew role"} /></SelectTrigger></FormControl>
+                                <SelectContent>{availableEvalRoles.map(r => (<SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>))}</SelectContent>
+                            </Select>
+                        </FormItem>
+                        <Button type="button" onClick={handleAddCrewEvaluation} className="self-end" disabled={!currentEvalCrewMemberRole || !currentEvalContent.trim()}><PlusCircle className="mr-2 h-4 w-4"/>Add Evaluation</Button>
+                    </div>
+                    {currentEvalCrewMemberRole && nameOfCrewBeingEvaluated && (
+                        <p className="text-sm font-medium mb-1 text-muted-foreground">
+                            Enter evaluation for: <strong className="text-primary">{nameOfCrewBeingEvaluated}</strong> ({currentEvalCrewMemberRole})
+                        </p>
+                    )}
+                    <FormItem>
+                        <FormLabel>Evaluation Notes {nameOfCrewBeingEvaluated ? `for ${nameOfCrewBeingEvaluated}` : '(for selected role)'}</FormLabel>
+                        <Textarea placeholder="Performance notes, commendations, areas for improvement..." className="min-h-[100px]" value={currentEvalContent} onChange={(e) => setCurrentEvalContent(e.target.value)}/>
                     </FormItem>
-                    <Button type="button" onClick={handleAddCrewEvaluation} className="self-end" disabled={!currentEvalCrewMemberRole || !currentEvalContent.trim()}><PlusCircle className="mr-2 h-4 w-4"/>Add Evaluation</Button>
-                </div><FormItem><FormLabel>Evaluation Notes</FormLabel><Textarea placeholder="Performance notes, commendations, areas for improvement..." className="min-h-[100px]" value={currentEvalContent} onChange={(e) => setCurrentEvalContent(e.target.value)}/></FormItem></div>
+                </div>
                 {addedCrewEvaluations.length > 0 && (<div className="space-y-3 mt-4"><h3 className="text-md font-semibold">Added Evaluations:</h3>{addedCrewEvaluations.map(ev => (<Card key={ev.id} className="p-3 bg-muted/50"><div className="flex justify-between items-center mb-1"><CardTitle className="text-sm font-medium">{ev.crewMemberRole}: {ev.crewMemberName}</CardTitle><Button variant="ghost" size="icon" onClick={() => handleRemoveCrewEvaluation(ev.id)} className="h-6 w-6 text-destructive hover:text-destructive/80"><Trash2 className="h-4 w-4" /></Button></div><p className="text-sm text-muted-foreground whitespace-pre-wrap">{ev.evaluation}</p></Card>))}</div>)}
               </AccordionContent>
             </AccordionItem>
@@ -455,3 +489,4 @@ export function PurserReportTool() {
     </div>
   );
 }
+
