@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff, ChevronDown } from "lucide-react";
+import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff } from "lucide-react";
 import { generatePurserReport, type PurserReportOutput, type PurserReportInput } from "@/ai/flows/purser-report-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -288,7 +288,6 @@ export function PurserReportTool() {
             case "Other Observations": dynamicSections.otherObservations = (dynamicSections.otherObservations ? dynamicSections.otherObservations + "\n\n---\n\n" : "") + section.content; break;
         }
     });
-    const crewPerformanceNotesString = addedCrewEvaluations.map(ev => `Evaluation for ${ev.crewMemberRole} (${ev.crewMemberName}):\n${ev.evaluation}`).join("\n\n---\n\n");
     
     const baseAiInput: PurserReportInput = {
       flightNumber: data.flightNumber, flightDate: new Date(data.flightDate).toISOString().split('T')[0], departureAirport: data.departureAirport, arrivalAirport: data.arrivalAirport,
@@ -297,8 +296,8 @@ export function PurserReportTool() {
     };
 
     const aiInput: PurserReportInput = { ...baseAiInput };
-    if (crewPerformanceNotesString) {
-      aiInput.crewPerformanceNotes = crewPerformanceNotesString;
+    if (addedCrewEvaluations.length > 0) {
+      aiInput.crewPerformanceNotes = addedCrewEvaluations.map(ev => `Evaluation for ${ev.crewMemberRole} (${ev.crewMemberName}):\n${ev.evaluation}`).join("\n\n---\n\n");
     }
 
     let savedReportId: string | null = null;
@@ -348,9 +347,8 @@ export function PurserReportTool() {
           <Accordion type="single" collapsible defaultValue="flight-info" className="w-full space-y-4">
             
             <AccordionItem value="flight-info" className="border-none">
-              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm [&[data-state=open]>svg]:rotate-180">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                 <div className="flex items-center"><PlaneTakeoff className="mr-2 h-5 w-5 text-primary"/>Flight Information</div>
-                <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200" />
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
                 <div className="space-y-4">
@@ -377,9 +375,8 @@ export function PurserReportTool() {
             </AccordionItem>
 
             <AccordionItem value="crew-info" className="border-none">
-              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm [&[data-state=open]>svg]:rotate-180">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                 <div className="flex items-center"><Users className="mr-2 h-5 w-5 text-primary" />Crew Information</div>
-                 <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200" />
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
                 <div className="space-y-4">
@@ -399,9 +396,8 @@ export function PurserReportTool() {
             </AccordionItem>
 
             <AccordionItem value="passenger-load" className="border-none">
-              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm [&[data-state=open]>svg]:rotate-180">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                 <div className="flex items-center"><Users className="mr-2 h-5 w-5 text-primary" />Passenger Load</div>
-                <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200" />
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -414,9 +410,8 @@ export function PurserReportTool() {
             </AccordionItem>
 
             <AccordionItem value="general-summary" className="border-none">
-              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm [&[data-state=open]>svg]:rotate-180">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                 <div className="flex items-center"><ClipboardList className="mr-2 h-5 w-5 text-primary"/>General Flight Summary</div>
-                 <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200" />
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
                  <FormField control={form.control} name="generalFlightSummary" render={({ field }) => (<FormItem><FormLabel>Summary Content</FormLabel><FormControl><Textarea placeholder="Overall flight conduct, punctuality, atmosphere, IFE status, any general incidents or positive feedback..." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -424,9 +419,8 @@ export function PurserReportTool() {
             </AccordionItem>
 
             <AccordionItem value="report-sections" className="border-none">
-              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm [&[data-state=open]>svg]:rotate-180">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                 <div className="flex items-center"><ClipboardList className="mr-2 h-5 w-5 text-primary"/>Specific Report Sections</div>
-                 <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200" />
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm space-y-6">
                 <div className="space-y-4 p-4 border rounded-md"><h3 className="text-md font-semibold">Add Report Section</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
@@ -438,9 +432,8 @@ export function PurserReportTool() {
             </AccordionItem>
 
             <AccordionItem value="crew-evaluations" className="border-none">
-              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm [&[data-state=open]>svg]:rotate-180">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                 <div className="flex items-center"><MessageSquareQuote className="mr-2 h-5 w-5 text-primary"/>Crew Performance Evaluation</div>
-                <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200" />
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm space-y-6">
                  <div className="space-y-4 p-4 border rounded-md">
