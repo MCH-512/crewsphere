@@ -29,7 +29,7 @@ import { Edit3 as EditIconMain, Loader2, AlertTriangle, CheckCircle, PlusCircle,
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
-import { collection, doc, getDoc, writeBatch, serverTimestamp, query, where, getDocs, deleteDoc, addDoc, Timestamp } from "firebase/firestore";
+import { collection, doc, getDoc, writeBatch, serverTimestamp, query, where, getDocs, deleteDoc, addDoc, Timestamp, orderBy } from "firebase/firestore";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { Progress } from "@/components/ui/progress";
 import { useRouter, useParams } from "next/navigation";
@@ -451,7 +451,7 @@ export default function EditComprehensiveCoursePage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <Form {...addQuestionForm}>
-                <div className="space-y-4 p-4 border rounded-md"> {/* Replaced inner form tag with div */}
+                <div className="space-y-4 p-4 border rounded-md">
                   <h4 className="text-md font-medium mb-2">Add New Question</h4>
                   <FormField
                     control={addQuestionForm.control}
@@ -548,11 +548,11 @@ export default function EditComprehensiveCoursePage() {
                       );
                     }}
                   />
-                  <Button type="button" onClick={addQuestionForm.handleSubmit(handleAddQuestion)} disabled={isAddingQuestion} size="sm"> {/* Changed type to button and added onClick */}
+                  <Button type="button" onClick={() => addQuestionForm.handleSubmit(handleAddQuestion)()} disabled={isAddingQuestion} size="sm">
                     {isAddingQuestion && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Add Question to Quiz
                   </Button>
-                </div> {/* End of div replacing inner form */}
+                </div>
               </Form>
               <Separator className="my-6"/>
               <div>
