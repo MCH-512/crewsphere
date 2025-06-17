@@ -410,16 +410,17 @@ export default function RequestsPage() {
             <AlertDialogTitle>Confirm Request Submission</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to submit this request?
-              {formDataToSubmit && (
-                <div className="mt-4 text-sm text-left space-y-1 border p-3 rounded-md bg-muted/50">
-                  <div><strong>Category:</strong> {formDataToSubmit.requestCategory}</div>
-                  {formDataToSubmit.specificRequestType && <div><strong>Type:</strong> {formDataToSubmit.specificRequestType}</div>}
-                  <div><strong>Urgency:</strong> {formDataToSubmit.urgencyLevel}</div>
-                  <div><strong>Subject:</strong> {formDataToSubmit.subject}</div>
-                  {formDataToSubmit.details && <div><strong>Details (start):</strong> {formDataToSubmit.details.substring(0, 100)}{formDataToSubmit.details.length > 100 ? "..." : ""}</div>}
-                </div>
-              )}
             </AlertDialogDescription>
+            {/* Moved the details block here, as a sibling to AlertDialogDescription */}
+            {formDataToSubmit && (
+              <div className="mt-4 text-sm text-left space-y-1 border p-3 rounded-md bg-muted/50">
+                <div><strong>Category:</strong> {formDataToSubmit.requestCategory}</div>
+                {formDataToSubmit.specificRequestType && <div><strong>Type:</strong> {formDataToSubmit.specificRequestType}</div>}
+                <div><strong>Urgency:</strong> {formDataToSubmit.urgencyLevel}</div>
+                <div><strong>Subject:</strong> {formDataToSubmit.subject}</div>
+                {formDataToSubmit.details && <div><strong>Details (start):</strong> {formDataToSubmit.details.substring(0, 100)}{formDataToSubmit.details.length > 100 ? "..." : ""}</div>}
+              </div>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setFormDataToSubmit(null)} disabled={isSubmitting}>Cancel</AlertDialogCancel>
