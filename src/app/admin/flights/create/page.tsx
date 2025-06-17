@@ -41,13 +41,15 @@ const weekDays = [
   { id: 0, label: "Sun" } // date-fns: 0 for Sunday, 6 for Saturday
 ];
 
+const aircraftTypes = ["B737-800", "B737-300", "B777", "A320", "A319", "A321", "A330", "ACMI"];
+
 const flightRecurrenceFormSchema = z.object({
   flightNumber: z.string().min(3, "Flight number must be at least 3 characters.").max(10),
   departureAirport: z.string().min(3, "Airport code must be 3 characters.").max(4).toUpperCase(),
   arrivalAirport: z.string().min(3, "Airport code must be 3 characters.").max(4).toUpperCase(),
   baseDepartureTimeUTC: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time. Use HH:MM UTC format."),
   baseArrivalTimeUTC: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time. Use HH:MM UTC format."),
-  aircraftType: z.string().min(3, "Aircraft type must be at least 3 characters.").max(50),
+  aircraftType: z.string({ required_error: "Please select an aircraft type."}).min(1, "Aircraft type is required."),
   status: z.enum(["Scheduled", "On Time", "Delayed", "Cancelled"], { required_error: "Please select a flight status." }),
 
   frequency: z.enum(["once", "daily", "weekly", "monthly", "custom"], { required_error: "Frequency is required." }),
@@ -91,7 +93,7 @@ const defaultValues: Partial<FlightRecurrenceFormValues> = {
   arrivalAirport: "",
   baseDepartureTimeUTC: "10:00",
   baseArrivalTimeUTC: "12:00",
-  aircraftType: "",
+  aircraftType: "", // Will be handled by Select placeholder
   status: "Scheduled",
   frequency: "once",
   startDate: new Date().toISOString().split('T')[0],
@@ -318,7 +320,28 @@ export default function CreateFlightPage() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input placeholder="e.g., BA245" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="aircraftType" render={({ field }) => (<FormItem><FormLabel>Aircraft Type</FormLabel><FormControl><Input placeholder="e.g., Boeing 787-9" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField
+                      control={form.control}
+                      name="aircraftType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Aircraft Type</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select aircraft type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {aircraftTypes.map((type) => (
+                                <SelectItem key={type} value={type}>{type}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="departureAirport" render={({ field }) => (<FormItem><FormLabel>Departure Airport (ICAO/IATA)</FormLabel><FormControl><Input placeholder="e.g., EGLL" {...field} /></FormControl><FormMessage /></FormItem>)} />

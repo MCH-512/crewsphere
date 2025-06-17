@@ -33,13 +33,15 @@ import { useRouter, useParams } from "next/navigation";
 import { formatISO, parseISO, format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
+const aircraftTypes = ["B737-800", "B737-300", "B777", "A320", "A319", "A321", "A330", "ACMI"];
+
 const flightEditFormSchema = z.object({
   flightNumber: z.string().min(3, "Flight number must be at least 3 characters.").max(10),
   departureAirport: z.string().min(3, "Airport code must be 3 characters.").max(4).toUpperCase(),
   arrivalAirport: z.string().min(3, "Airport code must be 3 characters.").max(4).toUpperCase(),
   scheduledDepartureDateTimeUTC: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid departure datetime."}),
   scheduledArrivalDateTimeUTC: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid arrival datetime."}),
-  aircraftType: z.string().min(3, "Aircraft type must be at least 3 characters.").max(50),
+  aircraftType: z.string({ required_error: "Please select an aircraft type."}).min(1, "Aircraft type is required."),
   status: z.enum(["Scheduled", "On Time", "Delayed", "Cancelled"], { required_error: "Please select a flight status." }),
   // purserReportSubmitted and purserReportId are not directly editable in the form
 })
@@ -223,7 +225,28 @@ export default function EditFlightPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input placeholder="e.g., BA245" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="aircraftType" render={({ field }) => (<FormItem><FormLabel>Aircraft Type</FormLabel><FormControl><Input placeholder="e.g., Boeing 787-9" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField
+                      control={form.control}
+                      name="aircraftType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Aircraft Type</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select aircraft type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {aircraftTypes.map((type) => (
+                                <SelectItem key={type} value={type}>{type}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="departureAirport" render={({ field }) => (<FormItem><FormLabel>Departure Airport (ICAO/IATA)</FormLabel><FormControl><Input placeholder="e.g., EGLL" {...field} /></FormControl><FormMessage /></FormItem>)} />
