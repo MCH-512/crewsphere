@@ -29,7 +29,20 @@ import { Edit3 as EditIconMain, Loader2, AlertTriangle, CheckCircle, PlusCircle,
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
-import { collection, doc, getDoc, writeBatch, serverTimestamp, query, where, getDocs, deleteDoc, addDoc, Timestamp, orderBy } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  writeBatch,
+  serverTimestamp,
+  query,
+  where,
+  getDocs,
+  deleteDoc,
+  addDoc,
+  Timestamp,
+  orderBy // Added orderBy here
+} from "firebase/firestore";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { Progress } from "@/components/ui/progress";
 import { useRouter, useParams } from "next/navigation";
@@ -450,7 +463,7 @@ export default function EditComprehensiveCoursePage() {
               <CardDescription>Add, view, (and soon edit/delete) questions for this course's quiz.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <Form {...addQuestionForm}>
+               <Form {...addQuestionForm}>
                 <div className="space-y-4 p-4 border rounded-md">
                   <h4 className="text-md font-medium mb-2">Add New Question</h4>
                   <FormField
@@ -649,5 +662,3 @@ export default function EditComprehensiveCoursePage() {
     </div>
   );
 }
-
-    
