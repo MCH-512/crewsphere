@@ -28,6 +28,7 @@ interface CourseData {
   quizId: string;
   quizTitle: string; 
   mandatory: boolean;
+  published?: boolean; // Added published field
   chapters?: Chapter[];
   duration?: string; 
   fileURL?: string; 
@@ -91,7 +92,7 @@ export default function TrainingHubPage() {
     setIsLoadingCourses(true);
     setLoadingError(null);
     try {
-      const coursesQuery = query(collection(db, "courses"), orderBy("title"));
+      const coursesQuery = query(collection(db, "courses"), where("published", "==", true), orderBy("title"));
       const coursesSnapshot = await getDocs(coursesQuery);
       const fetchedCoursesData = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CourseData));
 
@@ -560,4 +561,5 @@ export default function TrainingHubPage() {
   );
 }
 
+    
     

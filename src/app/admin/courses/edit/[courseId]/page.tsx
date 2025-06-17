@@ -25,7 +25,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit3 as EditIconMain, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, HelpCircle, Trash2 } from "lucide-react";
+import { Edit3 as EditIconMain, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, HelpCircle, Trash2, ToggleRight, ToggleLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
@@ -41,7 +41,7 @@ import {
   deleteDoc,
   addDoc,
   Timestamp,
-  orderBy // Added orderBy here
+  orderBy
 } from "firebase/firestore";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { Progress } from "@/components/ui/progress";
@@ -188,6 +188,7 @@ export default function EditComprehensiveCoursePage() {
             description: courseData.description || "",
             duration: courseData.duration || "1 hour",
             mandatory: courseData.mandatory || false,
+            published: courseData.published || false, // Load published status
             imageHint: courseData.imageHint || "",
             existingFileUrl: courseData.fileURL || "",
             chapters: courseData.chapters && courseData.chapters.length > 0 ? courseData.chapters : [defaultChapterValue],
@@ -256,7 +257,7 @@ export default function EditComprehensiveCoursePage() {
       const courseDocRef = doc(db, "courses", courseId);
       batch.update(courseDocRef, {
         title: data.title, category: data.category, courseType: data.courseType, referenceBody: data.referenceBody || null, description: data.description,
-        duration: data.duration, mandatory: data.mandatory, fileURL: fileDownloadURL, imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
+        duration: data.duration, mandatory: data.mandatory, published: data.published, fileURL: fileDownloadURL, imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
         chapters: data.chapters || [],
         updatedAt: serverTimestamp(),
       });
@@ -385,19 +386,39 @@ export default function EditComprehensiveCoursePage() {
               <FormField control={courseEditForm.control} name="description" render={({ field }) => (
                 <FormItem><FormLabel>Description*</FormLabel><FormControl><Textarea placeholder="Detailed overview of the course..." className="min-h-[120px]" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
-              <FormField
-                control={courseEditForm.control}
-                name="mandatory"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <FormLabel>Is this course mandatory?</FormLabel>
-                      <FormDescription>Indicates if completion is required for personnel.</FormDescription>
-                    </div>
-                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                    control={courseEditForm.control}
+                    name="mandatory"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                        <FormLabel>Is this course mandatory?</FormLabel>
+                        <FormDescription>Indicates if completion is required for personnel.</FormDescription>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={courseEditForm.control}
+                    name="published"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                            <FormLabel className="flex items-center">
+                                {field.value ? <ToggleRight className="mr-2 h-5 w-5 text-green-500"/> : <ToggleLeft className="mr-2 h-5 w-5 text-muted-foreground"/>}
+                                Course Visibility
+                            </FormLabel>
+                            <FormDescription>
+                                {field.value ? "Published (visible to users)" : "Draft (hidden from users)"}
+                            </FormDescription>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Course visibility toggle" /></FormControl>
+                    </FormItem>
+                    )}
+                />
+              </div>
               <FormField control={courseEditForm.control} name="associatedFile" render={({ field: { onChange, value, ...rest }}) => (
                 <FormItem>
                   <FormLabel className="flex items-center"><UploadCloud className="mr-2 h-5 w-5" />Main Course Material (Optional)</FormLabel>
@@ -463,8 +484,7 @@ export default function EditComprehensiveCoursePage() {
               <CardDescription>Add, view, (and soon edit/delete) questions for this course's quiz.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-               <Form {...addQuestionForm}>
-                <div className="space-y-4 p-4 border rounded-md">
+              <div className="space-y-4 p-4 border rounded-md">
                   <h4 className="text-md font-medium mb-2">Add New Question</h4>
                   <FormField
                     control={addQuestionForm.control}
@@ -566,7 +586,6 @@ export default function EditComprehensiveCoursePage() {
                     Add Question to Quiz
                   </Button>
                 </div>
-              </Form>
               <Separator className="my-6"/>
               <div>
                 <h4 className="text-md font-medium mb-3">Existing Questions ({quizQuestions.length})</h4>
@@ -624,6 +643,7 @@ export default function EditComprehensiveCoursePage() {
                         <li>Course Title: {watchedFormValues.title || "Not set"}</li>
                         <li>Category: {watchedFormValues.category || "Not set"}</li>
                         <li>Mandatory: {watchedFormValues.mandatory ? "Yes" : "No"}</li>
+                        <li>Published: {watchedFormValues.published ? "Yes (Visible)" : "No (Draft)"}</li>
                         <li>Chapters: {watchedFormValues.chapters?.length || 0}</li>
                         <li>Passing Score: {watchedFormValues.passingThreshold}%</li>
                         <li>Certificate Valid For: {watchedFormValues.certificateExpiryDays === 0 ? "No Expiry" : `${watchedFormValues.certificateExpiryDays} days`}</li>
@@ -662,3 +682,5 @@ export default function EditComprehensiveCoursePage() {
     </div>
   );
 }
+
+    
