@@ -174,8 +174,8 @@ export default function AdminPurserReportsPage() {
                 Submitted by: {selectedReport.userEmail} on {format(selectedReport.createdAt.toDate(), "PPpp")}
               </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="flex-grow pr-6 min-h-0"> {/* Added min-h-0 here */}
-              <div className="py-4 space-y-6">
+            <ScrollArea className="flex-grow min-h-0"> 
+              <div className="p-4 space-y-6"> {/* Moved py-4 to p-4 for consistent padding */}
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Key Highlights (AI Generated):</h3>
                   {selectedReport.reportOutput.keyHighlights && selectedReport.reportOutput.keyHighlights.length > 0 ? (
