@@ -183,7 +183,7 @@ export default function EditComprehensiveCoursePage() {
             randomizeAnswers: quizData?.randomizeAnswers || false,
             passingThreshold: certRuleData?.passingThreshold || 80,
             certificateExpiryDays: certRuleData?.expiryDurationDays !== undefined ? certRuleData.expiryDurationDays : 365,
-            certificateLogoUrl: certRuleData?.certificateLogoUrl || "https://placehold.co/150x50.png",
+            certificateLogoUrl: certRuleData?.logoURL || "https://placehold.co/150x50.png",
             certificateSignature: certRuleData?.signatureTextOrURL || "Express Airline Training Department",
           });
           replaceChapters(courseData.chapters && courseData.chapters.length > 0 ? courseData.chapters.map((ch: any) => ({...ch})) : [defaultChapterValue]);
@@ -451,7 +451,7 @@ export default function EditComprehensiveCoursePage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <Form {...addQuestionForm}>
-                <form onSubmit={addQuestionForm.handleSubmit(handleAddQuestion)} className="space-y-4 p-4 border rounded-md">
+                <div className="space-y-4 p-4 border rounded-md"> {/* Replaced inner form tag with div */}
                   <h4 className="text-md font-medium mb-2">Add New Question</h4>
                   <FormField
                     control={addQuestionForm.control}
@@ -548,11 +548,11 @@ export default function EditComprehensiveCoursePage() {
                       );
                     }}
                   />
-                  <Button type="submit" disabled={isAddingQuestion} size="sm">
+                  <Button type="button" onClick={addQuestionForm.handleSubmit(handleAddQuestion)} disabled={isAddingQuestion} size="sm"> {/* Changed type to button and added onClick */}
                     {isAddingQuestion && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Add Question to Quiz
                   </Button>
-                </form>
+                </div> {/* End of div replacing inner form */}
               </Form>
               <Separator className="my-6"/>
               <div>
@@ -649,3 +649,5 @@ export default function EditComprehensiveCoursePage() {
     </div>
   );
 }
+
+    
