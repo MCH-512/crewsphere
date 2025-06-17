@@ -409,7 +409,7 @@ export function PurserReportTool() {
           <Accordion type="single" collapsible defaultValue="flight-info" className="w-full space-y-4">
             
             <AccordionItem value="flight-info" className="border-none">
-              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
+               <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                 <div className="flex items-center"><PlaneTakeoff className="mr-2 h-5 w-5 text-primary"/>Flight Information</div>
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
