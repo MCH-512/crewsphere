@@ -41,14 +41,8 @@ interface FlightForSelection {
   arrivalAirport: string;
   scheduledDepartureDateTimeUTC: string; // ISO string
   aircraftType: string;
-  // Potential future fields for crew UIDs if available directly in list:
-  // assignedCaptainUid?: string;
-  // assignedPurserUid?: string;
-  // ... etc.
 }
 
-// Define a more detailed flight document structure, assuming these fields exist in Firestore for a single flight.
-// This is a SUPPOSITION for the pre-filling logic.
 interface FullFlightData extends FlightForSelection {
     assignedCaptainUid?: string;
     assignedFirstOfficerUid?: string;
@@ -56,7 +50,6 @@ interface FullFlightData extends FlightForSelection {
     assignedCabinCrewR1Uid?: string;
     assignedCabinCrewL2Uid?: string;
     assignedCabinCrewR2Uid?: string;
-    // other flight details...
 }
 
 
@@ -262,7 +255,6 @@ export function PurserReportTool() {
     }
     const selectedFlightBasic = availableFlights.find(f => f.id === flightId);
     if (selectedFlightBasic) {
-        // Pre-fill basic flight info
         form.setValue("flightNumber", selectedFlightBasic.flightNumber);
         form.setValue("flightDate", new Date(selectedFlightBasic.scheduledDepartureDateTimeUTC).toISOString().split('T')[0]);
         form.setValue("departureAirport", selectedFlightBasic.departureAirport);
@@ -270,14 +262,11 @@ export function PurserReportTool() {
         form.setValue("aircraftTypeRegistration", selectedFlightBasic.aircraftType); 
         setSelectedFlightIdState(flightId);
 
-        // Attempt to pre-fill crew info by fetching full flight document
-        // This assumes the flight document in Firestore contains assignedXxxUid fields
         try {
             const flightDocRef = doc(db, "flights", flightId);
             const flightSnap = await getDoc(flightDocRef);
             if (flightSnap.exists()) {
                 const fullFlightData = flightSnap.data() as FullFlightData;
-
                 const findAndSetCrew = (uid: string | undefined, list: CrewUser[], fieldName: keyof PurserReportFormValues) => {
                     if (uid) {
                         const crewMember = list.find(member => member.uid === uid);
@@ -290,7 +279,6 @@ export function PurserReportTool() {
                         form.setValue(fieldName, PLACEHOLDER_NONE_VALUE);
                     }
                 };
-                
                 findAndSetCrew(fullFlightData.assignedCaptainUid, pilotsList, 'captainName');
                 findAndSetCrew(fullFlightData.assignedFirstOfficerUid, pilotsList, 'firstOfficerName');
                 findAndSetCrew(fullFlightData.assignedPurserUid, supervisingCrewList, 'purserName');
@@ -298,24 +286,14 @@ export function PurserReportTool() {
                 findAndSetCrew(fullFlightData.assignedCabinCrewL2Uid, cabinCrewList, 'cabinCrewL2');
                 findAndSetCrew(fullFlightData.assignedCabinCrewR2Uid, cabinCrewList, 'cabinCrewR2');
             } else {
-                // Reset crew fields if full flight data not found, keeping basic flight info
-                form.setValue('captainName', PLACEHOLDER_NONE_VALUE);
-                form.setValue('firstOfficerName', PLACEHOLDER_NONE_VALUE);
-                form.setValue('purserName', PLACEHOLDER_NONE_VALUE);
-                form.setValue('cabinCrewR1', PLACEHOLDER_NONE_VALUE);
-                form.setValue('cabinCrewL2', PLACEHOLDER_NONE_VALUE);
-                form.setValue('cabinCrewR2', PLACEHOLDER_NONE_VALUE);
+                form.setValue('captainName', PLACEHOLDER_NONE_VALUE); form.setValue('firstOfficerName', PLACEHOLDER_NONE_VALUE); form.setValue('purserName', PLACEHOLDER_NONE_VALUE);
+                form.setValue('cabinCrewR1', PLACEHOLDER_NONE_VALUE); form.setValue('cabinCrewL2', PLACEHOLDER_NONE_VALUE); form.setValue('cabinCrewR2', PLACEHOLDER_NONE_VALUE);
             }
         } catch (error) {
             console.error("Error fetching full flight data for crew pre-fill:", error);
             toast({title: "Crew Pre-fill Incomplete", description: "Could not fetch detailed crew assignments for this flight. Please select manually.", variant: "default"});
-             // Reset crew fields on error as well
-            form.setValue('captainName', PLACEHOLDER_NONE_VALUE);
-            form.setValue('firstOfficerName', PLACEHOLDER_NONE_VALUE);
-            form.setValue('purserName', PLACEHOLDER_NONE_VALUE);
-            form.setValue('cabinCrewR1', PLACEHOLDER_NONE_VALUE);
-            form.setValue('cabinCrewL2', PLACEHOLDER_NONE_VALUE);
-            form.setValue('cabinCrewR2', PLACEHOLDER_NONE_VALUE);
+            form.setValue('captainName', PLACEHOLDER_NONE_VALUE); form.setValue('firstOfficerName', PLACEHOLDER_NONE_VALUE); form.setValue('purserName', PLACEHOLDER_NONE_VALUE);
+            form.setValue('cabinCrewR1', PLACEHOLDER_NONE_VALUE); form.setValue('cabinCrewL2', PLACEHOLDER_NONE_VALUE); form.setValue('cabinCrewR2', PLACEHOLDER_NONE_VALUE);
         }
     } else {
          setSelectedFlightIdState(null);
@@ -504,14 +482,31 @@ export function PurserReportTool() {
 
             <AccordionItem value="report-sections" className="border-none">
               <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
-                <div className="flex items-center"><ClipboardList className="mr-2 h-5 w-5 text-primary"/>Specific Report Sections</div>
+                 <div className="flex items-center"><ClipboardList className="mr-2 h-5 w-5 text-primary"/>Specific Report Sections</div>
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm space-y-6">
                 <div className="space-y-4 p-4 border rounded-md"><h3 className="text-md font-semibold">Add Report Section</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                     <FormItem><FormLabel>Section Type</FormLabel><Select value={currentSectionType} onValueChange={(v) => setCurrentSectionType(v as ReportSectionType)}><FormControl><SelectTrigger><SelectValue placeholder="Select section type" /></SelectTrigger></FormControl><SelectContent>{reportSectionTypes.map(t => (<SelectItem key={t} value={t}>{t}</SelectItem>))}</SelectContent></Select></FormItem>
                     <Button type="button" onClick={handleAddSection} className="self-end" disabled={!currentSectionType || !currentSectionContent.trim()}><PlusCircle className="mr-2 h-4 w-4"/> Add Section</Button>
                 </div><FormItem><FormLabel>Section Content</FormLabel><Textarea placeholder="Details for selected section..." className="min-h-[100px]" value={currentSectionContent} onChange={(e) => setCurrentSectionContent(e.target.value)}/></FormItem></div>
-                {addedSections.length > 0 && (<div className="space-y-3"><h3 className="text-md font-semibold mt-4">Added Sections:</h3>{addedSections.map(s => (<Card key={s.id} className="p-3 bg-muted/50"><div className="flex justify-between items-center mb-1"><CardTitle className="text-sm font-medium">{s.type}</CardTitle><Button variant="ghost" size="icon" onClick={() => handleRemoveSection(s.id)} className="h-6 w-6 text-destructive hover:text-destructive/80"><Trash2 className="h-4 w-4" /></Button></div><p className="text-sm text-muted-foreground whitespace-pre-wrap">{s.content}</p></Card>))}</div>)}
+                {addedSections.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-md font-semibold mt-4">Added Sections:</h3>
+                    {addedSections.map(s => (
+                      <Card key={s.id} className="bg-muted/50 shadow-sm">
+                        <CardHeader className="flex flex-row justify-between items-center py-2 px-3">
+                          <CardTitle className="text-sm font-medium">{s.type}</CardTitle>
+                          <Button variant="ghost" size="icon" onClick={() => handleRemoveSection(s.id)} className="h-7 w-7 text-destructive hover:text-destructive/80">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </CardHeader>
+                        <CardContent className="text-sm text-muted-foreground whitespace-pre-wrap px-3 pb-3 pt-0">
+                          {s.content}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </AccordionContent>
             </AccordionItem>
 
@@ -542,7 +537,24 @@ export function PurserReportTool() {
                         <Textarea placeholder="Performance notes, commendations, areas for improvement..." className="min-h-[100px]" value={currentEvalContent} onChange={(e) => setCurrentEvalContent(e.target.value)}/>
                     </FormItem>
                 </div>
-                {addedCrewEvaluations.length > 0 && (<div className="space-y-3 mt-4"><h3 className="text-md font-semibold">Added Evaluations:</h3>{addedCrewEvaluations.map(ev => (<Card key={ev.id} className="p-3 bg-muted/50"><div className="flex justify-between items-center mb-1"><CardTitle className="text-sm font-medium">{ev.crewMemberRole}: {ev.crewMemberName}</CardTitle><Button variant="ghost" size="icon" onClick={() => handleRemoveCrewEvaluation(ev.id)} className="h-6 w-6 text-destructive hover:text-destructive/80"><Trash2 className="h-4 w-4" /></Button></div><p className="text-sm text-muted-foreground whitespace-pre-wrap">{ev.evaluation}</p></Card>))}</div>)}
+                {addedCrewEvaluations.length > 0 && (
+                    <div className="space-y-3 mt-4">
+                        <h3 className="text-md font-semibold">Added Evaluations:</h3>
+                        {addedCrewEvaluations.map(ev => (
+                            <Card key={ev.id} className="bg-muted/50 shadow-sm">
+                                <CardHeader className="flex flex-row justify-between items-center py-2 px-3">
+                                    <CardTitle className="text-sm font-medium">{ev.crewMemberRole}: {ev.crewMemberName}</CardTitle>
+                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveCrewEvaluation(ev.id)} className="h-7 w-7 text-destructive hover:text-destructive/80">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </CardHeader>
+                                <CardContent className="text-sm text-muted-foreground whitespace-pre-wrap px-3 pb-3 pt-0">
+                                    {ev.evaluation}
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                )}
               </AccordionContent>
             </AccordionItem>
 
