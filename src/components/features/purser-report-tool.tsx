@@ -322,7 +322,7 @@ export function PurserReportTool() {
         .map(ev => `Evaluation for ${ev.crewMemberRole} (${ev.crewMemberName}):\n${ev.evaluation}`)
         .join("\n\n---\n\n");
 
-    const aiInput: PurserReportInput = {
+    const baseAiInput: PurserReportInput = {
       flightNumber: data.flightNumber,
       flightDate: new Date(data.flightDate).toISOString().split('T')[0],
       departureAirport: data.departureAirport,
@@ -332,8 +332,14 @@ export function PurserReportTool() {
       passengerLoad: { total: Number(data.passengerLoad.total), adults: Number(data.passengerLoad.adults), children: Number(data.passengerLoad.children), infants: Number(data.passengerLoad.infants) },
       generalFlightSummary: data.generalFlightSummary,
       ...dynamicSections,
-      crewPerformanceNotes: crewPerformanceNotesString || undefined,
+      // crewPerformanceNotes will be added conditionally below
     };
+
+    const aiInput: PurserReportInput = { ...baseAiInput };
+    if (crewPerformanceNotesString) {
+      aiInput.crewPerformanceNotes = crewPerformanceNotesString;
+    }
+
 
     let savedReportId: string | null = null;
 
