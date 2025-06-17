@@ -8,14 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { User, Bell, Shield, Palette, Loader2, Info, CalendarDays } from "lucide-react"; // Changed InfoSquare to Info
+import { User, Bell, Shield, Palette, Loader2, Info, CalendarDays } from "lucide-react"; 
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { updateProfile as updateAuthProfile } from "firebase/auth"; // Renamed to avoid conflict
+import { updateProfile as updateAuthProfile } from "firebase/auth"; 
 import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { format } from "date-fns";
-import Image from "next/image"; // Added Image import
+import Image from "next/image"; 
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -23,8 +23,6 @@ export default function SettingsPage() {
   
   const [displayName, setDisplayName] = React.useState("");
   const [fullName, setFullName] = React.useState("");
-  // employeeId and joiningDate are displayed from context, not directly editable by user here.
-  // If they were to be editable, they'd need their own state and handling.
 
   const [isUpdatingProfile, setIsUpdatingProfile] = React.useState(false);
 
@@ -32,7 +30,6 @@ export default function SettingsPage() {
     if (user) {
       setDisplayName(user.displayName || "");
       setFullName(user.fullName || "");
-      // employeeId and joiningDate will be read directly from user object for display
     }
   }, [user]);
 
@@ -57,19 +54,14 @@ export default function SettingsPage() {
         fullName: fullName.trim(),
       };
 
-      // Update Firebase Auth display name if it changed
       if (displayName.trim() !== auth.currentUser.displayName) {
         await updateAuthProfile(auth.currentUser, { displayName: displayName.trim() });
       }
 
-      // Update Firestore document
       const userDocRef = doc(db, "users", user.uid);
       await updateDoc(userDocRef, updatesForFirestore);
 
       toast({ title: "Profile Updated", description: "Your profile information has been successfully updated." });
-      // AuthContext should pick up displayName change from Firebase Auth.
-      // For fullName, AuthContext might need a refresh or a manual update if not re-fetching on every auth change.
-      // However, our AuthProvider now fetches full Firestore doc, so it should update on next state change.
     } catch (error: any) {
       console.error("Error updating profile:", error);
       toast({ title: "Update Failed", description: error.message || "Could not update your profile.", variant: "destructive" });
@@ -81,13 +73,11 @@ export default function SettingsPage() {
   const formatDateDisplay = (dateString?: string | null) => {
     if (!dateString) return "N/A";
     try {
-      // Assuming dateString is YYYY-MM-DD or a full ISO string
       const dateObj = new Date(dateString);
-      // Check if date is valid. getTime() returns NaN for invalid dates.
       if (isNaN(dateObj.getTime())) return "Invalid Date";
-      return format(dateObj, "PPP"); // e.g., Jul 28, 2024
+      return format(dateObj, "PPP"); 
     } catch (e) {
-      return dateString; // Fallback to original string if formatting fails
+      return dateString; 
     }
   };
 
@@ -115,7 +105,6 @@ export default function SettingsPage() {
         </CardHeader>
       </Card>
 
-      {/* Profile Settings */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><User className="w-5 h-5 text-primary" /> Profile Information</CardTitle>
@@ -187,7 +176,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Notification Settings */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Bell className="w-5 h-5 text-primary" /> Notification Preferences</CardTitle>
@@ -226,7 +214,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Appearance Settings */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Palette className="w-5 h-5 text-primary" /> Appearance</CardTitle>
@@ -245,7 +232,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Security Settings */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Shield className="w-5 h-5 text-primary" /> Security</CardTitle>
@@ -268,4 +254,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

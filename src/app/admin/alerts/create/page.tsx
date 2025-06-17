@@ -103,7 +103,7 @@ export default function CreateAlertPage() {
       toast({
         title: "Alert Created Successfully",
         description: `The alert "${data.title}" has been broadcast.`,
-        action: <CheckCircle className="text-green-500" />,
+        action: <CheckCircle className="text-success-foreground" />,
       });
       form.reset();
     } catch (error) {

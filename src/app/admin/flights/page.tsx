@@ -219,7 +219,7 @@ export default function AdminFlightsPage() {
                         <TableCell>
                           {flight.purserReportSubmitted ? (
                             <div className="flex items-center gap-1">
-                              <Badge variant="success" className="bg-green-500 hover:bg-green-600">
+                              <Badge variant="success">
                                   <CheckCircle className="mr-1 h-3 w-3" /> Submitted
                               </Badge>
                               {flight.purserReportId && (
@@ -290,4 +290,3 @@ export default function AdminFlightsPage() {
     </TooltipProvider>
   );
 }
-

@@ -204,8 +204,8 @@ export default function AdminAlertsPage() {
                       <TableCell>{format(alert.createdAt.toDate(), "PPp")}</TableCell>
                       <TableCell className="text-sm">
                         {alert.acknowledgementCount !== undefined ? (
-                            <span className="flex items-center">
-                                <CheckSquare className="mr-1.5 h-4 w-4 text-green-600"/> 
+                            <span className="flex items-center text-success-foreground">
+                                <CheckSquare className="mr-1.5 h-4 w-4"/> 
                                 {alert.acknowledgementCount} {alert.userId ? "" : "user(s)"}
                             </span>
                         ) : (

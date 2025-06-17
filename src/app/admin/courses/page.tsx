@@ -222,7 +222,7 @@ export default function AdminCoursesPage() {
                       <TableCell>{course.quizTitle || 'N/A'}</TableCell>
                       <TableCell>
                         {course.published ? (
-                          <Badge variant="default" className="flex items-center w-fit bg-green-500 hover:bg-green-600">
+                          <Badge variant="success" className="flex items-center w-fit">
                             <CheckCircle className="mr-1 h-3 w-3" /> Yes
                           </Badge>
                         ) : (

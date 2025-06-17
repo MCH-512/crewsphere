@@ -26,7 +26,7 @@ interface AlertData {
   createdAt: Timestamp;
   userId?: string | null; 
   iconName?: string | null;
-  linkUrl?: string | null; // Added linkUrl
+  linkUrl?: string | null; 
   isAcknowledged?: boolean;
   acknowledgedOn?: Timestamp | null;
 }
@@ -146,7 +146,7 @@ export default function MyAlertsPage() {
           : alert
       ));
       await refreshUnreadCount(); 
-      toast({ title: "Alert Acknowledged", description: "Marked as read.", action: <CheckCircle className="text-green-500" /> });
+      toast({ title: "Alert Acknowledged", description: "Marked as read.", action: <CheckCircle className="text-success-foreground" /> });
     } catch (err) {
       console.error("Error acknowledging alert:", err);
       toast({ title: "Acknowledgement Failed", description: "Could not mark alert as read.", variant: "destructive" });
@@ -280,7 +280,7 @@ export default function MyAlertsPage() {
                             {isAcknowledging[alert.id] ? "Acknowledging..." : "Acknowledge"}
                         </Button>
                         ) : (
-                        <div className="flex items-center text-xs text-green-600 dark:text-green-400">
+                        <div className="flex items-center text-xs text-success-foreground">
                             <CheckCircle className="mr-1.5 h-4 w-4" />
                             Acknowledged {alert.acknowledgedOn ? formatDistanceToNowStrict(alert.acknowledgedOn.toDate(), { addSuffix: true }) : ''}
                         </div>
@@ -295,4 +295,3 @@ export default function MyAlertsPage() {
     </div>
   );
 }
-

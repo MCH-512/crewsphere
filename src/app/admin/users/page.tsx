@@ -12,13 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogPrimitiveDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch"; // Added Switch
+import { Switch } from "@/components/ui/switch"; 
 import { useAuth } from "@/contexts/auth-context";
 import { db, auth as firebaseAuth } from "@/lib/firebase"; 
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff } from "lucide-react"; // Added Power, PowerOff
+import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { badgeVariants } from "@/components/ui/badge"; 
@@ -40,7 +40,7 @@ interface UserDocument {
   joiningDate?: string | null; 
   lastLogin?: Timestamp;
   createdAt?: Timestamp;
-  accountStatus?: AccountStatus; // Added accountStatus
+  accountStatus?: AccountStatus; 
 }
 
 const availableRoles: SpecificRole[] = ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'other'];
@@ -55,7 +55,7 @@ const manageUserFormSchema = z.object({
   employeeId: z.string().max(50).optional(), 
   joiningDate: z.string().optional().refine(val => val === "" || !val || !isNaN(new Date(val).getTime()), { message: "Invalid date format. Please use YYYY-MM-DD or leave empty."}), 
   role: z.string().optional(), 
-  accountStatus: z.boolean().default(true), // Added accountStatus, true for active
+  accountStatus: z.boolean().default(true), 
 })
 .refine((data) => {
   if (data.password) {
@@ -110,7 +110,7 @@ export default function AdminUsersPage() {
         employeeId: "",
         joiningDate: "",
         role: "", 
-        accountStatus: true, // Default to active
+        accountStatus: true, 
     }
   });
 
@@ -156,7 +156,7 @@ export default function AdminUsersPage() {
         employeeId: "",
         joiningDate: new Date().toISOString().split('T')[0], 
         role: "",
-        accountStatus: true, // Default to active
+        accountStatus: true, 
     });
     setIsManageUserDialogOpen(true);
   };
@@ -186,7 +186,7 @@ export default function AdminUsersPage() {
         employeeId: userToEdit.employeeId || "",
         joiningDate: formJoiningDate,
         role: userToEdit.role || "", 
-        accountStatus: userToEdit.accountStatus === 'active' || userToEdit.accountStatus === undefined, // Default to active if undefined
+        accountStatus: userToEdit.accountStatus === 'active' || userToEdit.accountStatus === undefined, 
         password: "", 
         confirmPassword: "",
     });
@@ -197,12 +197,6 @@ export default function AdminUsersPage() {
     setIsSubmitting(true);
     const joiningDateToSave = data.joiningDate ? data.joiningDate : null; 
     const statusToSave: AccountStatus = data.accountStatus ? 'active' : 'inactive';
-
-    // Note: Actually disabling a Firebase Auth user (auth.currentUser.disabled = true)
-    // requires Admin SDK privileges (typically via a Cloud Function).
-    // This implementation only sets an application-level status in Firestore.
-    // A Cloud Function could listen to changes on this 'accountStatus' field
-    // to then enable/disable the Firebase Auth user.
 
     if (isCreateMode) {
       if (!data.email || !data.password || !data.employeeId || !data.fullName || !data.displayName) {
@@ -227,7 +221,7 @@ export default function AdminUsersPage() {
           role: (data.role === NO_ROLE_SENTINEL || data.role === "") ? null : data.role as SpecificRole,
           accountStatus: statusToSave,
           createdAt: serverTimestamp(),
-          lastLogin: serverTimestamp(), // Set initial lastLogin for new users
+          lastLogin: serverTimestamp(), 
         });
 
         toast({ title: "User Created", description: `User ${data.email} created successfully with status: ${statusToSave}.` });
@@ -553,8 +547,8 @@ export default function AdminUsersPage() {
                             aria-label="Account status toggle"
                           />
                         </FormControl>
-                        {field.value ? <Power className="h-5 w-5 text-green-500" /> : <PowerOff className="h-5 w-5 text-destructive" />}
-                        <span className={cn("font-medium", field.value ? "text-green-600" : "text-destructive")}>
+                        {field.value ? <Power className="h-5 w-5 text-success-foreground" /> : <PowerOff className="h-5 w-5 text-destructive" />}
+                        <span className={cn("font-medium", field.value ? "text-success-foreground" : "text-destructive")}>
                           {field.value ? "Active" : "Inactive"}
                         </span>
                       </div>

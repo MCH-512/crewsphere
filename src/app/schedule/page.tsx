@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogPrimitiveDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogPrimitiveTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Added for inline error display
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -340,7 +340,7 @@ export default function SchedulePage() {
       let startTimeUTC: Timestamp | null = null;
       let endTimeUTC: Timestamp | null = null;
 
-      if (data.activityType !== "flight") { // Times are only for non-flight activities
+      if (data.activityType !== "flight") { 
         startTimeUTC = combineDateAndTime(activityBaseDate, data.startTime);
         endTimeUTC = combineDateAndTime(activityBaseDate, data.endTime);
       }
@@ -461,13 +461,13 @@ export default function SchedulePage() {
   const getActivityIcon = (activityType: UserActivity["activityType"]) => {
     switch (activityType) {
       case "flight": return <PlaneTakeoff className="h-5 w-5 text-primary" />;
-      case "off": return <Bed className="h-5 w-5 text-green-500" />;
-      case "standby": return <Shield className="h-5 w-5 text-orange-500" />;
-      case "leave": return <Briefcase className="h-5 w-5 text-blue-500" />;
-      case "sick": return <AlertTriangle className="h-5 w-5 text-red-500" />;
-      case "training": return <BookOpen className="h-5 w-5 text-purple-500" />;
+      case "off": return <Bed className="h-5 w-5 text-success-foreground" />;
+      case "standby": return <Shield className="h-5 w-5 text-orange-500" />; 
+      case "leave": return <Briefcase className="h-5 w-5 text-blue-500" />; 
+      case "sick": return <AlertTriangle className="h-5 w-5 text-destructive" />;
+      case "training": return <BookOpen className="h-5 w-5 text-purple-500" />; 
       case "other":
-      default: return <CircleHelp className="h-5 w-5 text-gray-500" />;
+      default: return <CircleHelp className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
@@ -804,4 +804,3 @@ export default function SchedulePage() {
     </div>
   );
 }
-

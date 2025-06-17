@@ -140,7 +140,7 @@ export default function EditAlertPage() {
       toast({
         title: "Alert Updated Successfully",
         description: `The alert "${data.title}" has been updated.`,
-        action: <CheckCircle className="text-green-500" />,
+        action: <CheckCircle className="text-success-foreground" />,
       });
       router.push('/admin/alerts');
     } catch (error) {
@@ -307,5 +307,4 @@ export default function EditAlertPage() {
     </div>
   );
 }
-
     

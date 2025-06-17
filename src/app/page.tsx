@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
-import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, ListChecks } from "lucide-react"; // Added ListChecks
+import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, ListChecks } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { generateDailyBriefing, type DailyBriefingOutput, type DailyBriefingInput } from "@/ai/flows/daily-briefing-flow";
@@ -17,7 +17,7 @@ import { collection, query, where, orderBy, limit, getDocs, Timestamp, or, doc, 
 import { formatDistanceToNowStrict, format, parseISO, addHours, subHours, startOfDay } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import { AnimatedCard } from "@/components/motion/animated-card";
-import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
+import { Skeleton } from "@/components/ui/skeleton"; 
 
 interface Alert {
   id: string;
@@ -135,7 +135,7 @@ export default function DashboardPage() {
             case "purser": schemaCompliantRole = "Purser"; break;
             case "cabin crew": schemaCompliantRole = "Cabin Crew"; break;
             case "instructor": schemaCompliantRole = "Instructor"; break;
-            case "pilote": schemaCompliantRole = "Pilot"; break; // Corrected from 'pilote' to 'Pilot' for schema
+            case "pilote": schemaCompliantRole = "Pilot"; break; 
             case "other": schemaCompliantRole = "Other"; break;
             default:
                 const validRoles: Array<DailyBriefingInput['userRole']> = ["Admin", "Purser", "Cabin Crew", "Instructor", "Pilot", "Other"];
@@ -501,15 +501,15 @@ export default function DashboardPage() {
             <CardContent className="space-y-3">
               {isUpcomingDutyLoading ? (
                 <div className="space-y-3 py-2">
-                  <Skeleton className="h-8 w-3/4" /> {/* Flight Number & Route */}
-                  <Skeleton className="h-4 w-1/2" /> {/* Aircraft */}
+                  <Skeleton className="h-8 w-3/4" /> 
+                  <Skeleton className="h-4 w-1/2" /> 
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2">
-                    <Skeleton className="h-4 w-full" /> {/* Report Time */}
-                    <Skeleton className="h-4 w-full" /> {/* Location */}
-                    <Skeleton className="h-4 w-full" /> {/* ETD */}
-                    <Skeleton className="h-4 w-full" /> {/* ETA */}
+                    <Skeleton className="h-4 w-full" /> 
+                    <Skeleton className="h-4 w-full" /> 
+                    <Skeleton className="h-4 w-full" /> 
+                    <Skeleton className="h-4 w-full" /> 
                   </div>
-                  <Skeleton className="h-9 w-full mt-3" /> {/* Button */}
+                  <Skeleton className="h-9 w-full mt-3" /> 
                 </div>
               ) : upcomingDutyError ? (
                 <ShadAlert variant="destructive">
@@ -596,7 +596,7 @@ export default function DashboardPage() {
                 </ShadAlert>
               ) : alerts.length === 0 ? (
                  <div className="text-center py-6">
-                  <CheckCircle className="h-10 w-10 mx-auto text-green-500 mb-2" />
+                  <CheckCircle className="h-10 w-10 mx-auto text-success-foreground mb-2" />
                   <p className="text-base text-muted-foreground">All clear! No new critical alerts.</p>
                   <p className="text-sm text-muted-foreground mt-1">You're up-to-date.</p>
                 </div>
@@ -628,14 +628,14 @@ export default function DashboardPage() {
       <AnimatedCard delay={0.35}>
         <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
-              <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-green-600"/>Safety &amp; Best Practice Tips</CardTitle>
+              <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-success-foreground"/>Safety &amp; Best Practice Tips</CardTitle>
               <CardDescription>Key reminders for maintaining safety and excellence.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
               {safetyTips.slice(0,2).map((tip) => (
-                  <div key={tip.id} className="flex items-start gap-3 p-3 border-l-4 border-green-500 bg-green-500/10 rounded-r-md">
-                      <ShieldCheck className="h-5 w-5 text-green-600 mt-0.5 shrink-0"/>
-                      <p className="text-sm text-green-700 dark:text-green-300">{tip.tip}</p>
+                  <div key={tip.id} className="flex items-start gap-3 p-3 border-l-4 border-success bg-success/10 rounded-r-md">
+                      <ShieldCheck className="h-5 w-5 text-success-foreground mt-0.5 shrink-0"/>
+                      <p className="text-sm text-success-foreground/90">{tip.tip}</p>
                   </div>
               ))}
                <Button variant="link" className="p-0 h-auto text-sm" asChild>

@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Sparkles, Search, Copy, CheckCircle } from "lucide-react"; // Added Copy, CheckCircle
+import { Loader2, Sparkles, Search, Copy, CheckCircle } from "lucide-react"; 
 import { generateAirportBriefing, type AirportBriefingOutput } from "@/ai/flows/airport-briefing-flow";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
@@ -87,7 +87,7 @@ export function AirportBriefingTool() {
         .then(() => {
           setCopied(true);
           toast({ title: "Copied to Clipboard", description: "Briefing content copied." });
-          setTimeout(() => setCopied(false), 2000); // Reset copied state after 2 seconds
+          setTimeout(() => setCopied(false), 2000); 
         })
         .catch(err => {
           console.error('Failed to copy briefing: ', err);
@@ -147,7 +147,7 @@ export function AirportBriefingTool() {
               AI-Generated Briefing for {form.getValues("airportIdentifier").toUpperCase()}
             </CardTitle>
             <Button variant="outline" size="sm" onClick={handleCopyToClipboard} disabled={copied}>
-              {copied ? <CheckCircle className="mr-2 h-4 w-4 text-green-500" /> : <Copy className="mr-2 h-4 w-4" />}
+              {copied ? <CheckCircle className="mr-2 h-4 w-4 text-success-foreground" /> : <Copy className="mr-2 h-4 w-4" />}
               {copied ? "Copied!" : "Copy Briefing"}
             </Button>
           </CardHeader>
