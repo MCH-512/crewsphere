@@ -33,6 +33,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
 const systemSettingsSchema = z.object({
+  appName: z.string().min(3, "Le nom de l'application doit comporter au moins 3 caractères.").max(50, "Le nom ne doit pas dépasser 50 caractères.").default("AirCrew Hub"),
   maintenanceMode: z.boolean().default(false),
   defaultBriefingModel: z.string().min(1, "Please select a default briefing model.").default("gemini-2.0-flash"),
   supportEmail: z.string().email("Invalid email address.").min(5, "Support email is required."),
@@ -58,6 +59,7 @@ export default function SystemSettingsPage() {
   const form = useForm<SystemSettingsFormValues>({
     resolver: zodResolver(systemSettingsSchema),
     defaultValues: {
+      appName: "AirCrew Hub",
       maintenanceMode: false,
       defaultBriefingModel: "gemini-2.0-flash",
       supportEmail: "",
@@ -80,7 +82,12 @@ export default function SystemSettingsPage() {
                 const docSnap = await getDoc(settingsDocRef);
                 if (docSnap.exists()) {
                     const data = docSnap.data() as SystemSettingsFormValues;
-                    form.reset(data);
+                    form.reset({
+                        appName: data.appName || "AirCrew Hub", // Ensure default if undefined
+                        maintenanceMode: data.maintenanceMode || false,
+                        defaultBriefingModel: data.defaultBriefingModel || "gemini-2.0-flash",
+                        supportEmail: data.supportEmail || "",
+                    });
                 } else {
                     // If no settings exist, form will use defaultValues
                     console.log("No system settings document found, using defaults.");
@@ -168,6 +175,21 @@ export default function SystemSettingsPage() {
                     <CardTitle>Application Settings</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                <FormField
+                    control={form.control}
+                    name="appName"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Application Name</FormLabel>
+                        <FormControl>
+                        <Input placeholder="e.g., AirCrew Hub Pro" {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormDescription>The name displayed throughout the application (e.g., in titles).</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+
                 <FormField
                     control={form.control}
                     name="maintenanceMode"
