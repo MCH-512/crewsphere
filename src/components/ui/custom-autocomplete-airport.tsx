@@ -46,10 +46,12 @@ export function CustomAutocompleteAirport({
 
   React.useEffect(() => {
     if (value) {
+      // Attempt to find the airport in the current suggestions or a broader list if available
+      // For now, this relies on the `airports` prop being up-to-date or the value being a direct code.
       const airport = airports.find(
-        (a) => a.icao.toLowerCase() === value.toLowerCase() || a.iata.toLowerCase() === value.toLowerCase()
+        (a) => (a.icao && a.icao.toLowerCase() === value.toLowerCase()) || (a.iata && a.iata.toLowerCase() === value.toLowerCase())
       );
-      setSelectedAirportDisplay(airport ? `${airport.name} (${airport.iata})` : value);
+      setSelectedAirportDisplay(airport ? `${airport.name} (${airport.iata || airport.icao})` : value);
     } else {
       setSelectedAirportDisplay(null);
     }
@@ -57,16 +59,17 @@ export function CustomAutocompleteAirport({
 
   const handleSelect = (airport: Airport) => {
     onSelect(airport);
-    setSelectedAirportDisplay(`${airport.name} (${airport.iata})`);
+    setSelectedAirportDisplay(`${airport.name} (${airport.iata || airport.icao})`);
     onInputChange(""); // Clear search input after selection
     setOpen(false);
   };
 
   const handleClear = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
+    event.stopPropagation(); // Prevent PopoverTrigger from re-opening if it's part of the button
     onSelect(null);
     setSelectedAirportDisplay(null);
     onInputChange("");
+    // setOpen(false); // Optionally close popover on clear
   };
 
   return (
@@ -77,7 +80,7 @@ export function CustomAutocompleteAirport({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between text-sm h-10"
+            className="w-full justify-between text-sm h-10 font-normal"
           >
             <PlaneTakeoff className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             {selectedAirportDisplay ? (
@@ -93,14 +96,17 @@ export function CustomAutocompleteAirport({
             variant="ghost"
             size="icon"
             onClick={handleClear}
-            className="absolute right-8 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+            className="absolute right-8 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
             aria-label="Clear selection"
           >
             <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
           </Button>
         )}
       </div>
-      <PopoverContent className="p-0 min-w-[var(--radix-popover-trigger-width)] w-auto max-w-lg" align="start">
+      <PopoverContent 
+        className="p-0 min-w-[var(--radix-popover-trigger-width)] w-auto max-w-md" 
+        align="start"
+      >
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search airport (name, IATA, ICAO)..."
@@ -119,19 +125,19 @@ export function CustomAutocompleteAirport({
               <CommandGroup>
                 {airports.map((airport) => (
                   <CommandItem
-                    key={airport.icao || airport.iata}
-                    value={`${airport.name} ${airport.city} ${airport.iata} ${airport.icao}`}
+                    key={airport.icao || airport.iata} // Ensure unique key
+                    value={`${airport.name} ${airport.city} ${airport.iata || ''} ${airport.icao || ''}`.trim()} // Create a unique value string
                     onSelect={() => handleSelect(airport)}
                     className="text-xs cursor-pointer"
                   >
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        value === airport.icao || value === airport.iata ? "opacity-100" : "opacity-0"
+                        (value === airport.icao || value === airport.iata) ? "opacity-100" : "opacity-0"
                       )}
                     />
                     <div>
-                      <div className="font-medium">{airport.name} ({airport.iata} / {airport.icao})</div>
+                      <div className="font-medium">{airport.name} ({airport.iata || airport.icao})</div>
                       <div className="text-muted-foreground text-xs">{airport.city}, {airport.country}</div>
                     </div>
                   </CommandItem>
