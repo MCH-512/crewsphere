@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, Files, GraduationCap, ClipboardList, Plane, Settings, Loader2, FilePlus } from "lucide-react";
+import { ServerCog, Users, Activity, Files, GraduationCap, ClipboardList, Plane, Settings, Loader2, FilePlus, CalendarPlus } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -99,9 +99,17 @@ export default function AdminConsolePage() {
       delay: 0.35
     },
     { 
+      icon: CalendarPlus,
+      title: "Add New Flight(s)",
+      description: "Quickly add individual or recurring flights to the schedule.",
+      buttonText: "Add Flight(s)",
+      href: "/admin/flights/create",
+      delay: 0.38 // Adjusted delay
+    },
+    { 
       icon: Plane, 
       title: "Flight Management", 
-      description: "Manage flight schedules. Add new flights from the management page.", 
+      description: "View, edit, and manage existing flight schedules and details.", // Updated description
       buttonText: "Manage Flights", 
       href: "/admin/flights",
       delay: 0.4
