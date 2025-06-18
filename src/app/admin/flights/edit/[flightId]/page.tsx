@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, Loader2, AlertTriangle, CheckCircle, Save, Edit3, FileText, XCircle } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle, Save, Edit3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -33,17 +33,21 @@ import { useRouter, useParams } from "next/navigation";
 import { formatISO, parseISO, format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
+import { CustomAutocompleteAirport } from "@/components/ui/custom-autocomplete-airport";
+import { searchAirports, type Airport } from "@/services/airport-service";
+
+const DEBOUNCE_DELAY = 300; // milliseconds
+
 const aircraftTypes = ["B737-800", "B737-300", "B777", "A320", "A319", "A321", "A330", "ACMI"];
 
 const flightEditFormSchema = z.object({
   flightNumber: z.string().min(3, "Flight number must be at least 3 characters.").max(10),
-  departureAirport: z.string().min(3, "Airport code must be 3 characters.").max(4).toUpperCase(),
-  arrivalAirport: z.string().min(3, "Airport code must be 3 characters.").max(4).toUpperCase(),
+  departureAirport: z.string().min(3, "Airport code must be 3-4 characters.").max(4).toUpperCase(),
+  arrivalAirport: z.string().min(3, "Airport code must be 3-4 characters.").max(4).toUpperCase(),
   scheduledDepartureDateTimeUTC: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid departure datetime."}),
   scheduledArrivalDateTimeUTC: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Invalid arrival datetime."}),
   aircraftType: z.string({ required_error: "Please select an aircraft type."}).min(1, "Aircraft type is required."),
   status: z.enum(["Scheduled", "On Time", "Delayed", "Cancelled"], { required_error: "Please select a flight status." }),
-  // purserReportSubmitted and purserReportId are not directly editable in the form
 })
 .superRefine((data, ctx) => {
     const departureTime = new Date(data.scheduledDepartureDateTimeUTC).getTime();
@@ -83,6 +87,12 @@ export default function EditFlightPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [currentFlightData, setCurrentFlightData] = React.useState<FlightDocumentForEdit | null>(null);
 
+  const [departureSearchTerm, setDepartureSearchTerm] = React.useState("");
+  const [arrivalSearchTerm, setArrivalSearchTerm] = React.useState("");
+  const [departureSuggestions, setDepartureSuggestions] = React.useState<Airport[]>([]);
+  const [arrivalSuggestions, setArrivalSuggestions] = React.useState<Airport[]>([]);
+  const [isLoadingDeparture, setIsLoadingDeparture] = React.useState(false);
+  const [isLoadingArrival, setIsLoadingArrival] = React.useState(false);
 
   const form = useForm<FlightEditFormValues>({
     resolver: zodResolver(flightEditFormSchema),
@@ -101,13 +111,54 @@ export default function EditFlightPage() {
     if (!isoString) return "";
     try {
       const date = parseISO(isoString);
-      // Format to 'YYYY-MM-DDTHH:mm' which is expected by datetime-local
       return format(date, "yyyy-MM-dd'T'HH:mm");
     } catch (e) {
       console.warn("Error formatting date for input:", e);
-      return ""; // Fallback or handle error
+      return ""; 
     }
   };
+
+  // Debounced search for departure airport
+  React.useEffect(() => {
+    if (!departureSearchTerm || departureSearchTerm.length < 2) {
+      setDepartureSuggestions([]);
+      return;
+    }
+    setIsLoadingDeparture(true);
+    const handler = setTimeout(async () => {
+      try {
+        const results = await searchAirports(departureSearchTerm);
+        setDepartureSuggestions(results);
+      } catch (error) {
+        console.error("Error searching departure airports:", error);
+        toast({ title: "Airport Search Error", description: "Could not fetch departure airport suggestions.", variant: "destructive" });
+      } finally {
+        setIsLoadingDeparture(false);
+      }
+    }, DEBOUNCE_DELAY);
+    return () => clearTimeout(handler);
+  }, [departureSearchTerm, toast]);
+
+  // Debounced search for arrival airport
+  React.useEffect(() => {
+    if (!arrivalSearchTerm || arrivalSearchTerm.length < 2) {
+      setArrivalSuggestions([]);
+      return;
+    }
+    setIsLoadingArrival(true);
+    const handler = setTimeout(async () => {
+      try {
+        const results = await searchAirports(arrivalSearchTerm);
+        setArrivalSuggestions(results);
+      } catch (error) {
+        console.error("Error searching arrival airports:", error);
+        toast({ title: "Airport Search Error", description: "Could not fetch arrival airport suggestions.", variant: "destructive" });
+      } finally {
+        setIsLoadingArrival(false);
+      }
+    }, DEBOUNCE_DELAY);
+    return () => clearTimeout(handler);
+  }, [arrivalSearchTerm, toast]);
 
 
   React.useEffect(() => {
@@ -168,7 +219,6 @@ export default function EditFlightPage() {
         scheduledArrivalDateTimeUTC: new Date(data.scheduledArrivalDateTimeUTC).toISOString(),
         aircraftType: data.aircraftType,
         status: data.status,
-        // Preserve existing purser report fields
         purserReportSubmitted: currentFlightData.purserReportSubmitted || false,
         purserReportId: currentFlightData.purserReportId || null,
         updatedAt: serverTimestamp(),
@@ -249,8 +299,44 @@ export default function EditFlightPage() {
                     />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField control={form.control} name="departureAirport" render={({ field }) => (<FormItem><FormLabel>Departure Airport (ICAO/IATA)</FormLabel><FormControl><Input placeholder="e.g., EGLL" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="arrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival Airport (ICAO/IATA)</FormLabel><FormControl><Input placeholder="e.g., KJFK" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField
+                      control={form.control}
+                      name="departureAirport"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Departure Airport</FormLabel>
+                          <CustomAutocompleteAirport
+                            value={field.value}
+                            onSelect={(airport) => form.setValue("departureAirport", airport ? (airport.icao || airport.iata) : "", { shouldValidate: true })}
+                            placeholder="Search departure airport..."
+                            airports={departureSuggestions}
+                            isLoading={isLoadingDeparture}
+                            onInputChange={setDepartureSearchTerm}
+                            currentSearchTerm={departureSearchTerm}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="arrivalAirport"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Arrival Airport</FormLabel>
+                           <CustomAutocompleteAirport
+                            value={field.value}
+                            onSelect={(airport) => form.setValue("arrivalAirport", airport ? (airport.icao || airport.iata) : "", { shouldValidate: true })}
+                            placeholder="Search arrival airport..."
+                            airports={arrivalSuggestions}
+                            isLoading={isLoadingArrival}
+                            onInputChange={setArrivalSearchTerm}
+                            currentSearchTerm={arrivalSearchTerm}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="scheduledDepartureDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Scheduled Departure (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormDescription>Date and Time in UTC</FormDescription><FormMessage /></FormItem>)} />
@@ -263,12 +349,12 @@ export default function EditFlightPage() {
                     <FormLabel>Purser Report Status</FormLabel>
                     <div className="flex items-center gap-2">
                       {currentFlightData.purserReportSubmitted ? (
-                        <Badge variant="success" className="bg-green-500 hover:bg-green-600">
-                          <CheckCircle className="mr-1 h-4 w-4" /> Submitted
+                        <Badge variant="success">
+                           Submitted
                         </Badge>
                       ) : (
                         <Badge variant="secondary">
-                          <XCircle className="mr-1 h-4 w-4" /> Pending
+                           Pending
                         </Badge>
                       )}
                       {currentFlightData.purserReportId && (
@@ -279,7 +365,7 @@ export default function EditFlightPage() {
                   </FormItem>
                 )}
               
-              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+              <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="w-full sm:w-auto">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -292,6 +378,9 @@ export default function EditFlightPage() {
                   </>
                 )}
               </Button>
+               {!form.formState.isValid && (
+                <p className="text-sm text-destructive mt-2">Please fill all required fields correctly.</p>
+              )}
             </form>
           </Form>
         </CardContent>
