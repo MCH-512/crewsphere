@@ -12,7 +12,6 @@ import {
   limit,
   getDocs,
   Timestamp,
-  or,
   doc,
   getDoc,
 } from "firebase/firestore";
@@ -20,6 +19,7 @@ import {
 interface AlertForCount {
   id: string;
   userId?: string | null;
+  createdAt: Timestamp; // Ensure createdAt is part of the type for sorting
 }
 
 interface NotificationContextType {
@@ -49,26 +49,43 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     let count = 0;
 
     try {
-      // Fetch all potentially relevant alerts (global or user-specific)
-      // We limit to a reasonable number as we fetch full docs for subsequent checks.
-      // This limit might need adjustment based on typical alert volume.
-      const alertsQuery = query(
+      // Fetch user-specific alerts
+      const userAlertsQuery = query(
         collection(db, "alerts"),
-        or(
-          where("userId", "==", currentUser.uid),
-          where("userId", "==", null)
-        ),
+        where("userId", "==", currentUser.uid),
         orderBy("createdAt", "desc"),
-        limit(50) // Fetch up to 50 most recent relevant alerts
+        limit(50) // Limit individual query
       );
-
-      const alertsSnapshot = await getDocs(alertsQuery);
-      const potentiallyUnreadAlerts = alertsSnapshot.docs.map(
+      const userAlertsSnapshot = await getDocs(userAlertsQuery);
+      const fetchedUserAlerts = userAlertsSnapshot.docs.map(
         (d) => ({ id: d.id, ...d.data() } as AlertForCount)
       );
-      
-      if (potentiallyUnreadAlerts.length > 0) {
-        const ackCheckPromises = potentiallyUnreadAlerts.map(async (alert) => {
+
+      // Fetch global alerts
+      const globalAlertsQuery = query(
+        collection(db, "alerts"),
+        where("userId", "==", null),
+        orderBy("createdAt", "desc"),
+        limit(50) // Limit individual query
+      );
+      const globalAlertsSnapshot = await getDocs(globalAlertsQuery);
+      const fetchedGlobalAlerts = globalAlertsSnapshot.docs.map(
+        (d) => ({ id: d.id, ...d.data() } as AlertForCount)
+      );
+
+      // Combine, deduplicate, sort by date, and take top 50 overall for acknowledgement checks
+      const combinedAlerts = [...fetchedUserAlerts, ...fetchedGlobalAlerts]
+        .reduce((acc, current) => { // Deduplicate
+          if (!acc.find(item => item.id === current.id)) {
+            acc.push(current);
+          }
+          return acc;
+        }, [] as AlertForCount[])
+        .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()) // Sort by createdAt
+        .slice(0, 50); // Limit for performance of ack checks
+
+      if (combinedAlerts.length > 0) {
+        const ackCheckPromises = combinedAlerts.map(async (alert) => {
           const ackDocId = `${currentUser.uid}_${alert.id}`;
           const ackDocRef = doc(db, "alertAcknowledgements", ackDocId);
           const ackSnap = await getDoc(ackDocRef);
@@ -93,7 +110,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (user) {
       fetchAndCountUnread(user);
     } else {
-      // If no user, reset count and loading state
       setUnreadAlertsCount(0);
       setIsLoadingCount(false);
       setErrorCount(null);
@@ -101,7 +117,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [user, fetchAndCountUnread]);
 
   const refreshUnreadCount = async () => {
-    // Re-fetch based on the current user from AuthContext
     await fetchAndCountUnread(user);
   };
   
@@ -121,3 +136,4 @@ export const useNotification = (): NotificationContextType => {
   }
   return context;
 };
+

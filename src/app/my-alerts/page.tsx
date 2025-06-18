@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, Timestamp, getDocs, or, serverTimestamp, doc, getDoc, setDoc } from "firebase/firestore";
+import { collection, query, where, orderBy, Timestamp, getDocs, serverTimestamp, doc, getDoc, setDoc, limit } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { BellRing, Loader2, AlertTriangle, RefreshCw, Info, Briefcase, GraduationCap, LucideIcon, CheckCircle, Link as LinkIcon } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns"; 
@@ -51,22 +51,40 @@ export default function MyAlertsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const alertsQuery = query(
+      // Fetch user-specific alerts
+      const userAlertsQuery = query(
         collection(db, "alerts"),
-        or(
-            where("userId", "==", user.uid),
-            where("userId", "==", null) 
-        ),
-        orderBy("createdAt", "desc")
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc"),
+        limit(10) // Limit individual queries
       );
+      const userAlertsSnapshot = await getDocs(userAlertsQuery);
+      const fetchedUserAlerts = userAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AlertData));
+
+      // Fetch global alerts
+      const globalAlertsQuery = query(
+        collection(db, "alerts"),
+        where("userId", "==", null),
+        orderBy("createdAt", "desc"),
+        limit(10) // Limit individual queries
+      );
+      const globalAlertsSnapshot = await getDocs(globalAlertsQuery);
+      const fetchedGlobalAlerts = globalAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AlertData));
       
-      const alertsSnapshot = await getDocs(alertsQuery);
-      const fetchedAlertsData = alertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AlertData));
+      // Combine, deduplicate, sort, and limit
+      const combinedAlerts = [...fetchedUserAlerts, ...fetchedGlobalAlerts]
+        .reduce((acc, current) => { // Deduplicate
+          if (!acc.find(item => item.id === current.id)) {
+            acc.push(current);
+          }
+          return acc;
+        }, [] as AlertData[])
+        .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()) // Sort by createdAt
+        .slice(0, 3); // Take top 3 overall
 
       const userAcknowledgementsMap = new Map<string, Timestamp>();
-      if (fetchedAlertsData.length > 0) {
-        
-        const ackPromises = fetchedAlertsData.map(alert => {
+      if (combinedAlerts.length > 0) {
+        const ackPromises = combinedAlerts.map(alert => {
           const ackDocId = `${user.uid}_${alert.id}`;
           return getDoc(doc(db, "alertAcknowledgements", ackDocId));
         });
@@ -75,12 +93,12 @@ export default function MyAlertsPage() {
         ackSnaps.forEach((ackSnap, index) => {
           if (ackSnap.exists()) {
             const ackData = ackSnap.data();
-            userAcknowledgementsMap.set(fetchedAlertsData[index].id, ackData.acknowledgedAt as Timestamp);
+            userAcknowledgementsMap.set(combinedAlerts[index].id, ackData.acknowledgedAt as Timestamp);
           }
         });
       }
       
-      const processedAlerts = fetchedAlertsData.map(alert => ({
+      const processedAlerts = combinedAlerts.map(alert => ({
         ...alert,
         isAcknowledged: userAcknowledgementsMap.has(alert.id),
         acknowledgedOn: userAcknowledgementsMap.get(alert.id) || null,
@@ -295,3 +313,4 @@ export default function MyAlertsPage() {
     </div>
   );
 }
+
