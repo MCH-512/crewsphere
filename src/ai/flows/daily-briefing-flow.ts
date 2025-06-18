@@ -34,7 +34,7 @@ export async function generateDailyBriefing(
 
 const dailyBriefingPrompt = ai.definePrompt({
   name: 'dailyBriefingPrompt',
-  model: 'gemini-1.5-flash-latest', // Explicitly set model here
+  model: 'googleai/gemini-1.5-flash-latest', // Explicitly set model here with prefix
   input: {schema: DailyBriefingInputSchema},
   output: {schema: DailyBriefingOutputSchema},
   prompt: `You are an AI assistant for AirCrew Hub, a platform for airline crew.
@@ -74,3 +74,4 @@ const dailyBriefingFlow = ai.defineFlow(
     return output;
   }
 );
+
