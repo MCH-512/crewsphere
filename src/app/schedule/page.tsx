@@ -23,7 +23,7 @@ import { collection, addDoc, getDocs, query, where, doc, getDoc, Timestamp, orde
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, endOfDay, parseISO, setHours, setMinutes, setSeconds, setMilliseconds, isSameMonth } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getAirportByCode } from "@/services/airport-service"; // Added import
+import { getAirportByCode } from "@/services/airport-service";
 
 interface Flight {
   id: string;
@@ -228,7 +228,20 @@ export default function SchedulePage() {
     try {
       const allFlightsQuery = query(collection(db, "flights"), orderBy("scheduledDepartureDateTimeUTC", "asc"));
       const allFlightsSnapshot = await getDocs(allFlightsQuery);
-      const allFlights = allFlightsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Flight));
+      
+      const allFlightsPromises = allFlightsSnapshot.docs.map(async d => {
+        const flightData = { id: d.id, ...d.data() } as Flight;
+        const depAirportInfo = await getAirportByCode(flightData.departureAirport);
+        if (depAirportInfo && depAirportInfo.iata) {
+            flightData.departureAirportIATA = depAirportInfo.iata;
+        }
+        const arrAirportInfo = await getAirportByCode(flightData.arrivalAirport);
+        if (arrAirportInfo && arrAirportInfo.iata) {
+            flightData.arrivalAirportIATA = arrAirportInfo.iata;
+        }
+        return flightData;
+      });
+      const allFlights = await Promise.all(allFlightsPromises);
       
       const assignedFlightIdsInActivities = userActivities
         .filter(act => act.activityType === 'flight' && act.flightId)
@@ -818,3 +831,4 @@ export default function SchedulePage() {
   );
 }
 
+    
