@@ -23,12 +23,15 @@ import { collection, addDoc, getDocs, query, where, doc, getDoc, Timestamp, orde
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, endOfDay, parseISO, setHours, setMinutes, setSeconds, setMilliseconds, isSameMonth } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getAirportByCode } from "@/services/airport-service"; // Added import
 
 interface Flight {
   id: string;
   flightNumber: string;
-  departureAirport: string;
-  arrivalAirport: string;
+  departureAirport: string; // Original ICAO code
+  departureAirportIATA?: string; // For display
+  arrivalAirport: string;   // Original ICAO code
+  arrivalAirportIATA?: string;   // For display
   scheduledDepartureDateTimeUTC: string; // Stored as ISO string
   scheduledArrivalDateTimeUTC: string; // Stored as ISO string
   aircraftType: string;
@@ -188,6 +191,16 @@ export default function SchedulePage() {
           const flightDocSnap = await getDoc(flightDocRef);
           if (flightDocSnap.exists()) {
             flightDetails = { id: flightDocSnap.id, ...flightDocSnap.data() } as Flight;
+             if (flightDetails) {
+                const depAirportInfo = await getAirportByCode(flightDetails.departureAirport);
+                if (depAirportInfo && depAirportInfo.iata) {
+                    flightDetails.departureAirportIATA = depAirportInfo.iata;
+                }
+                const arrAirportInfo = await getAirportByCode(flightDetails.arrivalAirport);
+                if (arrAirportInfo && arrAirportInfo.iata) {
+                    flightDetails.arrivalAirportIATA = arrAirportInfo.iata;
+                }
+            }
           }
         }
         populatedActivities.push({
@@ -571,7 +584,7 @@ export default function SchedulePage() {
                                 {getActivityIcon(event.activityType)}
                                 <h3 className="font-semibold text-sm capitalize">
                                     {event.activityType === 'flight' && event.flightDetails ? 
-                                     `${event.flightDetails.flightNumber}: ${event.flightDetails.departureAirport} - ${event.flightDetails.arrivalAirport}` : 
+                                     `${event.flightDetails.flightNumber}: ${event.flightDetails.departureAirportIATA || event.flightDetails.departureAirport} - ${event.flightDetails.arrivalAirportIATA || event.flightDetails.arrivalAirport}` : 
                                      event.activityType}
                                 </h3>
                             </div>
@@ -666,7 +679,7 @@ export default function SchedulePage() {
                         <FormControl>
                         <Input 
                             value={editingActivity.flightDetails ? 
-                                `${editingActivity.flightDetails.flightNumber}: ${editingActivity.flightDetails.departureAirport} - ${editingActivity.flightDetails.arrivalAirport} (${format(parseISO(editingActivity.flightDetails.scheduledDepartureDateTimeUTC), "HH:mm")} UTC)` :
+                                `${editingActivity.flightDetails.flightNumber}: ${editingActivity.flightDetails.departureAirportIATA || editingActivity.flightDetails.departureAirport} - ${editingActivity.flightDetails.arrivalAirportIATA || editingActivity.flightDetails.arrivalAirport} (${format(parseISO(editingActivity.flightDetails.scheduledDepartureDateTimeUTC), "HH:mm")} UTC)` :
                                 "Flight details unavailable"
                             } 
                             disabled 
@@ -707,7 +720,7 @@ export default function SchedulePage() {
                             ) : (
                                 flightsForDialogOnSelectedDate.map(flight => (
                                     <SelectItem key={flight.id} value={flight.id}>
-                                    {flight.flightNumber} ({flight.departureAirport}-{flight.arrivalAirport}) - Dep: {format(parseISO(flight.scheduledDepartureDateTimeUTC), "HH:mm")} UTC
+                                    {flight.flightNumber} ({flight.departureAirportIATA || flight.departureAirport}-{flight.arrivalAirportIATA || flight.arrivalAirport}) - Dep: {format(parseISO(flight.scheduledDepartureDateTimeUTC), "HH:mm")} UTC
                                     </SelectItem>
                                 ))
                             )}
@@ -804,3 +817,4 @@ export default function SchedulePage() {
     </div>
   );
 }
+
