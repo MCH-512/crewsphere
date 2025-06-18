@@ -60,6 +60,7 @@ import {
   FilePlus,
   Users,
   Wand2, 
+  PlaneTakeoff, // Added PlaneTakeoff for live tracking
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -76,15 +77,16 @@ const navItems = [
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
   { type: "separator", key: "sep1" },
-  { href: "/training", label: "My Active & Required Training", icon: GraduationCap },
-  { href: "/courses", label: "Course Library", icon: Library },
-  { href: "/quizzes", label: "My Quizzes", icon: ListChecks },
-  { href: "/certificates", label: "My Certificates", icon: Award },
-  { type: "separator", key: "sep2" },
   { href: "/airport-briefings", label: "Airport Briefings", icon: Navigation },
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/purser-reports", label: "Submit Purser Report", icon: FileSignature },
   { href: "/my-purser-reports", label: "My Purser Reports", icon: ClipboardCheck }, 
+  { href: "/live-tracking", label: "Live Flight Tracking", icon: PlaneTakeoff }, // New item
+  { type: "separator", key: "sep2" },
+  { href: "/training", label: "My Active & Required Training", icon: GraduationCap },
+  { href: "/courses", label: "Course Library", icon: Library },
+  { href: "/quizzes", label: "My Quizzes", icon: ListChecks },
+  { href: "/certificates", label: "My Certificates", icon: Award },
   { type: "separator", key: "sep3", adminOnly: true },
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];
@@ -139,6 +141,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/flight-duty-calculator": "Flight Duty Calculator",
     "/purser-reports": "Submit Purser Report",
     "/my-purser-reports": "My Purser Reports", 
+    "/live-tracking": "Live Flight Tracking", // New page title
     "/training": "My Active & Required Training",
     "/courses": "Course Library",
     "/quizzes": "My Quizzes", 
