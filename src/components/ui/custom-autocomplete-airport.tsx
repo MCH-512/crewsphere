@@ -93,14 +93,14 @@ export function CustomAutocompleteAirport({
             variant="ghost"
             size="icon"
             onClick={handleClear}
-            className="absolute right-10 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+            className="absolute right-8 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
             aria-label="Clear selection"
           >
             <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
           </Button>
         )}
       </div>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent className="p-0 min-w-[var(--radix-popover-trigger-width)] w-auto max-w-lg" align="start">
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search airport (name, IATA, ICAO)..."
