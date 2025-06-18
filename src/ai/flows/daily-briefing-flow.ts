@@ -34,6 +34,7 @@ export async function generateDailyBriefing(
 
 const dailyBriefingPrompt = ai.definePrompt({
   name: 'dailyBriefingPrompt',
+  model: 'gemini-1.5-flash-latest', // Explicitly set model here
   input: {schema: DailyBriefingInputSchema},
   output: {schema: DailyBriefingOutputSchema},
   prompt: `You are an AI assistant for AirCrew Hub, a platform for airline crew.

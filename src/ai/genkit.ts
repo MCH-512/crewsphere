@@ -3,5 +3,5 @@ import {googleAI} from '@genkit-ai/googleai';
 
 export const ai = genkit({
   plugins: [googleAI()],
-  model: 'gemini-pro', // Changed to a more standard model
+  // Removed model: 'gemini-pro' from here
 });
