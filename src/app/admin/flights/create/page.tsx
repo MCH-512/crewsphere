@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form"; // Removed Controller
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, AlertTriangle, CheckCircle, PlusCircle, CalendarPlus } from "lucide-react"; // Removed CalendarIcon
+import { Loader2, AlertTriangle, CheckCircle, PlusCircle, CalendarPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -35,18 +35,23 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { addDays, addMonths, getDay, isAfter, startOfDay, parseISO, formatISO } from "date-fns";
 
+import { CustomAutocompleteAirport } from "@/components/ui/custom-autocomplete-airport";
+import { searchAirports, type Airport } from "@/services/airport-service";
+
+const DEBOUNCE_DELAY = 300; // milliseconds
+
 const weekDays = [
   { id: 1, label: "Mon" }, { id: 2, label: "Tue" }, { id: 3, label: "Wed" },
   { id: 4, label: "Thu" }, { id: 5, label: "Fri" }, { id: 6, label: "Sat" },
-  { id: 0, label: "Sun" } // date-fns: 0 for Sunday, 6 for Saturday
+  { id: 0, label: "Sun" } 
 ];
 
 const aircraftTypes = ["B737-800", "B737-300", "B777", "A320", "A319", "A321", "A330", "ACMI"];
 
 const flightRecurrenceFormSchema = z.object({
   flightNumber: z.string().min(3, "Flight number must be at least 3 characters.").max(10),
-  departureAirport: z.string().min(3, "Airport code must be 3 characters.").max(4).toUpperCase(),
-  arrivalAirport: z.string().min(3, "Airport code must be 3 characters.").max(4).toUpperCase(),
+  departureAirport: z.string().min(3, "Airport code must be 3-4 characters.").max(4).toUpperCase(),
+  arrivalAirport: z.string().min(3, "Airport code must be 3-4 characters.").max(4).toUpperCase(),
   baseDepartureTimeUTC: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time. Use HH:MM UTC format."),
   baseArrivalTimeUTC: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time. Use HH:MM UTC format."),
   aircraftType: z.string({ required_error: "Please select an aircraft type."}).min(1, "Aircraft type is required."),
@@ -61,7 +66,7 @@ const flightRecurrenceFormSchema = z.object({
   endDate: z.string().optional(),
   numberOfOccurrences: z.coerce.number().int().min(1).optional(),
 
-  customDates: z.array(z.date()).optional(), // Store as Date objects from calendar, convert to string on submit
+  customDates: z.array(z.date()).optional(),
 })
 .superRefine((data, ctx) => {
   if (data.frequency === "weekly" && (!data.daysOfWeek || data.daysOfWeek.length === 0)) {
@@ -93,7 +98,7 @@ const defaultValues: Partial<FlightRecurrenceFormValues> = {
   arrivalAirport: "",
   baseDepartureTimeUTC: "10:00",
   baseArrivalTimeUTC: "12:00",
-  aircraftType: "", // Will be handled by Select placeholder
+  aircraftType: "",
   status: "Scheduled",
   frequency: "once",
   startDate: new Date().toISOString().split('T')[0],
@@ -102,7 +107,6 @@ const defaultValues: Partial<FlightRecurrenceFormValues> = {
   customDates: [],
 };
 
-// Helper function to generate dates based on recurrence rules
 const generateRecurrentDates = (values: FlightRecurrenceFormValues): Date[] => {
     const dates: Date[] = [];
     const { frequency, startDate: rawStartDate, daysOfWeek, endsOn, endDate: rawEndDate, numberOfOccurrences, customDates } = values;
@@ -125,7 +129,7 @@ const generateRecurrentDates = (values: FlightRecurrenceFormValues): Date[] => {
 
     let occurrences = 0;
     const maxOccurrences = endsOn === "afterOccurrences" ? numberOfOccurrences : Infinity;
-    const hardLoopLimit = 5 * 365; // Safety limit for "never" (5 years of days)
+    const hardLoopLimit = 5 * 365; 
     let iterationCount = 0;
 
     if (frequency === "daily" || frequency === "weekly") {
@@ -153,9 +157,8 @@ const generateRecurrentDates = (values: FlightRecurrenceFormValues): Date[] => {
             currentDate = addDays(currentDate, 1);
         }
     } else if (frequency === "monthly") {
-        // Loop by incrementing the month offset from the baseStartDate
         for (let monthOffset = 0; occurrences < maxOccurrences && iterationCount < hardLoopLimit; monthOffset++) {
-            iterationCount++; // Increment for the hardLoopLimit check
+            iterationCount++; 
             const currentDate = addMonths(baseStartDate, monthOffset);
             
             if (limitEndDate && isAfter(currentDate, limitEndDate)) {
@@ -178,9 +181,14 @@ export default function CreateFlightPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  
   const [customSelectedDates, setCustomSelectedDates] = React.useState<Date[] | undefined>([]);
 
+  const [departureSearchTerm, setDepartureSearchTerm] = React.useState("");
+  const [arrivalSearchTerm, setArrivalSearchTerm] = React.useState("");
+  const [departureSuggestions, setDepartureSuggestions] = React.useState<Airport[]>([]);
+  const [arrivalSuggestions, setArrivalSuggestions] = React.useState<Airport[]>([]);
+  const [isLoadingDeparture, setIsLoadingDeparture] = React.useState(false);
+  const [isLoadingArrival, setIsLoadingArrival] = React.useState(false);
 
   const form = useForm<FlightRecurrenceFormValues>({
     resolver: zodResolver(flightRecurrenceFormSchema),
@@ -195,13 +203,55 @@ export default function CreateFlightPage() {
     form.setValue("customDates", customSelectedDates);
   }, [customSelectedDates, form]);
 
-
   React.useEffect(() => {
     if (!authLoading && (!user || user.role !== 'admin')) {
       router.push('/');
       toast({ title: "Access Denied", description: "You need admin privileges to access this page.", variant: "destructive"});
     }
   }, [user, authLoading, router, toast]);
+
+  // Debounced search for departure airport
+  React.useEffect(() => {
+    if (!departureSearchTerm || departureSearchTerm.length < 2) {
+      setDepartureSuggestions([]);
+      return;
+    }
+    setIsLoadingDeparture(true);
+    const handler = setTimeout(async () => {
+      try {
+        const results = await searchAirports(departureSearchTerm);
+        setDepartureSuggestions(results);
+      } catch (error) {
+        console.error("Error searching departure airports:", error);
+        toast({ title: "Airport Search Error", description: "Could not fetch departure airport suggestions.", variant: "destructive" });
+      } finally {
+        setIsLoadingDeparture(false);
+      }
+    }, DEBOUNCE_DELAY);
+    return () => clearTimeout(handler);
+  }, [departureSearchTerm, toast]);
+
+  // Debounced search for arrival airport
+  React.useEffect(() => {
+    if (!arrivalSearchTerm || arrivalSearchTerm.length < 2) {
+      setArrivalSuggestions([]);
+      return;
+    }
+    setIsLoadingArrival(true);
+    const handler = setTimeout(async () => {
+      try {
+        const results = await searchAirports(arrivalSearchTerm);
+        setArrivalSuggestions(results);
+      } catch (error) {
+        console.error("Error searching arrival airports:", error);
+        toast({ title: "Airport Search Error", description: "Could not fetch arrival airport suggestions.", variant: "destructive" });
+      } finally {
+        setIsLoadingArrival(false);
+      }
+    }, DEBOUNCE_DELAY);
+    return () => clearTimeout(handler);
+  }, [arrivalSearchTerm, toast]);
+
 
   async function onSubmit(data: FlightRecurrenceFormValues) {
     if (!user || user.role !== 'admin') {
@@ -224,7 +274,7 @@ export default function CreateFlightPage() {
 
     for (const date of generatedDates) {
       try {
-        const dateStr = formatISO(date, { representation: 'date' }); // YYYY-MM-DD
+        const dateStr = formatISO(date, { representation: 'date' }); 
         const depDateTimeStr = `${dateStr}T${data.baseDepartureTimeUTC}:00.000Z`;
         const arrDateTimeStr = `${dateStr}T${data.baseArrivalTimeUTC}:00.000Z`;
 
@@ -244,8 +294,8 @@ export default function CreateFlightPage() {
           status: data.status,
           scheduledDepartureDateTimeUTC: departureDateTime.toISOString(),
           scheduledArrivalDateTimeUTC: arrivalDateTime.toISOString(),
-          purserReportSubmitted: false, // New field
-          purserReportId: null, // New field
+          purserReportSubmitted: false,
+          purserReportId: null,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           createdBy: user.uid,
@@ -267,6 +317,8 @@ export default function CreateFlightPage() {
             });
             form.reset();
             setCustomSelectedDates([]);
+            setDepartureSearchTerm("");
+            setArrivalSearchTerm("");
             router.push('/admin/flights'); 
         } else if (flightsFailedCount > 0) {
              toast({ title: "Flight Creation Failed", description: `No flights created. ${flightsFailedCount} date(s) could not be processed. Check console.`, variant: "destructive" });
@@ -315,7 +367,6 @@ export default function CreateFlightPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {/* Basic Flight Info */}
               <Card><CardHeader><CardTitle className="text-lg">Base Flight Details</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -344,8 +395,44 @@ export default function CreateFlightPage() {
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField control={form.control} name="departureAirport" render={({ field }) => (<FormItem><FormLabel>Departure Airport (ICAO/IATA)</FormLabel><FormControl><Input placeholder="e.g., EGLL" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="arrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival Airport (ICAO/IATA)</FormLabel><FormControl><Input placeholder="e.g., KJFK" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField
+                      control={form.control}
+                      name="departureAirport"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Departure Airport</FormLabel>
+                          <CustomAutocompleteAirport
+                            value={field.value}
+                            onSelect={(airport) => form.setValue("departureAirport", airport ? (airport.icao || airport.iata) : "", { shouldValidate: true })}
+                            placeholder="Search departure airport..."
+                            airports={departureSuggestions}
+                            isLoading={isLoadingDeparture}
+                            onInputChange={setDepartureSearchTerm}
+                            currentSearchTerm={departureSearchTerm}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="arrivalAirport"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Arrival Airport</FormLabel>
+                          <CustomAutocompleteAirport
+                            value={field.value}
+                            onSelect={(airport) => form.setValue("arrivalAirport", airport ? (airport.icao || airport.iata) : "", { shouldValidate: true })}
+                            placeholder="Search arrival airport..."
+                            airports={arrivalSuggestions}
+                            isLoading={isLoadingArrival}
+                            onInputChange={setArrivalSearchTerm}
+                            currentSearchTerm={arrivalSearchTerm}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="baseDepartureTimeUTC" render={({ field }) => (<FormItem><FormLabel>Base Departure Time (UTC)</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormDescription>HH:MM (24h)</FormDescription><FormMessage /></FormItem>)} />
@@ -355,7 +442,6 @@ export default function CreateFlightPage() {
                 </CardContent>
               </Card>
 
-              {/* Recurrence Rules */}
               <Card><CardHeader><CardTitle className="text-lg">Recurrence Rules</CardTitle></CardHeader>
                 <CardContent className="space-y-6">
                   <FormField control={form.control} name="startDate" render={({ field }) => (
@@ -462,6 +548,3 @@ export default function CreateFlightPage() {
     </div>
   );
 }
-    
-
-    
