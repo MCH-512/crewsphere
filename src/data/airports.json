@@ -22,11 +22,172 @@
     "country": "France"
   },
   {
+    "iata": "ORY",
+    "icao": "LFPO",
+    "name": "Paris Orly Airport",
+    "city": "Paris",
+    "country": "France"
+  },
+  {
+    "iata": "NCE",
+    "icao": "LFMN",
+    "name": "Nice Côte d'Azur Airport",
+    "city": "Nice",
+    "country": "France"
+  },
+  {
+    "iata": "LYS",
+    "icao": "LFLL",
+    "name": "Lyon-Saint Exupéry Airport",
+    "city": "Lyon",
+    "country": "France"
+  },
+  {
+    "iata": "MRS",
+    "icao": "LFML",
+    "name": "Marseille Provence Airport",
+    "city": "Marseille",
+    "country": "France"
+  },
+  {
+    "iata": "TLS",
+    "icao": "LFBO",
+    "name": "Toulouse–Blagnac Airport",
+    "city": "Toulouse",
+    "country": "France"
+  },
+  {
+    "iata": "FCO",
+    "icao": "LIRF",
+    "name": "Rome Leonardo da Vinci Fiumicino Airport",
+    "city": "Rome",
+    "country": "Italy"
+  },
+  {
+    "iata": "MXP",
+    "icao": "LIMC",
+    "name": "Milan Malpensa Airport",
+    "city": "Milan",
+    "country": "Italy"
+  },
+  {
+    "iata": "VCE",
+    "icao": "LIPZ",
+    "name": "Venice Marco Polo Airport",
+    "city": "Venice",
+    "country": "Italy"
+  },
+  {
+    "iata": "NAP",
+    "icao": "LIRN",
+    "name": "Naples International Airport",
+    "city": "Naples",
+    "country": "Italy"
+  },
+  {
+    "iata": "BLQ",
+    "icao": "LIPE",
+    "name": "Bologna Guglielmo Marconi Airport",
+    "city": "Bologna",
+    "country": "Italy"
+  },
+  {
     "iata": "TUN",
     "icao": "DTTA",
     "name": "Tunis-Carthage International Airport",
     "city": "Tunis",
     "country": "Tunisia"
+  },
+  {
+    "iata": "MIR",
+    "icao": "DTMB",
+    "name": "Monastir Habib Bourguiba International Airport",
+    "city": "Monastir",
+    "country": "Tunisia"
+  },
+  {
+    "iata": "DJE",
+    "icao": "DTTJ",
+    "name": "Djerba–Zarzis International Airport",
+    "city": "Djerba",
+    "country": "Tunisia"
+  },
+  {
+    "iata": "NBE",
+    "icao": "DTNH",
+    "name": "Enfidha–Hammamet International Airport",
+    "city": "Enfidha",
+    "country": "Tunisia"
+  },
+  {
+    "iata": "SFA",
+    "icao": "DTTX",
+    "name": "Sfax–Thyna International Airport",
+    "city": "Sfax",
+    "country": "Tunisia"
+  },
+  {
+    "iata": "ALG",
+    "icao": "DAAG",
+    "name": "Algiers Houari Boumediene Airport",
+    "city": "Algiers",
+    "country": "Algeria"
+  },
+  {
+    "iata": "ORN",
+    "icao": "DAOO",
+    "name": "Oran Ahmed Ben Bella Airport",
+    "city": "Oran",
+    "country": "Algeria"
+  },
+  {
+    "iata": "CZL",
+    "icao": "DABC",
+    "name": "Constantine Mohamed Boudiaf International Airport",
+    "city": "Constantine",
+    "country": "Algeria"
+  },
+  {
+    "iata": "CMN",
+    "icao": "GMMN",
+    "name": "Casablanca Mohammed V International Airport",
+    "city": "Casablanca",
+    "country": "Morocco"
+  },
+  {
+    "iata": "RAK",
+    "icao": "GMMX",
+    "name": "Marrakesh Menara Airport",
+    "city": "Marrakesh",
+    "country": "Morocco"
+  },
+  {
+    "iata": "RBA",
+    "icao": "GMME",
+    "name": "Rabat–Salé Airport",
+    "city": "Rabat",
+    "country": "Morocco"
+  },
+  {
+    "iata": "TNG",
+    "icao": "GMTT",
+    "name": "Tangier Ibn Battouta Airport",
+    "city": "Tangier",
+    "country": "Morocco"
+  },
+  {
+    "iata": "MJI",
+    "icao": "HLLM",
+    "name": "Tripoli Mitiga International Airport",
+    "city": "Tripoli",
+    "country": "Libya"
+  },
+  {
+    "iata": "BEN",
+    "icao": "HLLB",
+    "name": "Benghazi Benina International Airport",
+    "city": "Benghazi",
+    "country": "Libya"
   },
   {
     "iata": "HND",
