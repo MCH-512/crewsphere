@@ -180,11 +180,17 @@ export default function LiveTrackingPage() {
           )}
 
           {error && !isLoading && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-5 w-5" />
-              <AlertTitle>Error Loading Flight Data</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <Card className="my-4 p-4 border-destructive bg-destructive/10">
+              <CardHeader className="p-0 pb-2">
+                <CardTitle className="text-lg text-destructive-foreground flex items-center">
+                  <AlertTriangle className="h-5 w-5 mr-2" />
+                  Error Loading Flight Data
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <p className="text-sm text-destructive-foreground/90">{error}</p>
+              </CardContent>
+            </Card>
           )}
 
           {!isLoading && !error && flights.length === 0 && (
@@ -259,3 +265,5 @@ export default function LiveTrackingPage() {
     </div>
   );
 }
+
+    
