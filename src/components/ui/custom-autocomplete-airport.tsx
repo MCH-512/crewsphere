@@ -21,6 +21,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import type { Airport } from "@/services/airport-service";
+import { getAirportByCode } from "@/services/airport-service"; // Import the service function
 
 interface CustomAutocompleteAirportProps {
   value?: string; // The selected airport's ICAO or IATA code
@@ -45,31 +46,51 @@ export function CustomAutocompleteAirport({
   const [selectedAirportDisplay, setSelectedAirportDisplay] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    if (value) {
-      // Attempt to find the airport in the current suggestions or a broader list if available
-      // For now, this relies on the `airports` prop being up-to-date or the value being a direct code.
-      const airport = airports.find(
-        (a) => (a.icao && a.icao.toLowerCase() === value.toLowerCase()) || (a.iata && a.iata.toLowerCase() === value.toLowerCase())
-      );
-      setSelectedAirportDisplay(airport ? `${airport.name} (${airport.iata || airport.icao})` : value);
-    } else {
-      setSelectedAirportDisplay(null);
-    }
-  }, [value, airports]);
+    let isMounted = true;
+
+    const updateDisplayForValue = async () => {
+      if (value) {
+        // Check if the display is already correctly formatted for the current value
+        const currentCodeInDisplay = selectedAirportDisplay?.match(/\(([^)]+)\)/)?.[1];
+        if (selectedAirportDisplay && selectedAirportDisplay !== value && currentCodeInDisplay?.toLowerCase() === value.toLowerCase()) {
+          // Already displaying full name + code, and code matches.
+          return;
+        }
+
+        const airportDetails = await getAirportByCode(value);
+        if (isMounted) {
+          if (airportDetails) {
+            setSelectedAirportDisplay(`${airportDetails.name} (${airportDetails.iata || airportDetails.icao})`);
+          } else {
+            setSelectedAirportDisplay(value); // Fallback to just code if not found
+          }
+        }
+      } else {
+        if (isMounted) {
+          setSelectedAirportDisplay(null);
+        }
+      }
+    };
+
+    updateDisplayForValue();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [value, selectedAirportDisplay]); // Re-run if `value` changes or if `selectedAirportDisplay` was out of sync
 
   const handleSelect = (airport: Airport) => {
-    onSelect(airport);
-    setSelectedAirportDisplay(`${airport.name} (${airport.iata || airport.icao})`);
+    onSelect(airport); // This will trigger the parent form to update its `value` (the code)
+    setSelectedAirportDisplay(`${airport.name} (${airport.iata || airport.icao})`); // Set display immediately
     onInputChange(""); // Clear search input after selection
     setOpen(false);
   };
 
   const handleClear = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation(); // Prevent PopoverTrigger from re-opening if it's part of the button
+    event.stopPropagation();
     onSelect(null);
     setSelectedAirportDisplay(null);
     onInputChange("");
-    // setOpen(false); // Optionally close popover on clear
   };
 
   return (
@@ -104,8 +125,9 @@ export function CustomAutocompleteAirport({
         )}
       </div>
       <PopoverContent 
-        className="p-0 min-w-[var(--radix-popover-trigger-width)] w-auto max-w-md" 
+        className="p-0 min-w-[var(--radix-popover-trigger-width)] w-auto max-w-md md:max-w-lg" 
         align="start"
+        style={{ '--radix-popover-trigger-width': 'auto' } as React.CSSProperties} // Allow popover to be wider
       >
         <Command shouldFilter={false}>
           <CommandInput
@@ -125,15 +147,15 @@ export function CustomAutocompleteAirport({
               <CommandGroup>
                 {airports.map((airport) => (
                   <CommandItem
-                    key={airport.icao || airport.iata} // Ensure unique key
-                    value={`${airport.name} ${airport.city} ${airport.iata || ''} ${airport.icao || ''}`.trim()} // Create a unique value string
+                    key={airport.icao || airport.iata} 
+                    value={`${airport.name} ${airport.city} ${airport.iata || ''} ${airport.icao || ''}`.trim()} 
                     onSelect={() => handleSelect(airport)}
                     className="text-xs cursor-pointer"
                   >
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        (value === airport.icao || value === airport.iata) ? "opacity-100" : "opacity-0"
+                        (value && (value.toLowerCase() === airport.icao?.toLowerCase() || value.toLowerCase() === airport.iata?.toLowerCase())) ? "opacity-100" : "opacity-0"
                       )}
                     />
                     <div>
