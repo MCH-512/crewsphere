@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ClipboardCheck, Loader2, AlertTriangle, RefreshCw, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +31,7 @@ interface StoredPurserReport {
 export default function AdminPurserReportsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [reports, setReports] = React.useState<StoredPurserReport[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -68,6 +69,27 @@ export default function AdminPurserReportsPage() {
       }
     }
   }, [user, authLoading, router, fetchReports]);
+
+  React.useEffect(() => {
+    const reportIdFromQuery = searchParams.get("reportId");
+  
+    if (reportIdFromQuery && !isLoading && reports.length > 0) {
+      const foundReport = reports.find(r => r.id === reportIdFromQuery);
+      if (foundReport) {
+        setSelectedReport(foundReport);
+        setIsViewDialogOpen(true);
+      } else {
+        toast({
+          title: "Report Not Found",
+          description: `Could not find a purser report with ID: ${reportIdFromQuery}`,
+          variant: "warning",
+        });
+      }
+      // Clear the query parameter to prevent re-triggering and clean URL
+      router.replace('/admin/purser-reports', { scroll: false });
+    }
+  }, [searchParams, reports, isLoading, router, toast, setSelectedReport, setIsViewDialogOpen]);
+
 
   const handleOpenViewDialog = (report: StoredPurserReport) => {
     setSelectedReport(report);

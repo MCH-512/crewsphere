@@ -103,7 +103,7 @@ export default function AdminFlightsPage() {
       setFlightToDelete(null); 
     } catch (error) {
       console.error("Error deleting flight:", error);
-      toast({ title: "Deletion Failed", description: "Could not delete the flight.", variant: "destructive" });
+      toast({ title: "Deletion Failed", description: "Could not delete the flight. Please try again.", variant: "destructive" });
     } finally {
       setIsDeleting(false);
     }
