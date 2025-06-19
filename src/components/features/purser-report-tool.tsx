@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff, Clock, AlertTriangle } from "lucide-react";
+import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff, Clock, AlertTriangle, Utensils } from "lucide-react"; // Added Utensils
 import { generatePurserReport, type PurserReportOutput, type PurserReportInput } from "@/ai/flows/purser-report-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -28,6 +28,7 @@ import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, wh
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { format, parseISO, differenceInMinutes } from "date-fns";
+import { Switch } from "@/components/ui/switch"; // Added Switch
 
 interface CrewUser {
   uid: string;
@@ -61,7 +62,7 @@ const reportSectionTypes = [
   "Security Incidents",
   "Medical Incidents",
   "Passenger Feedback",
-  "Catering Notes",
+  "Catering Notes", // This is for in-flight observations
   "Maintenance Issues",
   "Other Observations",
 ] as const;
@@ -85,12 +86,12 @@ const passengerLoadSchema = z.object({
   total: z.coerce.number().int().min(0, "Min 0 passengers"),
   adults: z.coerce.number().int().min(0, "Min 0 adults"),
   infants: z.coerce.number().int().min(0, "Min 0 infants"),
-  um: z.coerce.number().int().min(0, "Min 0 UM").default(0),
-  pregnant: z.coerce.number().int().min(0, "Min 0 Pregnant").default(0),
-  wchr: z.coerce.number().int().min(0, "Min 0 WCHR").default(0),
-  wchs: z.coerce.number().int().min(0, "Min 0 WCHS").default(0),
-  wchc: z.coerce.number().int().min(0, "Min 0 WCHC").default(0),
-  inad: z.coerce.number().int().min(0, "Min 0 INAD").default(0),
+  um: z.coerce.number().int().min(0, "Min 0 UM").default(0).optional(),
+  pregnant: z.coerce.number().int().min(0, "Min 0 Pregnant").default(0).optional(),
+  wchr: z.coerce.number().int().min(0, "Min 0 WCHR").default(0).optional(),
+  wchs: z.coerce.number().int().min(0, "Min 0 WCHS").default(0).optional(),
+  wchc: z.coerce.number().int().min(0, "Min 0 WCHC").default(0).optional(),
+  inad: z.coerce.number().int().min(0, "Min 0 INAD").default(0).optional(),
 }).superRefine((data, ctx) => {
   if (data.total < (data.adults + data.infants)) {
     ctx.addIssue({
@@ -99,6 +100,14 @@ const passengerLoadSchema = z.object({
       path: ["total"],
     });
   }
+});
+
+const cateringLoadSchema = z.object({
+  standardMeals: z.coerce.number().int().min(0).optional(),
+  specialMeals: z.coerce.number().int().min(0).optional(),
+  crewMeals: z.coerce.number().int().min(0).optional(),
+  barFullyStocked: z.boolean().default(true).optional(),
+  additionalNotes: z.string().optional(),
 });
 
 
@@ -123,6 +132,7 @@ const purserReportFormSchema = z.object({
   otherCrewMembers: z.string().optional(),
 
   passengerLoad: passengerLoadSchema, 
+  cateringLoad: cateringLoadSchema.optional(), // Added catering load
   generalFlightSummary: z.string().min(10, "Min 10 characters for summary."),
 }).superRefine((data, ctx) => {
     if (data.actualArrivalUTC && !data.actualDepartureUTC) {
@@ -229,6 +239,7 @@ export function PurserReportTool() {
       cabinCrewR2: PLACEHOLDER_NONE_VALUE,
       otherCrewMembers: "",
       passengerLoad: { total: 0, adults: 0, infants: 0, um: 0, pregnant: 0, wchr: 0, wchs: 0, wchc: 0, inad: 0 },
+      cateringLoad: { standardMeals: 0, specialMeals: 0, crewMeals: 0, barFullyStocked: true, additionalNotes: "" }, // Default for catering load
       generalFlightSummary: "",
     },
     mode: "onChange", 
@@ -323,6 +334,7 @@ export function PurserReportTool() {
             cabinCrewR1: PLACEHOLDER_NONE_VALUE,
             cabinCrewL2: PLACEHOLDER_NONE_VALUE,
             cabinCrewR2: PLACEHOLDER_NONE_VALUE,
+            cateringLoad: { standardMeals: 0, specialMeals: 0, crewMeals: 0, barFullyStocked: true, additionalNotes: "" }, // Reset catering load
         });
         setSelectedFlightIdState(null); 
         return;
@@ -416,7 +428,7 @@ export function PurserReportTool() {
       data.otherCrewMembers ? `Other Crew: ${data.otherCrewMembers}` : null,
     ];
     const crewMembersString = crewDetailsParts.filter(Boolean).join('\n');
-    const dynamicSections: Partial<Omit<PurserReportInput, 'crewPerformanceNotes' | 'scheduledDepartureUTC' | 'scheduledArrivalUTC' | 'actualDepartureUTC' | 'actualArrivalUTC' | 'passengerLoad'>> = {};
+    const dynamicSections: Partial<Omit<PurserReportInput, 'crewPerformanceNotes' | 'scheduledDepartureUTC' | 'scheduledArrivalUTC' | 'actualDepartureUTC' | 'actualArrivalUTC' | 'passengerLoad' | 'cateringLoad'>> = {};
     addedSections.forEach(section => {
         switch (section.type) {
             case "Safety Incidents": dynamicSections.safetyIncidents = (dynamicSections.safetyIncidents ? dynamicSections.safetyIncidents + "\n\n---\n\n" : "") + section.content; break;
@@ -443,6 +455,13 @@ export function PurserReportTool() {
           wchc: Number(data.passengerLoad.wchc || 0),
           inad: Number(data.passengerLoad.inad || 0),
       },
+      cateringLoad: data.cateringLoad ? {
+          standardMeals: Number(data.cateringLoad.standardMeals || 0),
+          specialMeals: Number(data.cateringLoad.specialMeals || 0),
+          crewMeals: Number(data.cateringLoad.crewMeals || 0),
+          barFullyStocked: data.cateringLoad.barFullyStocked,
+          additionalNotes: data.cateringLoad.additionalNotes || ""
+      } : undefined,
       generalFlightSummary: data.generalFlightSummary, ...dynamicSections,
       scheduledDepartureUTC: data.scheduledDepartureUTC || undefined,
       scheduledArrivalUTC: data.scheduledArrivalUTC || undefined,
@@ -621,6 +640,34 @@ export function PurserReportTool() {
                 </div>
               </AccordionContent>
             </AccordionItem>
+            
+            <AccordionItem value="catering-load" className="border-none">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
+                <div className="flex items-center"><Utensils className="mr-2 h-5 w-5 text-primary" />Catering Load</div>
+              </AccordionTrigger>
+              <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm space-y-6">
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <FormField control={form.control} name="cateringLoad.standardMeals" render={({ field }) => (<FormItem><FormLabel>Standard Passenger Meals</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="cateringLoad.specialMeals" render={({ field }) => (<FormItem><FormLabel>Special Meals (VGML, CHML, etc.)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="cateringLoad.crewMeals" render={({ field }) => (<FormItem><FormLabel>Crew Meals</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                 </div>
+                 <FormField
+                    control={form.control}
+                    name="cateringLoad.barFullyStocked"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <div className="space-y-0.5">
+                                <FormLabel>Bar Fully Stocked?</FormLabel>
+                                <FormDescription>Indicate if the bar was fully stocked as per standard.</FormDescription>
+                            </div>
+                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                    )}
+                />
+                <FormField control={form.control} name="cateringLoad.additionalNotes" render={({ field }) => (<FormItem><FormLabel>Additional Catering Load Notes</FormLabel><FormControl><Textarea placeholder="Notes on uplift discrepancies, specific items loaded, bar shortages, etc." className="min-h-[80px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              </AccordionContent>
+            </AccordionItem>
+
 
             <AccordionItem value="general-summary" className="border-none">
               <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">

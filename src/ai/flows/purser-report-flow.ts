@@ -11,6 +11,26 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+const PassengerLoadSchema = z.object({
+  total: z.number().int().min(0).describe('Total number of passengers.'),
+  adults: z.number().int().min(0).describe('Number of adult passengers.'),
+  infants: z.number().int().min(0).describe('Number of infant passengers.'),
+  um: z.number().int().min(0).optional().describe('Number of Unaccompanied Minors.'),
+  pregnant: z.number().int().min(0).optional().describe('Number of pregnant women.'),
+  wchr: z.number().int().min(0).optional().describe('Number of Wheelchair (Ramp) passengers.'),
+  wchs: z.number().int().min(0).optional().describe('Number of Wheelchair (Steps) passengers.'),
+  wchc: z.number().int().min(0).optional().describe('Number of Wheelchair (Cabin) passengers.'),
+  inad: z.number().int().min(0).optional().describe('Number of Inadmissible passengers.'),
+});
+
+const CateringLoadSchema = z.object({
+  standardMeals: z.coerce.number().int().min(0).optional().describe("Number of standard passenger meals boarded."),
+  specialMeals: z.coerce.number().int().min(0).optional().describe("Number of special meals (e.g., VGML, CHML) boarded."),
+  crewMeals: z.coerce.number().int().min(0).optional().describe("Number of crew meals boarded."),
+  barFullyStocked: z.boolean().optional().describe("Whether the bar was fully stocked."),
+  additionalNotes: z.string().optional().describe("Any other notes on catering uplift or discrepancies.")
+});
+
 const PurserReportInputSchema = z.object({
   flightNumber: z.string().min(3).max(10).describe('Flight number (e.g., BA245, UAL123).'),
   flightDate: z.string().date().describe('Date of the flight (YYYY-MM-DD).'),
@@ -24,23 +44,14 @@ const PurserReportInputSchema = z.object({
   actualArrivalUTC: z.string().datetime().optional().describe('Actual Arrival Time in UTC (ISO 8601 format).'),
   
   crewMembers: z.string().min(10).describe('List of crew members on board (names and roles, typically multi-line).'),
-  passengerLoad: z.object({
-    total: z.number().int().min(0).describe('Total number of passengers.'),
-    adults: z.number().int().min(0).describe('Number of adult passengers.'),
-    infants: z.number().int().min(0).describe('Number of infant passengers.'),
-    um: z.number().int().min(0).optional().describe('Number of Unaccompanied Minors.'),
-    pregnant: z.number().int().min(0).optional().describe('Number of pregnant women.'),
-    wchr: z.number().int().min(0).optional().describe('Number of Wheelchair (Ramp) passengers.'),
-    wchs: z.number().int().min(0).optional().describe('Number of Wheelchair (Steps) passengers.'),
-    wchc: z.number().int().min(0).optional().describe('Number of Wheelchair (Cabin) passengers.'),
-    inad: z.number().int().min(0).optional().describe('Number of Inadmissible passengers.'),
-  }),
+  passengerLoad: PassengerLoadSchema,
+  cateringLoad: CateringLoadSchema.optional(), // Added new catering load section
   generalFlightSummary: z.string().min(10).describe('Overall summary of the flight, noting punctuality (based on provided times), and general atmosphere.'),
   safetyIncidents: z.string().optional().describe('Detailed description of any safety-related incidents or observations (e.g., turbulence, equipment malfunctions affecting safety).'),
   securityIncidents: z.string().optional().describe('Detailed description of any security-related incidents (e.g., unruly passengers, security breaches).'),
   medicalIncidents: z.string().optional().describe('Detailed description of any medical incidents involving passengers or crew, including actions taken.'),
   passengerFeedback: z.string().optional().describe('Summary of notable positive or negative passenger feedback received during the flight.'),
-  cateringNotes: z.string().optional().describe('Comments on catering quality, quantity, and any issues encountered with meal services.'),
+  cateringNotes: z.string().optional().describe('Comments on catering quality, quantity, and any issues encountered with meal services *during the flight*.'),
   maintenanceIssues: z.string().optional().describe('Description of any aircraft defects or maintenance issues noted by the crew during the flight.'),
   otherObservations: z.string().optional().describe('Any other relevant observations or information not covered in other sections (e.g., ground handling, customs/immigration issues).'),
   crewPerformanceNotes: z.string().optional().describe('Observations on individual cabin crew performance during the flight. Each crew member\'s evaluation should be clearly demarcated.'),
@@ -83,12 +94,20 @@ Flight Details:
   {{#if passengerLoad.wchs}}- WCHS (Wheelchair - Steps): {{{passengerLoad.wchs}}}{{/if}}
   {{#if passengerLoad.wchc}}- WCHC (Wheelchair - Cabin): {{{passengerLoad.wchc}}}{{/if}}
   {{#if passengerLoad.inad}}- INAD (Inadmissible): {{{passengerLoad.inad}}}{{/if}}
+{{#if cateringLoad}}
+- Catering Load:
+  {{#if cateringLoad.standardMeals}}  - Standard Passenger Meals: {{cateringLoad.standardMeals}}{{/if}}
+  {{#if cateringLoad.specialMeals}}   - Special Meals: {{cateringLoad.specialMeals}}{{/if}}
+  {{#if cateringLoad.crewMeals}}      - Crew Meals: {{cateringLoad.crewMeals}}{{/if}}
+  {{#if cateringLoad.barFullyStocked}} - Bar Fully Stocked: Yes{{else if cateringLoad.barFullyStocked === false}} - Bar Fully Stocked: No{{/if}}
+  {{#if cateringLoad.additionalNotes}}- Catering Uplift Notes: {{{cateringLoad.additionalNotes}}}{{/if}}
+{{/if}}
 
 Report Sections:
 
 1.  **## General Flight Summary**:
     {{{generalFlightSummary}}}
-    (Ensure to comment on flight punctuality based on the scheduled vs actual departure/arrival times if provided.)
+    (Ensure to comment on flight punctuality based on the scheduled vs actual departure/arrival times if provided. Also consider passenger load and catering load information if relevant to the summary.)
 
 {{#if safetyIncidents}}
 2.  **## Safety Incidents/Observations**:
@@ -111,8 +130,9 @@ Report Sections:
 {{/if}}
 
 {{#if cateringNotes}}
-6.  **## Catering Notes**:
+6.  **## Catering Notes (In-flight Observations)**:
     {{{cateringNotes}}}
+    (Observations on catering quality, quantity, and any issues encountered with meal services during the flight.)
 {{/if}}
 
 {{#if maintenanceIssues}}
@@ -153,5 +173,3 @@ const purserReportFlow = ai.defineFlow(
   }
 );
     
-
-
