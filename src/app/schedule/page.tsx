@@ -16,7 +16,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PlaneTakeoff, Briefcase, Users, MapPin, Loader2, AlertTriangle, PlusCircle, CheckCircle, CalendarPlus, ListTodo, Bed, Shield, BookOpen, CircleHelp, Trash2, Edit3, Filter } from "lucide-react";
+import { PlaneTakeoff, Briefcase, Users, MapPin, Loader2, AlertTriangle, PlusCircle, CheckCircle, CalendarPlus, ListTodo, Bed, Shield, BookOpen, CircleHelp, Trash2, Edit3, Filter, Ban } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, Timestamp, orderBy, serverTimestamp, deleteDoc, updateDoc } from "firebase/firestore";
@@ -201,12 +201,12 @@ export default function SchedulePage() {
                     flightDetails.arrivalAirportIATA = arrAirportInfo.iata;
                 }
             }
-          }
+          } // If flightDocSnap doesn't exist, flightDetails remains undefined
         }
         populatedActivities.push({
           id: activityDoc.id,
           ...activityData,
-          flightDetails,
+          flightDetails, // Will be undefined if flight was deleted or not found
         } as UserActivity);
       }
       setUserActivities(populatedActivities);
@@ -283,7 +283,7 @@ export default function SchedulePage() {
       }
       const typesOnDate = newMap.get(dateKey)!; 
       if (activity.activityType === 'flight') {
-        typesOnDate.add('flight');
+        typesOnDate.add(activity.flightDetails ? 'flight' : 'flight-deleted'); // Differentiate for dot
       } else {
         typesOnDate.add('otherType');
       }
@@ -372,10 +372,16 @@ export default function SchedulePage() {
       }
 
       if (isEditMode && editingActivity) {
+        // For flight activities, flightId cannot be changed during edit.
+        // For non-flight activities, flightId should be null.
+        const flightIdToUpdate = editingActivity.activityType === 'flight' 
+          ? editingActivity.flightId // Keep existing flightId if it's a flight activity
+          : null;
+
         const updatePayload: Partial<Omit<UserActivity, 'id' | 'createdAt' | 'userId' | 'flightDetails'>> = {
           activityType: data.activityType,
           comments: data.comments || "",
-          flightId: data.activityType === "flight" ? (editingActivity.flightId || data.flightId) : null, 
+          flightId: flightIdToUpdate, 
           startTime: startTimeUTC,
           endTime: endTimeUTC,
         };
@@ -458,6 +464,9 @@ export default function SchedulePage() {
             {activityTypesOnDate.has('flight') && (
               <div className="w-1.5 h-1.5 bg-primary rounded-full" />
             )}
+            {activityTypesOnDate.has('flight-deleted') && (
+              <div className="w-1.5 h-1.5 bg-destructive rounded-full" /> 
+            )}
             {activityTypesOnDate.has('otherType') && (
               <div className="w-1.5 h-1.5 bg-accent rounded-full" />
             )}
@@ -473,6 +482,9 @@ export default function SchedulePage() {
       const arrTime = format(parseISO(event.flightDetails.scheduledArrivalDateTimeUTC), "HH:mm");
       return `${depTime} - ${arrTime} UTC`;
     }
+    if (event.activityType === 'flight' && !event.flightDetails) {
+        return "Details N/A";
+    }
     if (event.startTime && event.endTime) {
       const sTime = format(event.startTime.toDate(), "HH:mm");
       const eTime = format(event.endTime.toDate(), "HH:mm");
@@ -484,7 +496,10 @@ export default function SchedulePage() {
     return "All day";
   };
   
-  const getActivityIcon = (activityType: UserActivity["activityType"]) => {
+  const getActivityIcon = (activityType: UserActivity["activityType"], flightDetailsExist?: boolean) => {
+    if (activityType === 'flight' && !flightDetailsExist) {
+      return <Ban className="h-5 w-5 text-destructive" />;
+    }
     switch (activityType) {
       case "flight": return <PlaneTakeoff className="h-5 w-5 text-primary" />;
       case "off": return <Bed className="h-5 w-5 text-success-foreground" />;
@@ -534,11 +549,14 @@ export default function SchedulePage() {
               className="rounded-md border p-4 w-full max-w-md lg:max-w-none"
               components={{ DayContent: CustomDayInnerContent }}
               footer={
-                <div className="flex flex-wrap justify-start items-center gap-x-4 gap-y-1 mt-4 pt-2 border-t">
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <div className="w-2 h-2 bg-primary rounded-full" /> Flight Activity
+                <div className="flex flex-wrap justify-start items-center gap-x-4 gap-y-1 mt-4 pt-2 border-t text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 bg-primary rounded-full" /> Flight
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 bg-destructive rounded-full" /> Deleted Flight
+                  </div>
+                  <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 bg-accent rounded-full" /> Other Activity
                   </div>
                 </div>
@@ -594,18 +612,19 @@ export default function SchedulePage() {
                         <li key={event.id} className="p-3 rounded-md border bg-card hover:shadow-sm transition-shadow">
                           <div className="flex justify-between items-start">
                             <div className="flex items-center gap-2 mb-1">
-                                {getActivityIcon(event.activityType)}
+                                {getActivityIcon(event.activityType, !!event.flightDetails)}
                                 <h3 className="font-semibold text-sm capitalize">
-                                    {event.activityType === 'flight' && event.flightDetails ? 
-                                     `${event.flightDetails.flightNumber}: ${event.flightDetails.departureAirportIATA || event.flightDetails.departureAirport} - ${event.flightDetails.arrivalAirportIATA || event.flightDetails.arrivalAirport}` : 
+                                    {event.activityType === 'flight' ? 
+                                     (event.flightDetails ? `${event.flightDetails.flightNumber}: ${event.flightDetails.departureAirportIATA || event.flightDetails.departureAirport} - ${event.flightDetails.arrivalAirportIATA || event.flightDetails.arrivalAirport}` : "Flight (Details N/A - Cancelled/Deleted)") : 
                                      event.activityType}
                                 </h3>
                             </div>
-                            {event.activityType !== 'flight' && (
                               <div className="flex items-center">
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary/80" onClick={() => handleOpenEditActivityDialog(event)}>
-                                  <Edit3 className="h-4 w-4" />
-                                </Button>
+                                {(event.activityType !== 'flight' || !event.flightDetails) && ( // Allow edit/delete for non-flight or deleted flight activities
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary/80" onClick={() => handleOpenEditActivityDialog(event)}>
+                                    <Edit3 className="h-4 w-4" />
+                                  </Button>
+                                )}
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive/80" onClick={() => setActivityToDelete(event)}>
@@ -614,10 +633,10 @@ export default function SchedulePage() {
                                     </AlertDialogTrigger>
                                 </AlertDialog>
                               </div>
-                            )}
                           </div>
                           <p className="text-xs text-muted-foreground">{formatEventTime(event)}</p>
                           {event.activityType === 'flight' && event.flightDetails && <Badge variant="default" className="mt-1 text-xs">{event.flightDetails.status}</Badge>}
+                          {event.activityType === 'flight' && !event.flightDetails && <Badge variant="destructive" className="mt-1 text-xs">Flight Cancelled/Deleted</Badge>}
                           {event.comments && <p className="text-xs text-muted-foreground mt-1">Note: {event.comments}</p>}
                         </li>
                       ))}
@@ -663,7 +682,7 @@ export default function SchedulePage() {
                             }
                         }} 
                         value={field.value} 
-                        disabled={isEditMode && editingActivity?.activityType === 'flight'}
+                        disabled={isEditMode && editingActivity?.activityType === 'flight' && !!editingActivity?.flightDetails} // Lock if it's an existing, valid flight
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -671,7 +690,7 @@ export default function SchedulePage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="flight" disabled={isEditMode && editingActivity?.activityType !== 'flight'}>Flight Duty</SelectItem>
+                        <SelectItem value="flight" disabled={isEditMode && editingActivity?.activityType !== 'flight' && editingActivity?.activityType !== undefined}>Flight Duty</SelectItem>
                         <SelectItem value="off">Day Off</SelectItem>
                         <SelectItem value="standby">Standby</SelectItem>
                         <SelectItem value="leave">Leave / Vacation</SelectItem>
@@ -701,7 +720,7 @@ export default function SchedulePage() {
                         </FormControl>
                         <FormDescription>Flight details are locked for existing flight activities. To change the flight, delete this activity and add a new one.</FormDescription>
                     </FormItem>
-                ) : (
+                ) : ( // Only show flight selector if adding new or editing a non-flight/deleted-flight activity to be a flight
                     <FormField
                     control={activityForm.control}
                     name="flightId"
@@ -830,5 +849,3 @@ export default function SchedulePage() {
     </div>
   );
 }
-
-    
