@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff, Clock, AlertTriangle, Utensils, Euro, Broom } from "lucide-react"; // Added Broom
+import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff, Clock, AlertTriangle, Utensils, Euro, Broom, BookOpen } from "lucide-react";
 import { generatePurserReport, type PurserReportOutput, type PurserReportInput } from "@/ai/flows/purser-report-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -146,7 +146,8 @@ const purserReportFormSchema = z.object({
 
   passengerLoad: passengerLoadSchema, 
   cateringLoad: cateringLoadSchema.optional(),
-  aircraftCleaning: aircraftCleaningSchema.optional(), // Added aircraftCleaning
+  aircraftCleaning: aircraftCleaningSchema.optional(),
+  briefingNotes: z.string().max(1000, "Briefing notes cannot exceed 1000 characters.").optional(),
   generalFlightSummary: z.string().min(10, "Min 10 characters for summary."),
 }).superRefine((data, ctx) => {
     if (data.actualArrivalUTC && !data.actualDepartureUTC) {
@@ -262,6 +263,7 @@ export function PurserReportTool() {
         cleaningIssuesNoted: "", 
         itemsLeftByPassengers: "" 
       },
+      briefingNotes: "",
       generalFlightSummary: "",
     },
     mode: "onChange", 
@@ -358,6 +360,7 @@ export function PurserReportTool() {
             cabinCrewR2: PLACEHOLDER_NONE_VALUE,
             cateringLoad: { standardMeals: 0, specialMeals: 0, crewMeals: 0, totalSalesCash: 0, barFullyStocked: true, additionalNotes: "" },
             aircraftCleaning: { cabinCleanlinessOverall: defaultCleanlinessRating, galleyCleanliness: defaultCleanlinessRating, lavatoryCleanliness: defaultCleanlinessRating, cleaningIssuesNoted: "", itemsLeftByPassengers: "" },
+            briefingNotes: "",
         });
         setSelectedFlightIdState(null); 
         return;
@@ -437,8 +440,8 @@ export function PurserReportTool() {
 
   async function onSubmit(data: PurserReportFormValues) {
     if (!user) { toast({ title: "Authentication Error", description: "You must be logged in.", variant: "destructive" }); return; }
-    if (addedSections.length === 0 && !data.generalFlightSummary && addedCrewEvaluations.length === 0 && !data.aircraftCleaning) {
-        toast({ title: "Empty Report", description: "Provide a general summary, report section, aircraft cleaning details, or crew evaluation.", variant: "default" }); return;
+    if (addedSections.length === 0 && !data.generalFlightSummary && addedCrewEvaluations.length === 0 && !data.aircraftCleaning && !data.briefingNotes) {
+        toast({ title: "Empty Report", description: "Provide a general summary, briefing notes, report section, aircraft cleaning details, or crew evaluation.", variant: "default" }); return;
     }
     setIsLoading(true); setReportResult(null);
     const crewDetailsParts = [
@@ -451,7 +454,7 @@ export function PurserReportTool() {
       data.otherCrewMembers ? `Other Crew: ${data.otherCrewMembers}` : null,
     ];
     const crewMembersString = crewDetailsParts.filter(Boolean).join('\n');
-    const dynamicSections: Partial<Omit<PurserReportInput, 'crewPerformanceNotes' | 'scheduledDepartureUTC' | 'scheduledArrivalUTC' | 'actualDepartureUTC' | 'actualArrivalUTC' | 'passengerLoad' | 'cateringLoad' | 'aircraftCleaning'>> = {};
+    const dynamicSections: Partial<Omit<PurserReportInput, 'crewPerformanceNotes' | 'scheduledDepartureUTC' | 'scheduledArrivalUTC' | 'actualDepartureUTC' | 'actualArrivalUTC' | 'passengerLoad' | 'cateringLoad' | 'aircraftCleaning' | 'briefingNotes'>> = {};
     addedSections.forEach(section => {
         switch (section.type) {
             case "Safety Incidents": dynamicSections.safetyIncidents = (dynamicSections.safetyIncidents ? dynamicSections.safetyIncidents + "\n\n---\n\n" : "") + section.content; break;
@@ -487,6 +490,7 @@ export function PurserReportTool() {
           additionalNotes: data.cateringLoad.additionalNotes || ""
       } : undefined,
       aircraftCleaning: data.aircraftCleaning,
+      briefingNotes: data.briefingNotes || undefined,
       generalFlightSummary: data.generalFlightSummary, ...dynamicSections,
       scheduledDepartureUTC: data.scheduledDepartureUTC || undefined,
       scheduledArrivalUTC: data.scheduledArrivalUTC || undefined,
@@ -772,6 +776,26 @@ export function PurserReportTool() {
                     </FormItem>
                   )}
                 />
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="briefing-notes" className="border-none">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
+                <div className="flex items-center"><BookOpen className="mr-2 h-5 w-5 text-primary"/>Briefing Notes</div>
+              </AccordionTrigger>
+              <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm">
+                 <FormField 
+                    control={form.control} 
+                    name="briefingNotes" 
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Pre-Flight Briefing Summary</FormLabel>
+                            <FormControl><Textarea placeholder="Key points from pre-flight briefing, safety topics discussed, specific crew instructions or concerns raised..." className="min-h-[100px]" {...field} /></FormControl>
+                            <FormDescription>Summarize important aspects of the briefing relevant to this flight.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )} 
+                  />
               </AccordionContent>
             </AccordionItem>
 

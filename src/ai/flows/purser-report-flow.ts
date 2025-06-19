@@ -59,7 +59,8 @@ const PurserReportInputSchema = z.object({
   crewMembers: z.string().min(10).describe('List of crew members on board (names and roles, typically multi-line).'),
   passengerLoad: PassengerLoadSchema,
   cateringLoad: CateringLoadSchema.optional(),
-  aircraftCleaning: AircraftCleaningSchema.optional(), // Added aircraftCleaning
+  aircraftCleaning: AircraftCleaningSchema.optional(),
+  briefingNotes: z.string().optional().describe('Key points from pre-flight briefing, safety topics, specific crew instructions.'),
   generalFlightSummary: z.string().min(10).describe('Overall summary of the flight, noting punctuality (based on provided times), and general atmosphere.'),
   safetyIncidents: z.string().optional().describe('Detailed description of any safety-related incidents or observations (e.g., turbulence, equipment malfunctions affecting safety).'),
   securityIncidents: z.string().optional().describe('Detailed description of any security-related incidents (e.g., unruly passengers, security breaches).'),
@@ -128,49 +129,54 @@ Flight Details:
 
 Report Sections:
 
-1.  **## General Flight Summary**:
-    {{{generalFlightSummary}}}
-    (Ensure to comment on flight punctuality based on the scheduled vs actual departure/arrival times if provided. Also consider passenger load and catering load information if relevant to the summary.)
+{{#if briefingNotes}}
+**## Briefing Notes**:
+{{{briefingNotes}}}
+{{/if}}
+
+**## General Flight Summary**:
+{{{generalFlightSummary}}}
+(Ensure to comment on flight punctuality based on the scheduled vs actual departure/arrival times if provided. Also consider passenger load and catering load information if relevant to the summary.)
 
 {{#if safetyIncidents}}
-2.  **## Safety Incidents/Observations**:
-    {{{safetyIncidents}}}
+**## Safety Incidents/Observations**:
+{{{safetyIncidents}}}
 {{/if}}
 
 {{#if securityIncidents}}
-3.  **## Security Incidents/Observations**:
-    {{{securityIncidents}}}
+**## Security Incidents/Observations**:
+{{{securityIncidents}}}
 {{/if}}
 
 {{#if medicalIncidents}}
-4.  **## Medical Incidents**:
-    {{{medicalIncidents}}}
+**## Medical Incidents**:
+{{{medicalIncidents}}}
 {{/if}}
 
 {{#if passengerFeedback}}
-5.  **## Passenger Feedback**:
-    {{{passengerFeedback}}}
+**## Passenger Feedback**:
+{{{passengerFeedback}}}
 {{/if}}
 
 {{#if cateringNotes}}
-6.  **## Catering Notes (In-flight Observations)**:
-    {{{cateringNotes}}}
-    (Observations on catering quality, quantity, and any issues encountered with meal services during the flight.)
+**## Catering Notes (In-flight Observations)**:
+{{{cateringNotes}}}
+(Observations on catering quality, quantity, and any issues encountered with meal services during the flight.)
 {{/if}}
 
 {{#if maintenanceIssues}}
-7.  **## Maintenance Issues Noted**:
-    {{{maintenanceIssues}}}
+**## Maintenance Issues Noted**:
+{{{maintenanceIssues}}}
 {{/if}}
 
 {{#if otherObservations}}
-8.  **## Other Observations/Information**:
-    {{{otherObservations}}}
+**## Other Observations/Information**:
+{{{otherObservations}}}
 {{/if}}
 
 {{#if crewPerformanceNotes}}
-9.  **## Crew Performance Notes**:
-    {{{crewPerformanceNotes}}}
+**## Crew Performance Notes**:
+{{{crewPerformanceNotes}}}
 {{/if}}
 
 After generating the full report, provide a separate list of key highlights or action items that management should be aware of. This should be a concise summary of the most critical points from the entire report.
