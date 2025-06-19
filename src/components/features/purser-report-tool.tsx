@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff, Clock, AlertTriangle, Utensils } from "lucide-react"; // Added Utensils
+import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff, Clock, AlertTriangle, Utensils, Euro } from "lucide-react";
 import { generatePurserReport, type PurserReportOutput, type PurserReportInput } from "@/ai/flows/purser-report-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -28,7 +28,7 @@ import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, wh
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { format, parseISO, differenceInMinutes } from "date-fns";
-import { Switch } from "@/components/ui/switch"; // Added Switch
+import { Switch } from "@/components/ui/switch";
 
 interface CrewUser {
   uid: string;
@@ -62,7 +62,7 @@ const reportSectionTypes = [
   "Security Incidents",
   "Medical Incidents",
   "Passenger Feedback",
-  "Catering Notes", // This is for in-flight observations
+  "Catering Notes", 
   "Maintenance Issues",
   "Other Observations",
 ] as const;
@@ -106,6 +106,7 @@ const cateringLoadSchema = z.object({
   standardMeals: z.coerce.number().int().min(0).optional(),
   specialMeals: z.coerce.number().int().min(0).optional(),
   crewMeals: z.coerce.number().int().min(0).optional(),
+  totalSalesCash: z.coerce.number().min(0).optional().describe("Total cash sales."),
   barFullyStocked: z.boolean().default(true).optional(),
   additionalNotes: z.string().optional(),
 });
@@ -132,7 +133,7 @@ const purserReportFormSchema = z.object({
   otherCrewMembers: z.string().optional(),
 
   passengerLoad: passengerLoadSchema, 
-  cateringLoad: cateringLoadSchema.optional(), // Added catering load
+  cateringLoad: cateringLoadSchema.optional(),
   generalFlightSummary: z.string().min(10, "Min 10 characters for summary."),
 }).superRefine((data, ctx) => {
     if (data.actualArrivalUTC && !data.actualDepartureUTC) {
@@ -239,7 +240,7 @@ export function PurserReportTool() {
       cabinCrewR2: PLACEHOLDER_NONE_VALUE,
       otherCrewMembers: "",
       passengerLoad: { total: 0, adults: 0, infants: 0, um: 0, pregnant: 0, wchr: 0, wchs: 0, wchc: 0, inad: 0 },
-      cateringLoad: { standardMeals: 0, specialMeals: 0, crewMeals: 0, barFullyStocked: true, additionalNotes: "" }, // Default for catering load
+      cateringLoad: { standardMeals: 0, specialMeals: 0, crewMeals: 0, totalSalesCash: 0, barFullyStocked: true, additionalNotes: "" },
       generalFlightSummary: "",
     },
     mode: "onChange", 
@@ -334,7 +335,7 @@ export function PurserReportTool() {
             cabinCrewR1: PLACEHOLDER_NONE_VALUE,
             cabinCrewL2: PLACEHOLDER_NONE_VALUE,
             cabinCrewR2: PLACEHOLDER_NONE_VALUE,
-            cateringLoad: { standardMeals: 0, specialMeals: 0, crewMeals: 0, barFullyStocked: true, additionalNotes: "" }, // Reset catering load
+            cateringLoad: { standardMeals: 0, specialMeals: 0, crewMeals: 0, totalSalesCash: 0, barFullyStocked: true, additionalNotes: "" },
         });
         setSelectedFlightIdState(null); 
         return;
@@ -459,6 +460,7 @@ export function PurserReportTool() {
           standardMeals: Number(data.cateringLoad.standardMeals || 0),
           specialMeals: Number(data.cateringLoad.specialMeals || 0),
           crewMeals: Number(data.cateringLoad.crewMeals || 0),
+          totalSalesCash: Number(data.cateringLoad.totalSalesCash || 0),
           barFullyStocked: data.cateringLoad.barFullyStocked,
           additionalNotes: data.cateringLoad.additionalNotes || ""
       } : undefined,
@@ -523,7 +525,7 @@ export function PurserReportTool() {
             
             <AccordionItem value="flight-info" className="border-none">
                <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
-                <div className="flex items-center"><PlaneTakeoff className="mr-2 h-5 w-5 text-primary"/>Flight Information & Timings</div>
+                <div className="flex items-center"><PlaneTakeoff className="mr-2 h-5 w-5 text-primary"/>Flight Information &amp; Timings</div>
               </AccordionTrigger>
               <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm">
                 <div className="max-h-[600px] overflow-y-auto pr-3 space-y-6">
@@ -646,11 +648,19 @@ export function PurserReportTool() {
                 <div className="flex items-center"><Utensils className="mr-2 h-5 w-5 text-primary" />Catering Load</div>
               </AccordionTrigger>
               <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm space-y-6">
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <FormField control={form.control} name="cateringLoad.standardMeals" render={({ field }) => (<FormItem><FormLabel>Standard Passenger Meals</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="cateringLoad.specialMeals" render={({ field }) => (<FormItem><FormLabel>Special Meals (VGML, CHML, etc.)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <FormField control={form.control} name="cateringLoad.standardMeals" render={({ field }) => (<FormItem><FormLabel>Std. Passenger Meals</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="cateringLoad.specialMeals" render={({ field }) => (<FormItem><FormLabel>Special Meals</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>VGML, CHML, etc.</FormDescription><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="cateringLoad.crewMeals" render={({ field }) => (<FormItem><FormLabel>Crew Meals</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                  </div>
+                 <FormField control={form.control} name="cateringLoad.totalSalesCash" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="flex items-center"><Euro className="mr-1.5 h-4 w-4 text-muted-foreground"/>Total Sales (Cash)</FormLabel>
+                        <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} /></FormControl>
+                        <FormDescription>Enter total cash sales from duty-free, snacks, etc.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                 )} />
                  <FormField
                     control={form.control}
                     name="cateringLoad.barFullyStocked"

@@ -12,21 +12,22 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const PassengerLoadSchema = z.object({
-  total: z.number().int().min(0).describe('Total number of passengers.'),
-  adults: z.number().int().min(0).describe('Number of adult passengers.'),
-  infants: z.number().int().min(0).describe('Number of infant passengers.'),
-  um: z.number().int().min(0).optional().describe('Number of Unaccompanied Minors.'),
-  pregnant: z.number().int().min(0).optional().describe('Number of pregnant women.'),
-  wchr: z.number().int().min(0).optional().describe('Number of Wheelchair (Ramp) passengers.'),
-  wchs: z.number().int().min(0).optional().describe('Number of Wheelchair (Steps) passengers.'),
-  wchc: z.number().int().min(0).optional().describe('Number of Wheelchair (Cabin) passengers.'),
-  inad: z.number().int().min(0).optional().describe('Number of Inadmissible passengers.'),
+  total: z.coerce.number().int().min(0).describe('Total number of passengers.'),
+  adults: z.coerce.number().int().min(0).describe('Number of adult passengers.'),
+  infants: z.coerce.number().int().min(0).describe('Number of infant passengers.'),
+  um: z.coerce.number().int().min(0).optional().describe('Number of Unaccompanied Minors.'),
+  pregnant: z.coerce.number().int().min(0).optional().describe('Number of pregnant women.'),
+  wchr: z.coerce.number().int().min(0).optional().describe('Number of Wheelchair (Ramp) passengers.'),
+  wchs: z.coerce.number().int().min(0).optional().describe('Number of Wheelchair (Steps) passengers.'),
+  wchc: z.coerce.number().int().min(0).optional().describe('Number of Wheelchair (Cabin) passengers.'),
+  inad: z.coerce.number().int().min(0).optional().describe('Number of Inadmissible passengers.'),
 });
 
 const CateringLoadSchema = z.object({
   standardMeals: z.coerce.number().int().min(0).optional().describe("Number of standard passenger meals boarded."),
   specialMeals: z.coerce.number().int().min(0).optional().describe("Number of special meals (e.g., VGML, CHML) boarded."),
   crewMeals: z.coerce.number().int().min(0).optional().describe("Number of crew meals boarded."),
+  totalSalesCash: z.coerce.number().min(0).optional().describe("Total cash sales made during the flight (e.g., duty-free, snacks)."),
   barFullyStocked: z.boolean().optional().describe("Whether the bar was fully stocked."),
   additionalNotes: z.string().optional().describe("Any other notes on catering uplift or discrepancies.")
 });
@@ -45,7 +46,7 @@ const PurserReportInputSchema = z.object({
   
   crewMembers: z.string().min(10).describe('List of crew members on board (names and roles, typically multi-line).'),
   passengerLoad: PassengerLoadSchema,
-  cateringLoad: CateringLoadSchema.optional(), // Added new catering load section
+  cateringLoad: CateringLoadSchema.optional(),
   generalFlightSummary: z.string().min(10).describe('Overall summary of the flight, noting punctuality (based on provided times), and general atmosphere.'),
   safetyIncidents: z.string().optional().describe('Detailed description of any safety-related incidents or observations (e.g., turbulence, equipment malfunctions affecting safety).'),
   securityIncidents: z.string().optional().describe('Detailed description of any security-related incidents (e.g., unruly passengers, security breaches).'),
@@ -99,6 +100,7 @@ Flight Details:
   {{#if cateringLoad.standardMeals}}  - Standard Passenger Meals: {{cateringLoad.standardMeals}}{{/if}}
   {{#if cateringLoad.specialMeals}}   - Special Meals: {{cateringLoad.specialMeals}}{{/if}}
   {{#if cateringLoad.crewMeals}}      - Crew Meals: {{cateringLoad.crewMeals}}{{/if}}
+  {{#if cateringLoad.totalSalesCash}} - Total Sales (Cash): {{cateringLoad.totalSalesCash}}{{/if}}
   {{#if cateringLoad.barFullyStocked}} - Bar Fully Stocked: Yes{{else if cateringLoad.barFullyStocked === false}} - Bar Fully Stocked: No{{/if}}
   {{#if cateringLoad.additionalNotes}}- Catering Uplift Notes: {{{cateringLoad.additionalNotes}}}{{/if}}
 {{/if}}
@@ -173,3 +175,4 @@ const purserReportFlow = ai.defineFlow(
   }
 );
     
+
