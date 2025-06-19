@@ -2,20 +2,38 @@
 "use client";
 
 import * as React from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { User, Bell, Shield, Palette, Loader2, Info, CalendarDays } from "lucide-react"; 
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Form, FormControl, FormDescription as UiFormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { User, Bell, Shield, Palette, Loader2, Info, CalendarDays, KeyRound } from "lucide-react"; 
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { updateProfile as updateAuthProfile } from "firebase/auth"; 
-import { doc, updateDoc } from "firebase/firestore";
+import { updateProfile as updateAuthProfile, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth"; 
+import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { format } from "date-fns";
 import Image from "next/image"; 
+
+// Schema for Change Password Form
+const changePasswordFormSchema = z.object({
+  currentPassword: z.string().min(1, { message: "Current password is required." }),
+  newPassword: z.string().min(6, { message: "New password must be at least 6 characters." }),
+  confirmPassword: z.string().min(6, { message: "Confirm password must be at least 6 characters." }),
+})
+.refine((data) => data.newPassword === data.confirmPassword, {
+  message: "New passwords don't match.",
+  path: ["confirmPassword"],
+});
+type ChangePasswordFormValues = z.infer<typeof changePasswordFormSchema>;
+
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -23,13 +41,38 @@ export default function SettingsPage() {
   
   const [displayName, setDisplayName] = React.useState("");
   const [fullName, setFullName] = React.useState("");
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = React.useState(true);
+  const [scheduleChangeAlertsEnabled, setScheduleChangeAlertsEnabled] = React.useState(true);
 
   const [isUpdatingProfile, setIsUpdatingProfile] = React.useState(false);
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = React.useState(false);
+  const [isChangingPassword, setIsChangingPassword] = React.useState(false);
+
+  const changePasswordForm = useForm<ChangePasswordFormValues>({
+    resolver: zodResolver(changePasswordFormSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
 
   React.useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || "");
       setFullName(user.fullName || "");
+      
+      // Fetch notification preferences from Firestore
+      const fetchUserPreferences = async () => {
+        const userDocRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists()) {
+          const userData = docSnap.data();
+          setEmailNotificationsEnabled(userData.prefsEmailNotifications === undefined ? true : userData.prefsEmailNotifications);
+          setScheduleChangeAlertsEnabled(userData.prefsScheduleChangeAlerts === undefined ? true : userData.prefsScheduleChangeAlerts);
+        }
+      };
+      fetchUserPreferences();
     }
   }, [user]);
 
@@ -49,9 +92,17 @@ export default function SettingsPage() {
 
     setIsUpdatingProfile(true);
     try {
-      const updatesForFirestore: { displayName: string; fullName: string; [key: string]: any } = {
+      const updatesForFirestore: { 
+        displayName: string; 
+        fullName: string; 
+        prefsEmailNotifications: boolean;
+        prefsScheduleChangeAlerts: boolean;
+        [key: string]: any 
+      } = {
         displayName: displayName.trim(),
         fullName: fullName.trim(),
+        prefsEmailNotifications: emailNotificationsEnabled,
+        prefsScheduleChangeAlerts: scheduleChangeAlertsEnabled,
       };
 
       if (displayName.trim() !== auth.currentUser.displayName) {
@@ -61,7 +112,7 @@ export default function SettingsPage() {
       const userDocRef = doc(db, "users", user.uid);
       await updateDoc(userDocRef, updatesForFirestore);
 
-      toast({ title: "Profile Updated", description: "Your profile information has been successfully updated." });
+      toast({ title: "Profile & Preferences Updated", description: "Your information has been successfully updated." });
     } catch (error: any) {
       console.error("Error updating profile:", error);
       toast({ title: "Update Failed", description: error.message || "Could not update your profile.", variant: "destructive" });
@@ -69,9 +120,36 @@ export default function SettingsPage() {
       setIsUpdatingProfile(false);
     }
   };
+
+  const handleChangePasswordSubmit = async (data: ChangePasswordFormValues) => {
+    if (!user || !user.email || !auth.currentUser) {
+      toast({ title: "Error", description: "User not authenticated.", variant: "destructive" });
+      return;
+    }
+    setIsChangingPassword(true);
+    try {
+      const credential = EmailAuthProvider.credential(user.email, data.currentPassword);
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      await updatePassword(auth.currentUser, data.newPassword);
+      toast({ title: "Password Changed", description: "Your password has been successfully updated." });
+      setIsChangePasswordDialogOpen(false);
+      changePasswordForm.reset();
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      let errorMessage = "Could not change password. Please try again.";
+      if (error.code === 'auth/wrong-password') {
+        errorMessage = "Incorrect current password.";
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = "The new password is too weak.";
+      }
+      toast({ title: "Password Change Failed", description: errorMessage, variant: "destructive" });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
   
   const formatDateDisplay = (dateString?: string | null) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return "N/A"; 
     try {
       const dateObj = new Date(dateString);
       if (isNaN(dateObj.getTime())) return "Invalid Date";
@@ -94,7 +172,11 @@ export default function SettingsPage() {
     return <p>Please log in to view settings.</p>;
   }
 
-  const isProfileChanged = displayName !== (user.displayName || "") || fullName !== (user.fullName || "");
+  const isProfileChanged = displayName !== (user.displayName || "") || 
+                           fullName !== (user.fullName || "") ||
+                           emailNotificationsEnabled !== (user.prefsEmailNotifications === undefined ? true : user.prefsEmailNotifications) ||
+                           scheduleChangeAlertsEnabled !== (user.prefsScheduleChangeAlerts === undefined ? true : user.prefsScheduleChangeAlerts);
+
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
@@ -168,11 +250,6 @@ export default function SettingsPage() {
                 <p className="text-xs text-muted-foreground mt-1">The date you joined the company.</p>
             </div>
            </div>
-
-          <Button onClick={handleProfileUpdate} disabled={isUpdatingProfile || !isProfileChanged}>
-            {isUpdatingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Update Profile
-          </Button>
         </CardContent>
       </Card>
 
@@ -188,19 +265,14 @@ export default function SettingsPage() {
                 Receive important updates and alerts via email.
               </span>
             </Label>
-            <Switch id="emailNotifications" defaultChecked disabled />
+            <Switch 
+              id="emailNotifications" 
+              checked={emailNotificationsEnabled} 
+              onCheckedChange={setEmailNotificationsEnabled}
+              disabled={isUpdatingProfile} 
+            />
           </div>
           <Separator />
-          <div className="flex items-center justify-between">
-            <Label htmlFor="pushNotifications" className="flex flex-col space-y-1">
-              <span>Push Notifications</span>
-              <span className="font-normal leading-snug text-muted-foreground">
-                Get real-time alerts on your mobile device (if app installed).
-              </span>
-            </Label>
-            <Switch id="pushNotifications" defaultChecked disabled />
-          </div>
-           <Separator />
           <div className="flex items-center justify-between">
             <Label htmlFor="scheduleChangeAlerts" className="flex flex-col space-y-1">
               <span>Schedule Change Alerts</span>
@@ -208,11 +280,22 @@ export default function SettingsPage() {
                 Notify me immediately of any changes to my flight or duty schedule.
               </span>
             </Label>
-            <Switch id="scheduleChangeAlerts" defaultChecked disabled />
+            <Switch 
+              id="scheduleChangeAlerts" 
+              checked={scheduleChangeAlertsEnabled} 
+              onCheckedChange={setScheduleChangeAlertsEnabled}
+              disabled={isUpdatingProfile} 
+            />
           </div>
-          <p className="text-xs text-muted-foreground">Notification settings are currently placeholders and not functional.</p>
+          <p className="text-xs text-muted-foreground">Push notifications for mobile are managed in the app settings (if applicable).</p>
         </CardContent>
       </Card>
+
+       <Button onClick={handleProfileUpdate} disabled={isUpdatingProfile || !isProfileChanged} className="w-full md:w-auto">
+            {isUpdatingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Profile & Preferences
+        </Button>
+
 
       <Card>
         <CardHeader>
@@ -237,8 +320,72 @@ export default function SettingsPage() {
           <CardTitle className="flex items-center gap-2"><Shield className="w-5 h-5 text-primary" /> Security</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button variant="outline" disabled>Change Password</Button>
-          <div className="flex items-center justify-between">
+          <Dialog open={isChangePasswordDialogOpen} onOpenChange={setIsChangePasswordDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline"><KeyRound className="mr-2 h-4 w-4"/>Change Password</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Change Your Password</DialogTitle>
+                <DialogDescription>
+                  Enter your current password and a new password.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...changePasswordForm}>
+                <form onSubmit={changePasswordForm.handleSubmit(handleChangePasswordSubmit)} className="space-y-4 py-4">
+                  <FormField
+                    control={changePasswordForm.control}
+                    name="currentPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Current Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={changePasswordForm.control}
+                    name="newPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>New Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <UiFormDescription>Minimum 6 characters.</UiFormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={changePasswordForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm New Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <DialogFooter className="pt-4">
+                     <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                    <Button type="submit" disabled={isChangingPassword}>
+                      {isChangingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Update Password
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+          
+          <div className="flex items-center justify-between mt-4">
             <Label htmlFor="twoFactorAuth" className="flex flex-col space-y-1">
               <span>Two-Factor Authentication (2FA)</span>
               <span className="font-normal leading-snug text-muted-foreground">
@@ -247,7 +394,7 @@ export default function SettingsPage() {
             </Label>
             <Switch id="twoFactorAuth" disabled />
           </div>
-          <p className="text-xs text-muted-foreground">Security settings are currently placeholders and not functional.</p>
+          <p className="text-xs text-muted-foreground">2FA is currently a placeholder and not functional.</p>
         </CardContent>
       </Card>
 
