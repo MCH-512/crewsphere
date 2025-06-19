@@ -242,7 +242,7 @@ export default function CertificatesPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="mx-auto my-4">
-                  <Image src={selectedCourseForCert.progress.certificateDetails.logoURL || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4 mx-auto" data-ai-hint="company logo airline"/>
+                  <Image src={selectedCourseForCert.progress.certificateDetails.logoURL || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4 mx-auto" data-ai-hint="company logo"/>
                    <div className="border-2 border-dashed border-primary p-6 rounded-lg bg-secondary/30 aspect-[8.5/5.5] w-full max-w-md flex flex-col items-center justify-around text-center" data-ai-hint="certificate award">
                         <h4 className="text-2xl font-bold text-primary">Certificate of Completion</h4>
                         <p className="text-sm my-2">This certifies that</p>
