@@ -705,4 +705,3 @@ export function PurserReportTool() {
     </div>
   );
 }
-
