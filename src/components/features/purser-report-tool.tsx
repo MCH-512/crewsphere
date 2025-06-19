@@ -84,14 +84,18 @@ interface AddedCrewEvaluation {
 const passengerLoadSchema = z.object({
   total: z.coerce.number().int().min(0, "Min 0 passengers"),
   adults: z.coerce.number().int().min(0, "Min 0 adults"),
-  children: z.coerce.number().int().min(0, "Min 0 children"),
   infants: z.coerce.number().int().min(0, "Min 0 infants"),
+  um: z.coerce.number().int().min(0, "Min 0 UM").default(0),
+  pregnant: z.coerce.number().int().min(0, "Min 0 Pregnant").default(0),
+  wchr: z.coerce.number().int().min(0, "Min 0 WCHR").default(0),
+  wchs: z.coerce.number().int().min(0, "Min 0 WCHS").default(0),
+  wchc: z.coerce.number().int().min(0, "Min 0 WCHC").default(0),
+  inad: z.coerce.number().int().min(0, "Min 0 INAD").default(0),
 }).superRefine((data, ctx) => {
-  const sumOfParts = data.adults + data.children + data.infants;
-  if (data.total < sumOfParts) {
+  if (data.total < (data.adults + data.infants)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `Total (${data.total}) cannot be less than the sum of Adults, Children, and Infants (${sumOfParts}).`,
+      message: `Total PAX (${data.total}) cannot be less than the sum of Adults and Infants (${data.adults + data.infants}). Special categories are typically included within Adult/Infant counts or noted additionally.`,
       path: ["total"],
     });
   }
@@ -224,7 +228,7 @@ export function PurserReportTool() {
       cabinCrewL2: PLACEHOLDER_NONE_VALUE,
       cabinCrewR2: PLACEHOLDER_NONE_VALUE,
       otherCrewMembers: "",
-      passengerLoad: { total: 0, adults: 0, children: 0, infants: 0 },
+      passengerLoad: { total: 0, adults: 0, infants: 0, um: 0, pregnant: 0, wchr: 0, wchs: 0, wchc: 0, inad: 0 },
       generalFlightSummary: "",
     },
     mode: "onChange", 
@@ -412,7 +416,7 @@ export function PurserReportTool() {
       data.otherCrewMembers ? `Other Crew: ${data.otherCrewMembers}` : null,
     ];
     const crewMembersString = crewDetailsParts.filter(Boolean).join('\n');
-    const dynamicSections: Partial<Omit<PurserReportInput, 'crewPerformanceNotes' | 'scheduledDepartureUTC' | 'scheduledArrivalUTC' | 'actualDepartureUTC' | 'actualArrivalUTC'>> = {};
+    const dynamicSections: Partial<Omit<PurserReportInput, 'crewPerformanceNotes' | 'scheduledDepartureUTC' | 'scheduledArrivalUTC' | 'actualDepartureUTC' | 'actualArrivalUTC' | 'passengerLoad'>> = {};
     addedSections.forEach(section => {
         switch (section.type) {
             case "Safety Incidents": dynamicSections.safetyIncidents = (dynamicSections.safetyIncidents ? dynamicSections.safetyIncidents + "\n\n---\n\n" : "") + section.content; break;
@@ -427,7 +431,18 @@ export function PurserReportTool() {
     
     const baseAiInput: Omit<PurserReportInput, 'crewPerformanceNotes'> = {
       flightNumber: data.flightNumber, flightDate: new Date(data.flightDate).toISOString().split('T')[0], departureAirport: data.departureAirport, arrivalAirport: data.arrivalAirport,
-      aircraftTypeRegistration: data.aircraftTypeRegistration, crewMembers: crewMembersString, passengerLoad: { total: Number(data.passengerLoad.total), adults: Number(data.passengerLoad.adults), children: Number(data.passengerLoad.children), infants: Number(data.passengerLoad.infants) },
+      aircraftTypeRegistration: data.aircraftTypeRegistration, crewMembers: crewMembersString, 
+      passengerLoad: { 
+          total: Number(data.passengerLoad.total), 
+          adults: Number(data.passengerLoad.adults), 
+          infants: Number(data.passengerLoad.infants),
+          um: Number(data.passengerLoad.um || 0),
+          pregnant: Number(data.passengerLoad.pregnant || 0),
+          wchr: Number(data.passengerLoad.wchr || 0),
+          wchs: Number(data.passengerLoad.wchs || 0),
+          wchc: Number(data.passengerLoad.wchc || 0),
+          inad: Number(data.passengerLoad.inad || 0),
+      },
       generalFlightSummary: data.generalFlightSummary, ...dynamicSections,
       scheduledDepartureUTC: data.scheduledDepartureUTC || undefined,
       scheduledArrivalUTC: data.scheduledArrivalUTC || undefined,
@@ -589,11 +604,20 @@ export function PurserReportTool() {
                 <div className="flex items-center"><Users className="mr-2 h-5 w-5 text-primary" />Passenger Load</div>
               </AccordionTrigger>
               <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                     <FormField control={form.control} name="passengerLoad.total" render={({ field }) => (<FormItem><FormLabel>Total Passengers</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="passengerLoad.adults" render={({ field }) => (<FormItem><FormLabel>Adults</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="passengerLoad.children" render={({ field }) => (<FormItem><FormLabel>Children</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="passengerLoad.infants" render={({ field }) => (<FormItem><FormLabel>Infants</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                </div>
+                <Separator className="my-6" />
+                <CardTitle className="text-md font-medium mb-4">Special Passenger Categories</CardTitle>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                    <FormField control={form.control} name="passengerLoad.um" render={({ field }) => (<FormItem><FormLabel>Unaccompanied Minors (UM)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="passengerLoad.pregnant" render={({ field }) => (<FormItem><FormLabel>Pregnant Women</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="passengerLoad.wchr" render={({ field }) => (<FormItem><FormLabel>WCHR (Ramp)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>Needs wheelchair for distance to/from aircraft.</FormDescription><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="passengerLoad.wchs" render={({ field }) => (<FormItem><FormLabel>WCHS (Steps)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>Cannot ascend/descend stairs.</FormDescription><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="passengerLoad.wchc" render={({ field }) => (<FormItem><FormLabel>WCHC (Cabin Seat)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>Completely immobile.</FormDescription><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="passengerLoad.inad" render={({ field }) => (<FormItem><FormLabel>INAD (Inadmissible)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -705,3 +729,4 @@ export function PurserReportTool() {
     </div>
   );
 }
+

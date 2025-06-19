@@ -27,8 +27,13 @@ const PurserReportInputSchema = z.object({
   passengerLoad: z.object({
     total: z.number().int().min(0).describe('Total number of passengers.'),
     adults: z.number().int().min(0).describe('Number of adult passengers.'),
-    children: z.number().int().min(0).describe('Number of child passengers.'),
     infants: z.number().int().min(0).describe('Number of infant passengers.'),
+    um: z.number().int().min(0).optional().describe('Number of Unaccompanied Minors.'),
+    pregnant: z.number().int().min(0).optional().describe('Number of pregnant women.'),
+    wchr: z.number().int().min(0).optional().describe('Number of Wheelchair (Ramp) passengers.'),
+    wchs: z.number().int().min(0).optional().describe('Number of Wheelchair (Steps) passengers.'),
+    wchc: z.number().int().min(0).optional().describe('Number of Wheelchair (Cabin) passengers.'),
+    inad: z.number().int().min(0).optional().describe('Number of Inadmissible passengers.'),
   }),
   generalFlightSummary: z.string().min(10).describe('Overall summary of the flight, noting punctuality (based on provided times), and general atmosphere.'),
   safetyIncidents: z.string().optional().describe('Detailed description of any safety-related incidents or observations (e.g., turbulence, equipment malfunctions affecting safety).'),
@@ -71,7 +76,13 @@ Flight Details:
 {{#if actualArrivalUTC}}- Actual Arrival (UTC): {{{actualArrivalUTC}}}{{/if}}
 - Crew Members:
 {{{crewMembers}}}
-- Passenger Load: Total: {{{passengerLoad.total}}}, Adults: {{{passengerLoad.adults}}}, Children: {{{passengerLoad.children}}}, Infants: {{{passengerLoad.infants}}}
+- Passenger Load: Total: {{{passengerLoad.total}}}, Adults: {{{passengerLoad.adults}}}, Infants: {{{passengerLoad.infants}}}
+  {{#if passengerLoad.um}}- Unaccompanied Minors (UM): {{{passengerLoad.um}}}{{/if}}
+  {{#if passengerLoad.pregnant}}- Pregnant Women: {{{passengerLoad.pregnant}}}{{/if}}
+  {{#if passengerLoad.wchr}}- WCHR (Wheelchair - Ramp): {{{passengerLoad.wchr}}}{{/if}}
+  {{#if passengerLoad.wchs}}- WCHS (Wheelchair - Steps): {{{passengerLoad.wchs}}}{{/if}}
+  {{#if passengerLoad.wchc}}- WCHC (Wheelchair - Cabin): {{{passengerLoad.wchc}}}{{/if}}
+  {{#if passengerLoad.inad}}- INAD (Inadmissible): {{{passengerLoad.inad}}}{{/if}}
 
 Report Sections:
 
@@ -142,4 +153,5 @@ const purserReportFlow = ai.defineFlow(
   }
 );
     
+
 
