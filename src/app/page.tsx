@@ -6,11 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
-import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, ListChecks, Brain } from "lucide-react"; // Added Brain
+import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, ListChecks, Brain } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { generateDailyBriefing, type DailyBriefingOutput, type DailyBriefingInput } from "@/ai/flows/daily-briefing-flow";
-import { generateOperationalInsights, type OperationalInsightsOutput, type OperationalInsightsInput, type IndividualInsight } from "@/ai/flows/operational-insights"; // Added Kai's imports
+import { generateOperationalInsights, type OperationalInsightsOutput, type OperationalInsightsInput, type IndividualInsight } from "@/ai/flows/operational-insights";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -18,7 +18,8 @@ import { collection, query, where, orderBy, limit, getDocs, Timestamp, or, doc, 
 import { formatDistanceToNowStrict, format, parseISO, addHours, subHours, startOfDay } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import { AnimatedCard } from "@/components/motion/animated-card";
-import { Skeleton } from "@/components/ui/skeleton"; 
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 
 interface Alert {
   id: string;
@@ -502,51 +503,43 @@ export default function DashboardPage() {
             <CardTitle className="text-2xl font-headline">Welcome Back, {userNameForGreeting}!</CardTitle>
             <CardDescription>Your central command for flight operations, documents, and training.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <p className="text-muted-foreground">
               Stay updated with your schedule, important alerts, and manage your professional development.
             </p>
-          </CardContent>
-        </Card>
-      </AnimatedCard>
-
-      <AnimatedCard delay={0.1}>
-        <Card className="shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium font-headline flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
-              Your AI Assistant: Kai
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {(isBriefingLoading || isKaiInsightsLoading) ? (
+            {(isBriefingLoading || isKaiInsightsLoading) && !user && (
+              <div className="space-y-3 py-2 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
+                  <p className="text-sm text-muted-foreground">Loading AI Assistant...</p>
+              </div>
+            )}
+            {(isBriefingLoading || isKaiInsightsLoading) && user &&(
               <div className="space-y-3 py-2">
-                <Skeleton className="h-6 w-3/5 mb-2" /> {/* Greeting */}
-                <Skeleton className="h-4 w-1/2 mb-1" /> {/* Subtitle */}
+                <Skeleton className="h-6 w-3/5 mb-2" />
+                <Skeleton className="h-4 w-1/2 mb-1" />
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-5/6" />
-                <Skeleton className="h-4 w-1/2 mt-2 mb-1" /> {/* Subtitle */}
+                <Skeleton className="h-4 w-1/2 mt-2 mb-1" />
                 {[1,2].map(i => (
                     <div key={i} className="p-3 border rounded-md bg-background/50 space-y-1">
                         <Skeleton className="h-4 w-1/2" />
                         <Skeleton className="h-3 w-full" />
                     </div>
                 ))}
-                <Skeleton className="h-8 w-1/3 mt-2" />
               </div>
-            ) : (kaiInsightsError && briefingError) ? (
-                <ShadAlert variant="destructive">
-                  <AlertTriangle className="h-5 w-5" />
-                  <ShadAlertTitle>AI Assistant Error</ShadAlertTitle>
-                  <ShadAlertDescription>Both Daily Briefing and Kai's Insights failed to load. Please try again later.</ShadAlertDescription>
-                </ShadAlert>
-            ) : (
+            )}
+
+            {(!isBriefingLoading && !isKaiInsightsLoading && user) && (
               <>
+                {(kaiInsightsData?.greeting || dailyBriefing?.briefingMarkdown || kaiInsightsData?.insights) && (
+                  <Separator className="my-4" />
+                )}
+
                 {kaiInsightsData?.greeting && (
                   <p className="text-base text-foreground font-semibold">{kaiInsightsData.greeting}</p>
                 )}
-
-                {(briefingError && !kaiInsightsError && !isBriefingLoading) && (
+                
+                {(briefingError && !kaiInsightsError) && (
                     <ShadAlert variant="destructive" className="my-2">
                         <AlertTriangle className="h-5 w-5" />
                         <ShadAlertTitle>Daily Briefing Error</ShadAlertTitle>
@@ -562,7 +555,7 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {(kaiInsightsError && !briefingError && !isKaiInsightsLoading) && (
+                {(kaiInsightsError && !briefingError) && (
                      <ShadAlert variant="destructive" className="my-2">
                         <AlertTriangle className="h-5 w-5" />
                         <ShadAlertTitle>Kai Insights Error</ShadAlertTitle>
@@ -585,6 +578,9 @@ export default function DashboardPage() {
                             </div>
                         ))}
                         </div>
+                         <Button variant="outline" size="sm" className="mt-3 w-full sm:w-auto" asChild>
+                            <Link href="/insights">View All Insights from Kai <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                        </Button>
                     </div>
                 )}
                 
@@ -594,18 +590,21 @@ export default function DashboardPage() {
                         <span>Log in to receive your personalized AI updates.</span>
                     </div>
                 )}
-
-                <Button variant="outline" size="sm" className="mt-4 w-full sm:w-auto" asChild>
-                    <Link href="/insights">View All Insights from Kai <ArrowRight className="ml-2 h-4 w-4" /></Link>
-                </Button>
               </>
             )}
+
+             {(!user && !isBriefingLoading && !isKaiInsightsLoading) && (
+                <div className="text-sm text-muted-foreground pt-2">
+                  <p>Log in to access your personalized dashboard, daily briefings, and AI insights.</p>
+                </div>
+             )}
+
           </CardContent>
         </Card>
       </AnimatedCard>
-
+      
       <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-        <AnimatedCard delay={0.15} className="md:col-span-2">
+        <AnimatedCard delay={0.1} className="md:col-span-2">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-medium font-headline">Upcoming Duty</CardTitle>
@@ -663,7 +662,7 @@ export default function DashboardPage() {
           </Card>
         </AnimatedCard>
 
-        <AnimatedCard delay={0.20} className="md:col-span-1">
+        <AnimatedCard delay={0.15} className="md:col-span-1">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
               <CardHeader>
                   <CardTitle className="font-headline text-lg">Quick Actions</CardTitle>
@@ -689,7 +688,7 @@ export default function DashboardPage() {
         </AnimatedCard>
       </div>
       
-      <AnimatedCard delay={0.25}>
+      <AnimatedCard delay={0.2}>
         <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-medium font-headline">Real-Time Alerts</CardTitle>
@@ -738,7 +737,7 @@ export default function DashboardPage() {
           </Card>
       </AnimatedCard>
       
-      <AnimatedCard delay={0.30}>
+      <AnimatedCard delay={0.25}>
         <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
               <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-success-foreground"/>Safety &amp; Best Practice Tips</CardTitle>
@@ -759,7 +758,7 @@ export default function DashboardPage() {
       </AnimatedCard>
 
       <div className="grid gap-6 md:grid-cols-3">
-         <AnimatedCard delay={0.35} className="md:col-span-2">
+         <AnimatedCard delay={0.30} className="md:col-span-2">
            <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="font-headline flex items-center"><BookCopy className="mr-2 h-5 w-5 text-primary"/>Key Updates &amp; Announcements</CardTitle>
@@ -804,7 +803,7 @@ export default function DashboardPage() {
           </Card>
         </AnimatedCard>
 
-        <AnimatedCard delay={0.40} className="md:col-span-1">
+        <AnimatedCard delay={0.35} className="md:col-span-1">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
               <CardHeader>
                   <CardTitle className="font-headline">Featured Training</CardTitle>
@@ -877,3 +876,5 @@ export default function DashboardPage() {
   );
 }
 
+
+    
