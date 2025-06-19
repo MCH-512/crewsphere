@@ -515,7 +515,7 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg font-medium font-headline flex items-center gap-2">
               <Brain className="h-5 w-5 text-primary" />
-              Votre Assistant IA : Kai
+              Your AI Assistant: Kai
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -555,7 +555,7 @@ export default function DashboardPage() {
                 )}
                 {(!briefingError && dailyBriefing) && (
                     <div className="mt-2">
-                        <h3 className="text-md font-semibold text-muted-foreground mb-1">Briefing du Jour</h3>
+                        <h3 className="text-md font-semibold text-muted-foreground mb-1">Daily Briefing</h3>
                         <div className="prose prose-sm max-w-none dark:prose-invert text-foreground border-l-2 border-primary/30 pl-3 py-1">
                             <ReactMarkdown>{dailyBriefing.briefingMarkdown}</ReactMarkdown>
                         </div>
@@ -571,7 +571,7 @@ export default function DashboardPage() {
                 )}
                 {(!kaiInsightsError && kaiInsightsData?.insights && kaiInsightsData.insights.length > 0) && (
                     <div className="mt-3">
-                        <h3 className="text-md font-semibold text-muted-foreground mb-1">Conseils Personnalisés de Kai</h3>
+                        <h3 className="text-md font-semibold text-muted-foreground mb-1">Personalized Tips from Kai</h3>
                         <div className="space-y-2">
                         {kaiInsightsData.insights.slice(0, 2).map((insight: IndividualInsight, index: number) => (
                             <div key={index} className="p-2.5 border rounded-md bg-background/50">
@@ -596,7 +596,7 @@ export default function DashboardPage() {
                 )}
 
                 <Button variant="outline" size="sm" className="mt-4 w-full sm:w-auto" asChild>
-                    <Link href="/insights">Voir Tous les Insights de Kai <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                    <Link href="/insights">View All Insights from Kai <ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
               </>
             )}
@@ -605,7 +605,7 @@ export default function DashboardPage() {
       </AnimatedCard>
 
       <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-        <AnimatedCard delay={0.2} className="md:col-span-2">
+        <AnimatedCard delay={0.15} className="md:col-span-2">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-medium font-headline">Upcoming Duty</CardTitle>
@@ -663,7 +663,7 @@ export default function DashboardPage() {
           </Card>
         </AnimatedCard>
 
-        <AnimatedCard delay={0.25} className="md:col-span-1">
+        <AnimatedCard delay={0.20} className="md:col-span-1">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
               <CardHeader>
                   <CardTitle className="font-headline text-lg">Quick Actions</CardTitle>
@@ -689,7 +689,7 @@ export default function DashboardPage() {
         </AnimatedCard>
       </div>
       
-      <AnimatedCard delay={0.3}>
+      <AnimatedCard delay={0.25}>
         <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-medium font-headline">Real-Time Alerts</CardTitle>
@@ -738,7 +738,7 @@ export default function DashboardPage() {
           </Card>
       </AnimatedCard>
       
-      <AnimatedCard delay={0.35}>
+      <AnimatedCard delay={0.30}>
         <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
               <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-success-foreground"/>Safety &amp; Best Practice Tips</CardTitle>
@@ -759,7 +759,7 @@ export default function DashboardPage() {
       </AnimatedCard>
 
       <div className="grid gap-6 md:grid-cols-3">
-         <AnimatedCard delay={0.4} className="md:col-span-2">
+         <AnimatedCard delay={0.35} className="md:col-span-2">
            <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="font-headline flex items-center"><BookCopy className="mr-2 h-5 w-5 text-primary"/>Key Updates &amp; Announcements</CardTitle>
@@ -804,7 +804,7 @@ export default function DashboardPage() {
           </Card>
         </AnimatedCard>
 
-        <AnimatedCard delay={0.45} className="md:col-span-1">
+        <AnimatedCard delay={0.40} className="md:col-span-1">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
               <CardHeader>
                   <CardTitle className="font-headline">Featured Training</CardTitle>
@@ -824,7 +824,7 @@ export default function DashboardPage() {
                       <div className="space-y-4">
                         {[1,2].map(i => (
                           <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
-                            <Skeleton className="h-16 w-16 rounded-md" />
+                            <Skeleton className="h-16 w-16 rounded-md" data-ai-hint="training material" />
                             <div className="space-y-2 flex-1">
                                 <Skeleton className="h-4 w-3/4" />
                                 <Skeleton className="h-3 w-1/2" />
@@ -876,3 +876,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
