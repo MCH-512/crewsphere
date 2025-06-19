@@ -32,6 +32,18 @@ const CateringLoadSchema = z.object({
   additionalNotes: z.string().optional().describe("Any other notes on catering uplift or discrepancies.")
 });
 
+const CleanlinessRatingSchema = z.enum(["Excellent", "Good", "Fair", "Poor"], {
+  errorMap: (issue, ctx) => ({ message: 'Please select a cleanliness rating.' })
+});
+
+const AircraftCleaningSchema = z.object({
+  cabinCleanlinessOverall: CleanlinessRatingSchema.describe("Overall cleanliness of the cabin."),
+  galleyCleanliness: CleanlinessRatingSchema.describe("Cleanliness of the galleys."),
+  lavatoryCleanliness: CleanlinessRatingSchema.describe("Cleanliness of the lavatories."),
+  cleaningIssuesNoted: z.string().optional().describe("Specific cleaning issues or deficiencies observed."),
+  itemsLeftByPassengers: z.string().optional().describe("Details of any items left behind by passengers and actions taken."),
+});
+
 const PurserReportInputSchema = z.object({
   flightNumber: z.string().min(3).max(10).describe('Flight number (e.g., BA245, UAL123).'),
   flightDate: z.string().date().describe('Date of the flight (YYYY-MM-DD).'),
@@ -47,6 +59,7 @@ const PurserReportInputSchema = z.object({
   crewMembers: z.string().min(10).describe('List of crew members on board (names and roles, typically multi-line).'),
   passengerLoad: PassengerLoadSchema,
   cateringLoad: CateringLoadSchema.optional(),
+  aircraftCleaning: AircraftCleaningSchema.optional(), // Added aircraftCleaning
   generalFlightSummary: z.string().min(10).describe('Overall summary of the flight, noting punctuality (based on provided times), and general atmosphere.'),
   safetyIncidents: z.string().optional().describe('Detailed description of any safety-related incidents or observations (e.g., turbulence, equipment malfunctions affecting safety).'),
   securityIncidents: z.string().optional().describe('Detailed description of any security-related incidents (e.g., unruly passengers, security breaches).'),
@@ -103,6 +116,14 @@ Flight Details:
   {{#if cateringLoad.totalSalesCash}} - Total Sales (Cash): {{cateringLoad.totalSalesCash}}{{/if}}
   {{#if cateringLoad.barFullyStocked}} - Bar Fully Stocked: Yes{{else if cateringLoad.barFullyStocked === false}} - Bar Fully Stocked: No{{/if}}
   {{#if cateringLoad.additionalNotes}}- Catering Uplift Notes: {{{cateringLoad.additionalNotes}}}{{/if}}
+{{/if}}
+{{#if aircraftCleaning}}
+- Aircraft Cleaning:
+  {{#if aircraftCleaning.cabinCleanlinessOverall}}  - Overall Cabin Cleanliness: {{aircraftCleaning.cabinCleanlinessOverall}}{{/if}}
+  {{#if aircraftCleaning.galleyCleanliness}}    - Galley Cleanliness: {{aircraftCleaning.galleyCleanliness}}{{/if}}
+  {{#if aircraftCleaning.lavatoryCleanliness}}  - Lavatory Cleanliness: {{aircraftCleaning.lavatoryCleanliness}}{{/if}}
+  {{#if aircraftCleaning.cleaningIssuesNoted}} - Cleaning Issues Noted: {{{aircraftCleaning.cleaningIssuesNoted}}}{{/if}}
+  {{#if aircraftCleaning.itemsLeftByPassengers}}- Items Left By Passengers: {{{aircraftCleaning.itemsLeftByPassengers}}}{{/if}}
 {{/if}}
 
 Report Sections:
