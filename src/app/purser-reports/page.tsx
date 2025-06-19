@@ -28,7 +28,7 @@ import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, wh
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { format, parseISO } from "date-fns";
-import { getAirportByCode } from "@/services/airport-service"; // Added import
+import { getAirportByCode } from "@/services/airport-service";
 
 interface CrewUser {
   uid: string;
@@ -38,10 +38,8 @@ interface CrewUser {
 interface FlightForSelection {
   id: string;
   flightNumber: string;
-  departureAirport: string; // Original ICAO
-  departureAirportIATA?: string; // For display
-  arrivalAirport: string;   // Original ICAO
-  arrivalAirportIATA?: string;   // For display
+  departureAirport: string;
+  arrivalAirport: string;
   scheduledDepartureDateTimeUTC: string; // ISO string
   aircraftType: string;
 }
@@ -121,7 +119,7 @@ const purserReportFormSchema = z.object({
 
 type PurserReportFormValues = z.infer<typeof purserReportFormSchema>;
 
-export function PurserReportTool() {
+export default function PurserReportsPage() { // Renamed and made default export
   const [isLoading, setIsLoading] = React.useState(false);
   const [reportResult, setReportResult] = React.useState<PurserReportOutput | null>(null);
   const { toast } = useToast();
@@ -177,28 +175,18 @@ export function PurserReportTool() {
       try {
         const flightsQuery = query(collection(db, "flights"), orderBy("scheduledDepartureDateTimeUTC", "desc"), limit(50)); 
         const querySnapshot = await getDocs(flightsQuery);
-        const fetchedFlightsDataPromises = querySnapshot.docs.map(async (doc) => {
+        const fetchedFlightsData: FlightForSelection[] = [];
+        querySnapshot.forEach((doc) => {
           const data = doc.data();
-          const flight: FlightForSelection = {
+          fetchedFlightsData.push({
             id: doc.id,
             flightNumber: data.flightNumber,
-            departureAirport: data.departureAirport, // Original ICAO
-            arrivalAirport: data.arrivalAirport,   // Original ICAO
+            departureAirport: data.departureAirport,
+            arrivalAirport: data.arrivalAirport,
             scheduledDepartureDateTimeUTC: data.scheduledDepartureDateTimeUTC,
             aircraftType: data.aircraftType,
-          };
-          // Enrich with IATA codes
-          const depAirportInfo = await getAirportByCode(flight.departureAirport);
-          if (depAirportInfo && depAirportInfo.iata) {
-            flight.departureAirportIATA = depAirportInfo.iata;
-          }
-          const arrAirportInfo = await getAirportByCode(flight.arrivalAirport);
-          if (arrAirportInfo && arrAirportInfo.iata) {
-            flight.arrivalAirportIATA = arrAirportInfo.iata;
-          }
-          return flight;
+          });
         });
-        const fetchedFlightsData = await Promise.all(fetchedFlightsDataPromises);
         setAvailableFlights(fetchedFlightsData);
       } catch (error) {
         console.error("Error fetching available flights:", error);
@@ -270,8 +258,8 @@ export function PurserReportTool() {
     if (selectedFlightBasic) {
         form.setValue("flightNumber", selectedFlightBasic.flightNumber);
         form.setValue("flightDate", new Date(selectedFlightBasic.scheduledDepartureDateTimeUTC).toISOString().split('T')[0]);
-        form.setValue("departureAirport", selectedFlightBasic.departureAirport); // Store ICAO in form
-        form.setValue("arrivalAirport", selectedFlightBasic.arrivalAirport);     // Store ICAO in form
+        form.setValue("departureAirport", selectedFlightBasic.departureAirport);
+        form.setValue("arrivalAirport", selectedFlightBasic.arrivalAirport);
         form.setValue("aircraftTypeRegistration", selectedFlightBasic.aircraftType); 
         setSelectedFlightIdState(flightId);
 
@@ -433,11 +421,7 @@ export function PurserReportTool() {
                       <FormControl><SelectTrigger><SelectValue placeholder={isLoadingFlights ? "Loading flights..." : "Choose a flight or enter manually"} /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="_MANUAL_ENTRY_">Enter Details Manually / Not Listed</SelectItem>
-                        {availableFlights.map(flight => (
-                          <SelectItem key={flight.id} value={flight.id}>
-                            {flight.flightNumber}: {flight.departureAirportIATA || flight.departureAirport} to {flight.arrivalAirportIATA || flight.arrivalAirport} ({format(parseISO(flight.scheduledDepartureDateTimeUTC), "MMM d, yyyy HH:mm")} UTC)
-                          </SelectItem>
-                        ))}
+                        {availableFlights.map(flight => (<SelectItem key={flight.id} value={flight.id}>{flight.flightNumber}: {flight.departureAirport} to {flight.arrivalAirport} ({format(parseISO(flight.scheduledDepartureDateTimeUTC), "MMM d, yyyy HH:mm")} UTC)</SelectItem>))}
                       </SelectContent>
                     </Select>
                     <FormDescription>Choosing a flight will pre-fill the fields below. Assigned crew may also be pre-filled if available in flight data.</FormDescription>
@@ -596,4 +580,3 @@ export function PurserReportTool() {
   );
 }
 
-    
