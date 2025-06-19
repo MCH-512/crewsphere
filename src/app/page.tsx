@@ -445,7 +445,7 @@ export default function DashboardPage() {
               route: `${nextFlightDetails.departureAirport} - ${nextFlightDetails.arrivalAirport}`,
               aircraft: nextFlightDetails.aircraftType,
               reportingTime: format(reportingDateTime, "HH:mm 'UTC'"),
-              reportingDate: format(reportingDateTime, "MMM d, yyyy"),
+              reportingDate: format(reportingDateTime, "MMM d, yyyy 'UTC'"),
               reportingLocation: "Crew Report Centre", 
               etd: format(departureDateTime, "HH:mm 'UTC'"),
               eta: format(parseISO(nextFlightDetails.scheduledArrivalDateTimeUTC), "HH:mm 'UTC'"), 
@@ -504,9 +504,6 @@ export default function DashboardPage() {
             <CardDescription>Your central command for flight operations, documents, and training.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Stay updated with your schedule, important alerts, and manage your professional development.
-            </p>
             {(isBriefingLoading || isKaiInsightsLoading) && !user && (
               <div className="space-y-3 py-2 text-center">
                   <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
@@ -531,12 +528,9 @@ export default function DashboardPage() {
 
             {(!isBriefingLoading && !isKaiInsightsLoading && user) && (
               <>
-                {(kaiInsightsData?.greeting || dailyBriefing?.briefingMarkdown || kaiInsightsData?.insights) && (
-                  <Separator className="my-4" />
-                )}
-
+                <Separator className="my-4" />
                 {kaiInsightsData?.greeting && (
-                  <p className="text-base text-foreground font-semibold">{kaiInsightsData.greeting}</p>
+                  <p className="text-base text-foreground font-semibold mb-2">{kaiInsightsData.greeting}</p>
                 )}
                 
                 {(briefingError && !kaiInsightsError) && (
@@ -875,6 +869,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-
-    
