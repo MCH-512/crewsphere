@@ -514,102 +514,98 @@ export default function DashboardPage() {
         <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg font-medium font-headline flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Your AI Daily Briefing
+              <Brain className="h-5 w-5 text-primary" />
+              Votre Assistant IA : Kai
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {isBriefingLoading ? (
-              <div className="space-y-2 py-2">
-                <Skeleton className="h-4 w-3/4" />
+          <CardContent className="space-y-4">
+            {(isBriefingLoading || isKaiInsightsLoading) ? (
+              <div className="space-y-3 py-2">
+                <Skeleton className="h-6 w-3/5 mb-2" /> {/* Greeting */}
+                <Skeleton className="h-4 w-1/2 mb-1" /> {/* Subtitle */}
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-5/6" />
-                <Skeleton className="h-4 w-full mt-2" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-            ) : briefingError ? (
-               <ShadAlert variant="destructive">
-                  <AlertTriangle className="h-5 w-5" />
-                  <ShadAlertTitle>Briefing Error</ShadAlertTitle>
-                  <ShadAlertDescription>{briefingError}</ShadAlertDescription>
-                </ShadAlert>
-            ) : dailyBriefing ? (
-              <div
-                className="prose prose-sm max-w-none dark:prose-invert text-foreground"
-              >
-                <ReactMarkdown>{dailyBriefing.briefingMarkdown}</ReactMarkdown>
-              </div>
-            ) : (
-               <div className="flex items-center space-x-2 text-muted-foreground">
-                <Info className="h-5 w-5" />
-                <span>Log in to receive your personalized daily briefing.</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </AnimatedCard>
-
-      <AnimatedCard delay={0.15}>
-        <Card className="shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-lg font-medium font-headline flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
-              AI Insights by Kai
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isKaiInsightsLoading ? (
-              <div className="space-y-3 py-2">
-                <Skeleton className="h-6 w-3/5 mb-2" /> 
+                <Skeleton className="h-4 w-1/2 mt-2 mb-1" /> {/* Subtitle */}
                 {[1,2].map(i => (
                     <div key={i} className="p-3 border rounded-md bg-background/50 space-y-1">
                         <Skeleton className="h-4 w-1/2" />
                         <Skeleton className="h-3 w-full" />
-                        <Skeleton className="h-3 w-4/5" />
                     </div>
                 ))}
                 <Skeleton className="h-8 w-1/3 mt-2" />
               </div>
-            ) : kaiInsightsError ? (
-               <ShadAlert variant="destructive">
+            ) : (kaiInsightsError && briefingError) ? (
+                <ShadAlert variant="destructive">
                   <AlertTriangle className="h-5 w-5" />
-                  <ShadAlertTitle>Kai Insights Error</ShadAlertTitle>
-                  <ShadAlertDescription>{kaiInsightsError}</ShadAlertDescription>
+                  <ShadAlertTitle>AI Assistant Error</ShadAlertTitle>
+                  <ShadAlertDescription>Both Daily Briefing and Kai's Insights failed to load. Please try again later.</ShadAlertDescription>
                 </ShadAlert>
-            ) : kaiInsightsData ? (
-              <div className="space-y-3">
-                <p className="text-base text-foreground">{kaiInsightsData.greeting}</p>
-                {kaiInsightsData.insights && kaiInsightsData.insights.length > 0 ? (
-                  kaiInsightsData.insights.slice(0, 2).map((insight: IndividualInsight, index: number) => (
-                    <div key={index} className="p-3 border rounded-md bg-background/50">
-                      <h4 className="font-semibold text-sm flex items-center">
-                        {insight.emoji && <span className="mr-1.5 text-lg">{insight.emoji}</span>}
-                        {insight.title}
-                      </h4>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2" title={insight.description}>
-                        <ReactMarkdown components={{ p: React.Fragment }}>{insight.description}</ReactMarkdown>
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No specific insights from Kai for you today.</p>
-                )}
-                <Button variant="outline" size="sm" className="mt-3 w-full sm:w-auto" asChild>
-                    <Link href="/insights">View All Insights from Kai <ArrowRight className="ml-2 h-4 w-4" /></Link>
-                </Button>
-              </div>
             ) : (
-               <div className="flex items-center space-x-2 text-muted-foreground">
-                <Info className="h-5 w-5" />
-                <span>Log in to receive your insights from Kai.</span>
-              </div>
+              <>
+                {kaiInsightsData?.greeting && (
+                  <p className="text-base text-foreground font-semibold">{kaiInsightsData.greeting}</p>
+                )}
+
+                {(briefingError && !kaiInsightsError && !isBriefingLoading) && (
+                    <ShadAlert variant="destructive" className="my-2">
+                        <AlertTriangle className="h-5 w-5" />
+                        <ShadAlertTitle>Daily Briefing Error</ShadAlertTitle>
+                        <ShadAlertDescription>{briefingError}</ShadAlertDescription>
+                    </ShadAlert>
+                )}
+                {(!briefingError && dailyBriefing) && (
+                    <div className="mt-2">
+                        <h3 className="text-md font-semibold text-muted-foreground mb-1">Briefing du Jour</h3>
+                        <div className="prose prose-sm max-w-none dark:prose-invert text-foreground border-l-2 border-primary/30 pl-3 py-1">
+                            <ReactMarkdown>{dailyBriefing.briefingMarkdown}</ReactMarkdown>
+                        </div>
+                    </div>
+                )}
+
+                {(kaiInsightsError && !briefingError && !isKaiInsightsLoading) && (
+                     <ShadAlert variant="destructive" className="my-2">
+                        <AlertTriangle className="h-5 w-5" />
+                        <ShadAlertTitle>Kai Insights Error</ShadAlertTitle>
+                        <ShadAlertDescription>{kaiInsightsError}</ShadAlertDescription>
+                    </ShadAlert>
+                )}
+                {(!kaiInsightsError && kaiInsightsData?.insights && kaiInsightsData.insights.length > 0) && (
+                    <div className="mt-3">
+                        <h3 className="text-md font-semibold text-muted-foreground mb-1">Conseils Personnalisés de Kai</h3>
+                        <div className="space-y-2">
+                        {kaiInsightsData.insights.slice(0, 2).map((insight: IndividualInsight, index: number) => (
+                            <div key={index} className="p-2.5 border rounded-md bg-background/50">
+                                <h4 className="font-semibold text-sm flex items-center">
+                                    {insight.emoji && <span className="mr-1.5 text-md">{insight.emoji}</span>}
+                                    {insight.title}
+                                </h4>
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2" title={insight.description}>
+                                    <ReactMarkdown components={{ p: React.Fragment }}>{insight.description}</ReactMarkdown>
+                                </p>
+                            </div>
+                        ))}
+                        </div>
+                    </div>
+                )}
+                
+                {(!kaiInsightsError && !briefingError && !user) && (
+                    <div className="flex items-center space-x-2 text-muted-foreground py-2">
+                        <Info className="h-5 w-5" />
+                        <span>Log in to receive your personalized AI updates.</span>
+                    </div>
+                )}
+
+                <Button variant="outline" size="sm" className="mt-4 w-full sm:w-auto" asChild>
+                    <Link href="/insights">Voir Tous les Insights de Kai <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                </Button>
+              </>
             )}
           </CardContent>
         </Card>
       </AnimatedCard>
 
       <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-        <AnimatedCard delay={0.25} className="md:col-span-2">
+        <AnimatedCard delay={0.2} className="md:col-span-2">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-medium font-headline">Upcoming Duty</CardTitle>
@@ -667,7 +663,7 @@ export default function DashboardPage() {
           </Card>
         </AnimatedCard>
 
-        <AnimatedCard delay={0.3} className="md:col-span-1">
+        <AnimatedCard delay={0.25} className="md:col-span-1">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
               <CardHeader>
                   <CardTitle className="font-headline text-lg">Quick Actions</CardTitle>
@@ -693,7 +689,7 @@ export default function DashboardPage() {
         </AnimatedCard>
       </div>
       
-      <AnimatedCard delay={0.35}>
+      <AnimatedCard delay={0.3}>
         <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-medium font-headline">Real-Time Alerts</CardTitle>
@@ -742,7 +738,7 @@ export default function DashboardPage() {
           </Card>
       </AnimatedCard>
       
-      <AnimatedCard delay={0.4}>
+      <AnimatedCard delay={0.35}>
         <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
               <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-success-foreground"/>Safety &amp; Best Practice Tips</CardTitle>
@@ -763,7 +759,7 @@ export default function DashboardPage() {
       </AnimatedCard>
 
       <div className="grid gap-6 md:grid-cols-3">
-         <AnimatedCard delay={0.45} className="md:col-span-2">
+         <AnimatedCard delay={0.4} className="md:col-span-2">
            <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="font-headline flex items-center"><BookCopy className="mr-2 h-5 w-5 text-primary"/>Key Updates &amp; Announcements</CardTitle>
@@ -808,7 +804,7 @@ export default function DashboardPage() {
           </Card>
         </AnimatedCard>
 
-        <AnimatedCard delay={0.5} className="md:col-span-1">
+        <AnimatedCard delay={0.45} className="md:col-span-1">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
               <CardHeader>
                   <CardTitle className="font-headline">Featured Training</CardTitle>
