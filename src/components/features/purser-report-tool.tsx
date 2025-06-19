@@ -105,8 +105,8 @@ const purserReportFormSchema = z.object({
   arrivalAirport: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars").toUpperCase(),
   aircraftTypeRegistration: z.string().min(3, "Min 3 chars").max(20, "Max 20 chars").describe("e.g., B789 G-XYZC"),
   
-  scheduledDepartureUTC: z.string().optional(), // Stored as full ISO for internal use
-  scheduledArrivalUTC: z.string().optional(),   // Stored as full ISO for internal use
+  scheduledDepartureUTC: z.string().optional(), 
+  scheduledArrivalUTC: z.string().optional(),   
   actualDepartureUTC: z.string().datetime({ message: "Invalid actual departure datetime." }).optional().or(z.literal("")),
   actualArrivalUTC: z.string().datetime({ message: "Invalid actual arrival datetime." }).optional().or(z.literal("")),
   
@@ -145,12 +145,10 @@ const purserReportFormSchema = z.object({
 
 type PurserReportFormValues = z.infer<typeof purserReportFormSchema>;
 
-// Helper to convert ISO string to datetime-local format string
 const toDatetimeLocalInputString = (isoString?: string): string => {
   if (!isoString) return "";
   try {
     const date = new Date(isoString);
-    // Get date parts in local timezone for input
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
@@ -249,8 +247,8 @@ export function PurserReportTool() {
             flightNumber: data.flightNumber,
             departureAirport: data.departureAirport,
             arrivalAirport: data.arrivalAirport,
-            scheduledDepartureDateTimeUTC: data.scheduledDepartureDateTimeUTC, // This is full ISO
-            scheduledArrivalDateTimeUTC: data.scheduledArrivalDateTimeUTC, // This is full ISO
+            scheduledDepartureDateTimeUTC: data.scheduledDepartureDateTimeUTC,
+            scheduledArrivalDateTimeUTC: data.scheduledArrivalDateTimeUTC,
             aircraftType: data.aircraftType,
           });
         });
@@ -332,10 +330,8 @@ export function PurserReportTool() {
         form.setValue("departureAirport", selectedFlightBasic.departureAirport);
         form.setValue("arrivalAirport", selectedFlightBasic.arrivalAirport);
         form.setValue("aircraftTypeRegistration", selectedFlightBasic.aircraftType);
-        // Store the full ISO strings for scheduled times
         form.setValue("scheduledDepartureUTC", selectedFlightBasic.scheduledDepartureDateTimeUTC);
         form.setValue("scheduledArrivalUTC", selectedFlightBasic.scheduledArrivalDateTimeUTC);
-        // Clear actual times when a new flight is selected
         form.setValue("actualDepartureUTC", "");
         form.setValue("actualArrivalUTC", "");
         
@@ -496,7 +492,7 @@ export function PurserReportTool() {
                 <div className="flex items-center"><PlaneTakeoff className="mr-2 h-5 w-5 text-primary"/>Flight Information & Timings</div>
               </AccordionTrigger>
               <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm">
-                <div className="space-y-6 max-h-[600px] overflow-y-auto pr-3">
+                <div className="max-h-[600px] overflow-y-auto pr-3 space-y-6">
                   <FormItem>
                     <FormLabel>Select Existing Flight (Optional)</FormLabel>
                     <Select onValueChange={handleFlightSelection} value={selectedFlightIdState || "_MANUAL_ENTRY_"} disabled={isLoadingFlights}>
