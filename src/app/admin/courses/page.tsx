@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 interface Course {
   id: string;
@@ -103,33 +104,39 @@ export default function AdminCoursesPage() {
   }, [user, authLoading, router, fetchCourses]);
 
   const handleDeleteCourse = async () => {
-    if (!courseToDelete) return;
+    if (!courseToDelete || !user) return;
     setIsDeleting(true);
     const batch = writeBatch(db);
 
     try {
-      // Delete the course document
       const courseRef = doc(db, "courses", courseToDelete.id);
       batch.delete(courseRef);
 
-      // Delete associated quiz if quizId exists
       if (courseToDelete.quizId) {
         const quizRef = doc(db, "quizzes", courseToDelete.quizId);
         batch.delete(quizRef);
 
-        // Delete questions associated with this quiz
         const questionsQuery = query(collection(db, "questions"), where("quizId", "==", courseToDelete.quizId));
         const questionsSnap = await getDocs(questionsQuery);
         questionsSnap.forEach(qDoc => batch.delete(qDoc.ref));
       }
 
-      // Delete associated certificate rule if certificateRuleId exists
       if (courseToDelete.certificateRuleId) {
         const certRuleRef = doc(db, "certificateRules", courseToDelete.certificateRuleId);
         batch.delete(certRuleRef);
       }
       
       await batch.commit();
+
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "DELETE_COURSE",
+        entityType: "COURSE",
+        entityId: courseToDelete.id,
+        details: { title: courseToDelete.title, category: courseToDelete.category },
+      });
+
       toast({ title: "Course Deleted", description: `Course "${courseToDelete.title}" and its associated quiz/questions have been deleted.` });
       fetchCourses(); 
     } catch (error) {
@@ -271,3 +278,4 @@ export default function AdminCoursesPage() {
     </div>
   );
 }
+

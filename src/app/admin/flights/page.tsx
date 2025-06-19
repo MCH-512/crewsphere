@@ -26,18 +26,19 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 interface Flight {
   id: string;
   flightNumber: string;
   departureAirport: string;
   arrivalAirport: string;
-  scheduledDepartureDateTimeUTC: string; // Stored as ISO string
-  scheduledArrivalDateTimeUTC: string; // Stored as ISO string
+  scheduledDepartureDateTimeUTC: string; 
+  scheduledArrivalDateTimeUTC: string; 
   aircraftType: string;
   status: "Scheduled" | "On Time" | "Delayed" | "Cancelled";
-  purserReportSubmitted?: boolean; // New field
-  purserReportId?: string | null; // New field
+  purserReportSubmitted?: boolean; 
+  purserReportId?: string | null; 
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -83,13 +84,23 @@ export default function AdminFlightsPage() {
   }, [user, authLoading, router, fetchFlights]);
 
   const handleDeleteFlight = async () => {
-    if (!flightToDelete) return;
+    if (!flightToDelete || !user) return;
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, "flights", flightToDelete.id));
+      
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "DELETE_FLIGHT",
+        entityType: "FLIGHT",
+        entityId: flightToDelete.id,
+        details: { flightNumber: flightToDelete.flightNumber, route: `${flightToDelete.departureAirport}-${flightToDelete.arrivalAirport}` },
+      });
+
       toast({ title: "Flight Deleted", description: `Flight ${flightToDelete.flightNumber} has been deleted.` });
-      fetchFlights(); // Refresh the list
-      setFlightToDelete(null); // Close dialog
+      fetchFlights(); 
+      setFlightToDelete(null); 
     } catch (error) {
       console.error("Error deleting flight:", error);
       toast({ title: "Deletion Failed", description: "Could not delete the flight.", variant: "destructive" });
@@ -118,9 +129,7 @@ export default function AdminFlightsPage() {
 
   const handleViewReport = (reportId: string | null | undefined) => {
     if (reportId) {
-      // For now, just toast. Later, this could navigate to a report view page.
-      // router.push(`/admin/purser-reports/${reportId}`); // Example future navigation
-      toast({ title: "View Report", description: `Report ID: ${reportId}. Viewing specific report details is not yet implemented on this button.` });
+      router.push(`/admin/purser-reports?reportId=${reportId}`);
     } else {
       toast({ title: "No Report", description: "No report ID associated with this flight." });
     }
@@ -290,3 +299,4 @@ export default function AdminFlightsPage() {
     </TooltipProvider>
   );
 }
+

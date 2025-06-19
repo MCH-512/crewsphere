@@ -31,6 +31,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 const alertFormSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters.").max(100),
@@ -127,7 +128,7 @@ export default function EditAlertPage() {
     setIsSubmitting(true);
     try {
       const alertDocRef = doc(db, "alerts", alertId);
-      await updateDoc(alertDocRef, {
+      const updatePayload = {
         title: data.title,
         content: data.content,
         level: data.level,
@@ -135,6 +136,16 @@ export default function EditAlertPage() {
         iconName: data.iconName || null,
         linkUrl: data.linkUrl || null,
         updatedAt: serverTimestamp(),
+      };
+      await updateDoc(alertDocRef, updatePayload);
+
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "UPDATE_ALERT",
+        entityType: "ALERT",
+        entityId: alertId,
+        details: { title: data.title, level: data.level, target: data.userId || "GLOBAL" },
       });
 
       toast({

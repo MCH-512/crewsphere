@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { badgeVariants } from "@/components/ui/badge"; 
 import { format } from "date-fns"; 
 import type { VariantProps as CvaVariantProps } from "class-variance-authority";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 type BadgeCvaVariantProps = CvaVariantProps<typeof badgeVariants>;
 
@@ -194,6 +195,10 @@ export default function AdminUsersPage() {
   };
 
   const handleFormSubmit = async (data: ManageUserFormValues) => {
+    if (!user) {
+        toast({ title: "Error", description: "Admin user not identified.", variant: "destructive"});
+        return;
+    }
     setIsSubmitting(true);
     const joiningDateToSave = data.joiningDate ? data.joiningDate : null; 
     const statusToSave: AccountStatus = data.accountStatus ? 'active' : 'inactive';
@@ -211,7 +216,7 @@ export default function AdminUsersPage() {
         await updateProfile(newUser, { displayName: data.displayName });
 
         const userDocRef = doc(db, "users", newUser.uid);
-        await setDoc(userDocRef, {
+        const newUserDocData = {
           uid: newUser.uid,
           email: data.email,
           displayName: data.displayName,
@@ -222,6 +227,16 @@ export default function AdminUsersPage() {
           accountStatus: statusToSave,
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(), 
+        };
+        await setDoc(userDocRef, newUserDocData);
+
+        await logAuditEvent({
+            userId: user.uid, 
+            userEmail: user.email || "N/A",
+            actionType: "CREATE_USER",
+            entityType: "USER",
+            entityId: newUser.uid,
+            details: { email: data.email, role: newUserDocData.role, status: statusToSave },
         });
 
         toast({ title: "User Created", description: `User ${data.email} created successfully with status: ${statusToSave}.` });
@@ -253,6 +268,16 @@ export default function AdminUsersPage() {
         }
         
         await updateDoc(userDocRef, updates);
+
+        await logAuditEvent({
+            userId: user.uid,
+            userEmail: user.email || "N/A",
+            actionType: "UPDATE_USER",
+            entityType: "USER",
+            entityId: currentUserToManage.uid,
+            details: { email: currentUserToManage.email, newRole: updates.role, newStatus: statusToSave },
+        });
+
         toast({ title: "User Updated", description: `${currentUserToManage.email}'s information updated. Status: ${statusToSave}.` });
         fetchUsers();
         setIsManageUserDialogOpen(false);
@@ -574,3 +599,4 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+

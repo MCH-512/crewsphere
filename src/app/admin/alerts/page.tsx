@@ -25,6 +25,7 @@ import { MessageSquareWarning, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, 
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import Link from "next/link";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 interface AlertDocument {
   id: string;
@@ -35,7 +36,7 @@ interface AlertDocument {
   iconName?: string | null;
   createdAt: Timestamp;
   createdBy: string;
-  acknowledgementCount?: number; // Added for acknowledgement count
+  acknowledgementCount?: number; 
 }
 
 export default function AdminAlertsPage() {
@@ -60,7 +61,6 @@ export default function AdminAlertsPage() {
           ...docSnapshot.data(),
         } as AlertDocument;
 
-        // Fetch acknowledgement count for this alert
         const ackQuery = query(collection(db, "alertAcknowledgements"), where("alertId", "==", alertData.id));
         const ackSnapshot = await getCountFromServer(ackQuery);
         alertData.acknowledgementCount = ackSnapshot.data().count;
@@ -91,12 +91,20 @@ export default function AdminAlertsPage() {
   }, [user, authLoading, router, fetchAlerts]);
 
   const handleDeleteAlert = async (alertToDelete: AlertDocument) => {
-    if (!alertToDelete) return;
+    if (!alertToDelete || !user) return;
     setIsDeleting(true);
     try {
       await deleteDoc(doc(db, "alerts", alertToDelete.id));
-      // Optionally, delete associated acknowledgements (or handle via Firestore rules/Cloud Functions for cascading deletes)
-      // For now, we'll leave acknowledgements, as they might be useful for historical audit.
+      
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "DELETE_ALERT",
+        entityType: "ALERT",
+        entityId: alertToDelete.id,
+        details: { title: alertToDelete.title, level: alertToDelete.level },
+      });
+
       toast({ title: "Alert Deleted", description: `Alert "${alertToDelete.title}" has been successfully deleted.` });
       fetchAlerts(); 
     } catch (error) {
@@ -256,3 +264,4 @@ export default function AdminAlertsPage() {
     </div>
   );
 }
+

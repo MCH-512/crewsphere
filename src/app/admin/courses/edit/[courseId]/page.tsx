@@ -82,6 +82,7 @@ import {
   questionTypes as qTypesList
 } from "@/schemas/quiz-question-schema";
 import { Separator } from "@/components/ui/separator";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 export default function EditComprehensiveCoursePage() {
   const { toast } = useToast();
@@ -100,7 +101,6 @@ export default function EditComprehensiveCoursePage() {
   const [quizQuestions, setQuizQuestions] = React.useState<StoredQuestion[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = React.useState(false);
   
-  // State for question CRUD
   const [isEditingQuestion, setIsEditingQuestion] = React.useState(false);
   const [editingQuestionId, setEditingQuestionId] = React.useState<string | null>(null);
   const [questionToDelete, setQuestionToDelete] = React.useState<StoredQuestion | null>(null);
@@ -133,19 +133,17 @@ export default function EditComprehensiveCoursePage() {
   const watchedQuestionType = addQuestionForm.watch("questionType");
 
   React.useEffect(() => {
-    if (!isEditingQuestion) { // Only apply default logic if not editing
+    if (!isEditingQuestion) { 
         if (watchedQuestionType === "tf") {
             replaceMcqOptions([{ text: "True" }, { text: "False" }]);
-            addQuestionForm.setValue("correctAnswer", "True"); // Default to True for TF
+            addQuestionForm.setValue("correctAnswer", "True"); 
         } else if (watchedQuestionType === "mcq") {
             const currentOptions = addQuestionForm.getValues("options");
             if (!currentOptions || currentOptions.length === 0) {
                 replaceMcqOptions([defaultQuestionOptionValue, defaultQuestionOptionValue]);
             }
-            // Don't reset correctAnswer here, let user pick
         } else if (watchedQuestionType === "short") {
             replaceMcqOptions([]);
-            // Don't reset correctAnswer here, let user type
         }
     }
   }, [watchedQuestionType, addQuestionForm, replaceMcqOptions, isEditingQuestion]);
@@ -279,12 +277,13 @@ export default function EditComprehensiveCoursePage() {
     try {
       const batch = writeBatch(db);
       const courseDocRef = doc(db, "courses", courseId);
-      batch.update(courseDocRef, {
+      const courseUpdatePayload = {
         title: data.title, category: data.category, courseType: data.courseType, referenceBody: data.referenceBody || null, description: data.description,
         duration: data.duration, mandatory: data.mandatory, published: data.published, fileURL: fileDownloadURL, imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
         chapters: data.chapters || [],
         updatedAt: serverTimestamp(),
-      });
+      };
+      batch.update(courseDocRef, courseUpdatePayload);
 
       const quizDocRef = doc(db, "quizzes", initialQuizId);
       batch.update(quizDocRef, {
@@ -298,6 +297,16 @@ export default function EditComprehensiveCoursePage() {
       });
 
       await batch.commit();
+      
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "UPDATE_COURSE",
+        entityType: "COURSE",
+        entityId: courseId,
+        details: { title: data.title, category: data.category, published: data.published },
+      });
+
       toast({
         title: "Course Updated Successfully!", description: `Course "${data.title}" has been updated.`,
         action: <CheckCircle className="text-green-500" />,
@@ -328,16 +337,31 @@ export default function EditComprehensiveCoursePage() {
         updatedAt: serverTimestamp(),
       };
 
+      let action: "CREATE" | "UPDATE" = "CREATE";
+      let qId = "";
+
       if (isEditingQuestion && editingQuestionId) {
         await updateDoc(doc(db, "questions", editingQuestionId), questionPayload);
         toast({ title: "Question Updated", description: "Question saved successfully." });
+        action = "UPDATE";
+        qId = editingQuestionId;
       } else {
-        await addDoc(collection(db, "questions"), { ...questionPayload, createdAt: serverTimestamp() });
+        const newQuestionRef = await addDoc(collection(db, "questions"), { ...questionPayload, createdAt: serverTimestamp() });
         toast({ title: "Question Added", description: "New question saved successfully." });
+        qId = newQuestionRef.id;
       }
       
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: action === "CREATE" ? "CREATE_QUIZ_QUESTION" : "UPDATE_QUIZ_QUESTION",
+        entityType: "QUIZ_QUESTION",
+        entityId: qId,
+        details: { courseId: courseId, quizId: initialQuizId, questionText: data.questionText.substring(0, 50) + "..." },
+      });
+
       addQuestionForm.reset(defaultQuestionFormValues);
-      replaceMcqOptions([defaultQuestionOptionValue, defaultQuestionOptionValue]); // Reset options for MCQ
+      replaceMcqOptions([defaultQuestionOptionValue, defaultQuestionOptionValue]); 
       setIsEditingQuestion(false);
       setEditingQuestionId(null);
       fetchQuizQuestions(initialQuizId);
@@ -368,10 +392,20 @@ export default function EditComprehensiveCoursePage() {
   };
   
   const confirmDeleteQuestion = async () => {
-    if (!questionToDelete || !initialQuizId) return;
+    if (!questionToDelete || !initialQuizId || !user) return;
     setIsDeletingQuestion(true);
     try {
         await deleteDoc(doc(db, "questions", questionToDelete.id));
+        
+        await logAuditEvent({
+            userId: user.uid,
+            userEmail: user.email || "N/A",
+            actionType: "DELETE_QUIZ_QUESTION",
+            entityType: "QUIZ_QUESTION",
+            entityId: questionToDelete.id,
+            details: { courseId: courseId, quizId: initialQuizId, questionText: questionToDelete.questionText.substring(0, 50) + "..." },
+        });
+
         toast({ title: "Question Deleted", description: `Question "${questionToDelete.questionText.substring(0,30)}..." has been deleted.` });
         fetchQuizQuestions(initialQuizId);
         setQuestionToDelete(null); 
@@ -416,7 +450,6 @@ export default function EditComprehensiveCoursePage() {
 
       <Form {...courseEditForm}>
         <form onSubmit={courseEditForm.handleSubmit(onCourseSubmit)} className="space-y-10">
-          {/* Section 1: Course Details */}
           <Card className="shadow-lg">
             <CardHeader><CardTitle className="text-xl font-semibold">1. Course Details</CardTitle></CardHeader>
             <CardContent className="space-y-6">
@@ -503,7 +536,6 @@ export default function EditComprehensiveCoursePage() {
             </CardContent>
           </Card>
 
-          {/* Section 1.5: Course Content (Chapters) */}
           <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle className="text-xl font-semibold flex items-center"><LayoutList className="mr-2 h-5 w-5 text-primary" /> Course Content (Chapters)</CardTitle>
@@ -524,7 +556,6 @@ export default function EditComprehensiveCoursePage() {
             </CardContent>
           </Card>
 
-          {/* Section 2: Quiz Settings */}
           <Card className="shadow-lg">
             <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><FileTextIcon className="mr-2 h-5 w-5 text-primary" /> Main Course Quiz Settings</CardTitle><CardDescription>Configure the main quiz parameters.</CardDescription></CardHeader>
             <CardContent className="space-y-6">
@@ -542,7 +573,6 @@ export default function EditComprehensiveCoursePage() {
             </CardContent>
           </Card>
           
-          {/* Section 2.5: Manage Quiz Questions */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-xl font-semibold flex items-center">
@@ -699,8 +729,6 @@ export default function EditComprehensiveCoursePage() {
             </CardContent>
           </Card>
 
-
-          {/* Section 3: Certification Rules */}
           <Card className="shadow-lg">
             <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><Award className="mr-2 h-5 w-5 text-primary" /> Certification Rules</CardTitle></CardHeader>
             <CardContent className="space-y-6">
@@ -721,7 +749,6 @@ export default function EditComprehensiveCoursePage() {
             </CardContent>
           </Card>
           
-          {/* Section 4: Summary & Preview */}
           <Card className="shadow-lg">
             <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><Eye className="mr-2 h-5 w-5 text-primary" /> Summary & Certificate Preview</CardTitle></CardHeader>
             <CardContent className="space-y-6">

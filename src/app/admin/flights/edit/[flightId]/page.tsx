@@ -32,11 +32,12 @@ import { doc, getDoc, updateDoc, serverTimestamp, Timestamp } from "firebase/fir
 import { useRouter, useParams } from "next/navigation";
 import { formatISO, parseISO, format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 import { CustomAutocompleteAirport } from "@/components/ui/custom-autocomplete-airport";
 import { searchAirports, type Airport } from "@/services/airport-service";
 
-const DEBOUNCE_DELAY = 300; // milliseconds
+const DEBOUNCE_DELAY = 300; 
 
 const aircraftTypes = ["B737-800", "B737-300", "B777", "A320", "A319", "A321", "A330", "ACMI"];
 
@@ -68,8 +69,8 @@ interface FlightDocumentForEdit {
   flightNumber: string;
   departureAirport: string;
   arrivalAirport: string;
-  scheduledDepartureDateTimeUTC: string; // Stored as ISO string
-  scheduledArrivalDateTimeUTC: string; // Stored as ISO string
+  scheduledDepartureDateTimeUTC: string; 
+  scheduledArrivalDateTimeUTC: string; 
   aircraftType: string;
   status: "Scheduled" | "On Time" | "Delayed" | "Cancelled";
   purserReportSubmitted?: boolean;
@@ -118,7 +119,6 @@ export default function EditFlightPage() {
     }
   };
 
-  // Debounced search for departure airport
   React.useEffect(() => {
     if (!departureSearchTerm || departureSearchTerm.length < 2) {
       setDepartureSuggestions([]);
@@ -139,7 +139,6 @@ export default function EditFlightPage() {
     return () => clearTimeout(handler);
   }, [departureSearchTerm, toast]);
 
-  // Debounced search for arrival airport
   React.useEffect(() => {
     if (!arrivalSearchTerm || arrivalSearchTerm.length < 2) {
       setArrivalSuggestions([]);
@@ -211,7 +210,7 @@ export default function EditFlightPage() {
     setIsSubmitting(true);
     try {
       const flightDocRef = doc(db, "flights", flightId);
-      await updateDoc(flightDocRef, {
+      const updatePayload = {
         flightNumber: data.flightNumber,
         departureAirport: data.departureAirport,
         arrivalAirport: data.arrivalAirport,
@@ -222,6 +221,16 @@ export default function EditFlightPage() {
         purserReportSubmitted: currentFlightData.purserReportSubmitted || false,
         purserReportId: currentFlightData.purserReportId || null,
         updatedAt: serverTimestamp(),
+      };
+      await updateDoc(flightDocRef, updatePayload);
+
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "UPDATE_FLIGHT",
+        entityType: "FLIGHT",
+        entityId: flightId,
+        details: { flightNumber: data.flightNumber, route: `${data.departureAirport}-${data.arrivalAirport}`, status: data.status },
       });
 
       toast({
