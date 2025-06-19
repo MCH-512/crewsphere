@@ -25,7 +25,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit3 as EditIconMain, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, HelpCircle, Trash2, ToggleRight, ToggleLeft } from "lucide-react";
+import { Edit3 as EditIconMain, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, HelpCircle, Trash2, ToggleRight, ToggleLeft, Edit3 as EditQuestionIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
@@ -41,12 +41,24 @@ import {
   deleteDoc,
   addDoc,
   Timestamp,
-  orderBy
+  orderBy,
+  updateDoc
 } from "firebase/firestore";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { Progress } from "@/components/ui/progress";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription as AlertDialogPrimitiveDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle as AlertDialogPrimitiveTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   courseCategories,
   courseTypes,
@@ -87,7 +99,14 @@ export default function EditComprehensiveCoursePage() {
 
   const [quizQuestions, setQuizQuestions] = React.useState<StoredQuestion[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = React.useState(false);
-  const [isAddingQuestion, setIsAddingQuestion] = React.useState(false);
+  
+  // State for question CRUD
+  const [isEditingQuestion, setIsEditingQuestion] = React.useState(false);
+  const [editingQuestionId, setEditingQuestionId] = React.useState<string | null>(null);
+  const [questionToDelete, setQuestionToDelete] = React.useState<StoredQuestion | null>(null);
+  const [isSavingQuestion, setIsSavingQuestion] = React.useState(false);
+  const [isDeletingQuestion, setIsDeletingQuestion] = React.useState(false);
+
 
   const courseEditForm = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
@@ -106,7 +125,7 @@ export default function EditComprehensiveCoursePage() {
     mode: "onChange",
   });
 
-  const { fields: mcqOptionFields, append: appendMcqOption, remove: removeMcqOption } = useFieldArray({
+  const { fields: mcqOptionFields, append: appendMcqOption, remove: removeMcqOption, replace: replaceMcqOptions } = useFieldArray({
     control: addQuestionForm.control,
     name: "options",
   });
@@ -114,17 +133,22 @@ export default function EditComprehensiveCoursePage() {
   const watchedQuestionType = addQuestionForm.watch("questionType");
 
   React.useEffect(() => {
-    if (watchedQuestionType === "tf") {
-      addQuestionForm.setValue("options", [{ text: "True" }, { text: "False" }]);
-      addQuestionForm.setValue("correctAnswer", "True");
-    } else if (watchedQuestionType === "mcq") {
-      if (!addQuestionForm.getValues("options") || addQuestionForm.getValues("options")?.length === 0) {
-        addQuestionForm.setValue("options", [defaultQuestionOptionValue, defaultQuestionOptionValue]);
-      }
-    } else if (watchedQuestionType === "short") {
-      addQuestionForm.setValue("options", []);
+    if (!isEditingQuestion) { // Only apply default logic if not editing
+        if (watchedQuestionType === "tf") {
+            replaceMcqOptions([{ text: "True" }, { text: "False" }]);
+            addQuestionForm.setValue("correctAnswer", "True"); // Default to True for TF
+        } else if (watchedQuestionType === "mcq") {
+            const currentOptions = addQuestionForm.getValues("options");
+            if (!currentOptions || currentOptions.length === 0) {
+                replaceMcqOptions([defaultQuestionOptionValue, defaultQuestionOptionValue]);
+            }
+            // Don't reset correctAnswer here, let user pick
+        } else if (watchedQuestionType === "short") {
+            replaceMcqOptions([]);
+            // Don't reset correctAnswer here, let user type
+        }
     }
-  }, [watchedQuestionType, addQuestionForm]);
+  }, [watchedQuestionType, addQuestionForm, replaceMcqOptions, isEditingQuestion]);
 
 
   const fetchQuizQuestions = React.useCallback(async (quizId: string) => {
@@ -171,7 +195,7 @@ export default function EditComprehensiveCoursePage() {
           if (courseData.quizId) {
             const quizSnap = await getDoc(doc(db, "quizzes", courseData.quizId));
             if (quizSnap.exists()) quizData = quizSnap.data();
-            fetchQuizQuestions(courseData.quizId); // Fetch questions after getting quizId
+            fetchQuizQuestions(courseData.quizId); 
           }
           
           let certRuleData = null;
@@ -188,7 +212,7 @@ export default function EditComprehensiveCoursePage() {
             description: courseData.description || "",
             duration: courseData.duration || "1 hour",
             mandatory: courseData.mandatory || false,
-            published: courseData.published || false, // Load published status
+            published: courseData.published || false,
             imageHint: courseData.imageHint || "",
             existingFileUrl: courseData.fileURL || "",
             chapters: courseData.chapters && courseData.chapters.length > 0 ? courseData.chapters : [defaultChapterValue],
@@ -288,12 +312,12 @@ export default function EditComprehensiveCoursePage() {
     }
   }
 
-  const handleAddQuestion = async (data: QuestionFormValues) => {
+  const handleSaveQuestion = async (data: QuestionFormValues) => {
     if (!user || !initialQuizId) {
-      toast({ title: "Error", description: "Cannot add question. Quiz ID or user missing.", variant: "destructive" });
+      toast({ title: "Error", description: "Cannot save question. Quiz ID or user missing.", variant: "destructive" });
       return;
     }
-    setIsAddingQuestion(true);
+    setIsSavingQuestion(true);
     try {
       const questionPayload = {
         quizId: initialQuizId,
@@ -301,18 +325,61 @@ export default function EditComprehensiveCoursePage() {
         questionType: data.questionType,
         options: data.options ? data.options.map(opt => opt.text) : [],
         correctAnswer: data.correctAnswer,
-        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
-      await addDoc(collection(db, "questions"), questionPayload);
-      toast({ title: "Question Added", description: "New question saved successfully." });
+
+      if (isEditingQuestion && editingQuestionId) {
+        await updateDoc(doc(db, "questions", editingQuestionId), questionPayload);
+        toast({ title: "Question Updated", description: "Question saved successfully." });
+      } else {
+        await addDoc(collection(db, "questions"), { ...questionPayload, createdAt: serverTimestamp() });
+        toast({ title: "Question Added", description: "New question saved successfully." });
+      }
+      
       addQuestionForm.reset(defaultQuestionFormValues);
-      fetchQuizQuestions(initialQuizId); // Refresh the list
+      replaceMcqOptions([defaultQuestionOptionValue, defaultQuestionOptionValue]); // Reset options for MCQ
+      setIsEditingQuestion(false);
+      setEditingQuestionId(null);
+      fetchQuizQuestions(initialQuizId);
     } catch (error) {
-      console.error("Error adding question:", error);
-      toast({ title: "Failed to Add Question", description: "Could not save the question.", variant: "destructive" });
+      console.error("Error saving question:", error);
+      toast({ title: `Failed to ${isEditingQuestion ? 'Update' : 'Add'} Question`, description: "Could not save the question.", variant: "destructive" });
     } finally {
-      setIsAddingQuestion(false);
+      setIsSavingQuestion(false);
+    }
+  };
+
+  const handleOpenEditQuestionDialog = (question: StoredQuestion) => {
+    setIsEditingQuestion(true);
+    setEditingQuestionId(question.id);
+    addQuestionForm.reset({
+      questionText: question.questionText,
+      questionType: question.questionType,
+      options: question.options ? question.options.map(opt => ({ text: opt })) : [],
+      correctAnswer: question.correctAnswer,
+    });
+  };
+
+  const handleCancelEditQuestion = () => {
+    setIsEditingQuestion(false);
+    setEditingQuestionId(null);
+    addQuestionForm.reset(defaultQuestionFormValues);
+    replaceMcqOptions([defaultQuestionOptionValue, defaultQuestionOptionValue]);
+  };
+  
+  const confirmDeleteQuestion = async () => {
+    if (!questionToDelete || !initialQuizId) return;
+    setIsDeletingQuestion(true);
+    try {
+        await deleteDoc(doc(db, "questions", questionToDelete.id));
+        toast({ title: "Question Deleted", description: `Question "${questionToDelete.questionText.substring(0,30)}..." has been deleted.` });
+        fetchQuizQuestions(initialQuizId);
+        setQuestionToDelete(null); 
+    } catch (error) {
+        console.error("Error deleting question:", error);
+        toast({ title: "Deletion Failed", description: "Could not delete the question.", variant: "destructive" });
+    } finally {
+        setIsDeletingQuestion(false);
     }
   };
   
@@ -479,113 +546,121 @@ export default function EditComprehensiveCoursePage() {
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-xl font-semibold flex items-center">
-                <HelpCircle className="mr-2 h-5 w-5 text-primary" /> Manage Quiz Questions
+                <HelpCircle className="mr-2 h-5 w-5 text-primary" /> {isEditingQuestion ? "Edit Quiz Question" : "Manage Quiz Questions"}
               </CardTitle>
-              <CardDescription>Add, view, (and soon edit/delete) questions for this course's quiz.</CardDescription>
+              <CardDescription>{isEditingQuestion ? "Modify the selected question." : "Add new questions or edit/delete existing ones for this course's quiz."}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4 p-4 border rounded-md">
-                  <h4 className="text-md font-medium mb-2">Add New Question</h4>
-                  <FormField
-                    control={addQuestionForm.control}
-                    name="questionText"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Question Text</FormLabel>
-                        <FormControl><Textarea placeholder="Enter the question..." {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={addQuestionForm.control}
-                    name="questionType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Question Type</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            {qTypesList.map(type => <SelectItem key={type} value={type}>{type.toUpperCase()}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {watchedQuestionType === 'mcq' && (
-                    <div className="space-y-2">
-                      <FormLabel>Options (MCQ)</FormLabel>
-                      {mcqOptionFields.map((optionField, optIndex) => (
-                        <div key={optionField.id} className="flex items-center gap-2">
-                          <FormField
-                            control={addQuestionForm.control}
-                            name={`options.${optIndex}.text`}
-                            render={({ field }) => (
-                              <FormItem className="flex-grow">
-                                <FormControl><Input placeholder={`Option ${optIndex + 1}`} {...field} /></FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <Button type="button" variant="ghost" size="icon" onClick={() => mcqOptionFields.length > 2 && removeMcqOption(optIndex)} disabled={mcqOptionFields.length <= 2}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button type="button" variant="outline" size="sm" onClick={() => appendMcqOption(defaultQuestionOptionValue)}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Option
-                      </Button>
-                    </div>
-                  )}
-                  
-                  <FormField
-                    control={addQuestionForm.control}
-                    name="correctAnswer"
-                    render={({ field }) => {
-                      if (watchedQuestionType === 'tf') {
-                        return (
-                          <FormItem>
-                            <FormLabel>Correct Answer (True/False)</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || "True"}>
-                              <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                              <SelectContent><SelectItem value="True">True</SelectItem><SelectItem value="False">False</SelectItem></SelectContent>
-                            </Select><FormMessage />
-                          </FormItem>
-                        );
-                      }
-                      if (watchedQuestionType === 'mcq') {
-                        const options = addQuestionForm.getValues("options")?.map(opt => opt.text).filter(Boolean) || [];
-                        return (
-                          <FormItem>
-                            <FormLabel>Correct Answer (MCQ)</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger>
-                                <SelectValue placeholder={options.length > 0 ? "Select correct option" : "Add options first"}/>
-                              </SelectTrigger></FormControl>
-                              <SelectContent>
-                                {options.map((optText, i) => <SelectItem key={i} value={optText}>{optText}</SelectItem>)}
-                              </SelectContent>
-                            </Select><FormMessage />
-                          </FormItem>
-                        );
-                      }
-                      // Default for "short" answer
-                      return (
+              <Form {...addQuestionForm}>
+                <form onSubmit={addQuestionForm.handleSubmit(handleSaveQuestion)} className="space-y-4 p-4 border rounded-md">
+                    <h4 className="text-md font-medium mb-2">{isEditingQuestion ? `Editing: ${quizQuestions.find(q=>q.id === editingQuestionId)?.questionText.substring(0,50)}...` : "Add New Question"}</h4>
+                    <FormField
+                      control={addQuestionForm.control}
+                      name="questionText"
+                      render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Correct Answer (Short Answer)</FormLabel>
-                          <FormControl><Input placeholder="Enter the exact correct answer" {...field} /></FormControl>
+                          <FormLabel>Question Text</FormLabel>
+                          <FormControl><Textarea placeholder="Enter the question..." {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
-                      );
-                    }}
-                  />
-                  <Button type="button" onClick={() => addQuestionForm.handleSubmit(handleAddQuestion)()} disabled={isAddingQuestion} size="sm">
-                    {isAddingQuestion && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Add Question to Quiz
-                  </Button>
-                </div>
+                      )}
+                    />
+                    <FormField
+                      control={addQuestionForm.control}
+                      name="questionType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Question Type</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              {qTypesList.map(type => <SelectItem key={type} value={type}>{type.toUpperCase()}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {watchedQuestionType === 'mcq' && (
+                      <div className="space-y-2">
+                        <FormLabel>Options (MCQ)</FormLabel>
+                        {mcqOptionFields.map((optionField, optIndex) => (
+                          <div key={optionField.id} className="flex items-center gap-2">
+                            <FormField
+                              control={addQuestionForm.control}
+                              name={`options.${optIndex}.text`}
+                              render={({ field }) => (
+                                <FormItem className="flex-grow">
+                                  <FormControl><Input placeholder={`Option ${optIndex + 1}`} {...field} /></FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <Button type="button" variant="ghost" size="icon" onClick={() => mcqOptionFields.length > 2 && removeMcqOption(optIndex)} disabled={mcqOptionFields.length <= 2}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => appendMcqOption(defaultQuestionOptionValue)}>
+                          <PlusCircle className="mr-2 h-4 w-4" /> Add Option
+                        </Button>
+                      </div>
+                    )}
+                    
+                    <FormField
+                      control={addQuestionForm.control}
+                      name="correctAnswer"
+                      render={({ field }) => {
+                        if (watchedQuestionType === 'tf') {
+                          return (
+                            <FormItem>
+                              <FormLabel>Correct Answer (True/False)</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value || "True"}>
+                                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                <SelectContent><SelectItem value="True">True</SelectItem><SelectItem value="False">False</SelectItem></SelectContent>
+                              </Select><FormMessage />
+                            </FormItem>
+                          );
+                        }
+                        if (watchedQuestionType === 'mcq') {
+                          const options = addQuestionForm.getValues("options")?.map(opt => opt.text).filter(Boolean) || [];
+                          return (
+                            <FormItem>
+                              <FormLabel>Correct Answer (MCQ)</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger>
+                                  <SelectValue placeholder={options.length > 0 ? "Select correct option" : "Add options first"}/>
+                                </SelectTrigger></FormControl>
+                                <SelectContent>
+                                  {options.map((optText, i) => <SelectItem key={i} value={optText}>{optText}</SelectItem>)}
+                                </SelectContent>
+                              </Select><FormMessage />
+                            </FormItem>
+                          );
+                        }
+                        return (
+                          <FormItem>
+                            <FormLabel>Correct Answer (Short Answer)</FormLabel>
+                            <FormControl><Input placeholder="Enter the exact correct answer" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                    <div className="flex gap-2">
+                        <Button type="submit" disabled={isSavingQuestion} size="sm">
+                            {isSavingQuestion && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isEditingQuestion ? "Update Question" : "Add Question to Quiz"}
+                        </Button>
+                        {isEditingQuestion && (
+                            <Button type="button" variant="outline" size="sm" onClick={handleCancelEditQuestion} disabled={isSavingQuestion}>
+                                Cancel Edit
+                            </Button>
+                        )}
+                    </div>
+                  </form>
+                </Form>
               <Separator className="my-6"/>
               <div>
                 <h4 className="text-md font-medium mb-3">Existing Questions ({quizQuestions.length})</h4>
@@ -596,13 +671,26 @@ export default function EditComprehensiveCoursePage() {
                 ) : (
                   <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                     {quizQuestions.map((q, index) => (
-                      <Card key={q.id} className="p-3 bg-muted/40 text-sm">
-                        <p className="font-medium truncate">Q{index + 1}: {q.questionText}</p>
-                        <p className="text-xs text-muted-foreground">Type: {q.questionType.toUpperCase()} | Answer: <span className="font-mono text-primary">{q.correctAnswer}</span></p>
-                        {q.questionType === 'mcq' && q.options && q.options.length > 0 && (
-                          <p className="text-xs text-muted-foreground">Options: {q.options.join('; ')}</p>
-                        )}
-                        {/* Add Edit/Delete buttons here in future */}
+                      <Card key={q.id} className="p-3 bg-muted/40 text-sm flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">Q{index + 1}: {q.questionText}</p>
+                          <p className="text-xs text-muted-foreground">Type: {q.questionType.toUpperCase()} | Answer: <span className="font-mono text-primary">{q.correctAnswer}</span></p>
+                          {q.questionType === 'mcq' && q.options && q.options.length > 0 && (
+                            <p className="text-xs text-muted-foreground">Options: {q.options.join('; ')}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0 ml-2">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenEditQuestionDialog(q)}>
+                                <EditQuestionIcon className="h-4 w-4 text-blue-600"/>
+                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setQuestionToDelete(q)}>
+                                        <Trash2 className="h-4 w-4 text-destructive"/>
+                                    </Button>
+                                </AlertDialogTrigger>
+                            </AlertDialog>
+                        </div>
                       </Card>
                     ))}
                   </div>
@@ -679,6 +767,27 @@ export default function EditComprehensiveCoursePage() {
           )}
         </form>
       </Form>
+
+      {questionToDelete && (
+        <AlertDialog open={!!questionToDelete} onOpenChange={(open) => !open && setQuestionToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogPrimitiveTitle>Confirm Question Deletion</AlertDialogPrimitiveTitle>
+                    <AlertDialogPrimitiveDescription>
+                        Are you sure you want to delete the question: "{questionToDelete.questionText.substring(0,50)}..."?
+                        This action cannot be undone.
+                    </AlertDialogPrimitiveDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setQuestionToDelete(null)} disabled={isDeletingQuestion}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmDeleteQuestion} disabled={isDeletingQuestion} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        {isDeletingQuestion && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Delete Question
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }
