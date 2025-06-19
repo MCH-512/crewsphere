@@ -495,8 +495,8 @@ export function PurserReportTool() {
                <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                 <div className="flex items-center"><PlaneTakeoff className="mr-2 h-5 w-5 text-primary"/>Flight Information & Timings</div>
               </AccordionTrigger>
-              <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
-                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+              <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm">
+                <div className="space-y-6 max-h-[600px] overflow-y-auto pr-3">
                   <FormItem>
                     <FormLabel>Select Existing Flight (Optional)</FormLabel>
                     <Select onValueChange={handleFlightSelection} value={selectedFlightIdState || "_MANUAL_ENTRY_"} disabled={isLoadingFlights}>
@@ -508,7 +508,7 @@ export function PurserReportTool() {
                     </Select>
                     <FormDescription>Choosing a flight will pre-fill flight, aircraft, and timing details. Assigned crew may also be pre-filled.</FormDescription>
                   </FormItem>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input placeholder="e.g., BA245" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="flightDate" render={({ field }) => (<FormItem><FormLabel>Flight Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="aircraftTypeRegistration" render={({ field }) => (<FormItem><FormLabel>Aircraft & Registration</FormLabel><FormControl><Input placeholder="e.g., B789 G-ABCD" {...field} /></FormControl><FormDescription>e.g., B787 G-XYZC</FormDescription><FormMessage /></FormItem>)} />
@@ -517,7 +517,7 @@ export function PurserReportTool() {
                   </div>
                   <Separator/>
                   <CardTitle className="text-md font-medium pt-2">Flight Timings (UTC)</CardTitle>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormItem>
                         <FormLabel>Scheduled Departure (UTC)</FormLabel>
                         <Input type="datetime-local" value={toDatetimeLocalInputString(form.getValues("scheduledDepartureUTC"))} readOnly disabled className="bg-muted/50"/>
@@ -571,14 +571,14 @@ export function PurserReportTool() {
               <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                 <div className="flex items-center"><Users className="mr-2 h-5 w-5 text-primary" />Crew Information</div>
               </AccordionTrigger>
-              <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm">
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       <FormField control={form.control} name="captainName" render={({ field }) => (<FormItem><FormLabel>Captain</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingPilots}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingPilots ? "Loading..." : "Select Captain"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{pilotsList.map(p => (<SelectItem key={p.uid} value={p.name}>{p.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
                       <FormField control={form.control} name="firstOfficerName" render={({ field }) => (<FormItem><FormLabel>First Officer</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingPilots}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingPilots ? "Loading..." : "Select F/O"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{pilotsList.map(p => (<SelectItem key={p.uid} value={p.name}>{p.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
                       <FormField control={form.control} name="purserName" render={({ field }) => ( <FormItem> <FormLabel>Supervising Crew*</FormLabel> <Select onValueChange={field.onChange} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingSupervisingCrew || (!isLoadingSupervisingCrew && supervisingCrewList.length === 0)} > <FormControl><SelectTrigger><SelectValue placeholder={purserSelectPlaceholder} /></SelectTrigger></FormControl> <SelectContent> <SelectItem value={PLACEHOLDER_NONE_VALUE} disabled> {purserDisabledItemText} </SelectItem> {supervisingCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))} </SelectContent> </Select> <FormMessage /> </FormItem> )} />
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <FormField control={form.control} name="cabinCrewR1" render={({ field }) => (<FormItem><FormLabel>Cabin Crew (R1)</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingCabinCrew}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingCabinCrew ? "Loading..." : "Select R1"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{cabinCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
                       <FormField control={form.control} name="cabinCrewL2" render={({ field }) => (<FormItem><FormLabel>Cabin Crew (L2)</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingCabinCrew}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingCabinCrew ? "Loading..." : "Select L2"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{cabinCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
                       <FormField control={form.control} name="cabinCrewR2" render={({ field }) => (<FormItem><FormLabel>Cabin Crew (R2)</FormLabel><Select onValueChange={(v) => field.onChange(v === PLACEHOLDER_NONE_VALUE ? "" : v)} value={field.value || PLACEHOLDER_NONE_VALUE} disabled={isLoadingCabinCrew}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingCabinCrew ? "Loading..." : "Select R2"} /></SelectTrigger></FormControl><SelectContent><SelectItem value={PLACEHOLDER_NONE_VALUE}>Not Assigned / Other</SelectItem>{cabinCrewList.map(c => (<SelectItem key={c.uid} value={c.name}>{c.name}</SelectItem>))}</SelectContent></Select><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)} />
@@ -592,8 +592,8 @@ export function PurserReportTool() {
               <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                 <div className="flex items-center"><Users className="mr-2 h-5 w-5 text-primary" />Passenger Load</div>
               </AccordionTrigger>
-              <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <FormField control={form.control} name="passengerLoad.total" render={({ field }) => (<FormItem><FormLabel>Total Passengers</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="passengerLoad.adults" render={({ field }) => (<FormItem><FormLabel>Adults</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="passengerLoad.children" render={({ field }) => (<FormItem><FormLabel>Children</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -606,7 +606,7 @@ export function PurserReportTool() {
               <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                 <div className="flex items-center"><ClipboardList className="mr-2 h-5 w-5 text-primary"/>General Flight Summary</div>
               </AccordionTrigger>
-              <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
+              <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm">
                  <FormField control={form.control} name="generalFlightSummary" render={({ field }) => (<FormItem><FormLabel>Summary Content</FormLabel><FormControl><Textarea placeholder="Overall flight conduct, punctuality, atmosphere, IFE status, any general incidents or positive feedback..." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
               </AccordionContent>
             </AccordionItem>
@@ -615,8 +615,8 @@ export function PurserReportTool() {
               <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                  <div className="flex items-center"><ClipboardList className="mr-2 h-5 w-5 text-primary"/>Specific Report Sections</div>
               </AccordionTrigger>
-              <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm space-y-6">
-                <div className="space-y-4 p-4 border rounded-md"><h3 className="text-md font-semibold">Add Report Section</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm space-y-6">
+                <div className="space-y-4 p-4 border rounded-md"><h3 className="text-md font-semibold">Add Report Section</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
                     <FormItem><FormLabel>Section Type</FormLabel><Select value={currentSectionType} onValueChange={(v) => setCurrentSectionType(v as ReportSectionType)}><FormControl><SelectTrigger><SelectValue placeholder="Select section type" /></SelectTrigger></FormControl><SelectContent>{reportSectionTypes.map(t => (<SelectItem key={t} value={t}>{t}</SelectItem>))}</SelectContent></Select></FormItem>
                     <Button type="button" onClick={handleAddSection} className="self-end" disabled={!currentSectionType || !currentSectionContent.trim()}><PlusCircle className="mr-2 h-4 w-4"/> Add Section</Button>
                 </div><FormItem><FormLabel>Section Content</FormLabel><Textarea placeholder="Details for selected section..." className="min-h-[100px]" value={currentSectionContent} onChange={(e) => setCurrentSectionContent(e.target.value)}/></FormItem></div>
@@ -645,10 +645,10 @@ export function PurserReportTool() {
               <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                 <div className="flex items-center"><MessageSquareQuote className="mr-2 h-5 w-5 text-primary"/>Crew Performance Evaluation</div>
               </AccordionTrigger>
-              <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm space-y-6">
+              <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm space-y-6">
                  <div className="space-y-4 p-4 border rounded-md">
                     <h3 className="text-md font-semibold">Add Crew Evaluation</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
                         <FormItem>
                             <FormLabel>Crew Member Role</FormLabel>
                             <Select value={currentEvalCrewMemberRole} onValueChange={(v) => setCurrentEvalCrewMemberRole(v as CrewRoleForEval)} disabled={availableEvalRoles.length === 0}>
