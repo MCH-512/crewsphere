@@ -16,17 +16,9 @@ const requiredEnvVars = [
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingVars.length > 0) {
-  const errorMessage = `FATAL ERROR: Firebase configuration is incomplete. Missing environment variables: ${missingVars.join(", ")}. Please ensure these are set in your .env file or hosting environment.`;
-  console.error(errorMessage);
-  // Throw an error to prevent the application from starting without proper Firebase config.
-  // This helps in diagnosing startup issues.
-  // if (typeof window === "undefined") { // Running in Node.js (server-side)
-  //   throw new Error(errorMessage); // Removed this line
-  // } else { 
-  //   // In a browser context, this error might not be caught by the server logs, 
-  //   // but it's good practice to log it.
-  //   // A more user-friendly UI error might be needed for client-side failures.
-  // }
+  const errorMessage = `WARNING: Firebase configuration is incomplete. Missing environment variables: ${missingVars.join(", ")}. Firebase services might not work as expected. Please ensure these are set in your .env file or hosting environment.`;
+  console.warn(errorMessage);
+  // Removed the throw new Error to allow the app to start, but Firebase will likely fail.
 }
 
 // Your web app's Firebase configuration, now read from environment variables
@@ -53,4 +45,3 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 export { app, auth, db, storage };
-
