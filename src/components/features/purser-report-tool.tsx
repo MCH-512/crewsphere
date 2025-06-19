@@ -496,7 +496,7 @@ export function PurserReportTool() {
                 <div className="flex items-center"><PlaneTakeoff className="mr-2 h-5 w-5 text-primary"/>Flight Information & Timings</div>
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                   <FormItem>
                     <FormLabel>Select Existing Flight (Optional)</FormLabel>
                     <Select onValueChange={handleFlightSelection} value={selectedFlightIdState || "_MANUAL_ENTRY_"} disabled={isLoadingFlights}>
