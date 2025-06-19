@@ -78,7 +78,7 @@ export function Breadcrumbs() {
           
           let label = predefinedLabels[segment] || formatSegment(segment);
           
-          // Specific overrides for dynamic or nested create/edit paths
+          // Specific overrides for dynamic or nested create/edit paths for the LAST segment
           if (pathname.includes("/admin/documents/edit/") && isLast) {
             label = "Edit Document";
           } else if (pathname.includes("/admin/documents/create") && isLast) {
@@ -95,10 +95,10 @@ export function Breadcrumbs() {
             label = "Edit Alert";
           } else if (pathname.includes("/admin/alerts/create") && isLast) {
             label = "Create Alert";
-          } else if (segment.startsWith("[") && segment.endsWith("]") && segments[index-1] === "edit") {
-             // Generic "Edit" for dynamic part if previous was 'edit'
-             label = "Edit";
           }
+          // Removed the problematic "else if" that labeled generic dynamic IDs as "Edit"
+          // Now, if none of the above specific overrides match for the last segment,
+          // it will use predefinedLabels[segment] or formatSegment(segment)
 
 
           return (
