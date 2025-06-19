@@ -160,13 +160,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/admin/courses": "Courses Management",
     "/admin/courses/create": "Create New Training Course",
     "/admin/courses/edit": "Edit Training Course",
-    "/admin/flights": "Manage Flights",
+    "/admin/flights": "Flight Management",
     "/admin/flights/create": "Add New Flight",
     "/admin/flights/edit": "Edit Flight",
     "/admin/purser-reports": "Submitted Purser Reports",
     "/admin/user-requests": "User Submitted Requests",
     "/admin/quizzes": "Quizzes Overview", 
     "/admin/system-settings": "System Configuration",
+    "/insights": "AI Insights"
   };
   
   let currentTitle = "AirCrew Hub"; 
@@ -344,7 +345,10 @@ function LayoutWithSidebar({
       <SidebarInset>
         <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
           {isMobile && <SidebarTrigger aria-label="Toggle sidebar" />}
-          <div className="flex-1">
+          <div className="flex-1 flex items-center">
+            <span className="text-lg font-semibold text-foreground truncate">
+              {currentPageTitle}
+            </span>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>
