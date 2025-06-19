@@ -68,6 +68,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNotification } from "@/contexts/notification-context"; 
 import { Breadcrumbs } from "./breadcrumbs"; 
 import Image from "next/image";
+import { HeaderClocks } from "@/components/features/header-clocks"; // Added import
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -167,7 +168,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/admin/user-requests": "User Submitted Requests",
     "/admin/quizzes": "Quizzes Overview", 
     "/admin/system-settings": "System Configuration",
-    "/insights": "AI Insights"
+    "/insights": "AI Insights & Coaching"
   };
   
   let currentTitle = "AirCrew Hub"; 
@@ -351,6 +352,7 @@ function LayoutWithSidebar({
             </span>
           </div>
           <div className="flex items-center gap-3">
+            <HeaderClocks /> {/* Added Clocks */}
             <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>
               {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </Button>
@@ -428,4 +430,3 @@ function LayoutWithSidebar({
   );
 }
 
-    
