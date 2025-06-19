@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff } from "lucide-react";
+import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff, Clock, AlertTriangle } from "lucide-react";
 import { generatePurserReport, type PurserReportOutput, type PurserReportInput } from "@/ai/flows/purser-report-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -27,7 +27,7 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, where, doc, getDoc, updateDoc } from "firebase/firestore"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, differenceInMinutes } from "date-fns";
 
 interface CrewUser {
   uid: string;
@@ -40,6 +40,7 @@ interface FlightForSelection {
   departureAirport: string;
   arrivalAirport: string;
   scheduledDepartureDateTimeUTC: string; // ISO string
+  scheduledArrivalDateTimeUTC: string; // ISO string
   aircraftType: string;
 }
 
@@ -104,6 +105,11 @@ const purserReportFormSchema = z.object({
   arrivalAirport: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars").toUpperCase(),
   aircraftTypeRegistration: z.string().min(3, "Min 3 chars").max(20, "Max 20 chars").describe("e.g., B789 G-XYZC"),
   
+  scheduledDepartureUTC: z.string().optional(), // Stored as full ISO for internal use
+  scheduledArrivalUTC: z.string().optional(),   // Stored as full ISO for internal use
+  actualDepartureUTC: z.string().datetime({ message: "Invalid actual departure datetime." }).optional().or(z.literal("")),
+  actualArrivalUTC: z.string().datetime({ message: "Invalid actual arrival datetime." }).optional().or(z.literal("")),
+  
   captainName: z.string().optional(),
   firstOfficerName: z.string().optional(),
   purserName: z.string().refine(val => val !== PLACEHOLDER_NONE_VALUE && val.trim() !== "", { message: "Supervising crew (Purser/Instructor) selection is required."}),
@@ -114,9 +120,63 @@ const purserReportFormSchema = z.object({
 
   passengerLoad: passengerLoadSchema, 
   generalFlightSummary: z.string().min(10, "Min 10 characters for summary."),
-});
+}).superRefine((data, ctx) => {
+    if (data.actualArrivalUTC && !data.actualDepartureUTC) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Actual departure time is required if actual arrival time is provided.",
+        path: ["actualDepartureUTC"],
+      });
+    }
+    if (data.actualDepartureUTC && data.actualArrivalUTC) {
+      try {
+        const dep = new Date(data.actualDepartureUTC).getTime();
+        const arr = new Date(data.actualArrivalUTC).getTime();
+        if (arr <= dep) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Actual arrival time must be after actual departure time.",
+            path: ["actualArrivalUTC"],
+          });
+        }
+      } catch (e) { /* Handled by field validation */ }
+    }
+  });
 
 type PurserReportFormValues = z.infer<typeof purserReportFormSchema>;
+
+// Helper to convert ISO string to datetime-local format string
+const toDatetimeLocalInputString = (isoString?: string): string => {
+  if (!isoString) return "";
+  try {
+    const date = new Date(isoString);
+    // Get date parts in local timezone for input
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  } catch {
+    return "";
+  }
+};
+
+const calculateTimeDifference = (scheduledIso?: string, actualIso?: string): string => {
+  if (!scheduledIso || !actualIso || actualIso === "") return "";
+  try {
+    const scheduledTime = parseISO(scheduledIso);
+    const actualTime = parseISO(actualIso);
+    const diffMins = differenceInMinutes(actualTime, scheduledTime);
+
+    if (diffMins === 0) return "On time";
+    if (diffMins > 0) return `${diffMins} min late`;
+    return `${Math.abs(diffMins)} min early`;
+  } catch (e) {
+    return "Invalid time input";
+  }
+};
+
 
 export function PurserReportTool() {
   const [isLoading, setIsLoading] = React.useState(false);
@@ -155,6 +215,10 @@ export function PurserReportTool() {
       departureAirport: "",
       arrivalAirport: "",
       aircraftTypeRegistration: "",
+      scheduledDepartureUTC: "",
+      scheduledArrivalUTC: "",
+      actualDepartureUTC: "",
+      actualArrivalUTC: "",
       captainName: PLACEHOLDER_NONE_VALUE, 
       firstOfficerName: PLACEHOLDER_NONE_VALUE,
       purserName: PLACEHOLDER_NONE_VALUE, 
@@ -167,6 +231,9 @@ export function PurserReportTool() {
     },
     mode: "onChange", 
   });
+
+  const departureVariance = calculateTimeDifference(form.watch("scheduledDepartureUTC"), form.watch("actualDepartureUTC"));
+  const arrivalVariance = calculateTimeDifference(form.watch("scheduledArrivalUTC"), form.watch("actualArrivalUTC"));
 
   React.useEffect(() => {
     const fetchInitialFlights = async () => {
@@ -182,7 +249,8 @@ export function PurserReportTool() {
             flightNumber: data.flightNumber,
             departureAirport: data.departureAirport,
             arrivalAirport: data.arrivalAirport,
-            scheduledDepartureDateTimeUTC: data.scheduledDepartureDateTimeUTC,
+            scheduledDepartureDateTimeUTC: data.scheduledDepartureDateTimeUTC, // This is full ISO
+            scheduledArrivalDateTimeUTC: data.scheduledArrivalDateTimeUTC, // This is full ISO
             aircraftType: data.aircraftType,
           });
         });
@@ -243,6 +311,10 @@ export function PurserReportTool() {
             departureAirport: "", 
             arrivalAirport: "", 
             aircraftTypeRegistration: "",
+            scheduledDepartureUTC: "",
+            scheduledArrivalUTC: "",
+            actualDepartureUTC: "",
+            actualArrivalUTC: "",
             captainName: PLACEHOLDER_NONE_VALUE,
             firstOfficerName: PLACEHOLDER_NONE_VALUE,
             purserName: PLACEHOLDER_NONE_VALUE,
@@ -259,7 +331,14 @@ export function PurserReportTool() {
         form.setValue("flightDate", new Date(selectedFlightBasic.scheduledDepartureDateTimeUTC).toISOString().split('T')[0]);
         form.setValue("departureAirport", selectedFlightBasic.departureAirport);
         form.setValue("arrivalAirport", selectedFlightBasic.arrivalAirport);
-        form.setValue("aircraftTypeRegistration", selectedFlightBasic.aircraftType); 
+        form.setValue("aircraftTypeRegistration", selectedFlightBasic.aircraftType);
+        // Store the full ISO strings for scheduled times
+        form.setValue("scheduledDepartureUTC", selectedFlightBasic.scheduledDepartureDateTimeUTC);
+        form.setValue("scheduledArrivalUTC", selectedFlightBasic.scheduledArrivalDateTimeUTC);
+        // Clear actual times when a new flight is selected
+        form.setValue("actualDepartureUTC", "");
+        form.setValue("actualArrivalUTC", "");
+        
         setSelectedFlightIdState(flightId);
 
         try {
@@ -337,7 +416,7 @@ export function PurserReportTool() {
       data.otherCrewMembers ? `Other Crew: ${data.otherCrewMembers}` : null,
     ];
     const crewMembersString = crewDetailsParts.filter(Boolean).join('\n');
-    const dynamicSections: Partial<Omit<PurserReportInput, 'crewPerformanceNotes'>> = {};
+    const dynamicSections: Partial<Omit<PurserReportInput, 'crewPerformanceNotes' | 'scheduledDepartureUTC' | 'scheduledArrivalUTC' | 'actualDepartureUTC' | 'actualArrivalUTC'>> = {};
     addedSections.forEach(section => {
         switch (section.type) {
             case "Safety Incidents": dynamicSections.safetyIncidents = (dynamicSections.safetyIncidents ? dynamicSections.safetyIncidents + "\n\n---\n\n" : "") + section.content; break;
@@ -350,10 +429,14 @@ export function PurserReportTool() {
         }
     });
     
-    const baseAiInput: PurserReportInput = {
+    const baseAiInput: Omit<PurserReportInput, 'crewPerformanceNotes'> = {
       flightNumber: data.flightNumber, flightDate: new Date(data.flightDate).toISOString().split('T')[0], departureAirport: data.departureAirport, arrivalAirport: data.arrivalAirport,
       aircraftTypeRegistration: data.aircraftTypeRegistration, crewMembers: crewMembersString, passengerLoad: { total: Number(data.passengerLoad.total), adults: Number(data.passengerLoad.adults), children: Number(data.passengerLoad.children), infants: Number(data.passengerLoad.infants) },
       generalFlightSummary: data.generalFlightSummary, ...dynamicSections,
+      scheduledDepartureUTC: data.scheduledDepartureUTC || undefined,
+      scheduledArrivalUTC: data.scheduledArrivalUTC || undefined,
+      actualDepartureUTC: data.actualDepartureUTC ? new Date(data.actualDepartureUTC).toISOString() : undefined,
+      actualArrivalUTC: data.actualArrivalUTC ? new Date(data.actualArrivalUTC).toISOString() : undefined,
     };
 
     const aiInput: PurserReportInput = { ...baseAiInput };
@@ -410,7 +493,7 @@ export function PurserReportTool() {
             
             <AccordionItem value="flight-info" className="border-none">
                <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
-                <div className="flex items-center"><PlaneTakeoff className="mr-2 h-5 w-5 text-primary"/>Flight Information</div>
+                <div className="flex items-center"><PlaneTakeoff className="mr-2 h-5 w-5 text-primary"/>Flight Information & Timings</div>
               </AccordionTrigger>
               <AccordionContent className="p-4 bg-card rounded-b-lg border-t-0 shadow-sm">
                 <div className="space-y-4">
@@ -423,7 +506,7 @@ export function PurserReportTool() {
                         {availableFlights.map(flight => (<SelectItem key={flight.id} value={flight.id}>{flight.flightNumber}: {flight.departureAirport} to {flight.arrivalAirport} ({format(parseISO(flight.scheduledDepartureDateTimeUTC), "MMM d, yyyy HH:mm")} UTC)</SelectItem>))}
                       </SelectContent>
                     </Select>
-                    <FormDescription>Choosing a flight will pre-fill the fields below. Assigned crew may also be pre-filled if available in flight data.</FormDescription>
+                    <FormDescription>Choosing a flight will pre-fill flight, aircraft, and timing details. Assigned crew may also be pre-filled.</FormDescription>
                   </FormItem>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input placeholder="e.g., BA245" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -431,6 +514,54 @@ export function PurserReportTool() {
                     <FormField control={form.control} name="aircraftTypeRegistration" render={({ field }) => (<FormItem><FormLabel>Aircraft & Registration</FormLabel><FormControl><Input placeholder="e.g., B789 G-ABCD" {...field} /></FormControl><FormDescription>e.g., B787 G-XYZC</FormDescription><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="departureAirport" render={({ field }) => (<FormItem><FormLabel>Departure Airport</FormLabel><FormControl><Input placeholder="e.g., LHR" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="arrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival Airport</FormLabel><FormControl><Input placeholder="e.g., JFK" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
+                  <Separator/>
+                  <CardTitle className="text-md font-medium pt-2">Flight Timings (UTC)</CardTitle>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormItem>
+                        <FormLabel>Scheduled Departure (UTC)</FormLabel>
+                        <Input type="datetime-local" value={toDatetimeLocalInputString(form.getValues("scheduledDepartureUTC"))} readOnly disabled className="bg-muted/50"/>
+                        <FormDescription>Pre-filled from selected flight.</FormDescription>
+                    </FormItem>
+                     <FormField
+                        control={form.control}
+                        name="actualDepartureUTC"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Actual Departure (UTC)</FormLabel>
+                            <FormControl>
+                                <Input type="datetime-local" {...field} 
+                                 onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value).toISOString() : "")}
+                                 value={field.value ? toDatetimeLocalInputString(field.value) : ""}
+                                />
+                            </FormControl>
+                            {departureVariance && <FormDescription className={departureVariance.includes("late") ? "text-destructive" : departureVariance.includes("early") ? "text-green-600" : ""}>{departureVariance}</FormDescription>}
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormItem>
+                        <FormLabel>Scheduled Arrival (UTC)</FormLabel>
+                        <Input type="datetime-local" value={toDatetimeLocalInputString(form.getValues("scheduledArrivalUTC"))} readOnly disabled className="bg-muted/50"/>
+                        <FormDescription>Pre-filled from selected flight.</FormDescription>
+                    </FormItem>
+                    <FormField
+                        control={form.control}
+                        name="actualArrivalUTC"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Actual Arrival (UTC)</FormLabel>
+                            <FormControl>
+                                <Input type="datetime-local" {...field} 
+                                onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value).toISOString() : "")}
+                                value={field.value ? toDatetimeLocalInputString(field.value) : ""}
+                                />
+                            </FormControl>
+                            {arrivalVariance && <FormDescription className={arrivalVariance.includes("late") ? "text-destructive" : arrivalVariance.includes("early") ? "text-green-600" : ""}>{arrivalVariance}</FormDescription>}
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
                   </div>
                 </div>
               </AccordionContent>

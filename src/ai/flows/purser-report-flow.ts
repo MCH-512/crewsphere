@@ -17,6 +17,12 @@ const PurserReportInputSchema = z.object({
   departureAirport: z.string().min(3).max(10).describe('Departure airport ICAO/IATA code.'),
   arrivalAirport: z.string().min(3).max(10).describe('Arrival airport ICAO/IATA code.'),
   aircraftTypeRegistration: z.string().min(3).max(20).describe('Aircraft type and registration (e.g., B789 G-XYZC).'),
+  
+  scheduledDepartureUTC: z.string().datetime().optional().describe('Scheduled Departure Time in UTC (ISO 8601 format).'),
+  actualDepartureUTC: z.string().datetime().optional().describe('Actual Departure Time in UTC (ISO 8601 format).'),
+  scheduledArrivalUTC: z.string().datetime().optional().describe('Scheduled Arrival Time in UTC (ISO 8601 format).'),
+  actualArrivalUTC: z.string().datetime().optional().describe('Actual Arrival Time in UTC (ISO 8601 format).'),
+  
   crewMembers: z.string().min(10).describe('List of crew members on board (names and roles, typically multi-line).'),
   passengerLoad: z.object({
     total: z.number().int().min(0).describe('Total number of passengers.'),
@@ -24,7 +30,7 @@ const PurserReportInputSchema = z.object({
     children: z.number().int().min(0).describe('Number of child passengers.'),
     infants: z.number().int().min(0).describe('Number of infant passengers.'),
   }),
-  generalFlightSummary: z.string().min(10).describe('Overall summary of the flight, noting punctuality, and general atmosphere.'),
+  generalFlightSummary: z.string().min(10).describe('Overall summary of the flight, noting punctuality (based on provided times), and general atmosphere.'),
   safetyIncidents: z.string().optional().describe('Detailed description of any safety-related incidents or observations (e.g., turbulence, equipment malfunctions affecting safety).'),
   securityIncidents: z.string().optional().describe('Detailed description of any security-related incidents (e.g., unruly passengers, security breaches).'),
   medicalIncidents: z.string().optional().describe('Detailed description of any medical incidents involving passengers or crew, including actions taken.'),
@@ -59,6 +65,10 @@ Flight Details:
 - Date: {{{flightDate}}}
 - Route: {{{departureAirport}}} - {{{arrivalAirport}}}
 - Aircraft: {{{aircraftTypeRegistration}}}
+{{#if scheduledDepartureUTC}}- Scheduled Departure (UTC): {{{scheduledDepartureUTC}}}{{/if}}
+{{#if actualDepartureUTC}}- Actual Departure (UTC): {{{actualDepartureUTC}}}{{/if}}
+{{#if scheduledArrivalUTC}}- Scheduled Arrival (UTC): {{{scheduledArrivalUTC}}}{{/if}}
+{{#if actualArrivalUTC}}- Actual Arrival (UTC): {{{actualArrivalUTC}}}{{/if}}
 - Crew Members:
 {{{crewMembers}}}
 - Passenger Load: Total: {{{passengerLoad.total}}}, Adults: {{{passengerLoad.adults}}}, Children: {{{passengerLoad.children}}}, Infants: {{{passengerLoad.infants}}}
@@ -67,6 +77,7 @@ Report Sections:
 
 1.  **## General Flight Summary**:
     {{{generalFlightSummary}}}
+    (Ensure to comment on flight punctuality based on the scheduled vs actual departure/arrival times if provided.)
 
 {{#if safetyIncidents}}
 2.  **## Safety Incidents/Observations**:
@@ -131,3 +142,4 @@ const purserReportFlow = ai.defineFlow(
   }
 );
     
+
