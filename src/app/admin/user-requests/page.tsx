@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority"; 
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 interface UserRequest {
   id: string;
@@ -136,7 +137,7 @@ export default function AdminUserRequestsPage() {
   };
 
   const handleStatusUpdate = async () => {
-    if (!selectedRequest || !newStatus ) {
+    if (!selectedRequest || !newStatus || !user) {
       toast({ title: "Selection Missing", description: "No request selected or new status not chosen.", variant: "default" });
       return;
     }
@@ -154,6 +155,16 @@ export default function AdminUserRequestsPage() {
         adminResponse: adminResponseText || null,
         updatedAt: serverTimestamp(),
        });
+       
+       await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "UPDATE_REQUEST_STATUS",
+        entityType: "REQUEST",
+        entityId: selectedRequest.id,
+        details: { newStatus: newStatus, oldStatus: selectedRequest.status },
+      });
+
       toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. Response saved.` });
       fetchRequests(); 
       setIsManageDialogOpen(false);

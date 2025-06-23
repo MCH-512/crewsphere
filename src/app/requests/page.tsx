@@ -40,7 +40,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 const requestCategoriesAndTypes = {
@@ -411,7 +410,6 @@ export default function RequestsPage() {
             <AlertDialogDescription>
               Are you sure you want to submit this request?
             </AlertDialogDescription>
-            {/* The details block is now a SIBLING to AlertDialogDescription, within AlertDialogHeader */}
             {formDataToSubmit && (
               <div className="mt-4 text-sm text-left space-y-1 border p-3 rounded-md bg-muted/50">
                 <div><strong>Category:</strong> {formDataToSubmit.requestCategory}</div>

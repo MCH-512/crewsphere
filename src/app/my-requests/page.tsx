@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
+import { Button } from "@/components/ui/button";
 
 interface UserRequestForDisplay {
   id: string;
@@ -124,7 +125,7 @@ export default function MyRequestsPage() {
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
         <CardTitle className="text-xl mb-2">Access Denied</CardTitle>
         <p className="text-muted-foreground">Please log in to view your submitted requests.</p>
-        <button onClick={() => router.push('/login')} className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90">Go to Login</button>
+        <Button onClick={() => router.push('/login')} className="mt-4">Go to Login</Button>
       </div>
     );
   }
@@ -135,10 +136,10 @@ export default function MyRequestsPage() {
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
         <CardTitle className="text-xl mb-2">Error Loading Requests</CardTitle>
         <p className="text-muted-foreground mb-4">{error}</p>
-        <button onClick={fetchMyRequests} disabled={isLoading} className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90">
+        <Button onClick={fetchMyRequests} disabled={isLoading} className="mt-4">
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Try Again
-        </button>
+        </Button>
       </div>
     );
   }
