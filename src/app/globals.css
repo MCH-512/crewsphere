@@ -15,25 +15,25 @@ body {
     --card-foreground: 210 10% 23%;
     --popover: 0 0% 100%;
     --popover-foreground: 210 10% 23%;
-    --primary: 207 51% 40%; /* Darker Deep Sky Blue for AA contrast - Was 207 51% 52% */
+    --primary: 207 51% 52%; /* Deep Sky Blue #498FBD */
     --primary-foreground: 0 0% 100%; /* White */
     --secondary: 207 50% 90%;
     --secondary-foreground: 207 51% 40%;
     --muted: 207 50% 94%;
     --muted-foreground: 207 30% 60%;
-    --accent: 229 24% 54%; /* #6A76A8 Slate Blue */
+    --accent: 229 24% 54%; /* Slate Blue #6A76A8 */
     --accent-foreground: 0 0% 100%; /* White */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --success: 145 63% 90%; /* Light green background for success */
     --success-foreground: 145 75% 30%; /* Dark green text for success */
-    --success-border: 145 60% 70%; /* Medium green border for success (if needed, or use border-transparent with bg) */
-    --warning-background: 48 100% 90%; /* Light yellow background (e.g., #FFF9E6) */
-    --warning-foreground: 40 90% 25%; /* Darker yellow/brownish text (e.g., #7A5B00) */
-    --warning-border: 45 85% 75%; /* Optional border color (e.g., #FADD73) */
+    --success-border: 145 60% 70%; 
+    --warning-background: 48 100% 90%; 
+    --warning-foreground: 40 90% 25%;
+    --warning-border: 45 85% 75%;
     --border: 207 40% 85%;
     --input: 207 40% 90%;
-    --ring: 207 51% 40%; /* Adjusted ring to match new primary */
+    --ring: 207 51% 52%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -42,18 +42,18 @@ body {
     --radius: 0.5rem;
 
     /* Sidebar specific colors */
-    --sidebar-background: 207 45% 38%; /* Lighter blue shade - Original: 207 45% 28% */
+    --sidebar-background: 207 45% 28%; /* Darker blue shade */
     --sidebar-foreground: 207 50% 92%; /* Light text for dark sidebar */
     --sidebar-primary: 207 51% 75%; /* Lighter primary for active items */
     --sidebar-primary-foreground: 207 45% 20%; /* Darker text for active items */
-    --sidebar-accent: 207 51% 45%; /* Accent for hover states - Original: 207 51% 40% */
+    --sidebar-accent: 207 51% 40%; /* Accent for hover states */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 207 45% 33%; /* Adjusted border - Original: 207 45% 25% */
+    --sidebar-border: 207 45% 25%; /* Slightly darker border */
     --sidebar-ring: 207 51% 65%;
   }
 
   .dark {
-    /* Ensuring dark mode is a variation, typically darker. For this app, a deep navy/charcoal theme. */
+    /* A deep navy/charcoal theme for dark mode */
     --background: 210 20% 12%;
     --foreground: 210 30% 90%;
     --card: 210 20% 15%;
@@ -70,12 +70,12 @@ body {
     --accent-foreground: 210 20% 10%;
     --destructive: 0 60% 50%;
     --destructive-foreground: 0 0% 100%;
-    --success: 145 63% 20%; /* Darker green background for success in dark mode */
-    --success-foreground: 145 60% 80%; /* Lighter green text for success in dark mode */
-    --success-border: 145 60% 40%; /* Medium green border for success in dark mode */
-    --warning-background: 40 70% 30%; /* Darker yellow/amber background (e.g., #664D03) */
-    --warning-foreground: 45 100% 85%; /* Lighter text for dark warning bg (e.g., #FFEFB3) */
-    --warning-border: 45 75% 45%; /* Optional border color (e.g., #B38B00) */
+    --success: 145 63% 20%;
+    --success-foreground: 145 60% 80%;
+    --success-border: 145 60% 40%;
+    --warning-background: 40 70% 30%;
+    --warning-foreground: 45 100% 85%;
+    --warning-border: 45 75% 45%;
     --border: 210 20% 30%;
     --input: 210 20% 28%;
     --ring: 207 51% 60%;
@@ -86,13 +86,13 @@ body {
     --chart-5: 27 75% 60%;
 
     /* Sidebar specific colors for dark mode */
-    --sidebar-background: 210 20% 18%; /* Lighter dark - Original: 210 20% 10% */
+    --sidebar-background: 210 20% 10%;
     --sidebar-foreground: 207 40% 80%;
     --sidebar-primary: 207 51% 55%;
     --sidebar-primary-foreground: 210 20% 5%;
-    --sidebar-accent: 207 51% 30%; /* Adjusted dark accent - Original: 207 51% 25% */
+    --sidebar-accent: 207 51% 25%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 210 20% 23%; /* Adjusted dark border - Original: 210 20% 15% */
+    --sidebar-border: 210 20% 15%;
     --sidebar-ring: 207 51% 50%;
   }
 }
