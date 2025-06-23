@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff, Clock, AlertTriangle, Utensils, Euro, Broom, BookOpen } from "lucide-react";
+import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff, Clock, AlertTriangle, Utensils, Euro, Wand2, BookOpen } from "lucide-react";
 import { generatePurserReport, type PurserReportOutput, type PurserReportInput } from "@/ai/flows/purser-report-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -551,7 +551,7 @@ export function PurserReportTool() {
           <Accordion type="single" collapsible defaultValue="flight-info" className="w-full space-y-4">
             
             <AccordionItem value="flight-info" className="border-none">
-               <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
+              <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
                 <div className="flex items-center"><PlaneTakeoff className="mr-2 h-5 w-5 text-primary"/>Flight Information & Timings</div>
               </AccordionTrigger>
               <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm">
@@ -707,7 +707,7 @@ export function PurserReportTool() {
 
              <AccordionItem value="aircraft-cleaning" className="border-none">
               <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
-                <div className="flex items-center"><Broom className="mr-2 h-5 w-5 text-primary" />Aircraft Cleaning</div>
+                <div className="flex items-center"><Wand2 className="mr-2 h-5 w-5 text-primary" />Aircraft Cleaning</div>
               </AccordionTrigger>
               <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -907,4 +907,3 @@ export function PurserReportTool() {
     </div>
   );
 }
-
