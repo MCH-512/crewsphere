@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const PassengerLoadSchema = z.object({
+const passengerLoadSchema = z.object({
   total: z.coerce.number().int().min(0).describe('Total number of passengers.'),
   adults: z.coerce.number().int().min(0).describe('Number of adult passengers.'),
   infants: z.coerce.number().int().min(0).describe('Number of infant passengers.'),
@@ -23,7 +23,7 @@ const PassengerLoadSchema = z.object({
   inad: z.coerce.number().int().min(0).optional().describe('Number of Inadmissible passengers.'),
 });
 
-const CateringLoadSchema = z.object({
+const cateringLoadSchema = z.object({
   standardMeals: z.coerce.number().int().min(0).optional().describe("Number of standard passenger meals boarded."),
   specialMeals: z.coerce.number().int().min(0).optional().describe("Number of special meals (e.g., VGML, CHML) boarded."),
   crewMeals: z.coerce.number().int().min(0).optional().describe("Number of crew meals boarded."),
@@ -32,19 +32,19 @@ const CateringLoadSchema = z.object({
   additionalNotes: z.string().optional().describe("Any other notes on catering uplift or discrepancies.")
 });
 
-const CleanlinessRatingSchema = z.enum(["Excellent", "Good", "Fair", "Poor"], {
+const cleanlinessRatingSchema = z.enum(["Excellent", "Good", "Fair", "Poor"], {
   errorMap: (issue, ctx) => ({ message: 'Please select a cleanliness rating.' })
 });
 
-const AircraftCleaningSchema = z.object({
-  cabinCleanlinessOverall: CleanlinessRatingSchema.describe("Overall cleanliness of the cabin."),
-  galleyCleanliness: CleanlinessRatingSchema.describe("Cleanliness of the galleys."),
-  lavatoryCleanliness: CleanlinessRatingSchema.describe("Cleanliness of the lavatories."),
+const aircraftCleaningSchema = z.object({
+  cabinCleanlinessOverall: cleanlinessRatingSchema.describe("Overall cleanliness of the cabin."),
+  galleyCleanliness: cleanlinessRatingSchema.describe("Cleanliness of the galleys."),
+  lavatoryCleanliness: cleanlinessRatingSchema.describe("Cleanliness of the lavatories."),
   cleaningIssuesNoted: z.string().optional().describe("Specific cleaning issues or deficiencies observed."),
   itemsLeftByPassengers: z.string().optional().describe("Details of any items left behind by passengers and actions taken."),
 });
 
-const BriefingDetailsSchema = z.object({
+const briefingDetailsSchema = z.object({
     briefingTime: z.string().optional().describe("Time of the pre-flight briefing (e.g., 10:30)."),
     flightCrewPresent: z.boolean().optional().describe("Whether the flight crew (PNT) was present at the briefing."),
     documentsChecked: z.object({
@@ -74,10 +74,10 @@ const PurserReportInputSchema = z.object({
   actualArrivalUTC: z.string().datetime().optional().describe('Actual Arrival Time in UTC (ISO 8601 format).'),
   
   crewMembers: z.string().min(10).describe('List of crew members on board (names and roles, typically multi-line).'),
-  passengerLoad: PassengerLoadSchema,
-  cateringLoad: CateringLoadSchema.optional(),
-  aircraftCleaning: AircraftCleaningSchema.optional(),
-  briefingDetails: BriefingDetailsSchema.optional(), // Replaced briefingNotes
+  passengerLoad: passengerLoadSchema,
+  cateringLoad: cateringLoadSchema.optional(),
+  aircraftCleaning: aircraftCleaningSchema.optional(),
+  briefingDetails: briefingDetailsSchema.optional(),
   generalFlightSummary: z.string().min(10).describe('Overall summary of the flight, noting punctuality (based on provided times), and general atmosphere.'),
   safetyIncidents: z.string().optional().describe('Detailed description of any safety-related incidents or observations (e.g., turbulence, equipment malfunctions affecting safety).'),
   securityIncidents: z.string().optional().describe('Detailed description of any security-related incidents (e.g., unruly passengers, security breaches).'),
@@ -132,7 +132,7 @@ Flight Details:
   {{#if cateringLoad.specialMeals}}   - Special Meals: {{cateringLoad.specialMeals}}{{/if}}
   {{#if cateringLoad.crewMeals}}      - Crew Meals: {{cateringLoad.crewMeals}}{{/if}}
   {{#if cateringLoad.totalSalesCash}} - Total Sales (Cash): {{cateringLoad.totalSalesCash}}{{/if}}
-  {{#if cateringLoad.barFullyStocked}} - Bar Fully Stocked: Yes{{else if cateringLoad.barFullyStocked === false}} - Bar Fully Stocked: No{{/if}}
+  {{#if cateringLoad.barFullyStocked}} - Bar Fully Stocked: Yes{{else}} - Bar Fully Stocked: No{{/if}}
   {{#if cateringLoad.additionalNotes}}- Catering Uplift Notes: {{{cateringLoad.additionalNotes}}}{{/if}}
 {{/if}}
 {{#if aircraftCleaning}}
@@ -231,5 +231,6 @@ const purserReportFlow = ai.defineFlow(
   }
 );
     
+
 
 
