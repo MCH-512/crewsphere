@@ -15,7 +15,7 @@ const requiredEnvVars = [
 
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
-if (missingVars.length > 0) {
+if (missingVars.length > 0 && typeof window !== 'undefined') {
   const errorMessage = `WARNING: Firebase configuration is incomplete. Missing environment variables: ${missingVars.join(", ")}. Firebase services might not work as expected. Please ensure these are set in your .env file or hosting environment.`;
   console.warn(errorMessage);
   // Removed the throw new Error to allow the app to start, but Firebase will likely fail.
