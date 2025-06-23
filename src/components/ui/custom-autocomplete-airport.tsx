@@ -21,7 +21,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import type { Airport } from "@/services/airport-service";
-import { getAirportByCode } from "@/services/airport-service"; // Import the service function
+import { getAirportByCode } from "@/services/airport-service";
 
 interface CustomAutocompleteAirportProps {
   value?: string; // The selected airport's ICAO or IATA code
@@ -53,7 +53,6 @@ export function CustomAutocompleteAirport({
         // Check if the display is already correctly formatted for the current value
         const currentCodeInDisplay = selectedAirportDisplay?.match(/\(([^)]+)\)/)?.[1];
         if (selectedAirportDisplay && selectedAirportDisplay !== value && currentCodeInDisplay?.toLowerCase() === value.toLowerCase()) {
-          // Already displaying full name + code, and code matches.
           return;
         }
 
@@ -77,7 +76,7 @@ export function CustomAutocompleteAirport({
     return () => {
       isMounted = false;
     };
-  }, [value, selectedAirportDisplay]); // Re-run if `value` changes or if `selectedAirportDisplay` was out of sync
+  }, [value, selectedAirportDisplay]);
 
   const handleSelect = (airport: Airport) => {
     onSelect(airport); // This will trigger the parent form to update its `value` (the code)
@@ -127,7 +126,7 @@ export function CustomAutocompleteAirport({
       <PopoverContent 
         className="p-0 min-w-[var(--radix-popover-trigger-width)] w-auto max-w-md md:max-w-lg" 
         align="start"
-        style={{ '--radix-popover-trigger-width': 'auto' } as React.CSSProperties} // Allow popover to be wider
+        style={{ '--radix-popover-trigger-width': 'auto' } as React.CSSProperties}
       >
         <Command shouldFilter={false}>
           <CommandInput

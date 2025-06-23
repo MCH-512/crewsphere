@@ -31,18 +31,18 @@ export async function searchAirports(searchTerm: string): Promise<Airport[]> {
   // Simulate a slight delay as if fetching from an API
   // await new Promise(resolve => setTimeout(resolve, 100));
 
-  return filteredAirports;
+  return filteredAirports.slice(0, 15); // Return top 15 results
 }
 
 export async function getAirportByCode(code: string): Promise<Airport | undefined> {
-  if (!code.trim()) {
+  if (!code || !code.trim()) {
     return undefined;
   }
   const lowercasedCode = code.toLowerCase();
   const airport = airportsData.find(
     (ap) =>
-      ap.iata.toLowerCase() === lowercasedCode ||
-      ap.icao.toLowerCase() === lowercasedCode
+      (ap.iata && ap.iata.toLowerCase() === lowercasedCode) ||
+      (ap.icao && ap.icao.toLowerCase() === lowercasedCode)
   );
   return airport;
 }

@@ -29,6 +29,10 @@ import { calculateFlightDuty, type FlightDutyOutput, type FlightDutyInput } from
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert";
+import { CustomAutocompleteAirport } from "@/components/ui/custom-autocomplete-airport";
+import { searchAirports, type Airport } from "@/services/airport-service";
+
+const DEBOUNCE_DELAY = 300; // milliseconds
 
 const flightSegmentSchema = z.object({
   departureAirport: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars").toUpperCase(),
@@ -53,6 +57,14 @@ export function FlightDutyCalculatorTool() {
   const [dutyResult, setDutyResult] = React.useState<FlightDutyOutput | null>(null);
   const { toast } = useToast();
 
+  const [departureSearchTerm, setDepartureSearchTerm] = React.useState("");
+  const [arrivalSearchTerm, setArrivalSearchTerm] = React.useState("");
+  const [departureSuggestions, setDepartureSuggestions] = React.useState<Airport[]>([]);
+  const [arrivalSuggestions, setArrivalSuggestions] = React.useState<Airport[]>([]);
+  const [isLoadingDeparture, setIsLoadingDeparture] = React.useState(false);
+  const [isLoadingArrival, setIsLoadingArrival] = React.useState(false);
+
+
   const defaultSegmentTime = () => {
     const now = new Date();
     now.setMinutes(0);
@@ -65,7 +77,7 @@ export function FlightDutyCalculatorTool() {
     resolver: zodResolver(FormSchema),
     defaultValues: {
       flightSegments: [
-        { departureAirport: "KJFK", arrivalAirport: "EGLL", departureTimeUTC: defaultSegmentTime(), arrivalTimeUTC: defaultSegmentTime() },
+        { departureAirport: "", arrivalAirport: "", departureTimeUTC: defaultSegmentTime(), arrivalTimeUTC: defaultSegmentTime() },
       ],
       reportTimeOffsetHours: 1,
       postDutyActivitiesHours: 0.5,
@@ -79,6 +91,48 @@ export function FlightDutyCalculatorTool() {
     control: form.control,
     name: "flightSegments",
   });
+
+  // Debounced search for departure airport
+  React.useEffect(() => {
+    if (!departureSearchTerm || departureSearchTerm.length < 2) {
+      setDepartureSuggestions([]);
+      return;
+    }
+    setIsLoadingDeparture(true);
+    const handler = setTimeout(async () => {
+      try {
+        const results = await searchAirports(departureSearchTerm);
+        setDepartureSuggestions(results);
+      } catch (error) {
+        console.error("Error searching departure airports:", error);
+        toast({ title: "Airport Search Error", description: "Could not fetch departure airport suggestions.", variant: "destructive" });
+      } finally {
+        setIsLoadingDeparture(false);
+      }
+    }, DEBOUNCE_DELAY);
+    return () => clearTimeout(handler);
+  }, [departureSearchTerm, toast]);
+
+  // Debounced search for arrival airport
+  React.useEffect(() => {
+    if (!arrivalSearchTerm || arrivalSearchTerm.length < 2) {
+      setArrivalSuggestions([]);
+      return;
+    }
+    setIsLoadingArrival(true);
+    const handler = setTimeout(async () => {
+      try {
+        const results = await searchAirports(arrivalSearchTerm);
+        setArrivalSuggestions(results);
+      } catch (error) {
+        console.error("Error searching arrival airports:", error);
+        toast({ title: "Airport Search Error", description: "Could not fetch arrival airport suggestions.", variant: "destructive" });
+      } finally {
+        setIsLoadingArrival(false);
+      }
+    }, DEBOUNCE_DELAY);
+    return () => clearTimeout(handler);
+  }, [arrivalSearchTerm, toast]);
 
   async function onSubmit(data: FlightDutyFormValues) {
     setIsLoading(true);
@@ -217,12 +271,18 @@ export function FlightDutyCalculatorTool() {
                   <FormField
                     control={form.control}
                     name={`flightSegments.${index}.departureAirport`}
-                    render={({ field }) => (
+                    render={({ field: formField }) => (
                       <FormItem>
                         <FormLabel>Departure Airport</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., KJFK" {...field} />
-                        </FormControl>
+                        <CustomAutocompleteAirport
+                          value={formField.value}
+                          onSelect={(airport) => form.setValue(`flightSegments.${index}.departureAirport`, airport ? (airport.icao || airport.iata) : "", { shouldValidate: true })}
+                          placeholder="Search departure..."
+                          airports={departureSuggestions}
+                          isLoading={isLoadingDeparture}
+                          onInputChange={setDepartureSearchTerm}
+                          currentSearchTerm={departureSearchTerm}
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
@@ -230,12 +290,18 @@ export function FlightDutyCalculatorTool() {
                   <FormField
                     control={form.control}
                     name={`flightSegments.${index}.arrivalAirport`}
-                    render={({ field }) => (
+                    render={({ field: formField }) => (
                       <FormItem>
                         <FormLabel>Arrival Airport</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., EGLL" {...field} />
-                        </FormControl>
+                        <CustomAutocompleteAirport
+                          value={formField.value}
+                          onSelect={(airport) => form.setValue(`flightSegments.${index}.arrivalAirport`, airport ? (airport.icao || airport.iata) : "", { shouldValidate: true })}
+                          placeholder="Search arrival..."
+                          airports={arrivalSuggestions}
+                          isLoading={isLoadingArrival}
+                          onInputChange={setArrivalSearchTerm}
+                          currentSearchTerm={arrivalSearchTerm}
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
@@ -279,7 +345,7 @@ export function FlightDutyCalculatorTool() {
                     onClick={() => remove(index)}
                     disabled={fields.length <= 1}
                     className="mb-1"
-                    aria-label={`Remove flight segment ${index + 1}: ${form.getValues(`flightSegments.${index}.departureAirport`)} to ${form.getValues(`flightSegments.${index}.arrivalAirport`)}`}
+                    aria-label={`Remove flight segment ${index + 1}`}
                   >
                     <XCircle className="h-5 w-5" />
                   </Button>
@@ -323,30 +389,28 @@ export function FlightDutyCalculatorTool() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-              <div>
-                <p className="font-semibold">Duty Period Start (UTC):</p>
-                <p className="text-primary">{new Date(dutyResult.dutyPeriodStartUTC).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })} UTC</p>
-              </div>
-              <div>
-                <p className="font-semibold">Duty Period End (UTC):</p>
-                <p className="text-primary">{new Date(dutyResult.dutyPeriodEndUTC).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })} UTC</p>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="inline h-4 w-4 text-muted-foreground" />
-                <span className="font-semibold">Total Duty Time:</span> {dutyResult.totalDutyTimeHours.toFixed(2)} hours
-              </div>
-              <div className="flex items-center gap-1">
-                 <Clock className="inline h-4 w-4 text-muted-foreground" />
-                <span className="font-semibold">Total Flight Time:</span> {dutyResult.totalFlightTimeHours.toFixed(2)} hours
-              </div>
-              <div className="flex items-center gap-1">
-                <Shield className="inline h-4 w-4 text-muted-foreground" />
-                <span className="font-semibold">Est. Max Duty Time:</span> {dutyResult.maxDutyTimeHours.toFixed(2)} hours
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+                <Card className="p-4 bg-card">
+                  <p className="font-semibold text-muted-foreground">Duty Period Start (UTC)</p>
+                  <p className="text-lg font-bold text-primary">{new Date(dutyResult.dutyPeriodStartUTC).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })}</p>
+                </Card>
+                <Card className="p-4 bg-card">
+                  <p className="font-semibold text-muted-foreground">Duty Period End (UTC)</p>
+                  <p className="text-lg font-bold text-primary">{new Date(dutyResult.dutyPeriodEndUTC).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })}</p>
+                </Card>
+                <Card className="p-4 bg-card col-span-1 md:col-span-2 lg:col-span-1 grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="font-semibold text-muted-foreground flex items-center gap-1"><Clock className="h-4 w-4"/>Total Duty</p>
+                    <p className="text-lg font-bold">{dutyResult.totalDutyTimeHours.toFixed(2)} hrs</p>
+                  </div>
+                   <div>
+                    <p className="font-semibold text-muted-foreground flex items-center gap-1"><Clock className="h-4 w-4"/>Total Flight</p>
+                    <p className="text-lg font-bold">{dutyResult.totalFlightTimeHours.toFixed(2)} hrs</p>
+                  </div>
+                </Card>
             </div>
             
-            {dutyResult.dutyTimeExceeded && (
+            {dutyResult.dutyTimeExceeded ? (
               <Alert variant="destructive">
                 <AlertTriangle className="h-5 w-5" />
                 <AlertTitle>Potential Duty Time Exceeded</AlertTitle>
@@ -354,26 +418,34 @@ export function FlightDutyCalculatorTool() {
                   The calculated total duty time ({dutyResult.totalDutyTimeHours.toFixed(2)} hrs) exceeds the AI's estimated maximum allowable duty time ({dutyResult.maxDutyTimeHours.toFixed(2)} hrs).
                 </ShadAlertDescription>
               </Alert>
+            ) : (
+                 <Alert variant="success">
+                    <Shield className="h-5 w-5"/>
+                    <AlertTitle>Within Estimated Limits</AlertTitle>
+                    <ShadAlertDescription>
+                        The calculated total duty time ({dutyResult.totalDutyTimeHours.toFixed(2)} hrs) is within the AI's estimated maximum allowable duty time ({dutyResult.maxDutyTimeHours.toFixed(2)} hrs).
+                    </ShadAlertDescription>
+                 </Alert>
             )}
 
-            <div className="space-y-3">
-                <div>
-                    <h4 className="font-semibold text-md flex items-center gap-1"><Info className="h-4 w-4 text-primary"/>Flight Time Compliance Notes:</h4>
-                    <p className="text-xs text-muted-foreground whitespace-pre-wrap p-2 border-l-2 border-primary/30 bg-card rounded-r-md">{dutyResult.flightTimeComplianceNotes}</p>
-                </div>
-                <div>
-                    <h4 className="font-semibold text-md flex items-center gap-1"><Info className="h-4 w-4 text-primary"/>Duty Time Compliance Notes:</h4>
-                    <p className="text-xs text-muted-foreground whitespace-pre-wrap p-2 border-l-2 border-primary/30 bg-card rounded-r-md">{dutyResult.dutyTimeComplianceNotes}</p>
-                </div>
-                <div>
-                    <h4 className="font-semibold text-md flex items-center gap-1"><Info className="h-4 w-4 text-primary"/>Rest Requirements Notes:</h4>
-                    <p className="text-xs text-muted-foreground whitespace-pre-wrap p-2 border-l-2 border-primary/30 bg-card rounded-r-md">{dutyResult.restRequirementsNotes}</p>
-                </div>
+            <div className="space-y-4 pt-4">
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-md flex items-center gap-2"><Info className="h-4 w-4 text-primary"/>Flight Time Compliance Notes</CardTitle></CardHeader>
+                  <CardContent><p className="text-sm text-muted-foreground whitespace-pre-wrap">{dutyResult.flightTimeComplianceNotes}</p></CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-md flex items-center gap-2"><Info className="h-4 w-4 text-primary"/>Duty Time Compliance Notes</CardTitle></CardHeader>
+                  <CardContent><p className="text-sm text-muted-foreground whitespace-pre-wrap">{dutyResult.dutyTimeComplianceNotes}</p></CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-md flex items-center gap-2"><Info className="h-4 w-4 text-primary"/>Rest Requirements Notes</CardTitle></CardHeader>
+                  <CardContent><p className="text-sm text-muted-foreground whitespace-pre-wrap">{dutyResult.restRequirementsNotes}</p></CardContent>
+                </Card>
             </div>
             
             <Separator />
             <div>
-              <p className="font-semibold mb-1">Overall Summary:</p>
+              <p className="font-semibold mb-1 text-lg">Overall Summary:</p>
               <div className="prose prose-sm max-w-none dark:prose-invert text-foreground">
                 <p className="whitespace-pre-wrap">{dutyResult.summary}</p>
               </div>

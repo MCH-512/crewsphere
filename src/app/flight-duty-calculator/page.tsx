@@ -1,7 +1,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FlightDutyCalculatorTool } from "@/components/features/flight-duty-calculator-tool";
-import { Calculator } from "lucide-react";
+import { Calculator, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
 
 export default function FlightDutyCalculatorPage() {
   return (
@@ -12,7 +13,7 @@ export default function FlightDutyCalculatorPage() {
           <div>
             <CardTitle className="text-2xl font-headline">Advanced Flight Duty Calculator</CardTitle>
             <CardDescription>
-              Calculate flight duty periods and check basic compliance using AI. Input crew details, flight segments, and duty parameters for a more detailed analysis.
+              Calculate flight duty periods and check basic compliance using AI. Input crew details, flight segments, and duty parameters for a detailed analysis.
             </CardDescription>
           </div>
         </CardHeader>
@@ -36,9 +37,18 @@ export default function FlightDutyCalculatorPage() {
               <li>Compliance notes regarding flight time, duty time (including potential extensions), and minimum rest requirements.</li>
               <li>An overall summary of the duty period with integrated compliance notes.</li>
             </ul>
-            <p className="font-semibold">Disclaimer: This calculator uses simplified, generic FTL rules for illustrative and educational purposes only. Always consult official company and regulatory documentation for operational flight planning and actual FTL compliance.</p>
         </CardContent>
       </Card>
+
+      <Alert variant="warning" className="shadow-md">
+          <AlertTriangle className="h-5 w-5" />
+          <ShadAlertTitle className="font-semibold">Important Disclaimer</ShadAlertTitle>
+          <ShadAlertDescription className="text-sm">
+            This calculator uses simplified, generic FTL rules for illustrative and educational purposes only.
+            <strong>Always consult official company and regulatory documentation (e.g., OM-A, FTL schemes) for operational flight planning and actual FTL compliance.</strong>
+            Do not rely solely on these AI-generated calculations for critical flight decisions.
+          </ShadAlertDescription>
+        </Alert>
     </div>
   );
 }
