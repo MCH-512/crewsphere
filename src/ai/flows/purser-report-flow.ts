@@ -44,6 +44,23 @@ const AircraftCleaningSchema = z.object({
   itemsLeftByPassengers: z.string().optional().describe("Details of any items left behind by passengers and actions taken."),
 });
 
+const BriefingDetailsSchema = z.object({
+    briefingTime: z.string().optional().describe("Time of the pre-flight briefing (e.g., 10:30)."),
+    flightCrewPresent: z.boolean().optional().describe("Whether the flight crew (PNT) was present at the briefing."),
+    documentsChecked: z.object({
+        licenseAndId: z.boolean().optional().describe("Checked crew licenses and IDs."),
+        passportAndVisa: z.boolean().optional().describe("Checked passports and necessary visas."),
+        manuals: z.boolean().optional().describe("Checked for required manuals (e.g., CCOM)."),
+        flightLog: z.boolean().optional().describe("Checked flight logbooks."),
+    }).optional().describe("Record of document checks performed."),
+    documentRemarks: z.string().optional().describe("Any remarks or issues found during document checks."),
+    securityQuestionTopic: z.string().optional().describe("The main topic of the security questions discussed."),
+    securityQuestionRemarks: z.string().optional().describe("Remarks on the security discussion."),
+    briefingAtmosphere: z.enum(["Chaleureuse", "Neutre", "Formelle", "Tendue"]).optional().describe("The overall atmosphere of the briefing."),
+    openDialogueEncouraged: z.boolean().optional().describe("Whether open dialogue and questions were encouraged."),
+    crewConcernsExpressed: z.string().optional().describe("Any specific concerns or observations expressed by the cabin crew during the briefing."),
+});
+
 const PurserReportInputSchema = z.object({
   flightNumber: z.string().min(3).max(10).describe('Flight number (e.g., BA245, UAL123).'),
   flightDate: z.string().date().describe('Date of the flight (YYYY-MM-DD).'),
@@ -60,7 +77,7 @@ const PurserReportInputSchema = z.object({
   passengerLoad: PassengerLoadSchema,
   cateringLoad: CateringLoadSchema.optional(),
   aircraftCleaning: AircraftCleaningSchema.optional(),
-  briefingNotes: z.string().optional().describe('Key points from pre-flight briefing, safety topics, specific crew instructions.'),
+  briefingDetails: BriefingDetailsSchema.optional(), // Replaced briefingNotes
   generalFlightSummary: z.string().min(10).describe('Overall summary of the flight, noting punctuality (based on provided times), and general atmosphere.'),
   safetyIncidents: z.string().optional().describe('Detailed description of any safety-related incidents or observations (e.g., turbulence, equipment malfunctions affecting safety).'),
   securityIncidents: z.string().optional().describe('Detailed description of any security-related incidents (e.g., unruly passengers, security breaches).'),
@@ -129,9 +146,21 @@ Flight Details:
 
 Report Sections:
 
-{{#if briefingNotes}}
-**## Briefing Notes**:
-{{{briefingNotes}}}
+{{#if briefingDetails}}
+**## Pre-Flight Briefing Details**:
+  - **Briefing Time:** {{#if briefingDetails.briefingTime}}{{briefingDetails.briefingTime}}{{else}}Not specified{{/if}}
+  - **Flight Crew (PNT) Present:** {{#if briefingDetails.flightCrewPresent}}Yes{{else}}No{{/if}}
+  - **Document Checks:**
+    - License & ID: {{#if briefingDetails.documentsChecked.licenseAndId}}✅ Verified{{else}}❌ Not Verified/Applicable{{/if}}
+    - Passport & Visa: {{#if briefingDetails.documentsChecked.passportAndVisa}}✅ Verified{{else}}❌ Not Verified/Applicable{{/if}}
+    - Manuals: {{#if briefingDetails.documentsChecked.manuals}}✅ Verified{{else}}❌ Not Verified/Applicable{{/if}}
+    - Flight Logbook: {{#if briefingDetails.documentsChecked.flightLog}}✅ Verified{{else}}❌ Not Verified/Applicable{{/if}}
+  {{#if briefingDetails.documentRemarks}}  - **Document Remarks:** {{{briefingDetails.documentRemarks}}}{{/if}}
+  - **Security Topic Discussed:** {{#if briefingDetails.securityQuestionTopic}}{{briefingDetails.securityQuestionTopic}}{{else}}Not specified{{/if}}
+  {{#if briefingDetails.securityQuestionRemarks}}  - **Security Remarks:** {{{briefingDetails.securityQuestionRemarks}}}{{/if}}
+  - **Briefing Atmosphere:** {{#if briefingDetails.briefingAtmosphere}}{{briefingDetails.briefingAtmosphere}}{{else}}Not specified{{/if}}
+  - **Open Dialogue Encouraged:** {{#if briefingDetails.openDialogueEncouraged}}Yes{{else}}No{{/if}}
+  {{#if briefingDetails.crewConcernsExpressed}}  - **Crew Concerns Expressed:** {{{briefingDetails.crewConcernsExpressed}}}{{/if}}
 {{/if}}
 
 **## General Flight Summary**:
@@ -202,4 +231,5 @@ const purserReportFlow = ai.defineFlow(
   }
 );
     
+
 

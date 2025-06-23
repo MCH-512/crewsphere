@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff, Clock, AlertTriangle, Utensils, Euro, Wand2, BookOpen } from "lucide-react";
+import { Loader2, Sparkles, ClipboardList, Users, PlusCircle, Trash2, MessageSquareQuote, PlaneTakeoff, Clock, AlertTriangle, Utensils, Euro, Wand2, BookOpen, UserCheck, ShieldQuestion, Handshake } from "lucide-react";
 import { generatePurserReport, type PurserReportOutput, type PurserReportInput } from "@/ai/flows/purser-report-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { format, parseISO, differenceInMinutes } from "date-fns";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface CrewUser {
   uid: string;
@@ -123,6 +124,22 @@ const aircraftCleaningSchema = z.object({
   itemsLeftByPassengers: z.string().max(500, "Max 500 characters").optional(),
 });
 
+const briefingDetailsSchema = z.object({
+  briefingTime: z.string().optional(),
+  flightCrewPresent: z.boolean().default(true),
+  documentsChecked: z.object({
+    licenseAndId: z.boolean().default(false),
+    passportAndVisa: z.boolean().default(false),
+    manuals: z.boolean().default(false),
+    flightLog: z.boolean().default(false),
+  }).default({ licenseAndId: false, passportAndVisa: false, manuals: false, flightLog: false }),
+  documentRemarks: z.string().optional(),
+  securityQuestionTopic: z.string().min(1, "Please specify the security topic.").optional().or(z.literal("")),
+  securityQuestionRemarks: z.string().optional(),
+  briefingAtmosphere: z.enum(["Chaleureuse", "Neutre", "Formelle", "Tendue"]),
+  openDialogueEncouraged: z.boolean().default(true),
+  crewConcernsExpressed: z.string().optional(),
+});
 
 const purserReportFormSchema = z.object({
   flightNumber: z.string().min(3, "Min 3 chars").max(10, "Max 10 chars"),
@@ -147,7 +164,7 @@ const purserReportFormSchema = z.object({
   passengerLoad: passengerLoadSchema, 
   cateringLoad: cateringLoadSchema.optional(),
   aircraftCleaning: aircraftCleaningSchema.optional(),
-  briefingNotes: z.string().max(1000, "Briefing notes cannot exceed 1000 characters.").optional(),
+  briefingDetails: briefingDetailsSchema.optional(),
   generalFlightSummary: z.string().min(10, "Min 10 characters for summary."),
 }).superRefine((data, ctx) => {
     if (data.actualArrivalUTC && !data.actualDepartureUTC) {
@@ -203,6 +220,23 @@ const calculateTimeDifference = (scheduledIso?: string, actualIso?: string): str
     return "Invalid time input";
   }
 };
+
+const securityTopics = [
+    "Handling of Unruly Passengers (CRM)",
+    "Passenger Profiling & Behavior Analysis",
+    "Cockpit Access Protocol Review",
+    "Handling of Suspicious Items/Baggage",
+    "In-flight Theft Prevention",
+    "Security of Galleys and Service Carts",
+    "Communication with Ground Security/Authorities"
+];
+
+const documentCheckItems = [
+    { id: "licenseAndId", label: "License & Company ID" },
+    { id: "passportAndVisa", label: "Passport & Visas" },
+    { id: "manuals", label: "Manuals (CCOM, etc.)" },
+    { id: "flightLog", label: "Flight Logbook" },
+] as const;
 
 
 export function PurserReportTool() {
@@ -263,7 +297,17 @@ export function PurserReportTool() {
         cleaningIssuesNoted: "", 
         itemsLeftByPassengers: "" 
       },
-      briefingNotes: "",
+      briefingDetails: {
+        briefingTime: "00:00",
+        flightCrewPresent: true,
+        documentsChecked: { licenseAndId: true, passportAndVisa: true, manuals: true, flightLog: false },
+        documentRemarks: "",
+        securityQuestionTopic: "",
+        securityQuestionRemarks: "",
+        briefingAtmosphere: "Neutre",
+        openDialogueEncouraged: true,
+        crewConcernsExpressed: "",
+      },
       generalFlightSummary: "",
     },
     mode: "onChange", 
@@ -360,7 +404,7 @@ export function PurserReportTool() {
             cabinCrewR2: PLACEHOLDER_NONE_VALUE,
             cateringLoad: { standardMeals: 0, specialMeals: 0, crewMeals: 0, totalSalesCash: 0, barFullyStocked: true, additionalNotes: "" },
             aircraftCleaning: { cabinCleanlinessOverall: defaultCleanlinessRating, galleyCleanliness: defaultCleanlinessRating, lavatoryCleanliness: defaultCleanlinessRating, cleaningIssuesNoted: "", itemsLeftByPassengers: "" },
-            briefingNotes: "",
+            briefingDetails: { briefingTime: "00:00", flightCrewPresent: true, documentsChecked: { licenseAndId: true, passportAndVisa: true, manuals: true, flightLog: false }, documentRemarks: "", securityQuestionTopic: "", securityQuestionRemarks: "", briefingAtmosphere: "Neutre", openDialogueEncouraged: true, crewConcernsExpressed: ""},
         });
         setSelectedFlightIdState(null); 
         return;
@@ -440,8 +484,8 @@ export function PurserReportTool() {
 
   async function onSubmit(data: PurserReportFormValues) {
     if (!user) { toast({ title: "Authentication Error", description: "You must be logged in.", variant: "destructive" }); return; }
-    if (addedSections.length === 0 && !data.generalFlightSummary && addedCrewEvaluations.length === 0 && !data.aircraftCleaning && !data.briefingNotes) {
-        toast({ title: "Empty Report", description: "Provide a general summary, briefing notes, report section, aircraft cleaning details, or crew evaluation.", variant: "default" }); return;
+    if (addedSections.length === 0 && !data.generalFlightSummary && addedCrewEvaluations.length === 0 && !data.aircraftCleaning && !data.briefingDetails) {
+        toast({ title: "Empty Report", description: "Provide a general summary, briefing details, report section, aircraft cleaning details, or crew evaluation.", variant: "default" }); return;
     }
     setIsLoading(true); setReportResult(null);
     const crewDetailsParts = [
@@ -454,7 +498,7 @@ export function PurserReportTool() {
       data.otherCrewMembers ? `Other Crew: ${data.otherCrewMembers}` : null,
     ];
     const crewMembersString = crewDetailsParts.filter(Boolean).join('\n');
-    const dynamicSections: Partial<Omit<PurserReportInput, 'crewPerformanceNotes' | 'scheduledDepartureUTC' | 'scheduledArrivalUTC' | 'actualDepartureUTC' | 'actualArrivalUTC' | 'passengerLoad' | 'cateringLoad' | 'aircraftCleaning' | 'briefingNotes'>> = {};
+    const dynamicSections: Partial<Omit<PurserReportInput, 'crewPerformanceNotes' | 'scheduledDepartureUTC' | 'scheduledArrivalUTC' | 'actualDepartureUTC' | 'actualArrivalUTC' | 'passengerLoad' | 'cateringLoad' | 'aircraftCleaning' | 'briefingDetails'>> = {};
     addedSections.forEach(section => {
         switch (section.type) {
             case "Safety Incidents": dynamicSections.safetyIncidents = (dynamicSections.safetyIncidents ? dynamicSections.safetyIncidents + "\n\n---\n\n" : "") + section.content; break;
@@ -490,7 +534,7 @@ export function PurserReportTool() {
           additionalNotes: data.cateringLoad.additionalNotes || ""
       } : undefined,
       aircraftCleaning: data.aircraftCleaning,
-      briefingNotes: data.briefingNotes || undefined,
+      briefingDetails: data.briefingDetails,
       generalFlightSummary: data.generalFlightSummary, ...dynamicSections,
       scheduledDepartureUTC: data.scheduledDepartureUTC || undefined,
       scheduledArrivalUTC: data.scheduledArrivalUTC || undefined,
@@ -779,26 +823,88 @@ export function PurserReportTool() {
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="briefing-notes" className="border-none">
+            <AccordionItem value="briefing-details" className="border-none">
               <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
-                <div className="flex items-center"><BookOpen className="mr-2 h-5 w-5 text-primary"/>Briefing Notes</div>
+                <div className="flex items-center"><BookOpen className="mr-2 h-5 w-5 text-primary"/>Pre-Flight Briefing Details</div>
               </AccordionTrigger>
-              <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm">
-                 <FormField 
-                    control={form.control} 
-                    name="briefingNotes" 
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Pre-Flight Briefing Summary</FormLabel>
-                            <FormControl><Textarea placeholder="Key points from pre-flight briefing, safety topics discussed, specific crew instructions or concerns raised..." className="min-h-[100px]" {...field} /></FormControl>
-                            <FormDescription>Summarize important aspects of the briefing relevant to this flight.</FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )} 
-                  />
+              <AccordionContent className="p-6 bg-card rounded-b-lg border-t-0 shadow-sm space-y-6">
+                <Card>
+                    <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="h-4 w-4"/>Timing & Attendance</CardTitle></CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField control={form.control} name="briefingDetails.briefingTime" render={({ field }) => (<FormItem><FormLabel>Briefing Time (Local)</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="briefingDetails.flightCrewPresent" render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm h-fit mt-auto">
+                                <FormLabel>Flight Crew (PNT) Present?</FormLabel>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )} />
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader><CardTitle className="text-base flex items-center gap-2"><UserCheck className="h-4 w-4"/>Document Verification</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <FormLabel>Documents Checked</FormLabel>
+                            <FormDescription>Select all documents that were verified during the briefing.</FormDescription>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-2">
+                            {documentCheckItems.map((item) => (
+                                <FormField
+                                key={item.id}
+                                control={form.control}
+                                name={`briefingDetails.documentsChecked.${item.id}`}
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    <FormLabel className="font-normal">{item.label}</FormLabel>
+                                    </FormItem>
+                                )}
+                                />
+                            ))}
+                            </div>
+                        </div>
+                        <FormField control={form.control} name="briefingDetails.documentRemarks" render={({ field }) => (<FormItem><FormLabel>Document Remarks</FormLabel><FormControl><Textarea placeholder="Any issues or remarks regarding crew documents..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShieldQuestion className="h-4 w-4"/>Security Focus</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        <FormField control={form.control} name="briefingDetails.securityQuestionTopic" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Security Question Topic</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || ""}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a security topic" /></SelectTrigger></FormControl>
+                                    <SelectContent>{securityTopics.map(t => (<SelectItem key={t} value={t}>{t}</SelectItem>))}</SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name="briefingDetails.securityQuestionRemarks" render={({ field }) => (<FormItem><FormLabel>Security Remarks</FormLabel><FormControl><Textarea placeholder="Notes on security questions, crew responses, or specific focus areas..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader><CardTitle className="text-base flex items-center gap-2"><Handshake className="h-4 w-4"/>Crew Engagement & Atmosphere</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        <FormField control={form.control} name="briefingDetails.briefingAtmosphere" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Briefing Atmosphere</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || "Neutre"}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select atmosphere" /></SelectTrigger></FormControl>
+                                    <SelectContent>{["Chaleureuse", "Neutre", "Formelle", "Tendue"].map(a => (<SelectItem key={a} value={a}>{a}</SelectItem>))}</SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name="briefingDetails.openDialogueEncouraged" render={({ field }) => (
+                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                <FormLabel>Open Dialogue Encouraged?</FormLabel>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name="briefingDetails.crewConcernsExpressed" render={({ field }) => (<FormItem><FormLabel>Crew Concerns Expressed</FormLabel><FormControl><Textarea placeholder="Note any specific concerns, questions, or important points raised by the cabin crew..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </CardContent>
+                </Card>
               </AccordionContent>
             </AccordionItem>
-
 
             <AccordionItem value="general-summary" className="border-none">
               <AccordionTrigger className="text-xl font-semibold p-4 bg-card rounded-t-lg hover:no-underline shadow-sm">
