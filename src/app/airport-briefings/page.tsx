@@ -1,4 +1,6 @@
 
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AirportBriefingTool } from "@/components/features/airport-briefing-tool";
 import { Navigation, AlertTriangle } from "lucide-react"; // Added AlertTriangle
