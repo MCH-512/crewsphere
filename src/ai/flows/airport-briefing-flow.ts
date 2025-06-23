@@ -53,9 +53,8 @@ Please provide a briefing that includes the following sections, using Markdown h
     *   **Location:** [City, Country]
     *   **ICAO Code:** [ICAO]
     *   **IATA Code:** [IATA]
-    *   **Airport Emblem/Symbol (Textual):** [e.g., Suggest a simple textual placeholder like "[Airport Icon]" or a relevant emoji if appropriate]
     *   **Local Time Zone:** [e.g., UTC-5 (Eastern Time), include DST info if applicable and known] 🕒
-    *   **Local Currency:** [e.g., USD ($), EUR (€), JPY (¥) - Include symbol and code if common] 💰
+    *   **Local Currency:** [e.g., US Dollar (USD, $), Euro (EUR, €), Japanese Yen (JPY, ¥) - Include name, code, and symbol] 💰
     *   **Airport Elevation:** [Elevation in feet and meters, e.g., 123 ft / 37 m] ⛰️
 
 
@@ -121,4 +120,3 @@ const airportBriefingFlow = ai.defineFlow(
     return output;
   }
 );
-
