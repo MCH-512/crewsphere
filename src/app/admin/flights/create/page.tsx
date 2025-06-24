@@ -275,8 +275,8 @@ export default function CreateFlightPage() {
     for (const date of generatedDates) {
       try {
         const dateStr = formatISO(date, { representation: 'date' }); 
-        const depDateTimeStr = `${dateStr}T${data.baseDepartureTimeUTC}:00.000Z`;
-        const arrDateTimeStr = `${dateStr}T${data.baseArrivalTimeUTC}:00.000Z`;
+        const depDateTimeStr = `\${dateStr}T\${data.baseDepartureTimeUTC}:00.000Z`;
+        const arrDateTimeStr = `\${dateStr}T\${data.baseArrivalTimeUTC}:00.000Z`;
 
         let departureDateTime = parseISO(depDateTimeStr);
         let arrivalDateTime = parseISO(arrDateTimeStr);
@@ -303,7 +303,7 @@ export default function CreateFlightPage() {
         flightsCreatedCount++;
       } catch (e) {
         flightsFailedCount++;
-        console.error(`Error processing date ${date}:`, e);
+        console.error(`Error processing date \${date}:`, e);
       }
     }
 
@@ -312,7 +312,7 @@ export default function CreateFlightPage() {
             await batch.commit();
             toast({
                 title: "Flight Creation Successful",
-                description: `${flightsCreatedCount} flight(s) created. ${flightsFailedCount > 0 ? `${flightsFailedCount} failed.` : ''}`,
+                description: `\${flightsCreatedCount} flight(s) created. \${flightsFailedCount > 0 ? `\${flightsFailedCount} failed.` : ''}`,
                 action: flightsFailedCount > 0 ? <AlertTriangle className="text-destructive"/> : <CheckCircle className="text-green-500" />,
             });
             form.reset();
@@ -321,7 +321,7 @@ export default function CreateFlightPage() {
             setArrivalSearchTerm("");
             router.push('/admin/flights'); 
         } else if (flightsFailedCount > 0) {
-             toast({ title: "Flight Creation Failed", description: `No flights created. ${flightsFailedCount} date(s) could not be processed. Check console.`, variant: "destructive" });
+             toast({ title: "Flight Creation Failed", description: `No flights created. \${flightsFailedCount} date(s) could not be processed. Check console.`, variant: "destructive" });
         } else {
             toast({ title: "No Flights to Create", description: "No dates were generated based on your rules.", variant: "default" });
         }

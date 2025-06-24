@@ -270,13 +270,13 @@ export function FlightDutyCalculatorTool() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                   <FormField
                     control={form.control}
-                    name={`flightSegments.${index}.departureAirport`}
+                    name={`flightSegments.\${index}.departureAirport`}
                     render={({ field: formField }) => (
                       <FormItem>
                         <FormLabel>Departure Airport</FormLabel>
                         <CustomAutocompleteAirport
                           value={formField.value}
-                          onSelect={(airport) => form.setValue(`flightSegments.${index}.departureAirport`, airport ? (airport.icao || airport.iata) : "", { shouldValidate: true })}
+                          onSelect={(airport) => form.setValue(`flightSegments.\${index}.departureAirport`, airport ? (airport.icao || airport.iata) : "", { shouldValidate: true })}
                           placeholder="Search departure..."
                           airports={departureSuggestions}
                           isLoading={isLoadingDeparture}
@@ -289,13 +289,13 @@ export function FlightDutyCalculatorTool() {
                   />
                   <FormField
                     control={form.control}
-                    name={`flightSegments.${index}.arrivalAirport`}
+                    name={`flightSegments.\${index}.arrivalAirport`}
                     render={({ field: formField }) => (
                       <FormItem>
                         <FormLabel>Arrival Airport</FormLabel>
                         <CustomAutocompleteAirport
                           value={formField.value}
-                          onSelect={(airport) => form.setValue(`flightSegments.${index}.arrivalAirport`, airport ? (airport.icao || airport.iata) : "", { shouldValidate: true })}
+                          onSelect={(airport) => form.setValue(`flightSegments.\${index}.arrivalAirport`, airport ? (airport.icao || airport.iata) : "", { shouldValidate: true })}
                           placeholder="Search arrival..."
                           airports={arrivalSuggestions}
                           isLoading={isLoadingArrival}
@@ -308,7 +308,7 @@ export function FlightDutyCalculatorTool() {
                   />
                   <FormField
                     control={form.control}
-                    name={`flightSegments.${index}.departureTimeUTC`}
+                    name={`flightSegments.\${index}.departureTimeUTC`}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Departure Time (UTC)</FormLabel>
@@ -324,7 +324,7 @@ export function FlightDutyCalculatorTool() {
                   />
                   <FormField
                     control={form.control}
-                    name={`flightSegments.${index}.arrivalTimeUTC`}
+                    name={`flightSegments.\${index}.arrivalTimeUTC`}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Arrival Time (UTC)</FormLabel>
@@ -345,7 +345,7 @@ export function FlightDutyCalculatorTool() {
                     onClick={() => remove(index)}
                     disabled={fields.length <= 1}
                     className="mb-1"
-                    aria-label={`Remove flight segment ${index + 1}`}
+                    aria-label={`Remove flight segment \${index + 1}`}
                   >
                     <XCircle className="h-5 w-5" />
                   </Button>
