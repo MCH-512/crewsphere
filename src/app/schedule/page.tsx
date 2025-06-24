@@ -255,7 +255,7 @@ export default function SchedulePage() {
 
     } catch (err) {
       console.error("Error fetching available flights:", err);
-      setError((prevError) => prevError ? `\${prevError}\nFailed to load available flights.` : "Failed to load available flights.");
+      setError((prevError) => prevError ? `${prevError}\nFailed to load available flights.` : "Failed to load available flights.");
     } finally {
       setIsLoadingAvailableFlights(false);
     }
@@ -386,7 +386,7 @@ export default function SchedulePage() {
           endTime: endTimeUTC,
         };
         await updateDoc(doc(db, "userActivities", editingActivity.id), updatePayload);
-        toast({ title: "Activity Updated", description: `Activity on \${format(activityBaseDate, "PPP")} has been updated.`});
+        toast({ title: "Activity Updated", description: `Activity on ${format(activityBaseDate, "PPP")} has been updated.`});
       } else {
         const activityToSave: Omit<UserActivity, 'id' | 'createdAt' | 'flightDetails'> = {
           userId: user.uid,
@@ -400,7 +400,7 @@ export default function SchedulePage() {
           createdAt: serverTimestamp(),
         };
         await addDoc(collection(db, "userActivities"), activityToSave);
-        toast({ title: "Activity Added", description: `\${data.activityType} for \${format(activityBaseDate, "PPP")} has been added.`});
+        toast({ title: "Activity Added", description: `${data.activityType} for ${format(activityBaseDate, "PPP")} has been added.`});
       }
       
       fetchUserActivities();
@@ -410,7 +410,7 @@ export default function SchedulePage() {
       setIsEditMode(false);
     } catch (err) {
       console.error("Error saving activity:", err);
-      toast({ title: "Save Failed", description: `Could not \${isEditMode ? 'update' : 'save'} the activity. Please try again.`, variant: "destructive" });
+      toast({ title: "Save Failed", description: `Could not ${isEditMode ? 'update' : 'save'} the activity. Please try again.`, variant: "destructive" });
     } finally {
       setIsSavingActivity(false);
     }
@@ -421,7 +421,7 @@ export default function SchedulePage() {
     setIsDeletingActivity(true);
     try {
         await deleteDoc(doc(db, "userActivities", activityToDelete.id));
-        toast({ title: "Activity Deleted", description: `The activity on \${format(activityToDelete.date.toDate(), "PPP")} has been deleted.` });
+        toast({ title: "Activity Deleted", description: `The activity on ${format(activityToDelete.date.toDate(), "PPP")} has been deleted.` });
         fetchUserActivities();
         setActivityToDelete(null);
     } catch (err) {
@@ -479,7 +479,7 @@ export default function SchedulePage() {
     if (event.activityType === 'flight' && event.flightDetails) {
       const depTime = format(parseISO(event.flightDetails.scheduledDepartureDateTimeUTC), "HH:mm");
       const arrTime = format(parseISO(event.flightDetails.scheduledArrivalDateTimeUTC), "HH:mm");
-      return `\${depTime} - \${arrTime} UTC`;
+      return `${depTime} - ${arrTime} UTC`;
     }
     if (event.activityType === 'flight' && !event.flightDetails) {
         return "Details N/A";
@@ -487,10 +487,10 @@ export default function SchedulePage() {
     if (event.startTime && event.endTime) {
       const sTime = format(event.startTime.toDate(), "HH:mm");
       const eTime = format(event.endTime.toDate(), "HH:mm");
-      return `\${sTime} - \${eTime} Local`;
+      return `${sTime} - ${eTime} Local`;
     }
     if (event.startTime) {
-      return `Starts \${format(event.startTime.toDate(), "HH:mm")} Local`;
+      return `Starts ${format(event.startTime.toDate(), "HH:mm")} Local`;
     }
     return "All day";
   };
@@ -610,16 +610,23 @@ export default function SchedulePage() {
                       {eventsForSelectedDate.map((event) => (
                         <li key={event.id} className="p-3 rounded-md border bg-card hover:shadow-sm transition-shadow">
                           <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2">
                                 {getActivityIcon(event.activityType, !!event.flightDetails)}
-                                <h3 className="font-semibold text-sm capitalize">
-                                    {event.activityType === 'flight' ? 
-                                     (event.flightDetails ? `\${event.flightDetails.flightNumber}: \${event.flightDetails.departureAirportIATA || event.flightDetails.departureAirport} - \${event.flightDetails.arrivalAirportIATA || event.flightDetails.arrivalAirport}` : "Flight (Details N/A - Cancelled/Deleted)") : 
-                                     event.activityType}
-                                </h3>
+                                <div>
+                                    <h3 className="font-semibold text-sm capitalize">
+                                        {event.activityType === 'flight' ? 
+                                         (event.flightDetails ? event.flightDetails.flightNumber : "Flight (Details N/A - Cancelled/Deleted)") : 
+                                         event.activityType}
+                                    </h3>
+                                    {event.activityType === 'flight' && event.flightDetails && (
+                                        <p className="text-xs text-muted-foreground">
+                                            {event.flightDetails.departureAirportIATA || event.flightDetails.departureAirport} &rarr; {event.flightDetails.arrivalAirportIATA || event.flightDetails.arrivalAirport}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
-                              <div className="flex items-center">
-                                {(event.activityType !== 'flight' || !event.flightDetails) && ( // Allow edit/delete for non-flight or deleted flight activities
+                            <div className="flex items-center flex-shrink-0">
+                                {(event.activityType !== 'flight' || !event.flightDetails) && (
                                   <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary/80" onClick={() => handleOpenEditActivityDialog(event)}>
                                     <Edit3 className="h-4 w-4" />
                                   </Button>
@@ -631,12 +638,14 @@ export default function SchedulePage() {
                                         </Button>
                                     </AlertDialogTrigger>
                                 </AlertDialog>
-                              </div>
+                            </div>
                           </div>
-                          <p className="text-xs text-muted-foreground">{formatEventTime(event)}</p>
-                          {event.activityType === 'flight' && event.flightDetails && <Badge variant="default" className="mt-1 text-xs">{event.flightDetails.status}</Badge>}
-                          {event.activityType === 'flight' && !event.flightDetails && <Badge variant="destructive" className="mt-1 text-xs">Flight Cancelled/Deleted</Badge>}
-                          {event.comments && <p className="text-xs text-muted-foreground mt-1">Note: {event.comments}</p>}
+                          <div className="pl-7 mt-1 space-y-1">
+                              <p className="text-xs text-muted-foreground">{formatEventTime(event)}</p>
+                              {event.activityType === 'flight' && event.flightDetails && <Badge variant="default" className="text-xs">{event.flightDetails.status}</Badge>}
+                              {event.activityType === 'flight' && !event.flightDetails && <Badge variant="destructive" className="text-xs">Flight Cancelled/Deleted</Badge>}
+                              {event.comments && <p className="text-xs text-muted-foreground mt-1">Note: {event.comments}</p>}
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -645,7 +654,7 @@ export default function SchedulePage() {
                   <p className="text-sm text-muted-foreground py-4 text-center">
                     {activityTypeFilter === "all" 
                       ? "No activities or flights for this date." 
-                      : `No activities of type '\${activityTypeFilter}' for this date.`}
+                      : `No activities of type '${activityTypeFilter}' for this date.`}
                   </p>
                 )}
               </CardContent>
@@ -657,7 +666,7 @@ export default function SchedulePage() {
       <Dialog open={isActivityFormOpen} onOpenChange={(open) => { setIsActivityFormOpen(open); if (!open) { setEditingActivity(null); setIsEditMode(false); activityForm.reset(); }}}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{isEditMode ? "Edit Activity" : `Add Activity for \${selectedDate ? format(selectedDate, "PPP") : ""}`}</DialogTitle>
+            <DialogTitle>{isEditMode ? "Edit Activity" : `Add Activity for ${selectedDate ? format(selectedDate, "PPP") : ""}`}</DialogTitle>
             <DialogDescription>
               {isEditMode ? "Modify the details of your activity." : "Select the type of activity and fill in the details. Times are considered local to the activity date."}
             </DialogDescription>
@@ -710,7 +719,7 @@ export default function SchedulePage() {
                         <FormControl>
                         <Input 
                             value={editingActivity.flightDetails ? 
-                                `\${editingActivity.flightDetails.flightNumber}: \${editingActivity.flightDetails.departureAirportIATA || editingActivity.flightDetails.departureAirport} - \${editingActivity.flightDetails.arrivalAirportIATA || editingActivity.flightDetails.arrivalAirport} (\${format(parseISO(editingActivity.flightDetails.scheduledDepartureDateTimeUTC), "HH:mm")} UTC)` :
+                                `${editingActivity.flightDetails.flightNumber}: ${editingActivity.flightDetails.departureAirportIATA || editingActivity.flightDetails.departureAirport} - ${editingActivity.flightDetails.arrivalAirportIATA || editingActivity.flightDetails.arrivalAirport} (${format(parseISO(editingActivity.flightDetails.scheduledDepartureDateTimeUTC), "HH:mm")} UTC)` :
                                 "Flight details unavailable"
                             } 
                             disabled 
@@ -737,7 +746,7 @@ export default function SchedulePage() {
                                 placeholder={
                                     isLoadingAvailableFlights ? "Loading available flights..." : 
                                     !selectedDate ? "Select a date on calendar first" :
-                                    flightsForDialogOnSelectedDate.length === 0 ? `No flights for \${selectedDate ? format(selectedDate, "PPP") : "selected date"}` :
+                                    flightsForDialogOnSelectedDate.length === 0 ? `No flights for ${selectedDate ? format(selectedDate, "PPP") : "selected date"}` :
                                     "Choose a flight for this activity"
                                 } 
                                 />
