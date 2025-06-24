@@ -12,6 +12,6 @@ import {googleAI} from '@genkit-ai/googleai';
 export const ai = genkit({
   plugins: [googleAI()],
   // Use a default model to avoid specifying it in every prompt.
-  // Using gemini-2.0-flash as a general-purpose model, which is also referenced in system settings.
-  model: 'gemini-2.0-flash',
+  // Using gemini-1.5-flash-latest as a general-purpose model.
+  model: 'gemini-1.5-flash-latest',
 });
