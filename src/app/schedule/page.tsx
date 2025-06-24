@@ -538,15 +538,15 @@ export default function SchedulePage() {
           <CardTitle className="text-2xl font-headline">My Schedule</CardTitle>
           <CardDescription>View your assigned flights & activities, and add or manage entries in your schedule.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col lg:flex-row gap-6">
-          <div className="flex-grow flex flex-col items-center">
+        <CardContent className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 flex flex-col">
             <Calendar
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
               month={month}
               onMonthChange={setMonth}
-              className="rounded-md border p-4 w-full max-w-md lg:max-w-none"
+              className="rounded-md border p-4 w-full"
               components={{ DayContent: CustomDayInnerContent }}
               footer={
                 <div className="flex flex-wrap justify-start items-center gap-x-4 gap-y-1 mt-4 pt-2 border-t text-xs">
@@ -565,13 +565,13 @@ export default function SchedulePage() {
              <Button 
                 onClick={handleOpenAddActivityDialog} 
                 variant="outline" 
-                className="mt-4 w-full max-w-md"
+                className="mt-4 w-full"
                 disabled={!selectedDate}
             >
                 <CalendarPlus className="mr-2 h-4 w-4" /> Add Activity for Selected Date
             </Button>
           </div>
-          <div className="lg:w-1/3 space-y-4">
+          <div className="lg:col-span-1 space-y-4">
             <Card className="bg-background/70 h-full">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg font-headline">
@@ -849,3 +849,5 @@ export default function SchedulePage() {
     </div>
   );
 }
+
+    
