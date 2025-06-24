@@ -34,7 +34,6 @@ export async function generateDailyBriefing(
 
 const dailyBriefingPrompt = ai.definePrompt({
   name: 'dailyBriefingPrompt',
-  model: 'googleai/gemini-pro', // Changed model to avoid rate limiting
   input: {schema: DailyBriefingInputSchema},
   output: {schema: DailyBriefingOutputSchema},
   prompt: `You are an AI assistant for AirCrew Hub, a platform for airline crew.
