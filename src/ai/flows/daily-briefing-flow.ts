@@ -34,7 +34,7 @@ export async function generateDailyBriefing(
 
 const dailyBriefingPrompt = ai.definePrompt({
   name: 'dailyBriefingPrompt',
-  model: 'googleai/gemini-1.5-flash-latest', // Explicitly set model here with prefix
+  model: 'googleai/gemini-pro', // Changed model to avoid rate limiting
   input: {schema: DailyBriefingInputSchema},
   output: {schema: DailyBriefingOutputSchema},
   prompt: `You are an AI assistant for AirCrew Hub, a platform for airline crew.
@@ -43,7 +43,7 @@ The briefing MUST be in well-structured Markdown format.
 
 Include the following sections using Markdown:
 - A warm and professional greeting to {{{userName}}}.
-- A reminder to check their schedule for any updates today. 📄
+- A reminder to check their schedule for any updates today. 📄 
 - A prompt to review any new important documents or communications that might have been posted. 📢
 - A short, relevant safety tip or operational best practice reminder. {{#if userRole}}Consider tailoring this tip to a {{{userRole}}}.{{else}}This tip should be general for all crew.{{/if}} 🛡️
 - A brief, simulated contextual update. Examples: "Heads up: Increased passenger flow expected at Hub Airport this morning due to a local festival." or "Reminder: New uniform guidelines were posted yesterday, please review them in the document library." or "Weather Watch: Expect potential turbulence over the Atlantic sector today." 🌤️
@@ -74,4 +74,3 @@ const dailyBriefingFlow = ai.defineFlow(
     return output;
   }
 );
-
