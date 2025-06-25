@@ -312,7 +312,7 @@ export default function CreateDocumentPage() {
                                 hover:file:bg-primary/20"
                             />
                         </FormControl>
-                        <FormDescription>Max file size: {MAX_FILE_SIZE_MB}MB. (e.g., PDF, DOCX, XLSX, Images).</FormDescription>
+                        <FormDescription>Max file size: ${MAX_FILE_SIZE_MB}MB. (e.g., PDF, DOCX, XLSX, Images).</FormDescription>
                         {uploadProgress !== null && <Progress value={uploadProgress} className="w-full mt-2" />}
                         <FormMessage />
                     </FormItem>

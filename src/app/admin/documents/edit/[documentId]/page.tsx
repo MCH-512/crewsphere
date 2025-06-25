@@ -409,7 +409,7 @@ export default function EditDocumentPage() {
                                 className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                             />
                         </FormControl>
-                        <FormDescription>Max file size: {MAX_FILE_SIZE_MB}MB.</FormDescription>
+                        <FormDescription>Max file size: ${MAX_FILE_SIZE_MB}MB.</FormDescription>
                         {uploadProgress !== null && <Progress value={uploadProgress} className="w-full mt-2" />}
                         <FormMessage />
                     </FormItem>
