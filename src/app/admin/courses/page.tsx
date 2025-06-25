@@ -70,12 +70,17 @@ export default function AdminCoursesPage() {
         };
 
         if (courseData.quizId) {
-          const quizDocRef = doc(db, "quizzes", courseData.quizId);
-          const quizDocSnap = await getDoc(quizDocRef);
-          if (quizDocSnap.exists()) {
-            course.quizTitle = (quizDocSnap.data() as QuizInfo).title;
-          } else {
-            course.quizTitle = "Quiz details not found";
+          try {
+            const quizDocRef = doc(db, "quizzes", courseData.quizId);
+            const quizDocSnap = await getDoc(quizDocRef);
+            if (quizDocSnap.exists()) {
+              course.quizTitle = (quizDocSnap.data() as QuizInfo).title;
+            } else {
+              course.quizTitle = "Quiz details not found";
+            }
+          } catch (quizError) {
+             console.warn(`Could not fetch quiz for course ${course.id}:`, quizError);
+             course.quizTitle = "Error loading quiz";
           }
         }
         return course;
@@ -278,4 +283,3 @@ export default function AdminCoursesPage() {
     </div>
   );
 }
-

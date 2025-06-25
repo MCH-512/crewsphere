@@ -14,7 +14,7 @@ interface ChapterDisplayProps {
   level: number;
 }
 
-const getResourceIcon = (type: Resource['type']) => {
+const getResourceIcon = (type?: Resource['type']) => {
   switch (type) {
     case "pdf": return <FileText className="h-4 w-4 mr-2 flex-shrink-0" />;
     case "image": return <ImageIcon className="h-4 w-4 mr-2 flex-shrink-0" />;
@@ -37,6 +37,11 @@ const ChapterDisplay: React.FC<ChapterDisplayProps> = ({ chapter, level }) => {
         <HeadingTag className={`font-semibold ${level === 0 ? 'text-xl' : level === 1 ? 'text-lg' : 'text-md'}`}>
           {chapter.title}
         </HeadingTag>
+        {chapter.description && (
+          <CardDescription className="text-sm italic pt-1">
+            {chapter.description}
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent className="pt-3 px-4 pb-4">
         {chapter.content && (

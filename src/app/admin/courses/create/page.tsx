@@ -145,7 +145,7 @@ export default function CreateComprehensiveCoursePage() {
       const newChapters = result.chapters.map(ch => ({
         id: ch.id || `gen_ch_${Math.random().toString(36).substr(2, 9)}`,
         title: ch.title,
-        description: ch.description || "", // Added description
+        description: ch.description || "",
         content: ch.content || "",
         resources: [], 
         children: [],   
@@ -153,6 +153,12 @@ export default function CreateComprehensiveCoursePage() {
       replaceChapters(newChapters.length > 0 ? newChapters : [defaultChapterValue]);
 
       form.setValue("quizTitle", `Final Assessment for ${result.courseTitle}`, { shouldValidate: true });
+      
+      if (result.certificateSettings) {
+        form.setValue("passingThreshold", result.certificateSettings.passingScore, { shouldValidate: true });
+        form.setValue("certificateExpiryDays", result.certificateSettings.expiryDays, { shouldValidate: true });
+        form.setValue("certificateSignature", result.certificateSettings.issuingAuthority, { shouldValidate: true });
+      }
       
       setAiGeneratedCourse(result); 
       toast({ title: "AI Draft Generated & Form Pre-filled!", description: "Review and complete the remaining details. AI suggestions for Quiz & Certificate are below." });
@@ -220,7 +226,7 @@ export default function CreateComprehensiveCoursePage() {
         fileURL: fileDownloadURL, 
         imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
         chapters: data.chapters.map(ch => ({...ch, description: ch.description || ""})) || [], // Ensure description is saved
-        published: false, 
+        published: data.published, 
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         createdBy: user.uid,
@@ -406,7 +412,22 @@ export default function CreateComprehensiveCoursePage() {
                 <FormField control={form.control} name="imageHint" render={({ field }) => (
                     <FormItem><FormLabel>Course Image Hint (Optional)</FormLabel><FormControl><Input placeholder="e.g., emergency exit, first aid" {...field} value={field.value || ""} /></FormControl><FormDescription>Keywords for course image (e.g., cockpit, safety vest).</FormDescription><FormMessage /></FormItem>
                 )} />
-                <FormField
+                 <FormField
+                    control={form.control}
+                    name="published"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                        <FormLabel>Publish Course</FormLabel>
+                        <FormDescription>If checked, the course will be visible to users immediately upon creation.</FormDescription>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                    )}
+                />
+               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <FormField
                     control={form.control}
                     name="mandatory"
                     render={({ field }) => (
@@ -419,8 +440,7 @@ export default function CreateComprehensiveCoursePage() {
                     </FormItem>
                     )}
                 />
-               </div>
-              <FormField control={form.control} name="associatedFile" render={({ field: { onChange, value, ...rest }}) => (
+                <FormField control={form.control} name="associatedFile" render={({ field: { onChange, value, ...rest }}) => (
                 <FormItem>
                   <FormLabel className="flex items-center"><UploadCloud className="mr-2 h-5 w-5" />Main Course Material (Optional)</FormLabel>
                   <FormControl><Input type="file" {...rest} onChange={(e) => onChange(e.target.files)} ref={fileInputRef} className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" /></FormControl>
@@ -429,6 +449,7 @@ export default function CreateComprehensiveCoursePage() {
                   <FormMessage />
                 </FormItem>
               )} />
+              </div>
             </CardContent>
           </Card>
           
@@ -471,7 +492,7 @@ export default function CreateComprehensiveCoursePage() {
           </Card>
 
           <Card className="shadow-lg">
-            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><Award className="mr-2 h-5 w-5 text-primary" /> Certification Rules (Review & Finalize)</CardTitle><CardDescription>AI suggestions for certification are below.</CardDescription></CardHeader>
+            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><Award className="mr-2 h-5 w-5 text-primary" /> Certification Rules (AI Pre-filled - Review & Finalize)</CardTitle><CardDescription>AI suggestions for certification have been pre-filled below.</CardDescription></CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField control={form.control} name="passingThreshold" render={({ field }) => (
@@ -496,7 +517,7 @@ export default function CreateComprehensiveCoursePage() {
               <AccordionItem value="ai-suggestions">
                 <AccordionTrigger>
                   <div className="flex items-center text-lg font-semibold">
-                    <Sparkles className="mr-2 h-5 w-5 text-blue-500" /> AI Suggestions for Quiz &amp; Certificate (Reference Only)
+                    <Sparkles className="mr-2 h-5 w-5 text-blue-500" /> AI Suggestions for Quiz (Reference Only)
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -520,18 +541,9 @@ export default function CreateComprehensiveCoursePage() {
                           </ScrollArea>
                         </div>
                       )}
-                      {aiGeneratedCourse.certificateSettings && (
-                        <div className="mt-4">
-                          <h4 className="font-semibold mb-2 text-md">Suggested Certificate Settings:</h4>
-                          <div className="text-sm space-y-1 p-3 border rounded-md bg-muted/20">
-                            <p><strong>Passing Score:</strong> {aiGeneratedCourse.certificateSettings.passingScore}%</p>
-                            <p><strong>Expiry Days:</strong> {aiGeneratedCourse.certificateSettings.expiryDays === 0 ? "No Expiry" : `${aiGeneratedCourse.certificateSettings.expiryDays} days`}</p>
-                            <p><strong>Issuing Authority:</strong> {aiGeneratedCourse.certificateSettings.issuingAuthority}</p>
-                          </div>
-                        </div>
-                      )}
+                      
                       <p className="text-xs text-muted-foreground mt-4">
-                        Note: These are AI suggestions. You will need to configure the quiz questions (via the quiz management interface for this course) and certificate rules manually using these ideas.
+                        Note: These are AI suggestions. You will need to configure the quiz questions via the quiz management interface for this course after creation.
                       </p>
                     </CardContent>
                   </Card>
@@ -575,7 +587,7 @@ export default function CreateComprehensiveCoursePage() {
               {isSubmitting ? (
                 <> <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Publishing... </>
               ) : (
-                <> <CheckCircle className="mr-2 h-5 w-5" /> Publish Course </>
+                <> <CheckCircle className="mr-2 h-5 w-5" /> Save Course </>
               )}
             </Button>
           </div>
@@ -587,3 +599,4 @@ export default function CreateComprehensiveCoursePage() {
     </div>
   );
 }
+

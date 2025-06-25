@@ -85,7 +85,7 @@ Please generate the following in valid JSON format conforming to the output sche
 3.  **description**: A concise (2-4 sentences) overall description of the course, outlining its main objectives, target audience relevance, and expected learning outcomes (think Competency-Based Training and Assessment - CBTA principles).
 4.  **chapters**: An array of approximately {{numberOfChapters}} chapters. Each chapter object *must* have:
     *   **title**: A specific and descriptive title for the chapter.
-    *   **description**: A brief (1-2 sentences) overview of this chapter's specific learning objectives. What should the {{targetAudience}} be able to do or know after completing this chapter?
+    *   **description**: A brief (1-2 sentences) overview of this chapter's specific learning objectives. What should the {{targetAudience}} be able to do or know after completing this chapter? This is a mandatory field.
     *   **content**: Detailed pedagogical content. This should include:
         *   Key learning points, procedures, best practices.
         *   Where appropriate, include examples, brief case studies (e.g., based on anonymized incident reports if relevant to the topic), or scenarios for {{targetAudience}}.
@@ -113,7 +113,7 @@ Example chapter structure for {{targetAudience}}:
 {
   "title": "Chapter X: Handling In-flight Medical Emergencies",
   "description": "This chapter equips {{targetAudience}} to assess medical situations, utilize MedLink, and administer first aid using onboard kits, adhering to established protocols.",
-  "content": "1. **Initial Assessment**: Follow DRSABCD protocol (Danger, Response, Send for help, Airways, Breathing, CPR, Defibrillation).\n   - ✈️ Specific considerations for aircraft environment (limited space, resources).\n2. **Utilizing MedLink/StatMD**: \n   - ✅ Information to gather *before* contact: passenger details, symptoms, vital signs (if obtainable).\n   - 💡 Communication best practices: be clear, concise, use standard terminology.\n3. **Onboard Medical Kits**: \n   - 📦 Overview of First Aid Kit (FAK) contents.\n   - 📦 Overview of Emergency Medical Kit (EMK/Doctors Kit) contents and authorized users.\n   - ⚠️ Procedures for common scenarios: fainting, minor burns, allergic reactions, cardiac events (basic life support).\n4. **Documentation**: \n   - 📝 Importance of accurate and timely reporting post-incident using company forms."
+  "content": "1. **Initial Assessment**: Follow DRSABCD protocol (Danger, Response, Send for help, Airways, Breathing, CPR, Defibrillation).\\n   - ✈️ Specific considerations for aircraft environment (limited space, resources).\\n2. **Utilizing MedLink/StatMD**: \\n   - ✅ Information to gather *before* contact: passenger details, symptoms, vital signs (if obtainable).\\n   - 💡 Communication best practices: be clear, concise, use standard terminology.\\n3. **Onboard Medical Kits**: \\n   - 📦 Overview of First Aid Kit (FAK) contents.\\n   - 📦 Overview of Emergency Medical Kit (EMK/Doctors Kit) contents and authorized users.\\n   - ⚠️ Procedures for common scenarios: fainting, minor burns, allergic reactions, cardiac events (basic life support).\\n4. **Documentation**: \\n   - 📝 Importance of accurate and timely reporting post-incident using company forms."
 }
 
 Ensure the output is valid JSON and all specified fields are present as described in the output schema.
@@ -141,4 +141,5 @@ const courseGeneratorFlow = ai.defineFlow(
     return { ...output, chapters: chaptersWithIds };
   }
 );
+
 

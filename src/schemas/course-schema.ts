@@ -40,7 +40,7 @@ export const courseFormSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters.").max(1000), // AI will pre-fill
   duration: z.string({ required_error: "Please select an estimated duration." }),
   mandatory: z.boolean().default(false),
-  published: z.boolean().default(false), // Added published field
+  published: z.boolean().default(false),
   associatedFile: z.custom<FileList>().optional().describe("Main course file like a global PDF if any."),
   imageHint: z.string().max(50).optional().describe("Keywords for course image (e.g., emergency exit)"),
   existingFileUrl: z.string().optional(), 
@@ -91,7 +91,7 @@ export const defaultValues: CourseFormValues = {
   description: "", // Will be AI-filled
   duration: "1 hour",
   mandatory: false,
-  published: false, // Added published default
+  published: false,
   imageHint: "",
   existingFileUrl: "",
   associatedFile: undefined, 
@@ -110,5 +110,3 @@ export const defaultValues: CourseFormValues = {
   certificateLogoUrl: "https://placehold.co/150x50.png",
   certificateSignature: "Express Airline Training Department",
 };
-
-    
