@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -427,10 +426,27 @@ const CourseContentDialog = ({ course, isOpen, onOpenChange, onComplete, isUpdat
 
 const QuizDialog = ({ course, isOpen, onOpenChange, onSimulate, isUpdating }: { course: CombinedCourse, isOpen: boolean, onOpenChange: (open: boolean) => void, onSimulate: (id: string, passed: boolean) => void, isUpdating: boolean }) => (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>Take Quiz: {course.quizTitle}</DialogTitle><DialogDescription>This is a simulation. For now, choose to simulate passing or failing.</DialogDescription></DialogHeader>
-      <div className="py-4 space-y-3"><p className="text-sm text-muted-foreground">Course: {course.title}</p>{course.mandatory && <p className="text-sm font-semibold text-destructive flex items-center gap-1"><AlertTriangle className="h-4 w-4"/>This is a mandatory quiz.</p>}</div>
-      <DialogFooter className="gap-2 sm:justify-between"><Button variant="outline" onClick={() => onSimulate(course.id, false)} disabled={isUpdating}>{isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<XCircle className="mr-2 h-4 w-4"/>Simulate Fail</Button><Button onClick={() => onSimulate(course.id, true)} disabled={isUpdating}>{isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}<CheckCircle className="mr-2 h-4 w-4"/>Simulate Pass</Button></DialogFooter>
-    </DialogContent>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Take Quiz: {course.quizTitle}</DialogTitle>
+          <DialogDescription>This is a simulation. For now, choose to simulate passing or failing.</DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-3">
+          <p className="text-sm text-muted-foreground">Course: {course.title}</p>
+          {course.mandatory && <p className="text-sm font-semibold text-destructive flex items-center gap-1"><AlertTriangle className="h-4 w-4"/>This is a mandatory quiz.</p>}
+        </div>
+        <DialogFooter className="gap-2 sm:justify-between">
+          <Button variant="outline" onClick={() => onSimulate(course.id, false)} disabled={isUpdating}>
+            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+            <XCircle className="mr-2 h-4 w-4"/>Simulate Fail
+          </Button>
+          <Button onClick={() => onSimulate(course.id, true)} disabled={isUpdating}>
+            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+            <CheckCircle className="mr-2 h-4 w-4"/>Simulate Pass
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 );
 
 const CertificateDialog = ({ course, isOpen, onOpenChange, user }: { course: CombinedCourse, isOpen: boolean, onOpenChange: (open: boolean) => void, user: any }) => {
