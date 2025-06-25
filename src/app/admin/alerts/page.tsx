@@ -61,6 +61,7 @@ export default function AdminAlertsPage() {
           ...docSnapshot.data(),
         } as AlertDocument;
 
+        // Fetch acknowledgement count for each alert
         const ackQuery = query(collection(db, "alertAcknowledgements"), where("alertId", "==", alertData.id));
         const ackSnapshot = await getCountFromServer(ackQuery);
         alertData.acknowledgementCount = ackSnapshot.data().count;
@@ -264,4 +265,3 @@ export default function AdminAlertsPage() {
     </div>
   );
 }
-

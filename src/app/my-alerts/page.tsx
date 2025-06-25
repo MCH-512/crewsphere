@@ -56,7 +56,7 @@ export default function MyAlertsPage() {
         collection(db, "alerts"),
         where("userId", "==", user.uid),
         orderBy("createdAt", "desc"),
-        limit(10) // Limit individual queries
+        limit(20) // Increased limit
       );
       const userAlertsSnapshot = await getDocs(userAlertsQuery);
       const fetchedUserAlerts = userAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AlertData));
@@ -66,12 +66,12 @@ export default function MyAlertsPage() {
         collection(db, "alerts"),
         where("userId", "==", null),
         orderBy("createdAt", "desc"),
-        limit(10) // Limit individual queries
+        limit(20) // Increased limit
       );
       const globalAlertsSnapshot = await getDocs(globalAlertsQuery);
       const fetchedGlobalAlerts = globalAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AlertData));
       
-      // Combine, deduplicate, sort, and limit
+      // Combine, deduplicate, and sort
       const combinedAlerts = [...fetchedUserAlerts, ...fetchedGlobalAlerts]
         .reduce((acc, current) => { // Deduplicate
           if (!acc.find(item => item.id === current.id)) {
@@ -79,8 +79,7 @@ export default function MyAlertsPage() {
           }
           return acc;
         }, [] as AlertData[])
-        .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()) // Sort by createdAt
-        .slice(0, 3); // Take top 3 overall
+        .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()); // Sort by createdAt
 
       const userAcknowledgementsMap = new Map<string, Timestamp>();
       if (combinedAlerts.length > 0) {
@@ -313,4 +312,3 @@ export default function MyAlertsPage() {
     </div>
   );
 }
-
