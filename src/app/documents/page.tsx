@@ -2,10 +2,9 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter as DialogPrimitiveFooter, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, StickyNote, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -31,14 +30,92 @@ interface Document {
   category: string;
   source: string;
   version?: string;
+  description?: string;
   lastUpdated: Timestamp | string;
   size?: string;
   downloadURL?: string;
-  fileName?: string; 
+  fileName?: string;
   fileType?: string;
-  documentContentType?: 'file' | 'markdown' | 'fileWithMarkdown'; 
+  documentContentType?: 'file' | 'markdown' | 'fileWithMarkdown';
   content?: string;
 }
+
+
+const getIconForDocumentType = (doc: Document) => {
+   switch (doc.documentContentType) {
+      case 'markdown': return <StickyNote className="h-5 w-5 text-yellow-500" />;
+      case 'file': return <FileTextIcon className="h-5 w-5 text-primary" />;
+      case 'fileWithMarkdown': return <Layers className="h-5 w-5 text-green-500" />;
+      default:
+           if (doc.downloadURL) return <FileTextIcon className="h-5 w-5 text-primary" />;
+           if (doc.content) return <StickyNote className="h-5 w-5 text-yellow-500" />;
+          return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
+  }
+};
+
+const formatDate = (dateValue: Timestamp | string) => {
+  if (!dateValue) return "N/A";
+  if (typeof dateValue === "string") {
+    try {
+      return format(new Date(dateValue), "PP");
+    } catch (e) {
+      return dateValue;
+    }
+  }
+  if (dateValue instanceof Timestamp) {
+    return format(dateValue.toDate(), "PP");
+  }
+  return "Invalid Date";
+};
+
+// New component for the document card
+const DocumentCard = ({ document, onView }: { document: Document; onView: (doc: Document) => void }) => {
+  const Icon = getIconForDocumentType(document);
+  return (
+    <AnimatedCard className="h-full">
+      <Card className="flex flex-col h-full shadow-md hover:shadow-xl transition-shadow duration-300">
+        <CardHeader>
+          <div className="flex items-start gap-4">
+            <div className="pt-1">{Icon}</div>
+            <div>
+              <CardTitle className="text-lg leading-tight">{document.title}</CardTitle>
+              {document.version && (
+                <CardDescription className="text-xs mt-1">Version: {document.version}</CardDescription>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="flex-grow space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">{document.category}</Badge>
+            <Badge variant="secondary">{document.source}</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground line-clamp-3" title={document.description}>
+            {document.description || "No description available."}
+          </p>
+        </CardContent>
+        <CardFooter className="flex-col items-stretch space-y-2 pt-4">
+           <p className="text-xs text-muted-foreground text-center mb-2">
+            Last Updated: {formatDate(document.lastUpdated)}
+          </p>
+          <div className="flex gap-2 w-full">
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => onView(document)}>
+              <Eye className="mr-2 h-4 w-4" /> View
+            </Button>
+            {(document.documentContentType === 'file' || document.documentContentType === 'fileWithMarkdown') && document.downloadURL && (
+              <Button variant="secondary" size="sm" className="flex-1" asChild>
+                <a href={document.downloadURL} download={document.fileName || document.title}>
+                  <Download className="mr-2 h-4 w-4" /> Download
+                </a>
+              </Button>
+            )}
+          </div>
+        </CardFooter>
+      </Card>
+    </AnimatedCard>
+  );
+};
+
 
 export default function DocumentsPage() {
   const [allDocuments, setAllDocuments] = React.useState<Document[]>([]);
@@ -49,7 +126,7 @@ export default function DocumentsPage() {
 
   const [searchTerm, setSearchTerm] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
-  const [sourceFilter, setSourceFilter] = React.useState("all"); 
+  const [sourceFilter, setSourceFilter] = React.useState("all");
 
   const [selectedDocumentForView, setSelectedDocumentForView] = React.useState<Document | null>(null);
   const [isViewNoteDialogOpen, setIsViewNoteDialogOpen] = React.useState(false);
@@ -63,18 +140,20 @@ export default function DocumentsPage() {
       const querySnapshot = await getDocs(q);
       const fetchedDocuments = querySnapshot.docs.map(doc => {
         const data = doc.data();
+        const contentPreview = data.description || (data.content ? data.content.substring(0, 150) + "..." : "No description available.");
         return {
           id: doc.id,
           title: data.title || "Untitled Document",
           category: data.category || "Uncategorized",
           source: data.source || "Unknown",
           version: data.version,
+          description: contentPreview,
           lastUpdated: data.lastUpdated,
           size: data.size,
           downloadURL: data.downloadURL,
           fileName: data.fileName,
           fileType: data.fileType,
-          documentContentType: data.documentContentType || (data.downloadURL ? 'file' : 'markdown'), 
+          documentContentType: data.documentContentType || (data.downloadURL ? 'file' : 'markdown'),
           content: data.content,
         } as Document;
       });
@@ -102,7 +181,7 @@ export default function DocumentsPage() {
     if (categoryFilter !== "all") {
       currentDocuments = currentDocuments.filter(doc => doc.category === categoryFilter);
     }
-    if (sourceFilter !== "all") { 
+    if (sourceFilter !== "all") {
       currentDocuments = currentDocuments.filter(doc => doc.source === sourceFilter);
     }
     if (searchTerm) {
@@ -114,33 +193,6 @@ export default function DocumentsPage() {
     setFilteredDocuments(currentDocuments);
   }, [searchTerm, categoryFilter, sourceFilter, allDocuments]);
 
-
-  const getIconForDocumentType = (doc: Document) => {
-     switch (doc.documentContentType) {
-        case 'markdown': return <StickyNote className="h-5 w-5 text-yellow-500" />;
-        case 'file': return <FileTextIcon className="h-5 w-5 text-primary" />;
-        case 'fileWithMarkdown': return <Layers className="h-5 w-5 text-green-500" />;
-        default:
-             if (doc.downloadURL) return <FileTextIcon className="h-5 w-5 text-primary" />;
-             if (doc.content) return <StickyNote className="h-5 w-5 text-yellow-500" />;
-            return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
-    }
-  };
-
-  const formatDate = (dateValue: Timestamp | string) => {
-    if (!dateValue) return "N/A";
-    if (typeof dateValue === "string") {
-      try {
-        return format(new Date(dateValue), "PP");
-      } catch (e) {
-        return dateValue;
-      }
-    }
-    if (dateValue instanceof Timestamp) {
-      return format(dateValue.toDate(), "PP");
-    }
-    return "Invalid Date";
-  };
 
   const handleViewDocument = (doc: Document) => {
     if (doc.documentContentType === 'markdown' || doc.documentContentType === 'fileWithMarkdown') {
@@ -226,44 +278,10 @@ export default function DocumentsPage() {
             )}
 
             {!isLoading && !error && filteredDocuments.length > 0 && (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[60px]">Type</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Provenance</TableHead>
-                      <TableHead>Version</TableHead>
-                      <TableHead>Last Updated</TableHead>
-                      <TableHead>Size</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredDocuments.map((doc) => (
-                      <TableRow key={doc.id}>
-                        <TableCell>{getIconForDocumentType(doc)}</TableCell>
-                        <TableCell className="font-medium max-w-sm truncate" title={doc.title}>{doc.title}</TableCell>
-                        <TableCell><Badge variant="outline">{doc.category}</Badge></TableCell>
-                        <TableCell><Badge variant="secondary">{doc.source}</Badge></TableCell>
-                        <TableCell>{doc.version || "N/A"}</TableCell>
-                        <TableCell>{formatDate(doc.lastUpdated)}</TableCell>
-                        <TableCell>{doc.documentContentType === 'markdown' ? "N/A" : (doc.size || "N/A")}</TableCell>
-                        <TableCell className="text-right space-x-2">
-                           <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc)} aria-label={`View document: ${doc.title}`}>
-                                <Eye className="h-4 w-4" />
-                            </Button>
-                          {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
-                            <Button variant="ghost" size="icon" asChild aria-label={`Download document: ${doc.title}`}>
-                                <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="h-4 w-4" /></a>
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                  {filteredDocuments.map((doc) => (
+                      <DocumentCard key={doc.id} document={doc} onView={handleViewDocument} />
+                  ))}
               </div>
             )}
           </CardContent>
@@ -298,11 +316,11 @@ export default function DocumentsPage() {
                   )}
                 </div>
             </ScrollArea>
-            <DialogFooter className="mt-auto pt-4 border-t">
+            <DialogPrimitiveFooter className="mt-auto pt-4 border-t">
               <DialogClose asChild>
                 <Button variant="outline">Close</Button>
               </DialogClose>
-            </DialogFooter>
+            </DialogPrimitiveFooter>
           </DialogContent>
         </Dialog>
       )}
