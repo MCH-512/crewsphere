@@ -109,11 +109,11 @@ export default function AdminFlightsPage() {
     }
   };
 
-  const getStatusBadgeVariant = (status: Flight["status"]): "secondary" | "default" | "outline" | "destructive" => {
+  const getStatusBadgeVariant = (status: Flight["status"]): "secondary" | "success" | "warning" | "destructive" => {
     switch (status) {
       case "Scheduled": return "secondary";
-      case "On Time": return "default"; 
-      case "Delayed": return "outline"; 
+      case "On Time": return "success"; 
+      case "Delayed": return "warning"; 
       case "Cancelled": return "destructive";
       default: return "secondary";
     }
@@ -299,4 +299,3 @@ export default function AdminFlightsPage() {
     </TooltipProvider>
   );
 }
-

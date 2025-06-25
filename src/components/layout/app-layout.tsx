@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -140,7 +141,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     "/flight-duty-calculator": "Flight Duty Calculator",
     "/purser-reports": "Submit Purser Report",
     "/my-purser-reports": "My Purser Reports", 
-    "/live-tracking": "Live Flight Tracking",
     "/training": "My Active & Required Training",
     "/courses": "Course Library",
     "/quizzes": "My Quizzes", 
