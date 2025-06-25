@@ -49,7 +49,8 @@ import {
   Inbox, 
   ClipboardCheck, 
   FilePlus,
-  Users
+  Users,
+  FileSignature
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
