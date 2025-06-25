@@ -46,18 +46,13 @@ import {
   Navigation,
   Calculator,
   FileSignature,
-  ListChecks,
   LogIn,
   UserPlus,
   Loader2,
-  Library, 
-  Award,
   Inbox, 
   ClipboardCheck, 
   FilePlus,
-  Users,
-  Brain,
-  PlaneTakeoff
+  Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -78,13 +73,8 @@ const navItems = [
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/purser-reports", label: "Submit Purser Report", icon: FileSignature },
   { href: "/my-purser-reports", label: "My Purser Reports", icon: ClipboardCheck }, 
-  { href: "/live-tracking", label: "Live Tracking", icon: PlaneTakeoff },
-  { href: "/insights", label: "AI Insights", icon: Brain },
   { type: "separator", key: "sep2" },
-  { href: "/training", label: "My Active & Required Training", icon: GraduationCap },
-  { href: "/courses", label: "Course Library", icon: Library },
-  { href: "/quizzes", label: "My Quizzes", icon: ListChecks },
-  { href: "/certificates", label: "My Certificates", icon: Award },
+  { href: "/training", label: "Training Hub", icon: GraduationCap },
   { type: "separator", key: "sep3", adminOnly: true },
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];

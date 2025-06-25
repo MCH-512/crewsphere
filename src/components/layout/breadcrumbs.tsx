@@ -32,17 +32,13 @@ const predefinedLabels: { [key: string]: string } = {
   "user-requests": "User Requests",
   "airport-briefings": "Airport Briefings",
   "flight-duty-calculator": "Duty Calculator",
-  insights: "AI Insights",
   training: "Training Hub",
-  quizzes: "My Quizzes",
-  certificates: "My Certificates",
   settings: "Settings",
   schedule: "My Schedule",
   requests: "Submit Request",
   "my-alerts": "My Alerts",
   "my-requests": "My Submitted Requests",
   "system-settings": "System Configuration",
-  "live-tracking": "Live Tracking",
 };
 
 export function Breadcrumbs() {
