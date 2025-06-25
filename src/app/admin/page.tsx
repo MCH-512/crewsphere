@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, GraduationCap, ClipboardList, Plane, Settings, Loader2, FilePlus, Bell, FileSignature } from "lucide-react";
+import { ServerCog, Users, Activity, GraduationCap, ClipboardList, Plane, Settings, Loader2, FilePlus, Bell, FileSignature, ClipboardCheck } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -90,7 +90,7 @@ export default function AdminConsolePage() {
       delay: 0.1 
     },
     { 
-      icon: ClipboardList, 
+      icon: ClipboardCheck, 
       title: "User Request Management", 
       description: "Review, manage, and respond to user-submitted requests (e.g., leave, schedule changes).", 
       buttonText: "Manage Requests", 
@@ -128,7 +128,7 @@ export default function AdminConsolePage() {
     { 
       icon: Plane, 
       title: "Flight Management", 
-      description: "View, edit, and manage flight schedules. You can create new individual or recurring flights from this page.", 
+      description: "Create, view, and manage all flight schedules. Includes tools for recurring flight generation.", 
       buttonText: "Manage Flights", 
       href: "/admin/flights",
       stat: stats.flightsToday,
@@ -145,7 +145,7 @@ export default function AdminConsolePage() {
     { 
       icon: Settings, 
       title: "System Settings", 
-      description: "Configure application-wide settings.", 
+      description: "Configure application-wide settings such as maintenance mode and AI model preferences.", 
       buttonText: "Configure Settings", 
       href: "/admin/system-settings", 
       delay: 0.45
@@ -153,7 +153,7 @@ export default function AdminConsolePage() {
     { 
       icon: Activity, 
       title: "Audit Logs", 
-      description: "Review system activity, changes, and important events.", 
+      description: "Review a detailed, chronological record of system activities, changes, and important events.", 
       buttonText: "View Logs", 
       href: "/admin/audit-logs", 
       delay: 0.5
