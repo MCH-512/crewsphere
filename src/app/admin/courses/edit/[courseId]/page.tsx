@@ -818,5 +818,3 @@ export default function EditComprehensiveCoursePage() {
     </div>
   );
 }
-
-    
