@@ -9,14 +9,11 @@ import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitl
 import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, ListChecks, Brain } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { generateDashboardData, type DashboardDataOutput, type DashboardDataInput } from "@/ai/flows/dashboard-flow";
-import type { IndividualInsight } from "@/ai/flows/operational-insights";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, limit, getDocs, Timestamp, or, doc, getDoc, DocumentData } from "firebase/firestore";
 import { formatDistanceToNowStrict, format, parseISO, addHours, subHours, startOfDay } from "date-fns";
-import ReactMarkdown from "react-markdown";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -55,8 +52,10 @@ interface RecentDocument {
 interface Flight {
   id: string;
   flightNumber: string;
-  departureAirport: string;
-  arrivalAirport: string;
+  departureAirport: string; // Original ICAO code
+  departureAirportIATA?: string; // For display
+  arrivalAirport: string;   // Original ICAO code
+  arrivalAirportIATA?: string;   // For display
   scheduledDepartureDateTimeUTC: string; // ISO string
   scheduledArrivalDateTimeUTC: string; // ISO string
   aircraftType: string;
@@ -88,9 +87,6 @@ interface UpcomingDutyData {
 export default function DashboardPage() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [dashboardData, setDashboardData] = React.useState<DashboardDataOutput | null>(null);
-  const [isDashboardLoading, setIsDashboardLoading] = React.useState(true);
-  const [dashboardError, setDashboardError] = React.useState<string | null>(null);
   const [userNameForGreeting, setUserNameForGreeting] = React.useState<string>("User");
 
   const [alerts, setAlerts] = React.useState<Alert[]>([]);
@@ -116,60 +112,6 @@ export default function DashboardPage() {
       setUserNameForGreeting(name.charAt(0).toUpperCase() + name.slice(1));
     }
   }, [user]);
-
-  React.useEffect(() => {
-    async function fetchDashboardAiData() {
-      if (!user) {
-        setIsDashboardLoading(false);
-        setDashboardError("Please log in to view your dashboard.");
-        return;
-      }
-      setIsDashboardLoading(true);
-      setDashboardError(null);
-      try {
-        const nameForBriefing = user.displayName || user.email || "Crew Member";
-        const authRole = user.role;
-        let schemaCompliantRole: DashboardDataInput['userRole'];
-
-        if (authRole) {
-            switch (authRole) {
-            case "admin": schemaCompliantRole = "Admin"; break;
-            case "purser": schemaCompliantRole = "Purser"; break;
-            case "cabin crew": schemaCompliantRole = "Cabin Crew"; break;
-            case "instructor": schemaCompliantRole = "Instructor"; break;
-            case "pilote": schemaCompliantRole = "Pilot"; break; 
-            case "other": schemaCompliantRole = "Other"; break;
-            default:
-                const validRoles: Array<DashboardDataInput['userRole']> = ["Admin", "Purser", "Cabin Crew", "Instructor", "Pilot", "Other"];
-                if (validRoles.includes(authRole as DashboardDataInput['userRole'])) {
-                    schemaCompliantRole = authRole as DashboardDataInput['userRole'];
-                } else {
-                    console.warn(`Unrecognized role "${authRole}" for briefing. Defaulting to "Other".`);
-                    schemaCompliantRole = "Other";
-                }
-            }
-        } else {
-            schemaCompliantRole = "Other"; 
-        }
-        
-        const dashboardInput: DashboardDataInput = { userName: nameForBriefing, userRole: schemaCompliantRole };
-
-        const data = await generateDashboardData(dashboardInput);
-        setDashboardData(data);
-      } catch (error) {
-        console.error("Failed to load dashboard AI data:", error);
-        setDashboardError("Could not load your AI assistant data. Please try again later.");
-        toast({
-          title: "AI Assistant Error",
-          description: "Could not load data from Kai at this time.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsDashboardLoading(false);
-      }
-    }
-    fetchDashboardAiData();
-  }, [toast, user]);
 
 
   React.useEffect(() => {
@@ -444,77 +386,8 @@ export default function DashboardPage() {
             <CardTitle className="text-2xl font-headline">Welcome Back, {userNameForGreeting}!</CardTitle>
             <CardDescription>Your central command for flight operations, documents, and training.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {isDashboardLoading && (
-              <div className="space-y-3 py-2">
-                <Skeleton className="h-6 w-3/5 mb-2" />
-                <Skeleton className="h-4 w-1/2 mb-1" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-5/6" />
-                <Skeleton className="h-4 w-1/2 mt-2 mb-1" />
-                {[1,2].map(i => (
-                    <div key={i} className="p-3 border rounded-md bg-background/50 space-y-1">
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-3 w-full" />
-                    </div>
-                ))}
-              </div>
-            )}
-
-            {!isDashboardLoading && dashboardData && (
-              <>
-                <Separator className="my-4" />
-                {dashboardData.kaiInsights?.greeting && (
-                  <p className="text-base text-foreground font-semibold mb-2">{dashboardData.kaiInsights.greeting}</p>
-                )}
-                
-                {dashboardData.dailyBriefing && (
-                    <div className="mt-2">
-                        <h3 className="text-md font-semibold text-muted-foreground mb-1">Daily Briefing</h3>
-                        <div className="prose prose-sm max-w-none dark:prose-invert text-foreground border-l-2 border-primary/30 pl-3 py-1">
-                            <ReactMarkdown>{dashboardData.dailyBriefing.briefingMarkdown}</ReactMarkdown>
-                        </div>
-                    </div>
-                )}
-
-                {dashboardData.kaiInsights?.insights && dashboardData.kaiInsights.insights.length > 0 && (
-                    <div className="mt-3">
-                        <h3 className="text-md font-semibold text-muted-foreground mb-1">Personalized Tips from Kai</h3>
-                        <div className="space-y-2">
-                        {dashboardData.kaiInsights.insights.slice(0, 2).map((insight: IndividualInsight, index: number) => (
-                            <div key={index} className="p-2.5 border rounded-md bg-background/50">
-                                <h4 className="font-semibold text-sm flex items-center">
-                                    {insight.emoji && <span className="mr-1.5 text-md">{insight.emoji}</span>}
-                                    {insight.title}
-                                </h4>
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2" title={insight.description}>
-                                    <ReactMarkdown components={{ p: React.Fragment }}>{insight.description}</ReactMarkdown>
-                                </p>
-                            </div>
-                        ))}
-                        </div>
-                         <Button variant="outline" size="sm" className="mt-3 w-full sm:w-auto" asChild>
-                            <Link href="/insights">View All Insights from Kai <ArrowRight className="ml-2 h-4 w-4" /></Link>
-                        </Button>
-                    </div>
-                )}
-              </>
-            )}
-
-            {dashboardError && !isDashboardLoading && (
-              <ShadAlert variant="destructive" className="my-2">
-                  <AlertTriangle className="h-5 w-5" />
-                  <ShadAlertTitle>AI Assistant Error</ShadAlertTitle>
-                  <ShadAlertDescription>{dashboardError}</ShadAlertDescription>
-              </ShadAlert>
-            )}
-
-             {(!user && !isDashboardLoading) && (
-                <div className="text-sm text-muted-foreground pt-2">
-                  <p>Log in to access your personalized dashboard, daily briefings, and AI insights.</p>
-                </div>
-             )}
-
+          <CardContent>
+            <p className="text-muted-foreground">Stay updated with your schedule, alerts, and training requirements.</p>
           </CardContent>
         </Card>
       </AnimatedCard>
