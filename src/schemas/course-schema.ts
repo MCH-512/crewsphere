@@ -32,12 +32,12 @@ export type Chapter = z.infer<typeof chapterSchema>;
 
 // Main Course Form Schema
 export const courseFormSchema = z.object({
-  // Course Details (some used as AI input)
+  // Course Details
   title: z.string().min(5, "Title must be at least 5 characters.").max(150),
   category: z.string({ required_error: "Please select a course category." }),
   courseType: z.string({ required_error: "Please select a course type." }),
   referenceBody: z.string().optional(),
-  description: z.string().min(10, "Description must be at least 10 characters.").max(1000), // AI will pre-fill
+  description: z.string().min(10, "Description must be at least 10 characters.").max(1000),
   duration: z.string({ required_error: "Please select an estimated duration." }),
   mandatory: z.boolean().default(false),
   published: z.boolean().default(false),
@@ -45,18 +45,13 @@ export const courseFormSchema = z.object({
   imageHint: z.string().max(50).optional().describe("Keywords for course image (e.g., emergency exit)"),
   existingFileUrl: z.string().optional(), 
 
-  // AI Generation Inputs (part of the form, but distinctly for AI config)
-  targetAudience: z.enum(["Cabin Crew", "Pilot", "Ground Staff", "All Crew", "Other"]).default("All Crew"),
-  numberOfChapters: z.coerce.number().int().min(1).max(10).default(5),
-  detailLevel: z.enum(["overview", "standard", "detailed"]).default("standard"),
-
-  // Hierarchical Chapters/Content Structure (AI will pre-fill)
+  // Hierarchical Chapters/Content Structure
   chapters: z.array(chapterSchema).min(1, "Course must have at least one chapter."),
 
-  // Quiz title (AI will pre-fill based on course title)
+  // Quiz title
   quizTitle: z.string().min(5, "Quiz Title must be at least 5 characters.").max(100),
-  randomizeQuestions: z.boolean().default(false).describe("AI generated quiz - randomize question order?"),
-  randomizeAnswers: z.boolean().default(false).describe("AI generated quiz - randomize MCQ answer order?"),
+  randomizeQuestions: z.boolean().default(false),
+  randomizeAnswers: z.boolean().default(false),
 
   // Certification Rules
   passingThreshold: z.coerce.number().min(0).max(100, "Threshold must be between 0 and 100.").default(80),
@@ -88,7 +83,7 @@ export const defaultValues: CourseFormValues = {
   category: "",
   courseType: "Initial Training",
   referenceBody: "",
-  description: "", // Will be AI-filled
+  description: "",
   duration: "1 hour",
   mandatory: false,
   published: false,
@@ -96,13 +91,8 @@ export const defaultValues: CourseFormValues = {
   existingFileUrl: "",
   associatedFile: undefined, 
   
-  // AI Input Defaults
-  targetAudience: "All Crew",
-  numberOfChapters: 5,
-  detailLevel: "standard",
-
-  chapters: [defaultChapterValue], // Will be AI-filled
-  quizTitle: "", // Will be AI-filled
+  chapters: [defaultChapterValue],
+  quizTitle: "",
   randomizeQuestions: false,
   randomizeAnswers: false,
   passingThreshold: 80,
