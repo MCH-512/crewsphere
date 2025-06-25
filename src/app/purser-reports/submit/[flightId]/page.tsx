@@ -9,7 +9,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileSignature, Loader2, AlertTriangle, Send } from "lucide-react";
+import { FileSignature, Loader2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -18,6 +18,8 @@ import { useRouter, useParams } from "next/navigation";
 import { purserReportFormSchema, type PurserReportFormValues } from "@/schemas/purser-report-schema";
 import { format, parseISO } from "date-fns";
 import { getAirportByCode } from "@/services/airport-service";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 
 interface FlightForReport {
   id: string;
@@ -146,6 +148,17 @@ export default function SubmitPurserReportPage() {
     );
   }
 
+  const optionalSections: { name: keyof PurserReportFormValues, label: string, placeholder: string }[] = [
+    { name: 'safetyIncidents', label: 'Safety Incidents', placeholder: 'Describe any safety-related incidents or concerns...' },
+    { name: 'securityIncidents', label: 'Security Incidents', placeholder: 'Describe any security-related incidents or concerns...' },
+    { name: 'medicalIncidents', label: 'Medical Incidents', placeholder: 'Describe any medical incidents, treatments administered, or requests for medical assistance...' },
+    { name: 'passengerFeedback', label: 'Significant Passenger Feedback', placeholder: 'Note any notable positive or negative feedback from passengers...' },
+    { name: 'cateringNotes', label: 'Catering Notes', placeholder: 'Note any issues with catering, stock levels, or special meal requests...' },
+    { name: 'maintenanceIssues', label: 'Maintenance or Equipment Issues', placeholder: 'Describe any technical issues or malfunctioning cabin equipment...' },
+    { name: 'crewPerformanceNotes', label: 'Crew Performance Notes', placeholder: 'Note any exceptional performance or areas for improvement within the crew...' },
+    { name: 'otherObservations', label: 'Other Observations', placeholder: 'Any other notes or observations relevant to the flight...' },
+  ];
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -176,15 +189,29 @@ export default function SubmitPurserReportPage() {
         <Card>
             <CardHeader><CardTitle className="text-lg">Flight Summary & Observations</CardTitle></CardHeader>
             <CardContent className="space-y-6">
-                <FormField control={form.control} name="generalFlightSummary" render={({ field }) => (<FormItem><FormLabel>General Flight Summary</FormLabel><FormControl><Textarea placeholder="Describe the overall flight experience, punctuality, and any general observations..." className="min-h-[120px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="safetyIncidents" render={({ field }) => (<FormItem><FormLabel>Safety Incidents (Optional)</FormLabel><FormControl><Textarea placeholder="Describe any safety-related incidents or concerns..." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="securityIncidents" render={({ field }) => (<FormItem><FormLabel>Security Incidents (Optional)</FormLabel><FormControl><Textarea placeholder="Describe any security-related incidents or concerns..." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="medicalIncidents" render={({ field }) => (<FormItem><FormLabel>Medical Incidents (Optional)</FormLabel><FormControl><Textarea placeholder="Describe any medical incidents, treatments administered, or requests for medical assistance..." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="passengerFeedback" render={({ field }) => (<FormItem><FormLabel>Significant Passenger Feedback (Optional)</FormLabel><FormControl><Textarea placeholder="Note any notable positive or negative feedback from passengers..." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="cateringNotes" render={({ field }) => (<FormItem><FormLabel>Catering Notes (Optional)</FormLabel><FormControl><Textarea placeholder="Note any issues with catering, stock levels, or special meal requests..." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="maintenanceIssues" render={({ field }) => (<FormItem><FormLabel>Maintenance or Equipment Issues (Optional)</FormLabel><FormControl><Textarea placeholder="Describe any technical issues or malfunctioning cabin equipment..." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="crewPerformanceNotes" render={({ field }) => (<FormItem><FormLabel>Crew Performance Notes (Optional)</FormLabel><FormControl><Textarea placeholder="Note any exceptional performance or areas for improvement within the crew..." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="otherObservations" render={({ field }) => (<FormItem><FormLabel>Other Observations (Optional)</FormLabel><FormControl><Textarea placeholder="Any other notes or observations relevant to the flight..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="generalFlightSummary" render={({ field }) => (<FormItem><FormLabel>General Flight Summary*</FormLabel><FormControl><Textarea placeholder="Describe the overall flight experience, punctuality, and any general observations..." className="min-h-[120px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                
+                <Accordion type="multiple" className="w-full">
+                  {optionalSections.map((section) => (
+                    <AccordionItem value={section.name} key={section.name}>
+                       <AccordionTrigger>{section.label} (Optional)</AccordionTrigger>
+                       <AccordionContent>
+                         <FormField
+                           control={form.control}
+                           name={section.name as any}
+                           render={({ field }) => (
+                             <FormItem>
+                               <FormControl>
+                                 <Textarea placeholder={section.placeholder} {...field} />
+                               </FormControl>
+                               <FormMessage />
+                             </FormItem>
+                           )}
+                         />
+                       </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
             </CardContent>
         </Card>
         
@@ -205,3 +232,4 @@ export default function SubmitPurserReportPage() {
     </Form>
   );
 }
+
