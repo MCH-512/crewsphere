@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -28,7 +27,6 @@ const predefinedLabels: { [key: string]: string } = {
   "user-requests": "User Requests", 
   "airport-briefings": "Airport Briefings",
   "flight-duty-calculator": "Duty Calculator",
-  "live-tracking": "Live Flight Tracking",
   insights: "AI Insights",
   training: "Training Hub",
   quizzes: "My Quizzes",

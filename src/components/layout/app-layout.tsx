@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -82,7 +81,6 @@ const navItems = [
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/purser-reports", label: "Submit Purser Report", icon: FileSignature },
   { href: "/my-purser-reports", label: "My Purser Reports", icon: ClipboardCheck }, 
-  { href: "/live-tracking", label: "Live Flight Tracking", icon: PlaneTakeoff },
   { type: "separator", key: "sep2" },
   { href: "/training", label: "My Active & Required Training", icon: GraduationCap },
   { href: "/courses", label: "Course Library", icon: Library },
