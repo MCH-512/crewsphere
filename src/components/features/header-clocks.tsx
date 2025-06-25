@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { Clock, CalendarDays } from "lucide-react"; // Added CalendarDays
+import { Clock, CalendarDays } from "lucide-react";
 
 export function HeaderClocks() {
   const [currentDate, setCurrentDate] = React.useState<string | null>(null);
@@ -13,14 +13,14 @@ export function HeaderClocks() {
     const updateDateTime = () => {
       const now = new Date();
       setCurrentDate(
-        now.toLocaleDateString("fr-TN", { // French locale for Tunisia for date format
+        now.toLocaleDateString("en-US", {
           weekday: 'short',
           day: 'numeric',
           month: 'short',
         })
       );
       setUtcTime(
-        now.toLocaleTimeString("fr-TN", {
+        now.toLocaleTimeString("en-GB", {
           timeZone: "UTC",
           hour: "2-digit",
           minute: "2-digit",
@@ -29,7 +29,7 @@ export function HeaderClocks() {
         })
       );
       setTunisTime(
-        now.toLocaleTimeString("fr-TN", {
+        now.toLocaleTimeString("en-GB", {
           timeZone: "Africa/Tunis",
           hour: "2-digit",
           minute: "2-digit",
@@ -46,18 +46,18 @@ export function HeaderClocks() {
   }, []);
 
   return (
-    <div className="hidden md:flex items-center gap-3 text-xs text-muted-foreground">
-      <div className="flex items-center gap-1" title="Date Actuelle">
-        <CalendarDays className="h-3.5 w-3.5" />
-        <span>{currentDate || "--- -- ---"}</span>
+    <div className="hidden md:flex items-center gap-4 text-xs font-medium text-muted-foreground">
+      <div className="flex items-center gap-1.5" title="Current Date">
+        <CalendarDays className="h-4 w-4" />
+        <span className="font-mono">{currentDate || "--- -- ---"}</span>
       </div>
-      <div className="flex items-center gap-1" title="Heure Locale (Tunis)">
-        <Clock className="h-3.5 w-3.5" />
+      <div className="flex items-center gap-1.5" title="Local Time (Tunis)">
+        <Clock className="h-4 w-4" />
         <span>TUN:</span>
         <span className="font-mono">{tunisTime || "--:--:--"}</span>
       </div>
-      <div className="flex items-center gap-1" title="Temps Universel Coordonné">
-        <Clock className="h-3.5 w-3.5" />
+      <div className="flex items-center gap-1.5" title="Coordinated Universal Time">
+        <Clock className="h-4 w-4" />
         <span>UTC:</span>
         <span className="font-mono">{utcTime || "--:--:--"}</span>
       </div>

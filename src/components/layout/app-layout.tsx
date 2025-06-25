@@ -15,9 +15,6 @@ import {
   SidebarInset,
   SidebarTrigger,
   useSidebar,
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
   SidebarProvider, 
   SidebarMenuBadge,
 } from "@/components/ui/sidebar";
@@ -59,16 +56,15 @@ import {
   ClipboardCheck, 
   FilePlus,
   Users,
-  Wand2, 
-  PlaneTakeoff,
+  Brain,
+  PlaneTakeoff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
 import { useToast } from "@/hooks/use-toast";
 import { useNotification } from "@/contexts/notification-context"; 
 import { Breadcrumbs } from "./breadcrumbs"; 
-import Image from "next/image";
-import { HeaderClocks } from "@/components/features/header-clocks"; // Added import
+import { HeaderClocks } from "@/components/features/header-clocks";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -82,6 +78,8 @@ const navItems = [
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/purser-reports", label: "Submit Purser Report", icon: FileSignature },
   { href: "/my-purser-reports", label: "My Purser Reports", icon: ClipboardCheck }, 
+  { href: "/live-tracking", label: "Live Tracking", icon: PlaneTakeoff },
+  { href: "/insights", label: "AI Insights", icon: Brain },
   { type: "separator", key: "sep2" },
   { href: "/training", label: "My Active & Required Training", icon: GraduationCap },
   { href: "/courses", label: "Course Library", icon: Library },
@@ -130,73 +128,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const pageTitles: { [key: string]: string } = {
-    "/": "Dashboard",
-    "/documents": "Document Library",
-    "/schedule": "My Schedule",
-    "/requests": "Submit a Request",
-    "/my-requests": "My Submitted Requests", 
-    "/my-alerts": "My Alerts",
-    "/airport-briefings": "Airport Briefing Generator",
-    "/flight-duty-calculator": "Flight Duty Calculator",
-    "/purser-reports": "Submit Purser Report",
-    "/my-purser-reports": "My Purser Reports", 
-    "/training": "My Active & Required Training",
-    "/courses": "Course Library",
-    "/quizzes": "My Quizzes", 
-    "/certificates": "My Certificates",
-    "/settings": "Settings",
-    "/login": "Login",
-    "/signup": "Sign Up",
-    "/admin": "Admin Console",
-    "/admin/users": "User Management",
-    "/admin/documents": "Document Management",
-    "/admin/documents/create": "Create New Document", 
-    "/admin/documents/edit": "Edit Document", 
-    "/admin/alerts": "All Broadcast Alerts",
-    "/admin/alerts/create": "Create New Alert",
-    "/admin/alerts/edit": "Edit Alert",
-    "/admin/courses": "Courses Management",
-    "/admin/courses/create": "Create New Training Course",
-    "/admin/courses/edit": "Edit Training Course",
-    "/admin/flights": "Flight Management",
-    "/admin/flights/create": "Add New Flight",
-    "/admin/flights/edit": "Edit Flight",
-    "/admin/purser-reports": "Submitted Purser Reports",
-    "/admin/user-requests": "User Submitted Requests",
-    "/admin/quizzes": "Quizzes Overview", 
-    "/admin/system-settings": "System Configuration",
-    "/insights": "AI Insights & Coaching"
-  };
-  
-  let currentTitle = "AirCrew Hub"; 
-  let longestMatch = "";
-
-  for (const path in pageTitles) {
-    if (pathname === path) {
-      if (path.length > longestMatch.length) {
-        longestMatch = path;
-        currentTitle = pageTitles[path];
-      }
-    } else if (pathname.startsWith(path + '/') && path !== '/') {
-      if (pathname.startsWith(path + "/edit/") || pathname.startsWith(path + "/create")) {
-         if (path.length > longestMatch.length) {
-          longestMatch = path;
-          currentTitle = pageTitles[path];
-        }
-      } else if (path.length > longestMatch.length) { 
-        longestMatch = path;
-        currentTitle = pageTitles[path];
-      }
-    }
-  }
-  if (pageTitles[pathname]) {
-    currentTitle = pageTitles[pathname];
-  }
-
-
-  const currentPageTitle = currentTitle;
-
   if (pathname === "/login" || pathname === "/signup") {
     return <>{children}</>; 
   }
@@ -212,7 +143,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider defaultOpen>
       <LayoutWithSidebar 
-        currentPageTitle={currentPageTitle} 
         user={user} 
         handleLogout={handleLogout} 
         theme={theme} 
@@ -228,7 +158,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
 function LayoutWithSidebar({ 
   children, 
-  currentPageTitle, 
   user, 
   handleLogout, 
   theme, 
@@ -237,7 +166,6 @@ function LayoutWithSidebar({
   isNotificationCountLoading
 }: { 
   children: React.ReactNode; 
-  currentPageTitle: string; 
   user: any; 
   handleLogout: () => void; 
   theme: string; 
@@ -345,12 +273,10 @@ function LayoutWithSidebar({
         <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
           {isMobile && <SidebarTrigger aria-label="Toggle sidebar" />}
           <div className="flex-1 flex items-center">
-            <span className="text-lg font-semibold text-foreground truncate">
-              {currentPageTitle}
-            </span>
+             <Breadcrumbs />
           </div>
           <div className="flex items-center gap-3">
-            <HeaderClocks /> {/* Added Clocks */}
+            <HeaderClocks />
             <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>
               {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </Button>
@@ -419,8 +345,6 @@ function LayoutWithSidebar({
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
-          <Breadcrumbs /> 
-          <h1 className="text-2xl font-bold text-foreground mb-6 sr-only">{currentPageTitle}</h1>
           {children}
         </main>
       </SidebarInset>

@@ -193,7 +193,7 @@ export default function DashboardPage() {
 
         for (const course of potentialMandatoryCourses) {
           if (finalFeaturedCourses.length >= 2) break; 
-          const progressDocId = `${user.uid}_${course.id}`;
+          const progressDocId = `\${user.uid}_\${course.id}`;
           const progressSnap = await getDoc(doc(db, "userTrainingProgress", progressDocId));
           if (progressSnap.exists() && progressSnap.data().quizStatus === 'Passed') {
             continue; 
@@ -217,7 +217,7 @@ export default function DashboardPage() {
             if (finalFeaturedCourses.length >= 2) break;
             if (existingIds.includes(course.id)) continue; 
 
-            const progressDocId = `${user.uid}_${course.id}`;
+            const progressDocId = `\${user.uid}_\${course.id}`;
             const progressSnap = await getDoc(doc(db, "userTrainingProgress", progressDocId));
             if (progressSnap.exists() && progressSnap.data().quizStatus === 'Passed') {
               continue; 
@@ -325,10 +325,10 @@ export default function DashboardPage() {
 
             setUpcomingDuty({
               flightNumber: nextFlightDetails.flightNumber,
-              route: `${nextFlightDetails.departureAirport} - ${nextFlightDetails.arrivalAirport}`,
+              route: `\${nextFlightDetails.departureAirport} - \${nextFlightDetails.arrivalAirport}`,
               aircraft: nextFlightDetails.aircraftType,
               reportingTime: format(reportingDateTime, "HH:mm 'UTC'"),
-              reportingDate: format(reportingDateTime, "MMM d, yyyy 'UTC'"),
+              reportingDate: format(reportingDateTime, "MMM d, yyyy"),
               reportingLocation: "Crew Report Centre", 
               etd: format(departureDateTime, "HH:mm 'UTC'"),
               eta: format(parseISO(nextFlightDetails.scheduledArrivalDateTimeUTC), "HH:mm 'UTC'"), 
@@ -379,20 +379,17 @@ export default function DashboardPage() {
 
 
   return (
-    <div className="grid gap-6 md:gap-8">
+    <div className="space-y-6">
       <AnimatedCard>
-        <Card className="shadow-lg">
+        <Card className="shadow-lg bg-card border-none">
           <CardHeader>
-            <CardTitle className="text-2xl font-headline">Welcome Back, {userNameForGreeting}!</CardTitle>
-            <CardDescription>Your central command for flight operations, documents, and training.</CardDescription>
+            <CardTitle className="text-3xl font-headline">Welcome Back, {userNameForGreeting}!</CardTitle>
+            <CardDescription>This is your central command for flight operations, documents, and training.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Stay updated with your schedule, alerts, and training requirements.</p>
-          </CardContent>
         </Card>
       </AnimatedCard>
       
-      <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+      <div className="grid md:grid-cols-3 gap-6">
         <AnimatedCard delay={0.1} className="md:col-span-2">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -475,78 +472,75 @@ export default function DashboardPage() {
               </CardContent>
           </Card>
         </AnimatedCard>
-      </div>
-      
-      <AnimatedCard delay={0.2}>
-        <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg font-medium font-headline">Real-Time Alerts</CardTitle>
-              <BellRing className="h-5 w-5 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {alertsLoading ? (
-                 <div className="space-y-3 py-2">
-                    <div className="flex items-start space-x-3"><Skeleton className="h-5 w-5 rounded-full mt-1" /><div className="space-y-1 flex-1"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-8 w-full" /></div></div>
-                    <div className="flex items-start space-x-3"><Skeleton className="h-5 w-5 rounded-full mt-1" /><div className="space-y-1 flex-1"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-8 w-full" /></div></div>
-                 </div>
-              ) : alertsError ? (
-                <ShadAlert variant="destructive" className="mb-4">
-                    <AlertTriangle className="h-5 w-5" />
-                    <ShadAlertTitle>Alerts Error</ShadAlertTitle>
-                    <ShadAlertDescription>{alertsError}</ShadAlertDescription>
-                </ShadAlert>
-              ) : alerts.length === 0 ? (
-                 <div className="text-center py-6">
-                  <CheckCircle className="h-10 w-10 mx-auto text-success-foreground mb-2" />
-                  <p className="text-base text-muted-foreground">All clear! No new critical alerts.</p>
-                  <p className="text-sm text-muted-foreground mt-1">You're up-to-date.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {alerts.map((alert) => {
-                    const IconComponent = getIconForAlert(alert);
-                    const timeAgo = formatDistanceToNowStrict(alert.createdAt.toDate(), { addSuffix: true });
-                    
-                    return (
-                    <ShadAlert key={alert.id} variant={getAlertVariant(alert.level)} className="shadow-sm">
-                      <IconComponent className="h-5 w-5" />
-                       <div className="flex justify-between items-center mb-1">
-                        <ShadAlertTitle>{alert.title}</ShadAlertTitle>
-                        <p className="text-xs text-muted-foreground/70">{timeAgo}</p>
-                       </div>
-                      <ShadAlertDescription>{alert.content}</ShadAlertDescription>
+        
+        <AnimatedCard delay={0.2} className="md:col-span-3">
+            <Card className="shadow-md hover:shadow-lg transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-lg font-medium font-headline">Real-Time Alerts</CardTitle>
+                <BellRing className="h-5 w-5 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                {alertsLoading ? (
+                    <div className="space-y-3 py-2">
+                        <div className="flex items-start space-x-3"><Skeleton className="h-5 w-5 rounded-full mt-1" /><div className="space-y-1 flex-1"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-8 w-full" /></div></div>
+                        <div className="flex items-start space-x-3"><Skeleton className="h-5 w-5 rounded-full mt-1" /><div className="space-y-1 flex-1"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-8 w-full" /></div></div>
+                    </div>
+                ) : alertsError ? (
+                    <ShadAlert variant="destructive" className="mb-4">
+                        <AlertTriangle className="h-5 w-5" />
+                        <ShadAlertTitle>Alerts Error</ShadAlertTitle>
+                        <ShadAlertDescription>{alertsError}</ShadAlertDescription>
                     </ShadAlert>
-                  )})}
-                </div>
-              )}
-               <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
-                  <Link href="/my-alerts">View All Alerts <ArrowRight className="ml-2 h-4 w-4" /></Link>
-               </Button>
-            </CardContent>
-          </Card>
-      </AnimatedCard>
-      
-      <AnimatedCard delay={0.25}>
-        <Card className="shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader>
-              <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-success-foreground"/>Safety &amp; Best Practice Tips</CardTitle>
-              <CardDescription>Key reminders for maintaining safety and excellence.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-              {safetyTips.slice(0,2).map((tip) => (
-                  <div key={tip.id} className="flex items-start gap-3 p-3 border-l-4 border-success bg-success/10 rounded-r-md">
-                      <ShieldCheck className="h-5 w-5 text-success-foreground mt-0.5 shrink-0"/>
-                      <p className="text-sm text-success-foreground/90">{tip.tip}</p>
-                  </div>
-              ))}
-               <Button variant="link" className="p-0 h-auto text-sm" asChild>
-                <Link href={`/documents?category=${encodeURIComponent("🚨 SEP (Safety & Emergency Procedures)")}`}>More Safety Information</Link>
-              </Button>
-          </CardContent>
-        </Card>
-      </AnimatedCard>
+                ) : alerts.length === 0 ? (
+                    <div className="text-center py-6">
+                    <CheckCircle className="h-10 w-10 mx-auto text-success mb-2" />
+                    <p className="text-base text-muted-foreground">All clear! No new critical alerts.</p>
+                    <p className="text-sm text-muted-foreground mt-1">You're up-to-date.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                    {alerts.map((alert) => {
+                        const IconComponent = getIconForAlert(alert);
+                        const timeAgo = formatDistanceToNowStrict(alert.createdAt.toDate(), { addSuffix: true });
+                        
+                        return (
+                        <ShadAlert key={alert.id} variant={getAlertVariant(alert.level)} className="shadow-sm">
+                        <IconComponent className="h-5 w-5" />
+                        <div className="flex justify-between items-center mb-1">
+                            <ShadAlertTitle>{alert.title}</ShadAlertTitle>
+                            <p className="text-xs text-muted-foreground/70">{timeAgo}</p>
+                        </div>
+                        <ShadAlertDescription>{alert.content}</ShadAlertDescription>
+                        </ShadAlert>
+                    )})}
+                    </div>
+                )}
+                <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
+                    <Link href="/my-alerts">View All Alerts <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                </Button>
+                </CardContent>
+            </Card>
+        </AnimatedCard>
 
-      <div className="grid gap-6 md:grid-cols-3">
+        <AnimatedCard delay={0.25} className="md:col-span-1">
+            <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader>
+                <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-success"/>Safety &amp; Best Practice</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+                {safetyTips.slice(0,2).map((tip) => (
+                    <div key={tip.id} className="flex items-start gap-3 p-3 border-l-4 border-success bg-success/10 rounded-r-md">
+                        <ShieldCheck className="h-5 w-5 text-success mt-0.5 shrink-0"/>
+                        <p className="text-sm text-success/90">{tip.tip}</p>
+                    </div>
+                ))}
+                <Button variant="link" className="p-0 h-auto text-sm" asChild>
+                    <Link href={`/documents?category=${encodeURIComponent("🚨 SEP (Safety & Emergency Procedures)")}`}>More Safety Information</Link>
+                </Button>
+            </CardContent>
+            </Card>
+        </AnimatedCard>
+
          <AnimatedCard delay={0.30} className="md:col-span-2">
            <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
@@ -578,7 +572,7 @@ export default function DashboardPage() {
                   <h3 className="font-semibold">{doc.title}</h3>
                   <Badge variant="outline" className="text-xs mb-1">{doc.category}</Badge>
                   <p className="text-sm text-muted-foreground line-clamp-2">
-                    {doc.content || doc.description || (doc.documentContentType === 'file' && doc.fileName ? `File: ${doc.fileName}` : doc.documentContentType === 'file' ? 'Attached File' : 'No preview available.')}
+                    {doc.content || doc.description || (doc.documentContentType === 'file' && doc.fileName ? `File: \${doc.fileName}` : doc.documentContentType === 'file' ? 'Attached File' : 'No preview available.')}
                   </p>
                   <p className="text-xs text-muted-foreground/80 mt-1">
                     Updated: {format(doc.lastUpdated.toDate(), "PP")}
@@ -592,74 +586,6 @@ export default function DashboardPage() {
           </Card>
         </AnimatedCard>
 
-        <AnimatedCard delay={0.35} className="md:col-span-1">
-          <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader>
-                  <CardTitle className="font-headline">Featured Training</CardTitle>
-                  <CardDescription>Mandatory &amp; recommended courses.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {user && user.role === 'admin' ? (
-                  <div className="text-sm text-muted-foreground">
-                    <p>As an administrator, you manage training content rather than undertake it here.</p>
-                    <Button asChild variant="link" className="p-0 h-auto mt-2">
-                      <Link href="/admin/courses">Go to Course Management <ArrowRight className="ml-1 h-4 w-4" /></Link>
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    {featuredTrainingsLoading ? (
-                      <div className="space-y-4">
-                        {[1,2].map(i => (
-                          <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
-                            <Skeleton className="h-16 w-16 rounded-md" data-ai-hint="training material" />
-                            <div className="space-y-2 flex-1">
-                                <Skeleton className="h-4 w-3/4" />
-                                <Skeleton className="h-3 w-1/2" />
-                                <Skeleton className="h-3 w-1/4 mb-1" />
-                                <Skeleton className="h-7 w-24" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : featuredTrainingsError ? (
-                      <ShadAlert variant="destructive">
-                        <AlertTriangle className="h-5 w-5" />
-                        <ShadAlertTitle>Training Error</ShadAlertTitle>
-                        <ShadAlertDescription>{featuredTrainingsError}</ShadAlertDescription>
-                      </ShadAlert>
-                    ) : featuredTrainings.length === 0 && user ? (
-                      <p className="text-sm text-muted-foreground py-4">No featured trainings for you at this time. All caught up or check the full library!</p>
-                    ) : !user ? (
-                      <p className="text-sm text-muted-foreground py-4">Log in to see featured trainings.</p>
-                    ) : featuredTrainings.map((course) => (
-                      <div key={course.id} className="flex items-center gap-4 p-3 border rounded-lg bg-card">
-                        <Image 
-                          src={`https://placehold.co/60x60.png`} 
-                          alt={course.title} 
-                          width={60} 
-                          height={60} 
-                          className="rounded-md" 
-                          data-ai-hint={course.imageHint || "training material"} 
-                        />
-                        <div>
-                          <h3 className="font-semibold text-sm">{course.title}</h3>
-                          <p className="text-xs text-muted-foreground truncate w-40" title={course.description}>{course.description}</p>
-                          {course.mandatory ? (
-                              <Badge variant="destructive" className="mt-1 text-xs">Mandatory</Badge>
-                          ) : (
-                              <Badge variant="outline" className="mt-1 text-xs">Recommended</Badge>
-                          )}
-                          <br/>
-                          <Button size="sm" className="mt-2 text-xs" asChild><Link href="/training">Go to Training</Link></Button>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                )}
-              </CardContent>
-          </Card>
-        </AnimatedCard>
       </div>
     </div>
   );
