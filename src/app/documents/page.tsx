@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter as DialogPrimitiveFooter, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, StickyNote, Layers } from "lucide-react";
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, StickyNote, Layers, LayoutGrid, List } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
 import { format } from "date-fns";
@@ -23,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import ReactMarkdown from "react-markdown";
 import { documentCategories, documentSources } from "@/config/document-options";
+import { cn } from "@/lib/utils";
 
 interface Document {
   id: string;
@@ -127,6 +129,8 @@ export default function DocumentsPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
   const [sourceFilter, setSourceFilter] = React.useState("all");
+  
+  const [layout, setLayout] = React.useState<'grid' | 'list'>('grid');
 
   const [selectedDocumentForView, setSelectedDocumentForView] = React.useState<Document | null>(null);
   const [isViewNoteDialogOpen, setIsViewNoteDialogOpen] = React.useState(false);
@@ -220,44 +224,54 @@ export default function DocumentsPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6">
-              <Input
-                placeholder="Search by title or source..."
-                className="max-w-xs"
-                disabled={isLoading}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Select
-                value={categoryFilter}
-                onValueChange={setCategoryFilter}
-                disabled={isLoading}
-              >
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <SelectValue placeholder="Filter by category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {documentCategories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={sourceFilter}
-                onValueChange={setSourceFilter}
-                disabled={isLoading}
-              >
-                <SelectTrigger className="w-full sm:w-[240px]">
-                  <SelectValue placeholder="Filter by provenance" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Provenances</SelectItem>
-                  {documentSources.map(src => (
-                    <SelectItem key={src} value={src}>{src}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-4 w-full">
+                <Input
+                  placeholder="Search by title or source..."
+                  className="max-w-xs"
+                  disabled={isLoading}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Select
+                  value={categoryFilter}
+                  onValueChange={setCategoryFilter}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Filter by category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {documentCategories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={sourceFilter}
+                  onValueChange={setSourceFilter}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger className="w-full sm:w-[240px]">
+                    <SelectValue placeholder="Filter by provenance" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Provenances</SelectItem>
+                    {documentSources.map(src => (
+                      <SelectItem key={src} value={src}>{src}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto justify-end">
+                <Button variant={layout === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setLayout('grid')} aria-label="Grid view">
+                  <LayoutGrid className="h-5 w-5" />
+                </Button>
+                <Button variant={layout === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setLayout('list')} aria-label="List view">
+                  <List className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
 
             {isLoading && (
@@ -278,11 +292,52 @@ export default function DocumentsPage() {
             )}
 
             {!isLoading && !error && filteredDocuments.length > 0 && (
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                  {filteredDocuments.map((doc) => (
-                      <DocumentCard key={doc.id} document={doc} onView={handleViewDocument} />
-                  ))}
-              </div>
+              layout === 'grid' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                    {filteredDocuments.map((doc) => (
+                        <DocumentCard key={doc.id} document={doc} onView={handleViewDocument} />
+                    ))}
+                </div>
+              ) : (
+                <div className="rounded-md border mt-6">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[50px]">Type</TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Last Updated</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredDocuments.map((doc) => (
+                        <TableRow key={doc.id}>
+                          <TableCell>{getIconForDocumentType(doc)}</TableCell>
+                          <TableCell className="font-medium max-w-xs truncate" title={doc.title}>
+                            {doc.title}
+                            {doc.version && <span className="text-muted-foreground text-xs ml-1">(v{doc.version})</span>}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{doc.category}</Badge>
+                          </TableCell>
+                          <TableCell className="text-xs">{formatDate(doc.lastUpdated)}</TableCell>
+                          <TableCell className="text-right space-x-1">
+                            <Button variant="ghost" size="sm" onClick={() => handleViewDocument(doc)}>
+                                <Eye className="mr-2 h-4 w-4" /> View
+                            </Button>
+                             {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
+                                <Button variant="ghost" size="sm" asChild>
+                                    <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="mr-2 h-4 w-4" /> Download</a>
+                                </Button>
+                             )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )
             )}
           </CardContent>
         </Card>
