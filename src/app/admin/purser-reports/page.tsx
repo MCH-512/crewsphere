@@ -228,7 +228,7 @@ export default function AdminPurserReportsPage() {
                        <p><strong>Date:</strong> {format(new Date(selectedReport.reportInput.flightDate), "PPP")}</p>
                        <p><strong>Route:</strong> {selectedReport.reportInput.departureAirport} - {selectedReport.reportInput.arrivalAirport}</p>
                        <p><strong>Aircraft:</strong> {selectedReport.reportInput.aircraftTypeRegistration}</p>
-                       <p><strong>Passenger Load:</strong> Total: {selectedReport.reportInput.passengerLoad.total}, Adults: {selectedReport.reportInput.passengerLoad.adults}, Children: {selectedReport.reportInput.passengerLoad.children}, Infants: {selectedReport.reportInput.passengerLoad.infants}</p>
+                       <p><strong>Passenger Load:</strong> Total: {selectedReport.reportInput.passengerLoad.total}, Adults: {selectedReport.reportInput.passengerLoad.adults}, Infants: {selectedReport.reportInput.passengerLoad.infants}</p>
                     </div>
                     <div>
                       <p><strong>Crew Members:</strong></p>
@@ -262,4 +262,5 @@ export default function AdminPurserReportsPage() {
     </div>
   );
 }
+
 

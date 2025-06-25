@@ -62,7 +62,7 @@ const briefingDetailsSchema = z.object({
 
 const PurserReportInputSchema = z.object({
   flightNumber: z.string().min(3).max(10).describe('Flight number (e.g., BA245, UAL123).'),
-  flightDate: z.string().date().describe('Date of the flight (YYYY-MM-DD).'),
+  flightDate: z.string().describe('Date of the flight (YYYY-MM-DD).'),
   departureAirport: z.string().min(3).max(10).describe('Departure airport ICAO/IATA code.'),
   arrivalAirport: z.string().min(3).max(10).describe('Arrival airport ICAO/IATA code.'),
   aircraftTypeRegistration: z.string().min(3).max(20).describe('Aircraft type and registration (e.g., B789 G-XYZC).'),
@@ -230,6 +230,7 @@ const purserReportFlow = ai.defineFlow(
   }
 );
     
+
 
 
 
