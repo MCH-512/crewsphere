@@ -166,7 +166,7 @@ export default function AdminFlightsPage() {
                 <Plane className="mr-3 h-7 w-7 text-primary" />
                 Manage Flights
               </CardTitle>
-              <CardDescription>View all scheduled and active flights in the system.</CardDescription>
+              <CardDescription>View all scheduled flights. You can also create new single or recurring flights from here.</CardDescription>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={fetchFlights} disabled={isLoading}>

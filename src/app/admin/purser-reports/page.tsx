@@ -88,7 +88,7 @@ export default function AdminPurserReportsPage() {
       // Clear the query parameter to prevent re-triggering and clean URL
       router.replace('/admin/purser-reports', { scroll: false });
     }
-  }, [searchParams, reports, isLoading, router, toast, setSelectedReport, setIsViewDialogOpen]);
+  }, [searchParams, reports, isLoading, router, toast]);
 
 
   const handleOpenViewDialog = (report: StoredPurserReport) => {
@@ -188,7 +188,7 @@ export default function AdminPurserReportsPage() {
       {selectedReport && (
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
           <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] grid grid-rows-[auto_minmax(0,1fr)_auto] p-0">
-            <DialogHeader className="p-6 pb-0"> {/* Adjust padding for header */}
+            <DialogHeader className="p-6 pb-0">
               <DialogTitle>
                 Purser Report: {selectedReport.reportInput.flightNumber} ({selectedReport.reportInput.departureAirport} - {selectedReport.reportInput.arrivalAirport})
               </DialogTitle>
@@ -196,8 +196,8 @@ export default function AdminPurserReportsPage() {
                 Submitted by: {selectedReport.userEmail} on {format(selectedReport.createdAt.toDate(), "PPpp")}
               </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="min-h-0"> {/* ScrollArea is the 1fr part */}
-              <div className="p-6 space-y-6"> {/* Add padding to the content wrapper */}
+            <ScrollArea className="min-h-0">
+              <div className="p-6 space-y-6">
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Key Highlights (AI Generated):</h3>
                   {selectedReport.reportOutput.keyHighlights && selectedReport.reportOutput.keyHighlights.length > 0 ? (
@@ -251,7 +251,7 @@ export default function AdminPurserReportsPage() {
                 </Card>
               </div>
             </ScrollArea>
-            <DialogFooter className="p-6 pt-0"> {/* Adjust padding for footer */}
+            <DialogFooter className="p-6 pt-0">
               <DialogClose asChild>
                 <Button variant="outline">Close</Button>
               </DialogClose>
@@ -262,5 +262,3 @@ export default function AdminPurserReportsPage() {
     </div>
   );
 }
-
-
