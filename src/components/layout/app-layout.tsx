@@ -64,6 +64,7 @@ const navItems = [
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/requests", label: "Submit Request", icon: SendHorizonal },
   { href: "/my-requests", label: "My Requests", icon: Inbox }, 
+  { href: "/my-purser-reports", label: "My Purser Reports", icon: FileSignature },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
   { type: "separator", key: "sep2" },

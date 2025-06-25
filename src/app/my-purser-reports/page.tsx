@@ -15,18 +15,8 @@ import { useRouter } from "next/navigation";
 import { FileText, Loader2, AlertTriangle, RefreshCw, Eye, Inbox } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { PurserReportInput, PurserReportOutput } from "@/ai/flows/purser-report-flow";
-import ReactMarkdown from 'react-markdown';
-
-interface StoredPurserReport {
-  id: string;
-  reportInput: PurserReportInput;
-  reportOutput: PurserReportOutput;
-  userId: string;
-  userEmail: string;
-  createdAt: Timestamp;
-  status: string; // e.g. "submitted", "reviewed", "archived"
-}
+import { type StoredPurserReport } from "@/schemas/purser-report-schema";
+import { Separator } from "@/components/ui/separator";
 
 export default function MyPurserReportsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -152,9 +142,9 @@ export default function MyPurserReportsPage() {
                       <TableCell>
                         {report.createdAt ? format(report.createdAt.toDate(), "PPp") : 'N/A'}
                       </TableCell>
-                      <TableCell className="font-medium">{report.reportInput.flightNumber}</TableCell>
-                      <TableCell>{format(new Date(report.reportInput.flightDate), "PPP")}</TableCell>
-                      <TableCell>{report.reportInput.departureAirport} - {report.reportInput.arrivalAirport}</TableCell>
+                      <TableCell className="font-medium">{report.flightNumber}</TableCell>
+                      <TableCell>{format(new Date(report.flightDate), "PPP")}</TableCell>
+                      <TableCell>{report.departureAirport} - {report.arrivalAirport}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" onClick={() => handleOpenViewDialog(report)}>
                           <Eye className="mr-1 h-4 w-4" /> View Details
@@ -174,66 +164,47 @@ export default function MyPurserReportsPage() {
           <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>
-                Purser Report: {selectedReport.reportInput.flightNumber} ({selectedReport.reportInput.departureAirport} - {selectedReport.reportInput.arrivalAirport})
+                Purser Report: {selectedReport.flightNumber} ({selectedReport.departureAirport} - {selectedReport.arrivalAirport})
               </DialogTitle>
               <DialogDescription>
                 Submitted by you on {format(selectedReport.createdAt.toDate(), "PPpp")}
               </DialogDescription>
             </DialogHeader>
             <ScrollArea className="flex-grow pr-6">
-              <div className="py-4 space-y-6">
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Key Highlights (AI Generated):</h3>
-                  {selectedReport.reportOutput.keyHighlights && selectedReport.reportOutput.keyHighlights.length > 0 ? (
-                    <ul className="list-disc pl-5 space-y-1 text-sm bg-secondary/30 p-3 rounded-md">
-                      {selectedReport.reportOutput.keyHighlights.map((highlight, index) => (
-                        <li key={index}>{highlight}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No key highlights identified by AI.</p>
-                  )}
-                </div>
-                
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Full AI Generated Report:</h3>
-                  <div className="prose prose-sm max-w-none dark:prose-invert text-foreground p-4 border rounded-md bg-background">
-                    <ReactMarkdown>{selectedReport.reportOutput.formattedReport}</ReactMarkdown>
-                  </div>
-                </div>
+                <div className="py-4 space-y-4">
+                    <Card>
+                        <CardHeader className="pb-3"><CardTitle className="text-base">Flight & Passenger Details</CardTitle></CardHeader>
+                        <CardContent className="text-sm space-y-2">
+                            <p><strong>Aircraft:</strong> {selectedReport.aircraftTypeRegistration}</p>
+                            <p><strong>Total Passengers:</strong> {selectedReport.passengerLoad.total} (Adults: {selectedReport.passengerLoad.adults}, Infants: {selectedReport.passengerLoad.infants})</p>
+                            <div>
+                                <Label className="font-medium">Crew Members:</Label>
+                                <p className="text-muted-foreground whitespace-pre-wrap text-xs p-2 bg-muted rounded-md mt-1">{selectedReport.crewMembers}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Your Submitted Input Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-sm">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
-                       <p><strong>Flight Number:</strong> {selectedReport.reportInput.flightNumber}</p>
-                       <p><strong>Date:</strong> {format(new Date(selectedReport.reportInput.flightDate), "PPP")}</p>
-                       <p><strong>Route:</strong> {selectedReport.reportInput.departureAirport} - {selectedReport.reportInput.arrivalAirport}</p>
-                       <p><strong>Aircraft:</strong> {selectedReport.reportInput.aircraftTypeRegistration}</p>
-                       <p><strong>Passenger Load:</strong> Total: {selectedReport.reportInput.passengerLoad.total}, Adults: {selectedReport.reportInput.passengerLoad.adults}, Infants: {selectedReport.reportInput.passengerLoad.infants}</p>
-                    </div>
-                    <div>
-                      <p><strong>Crew Members:</strong></p>
-                      <pre className="text-xs bg-muted p-2 rounded-md whitespace-pre-wrap">{selectedReport.reportInput.crewMembers}</pre>
-                    </div>
-                    <div className="border-t pt-2 mt-2">
-                       <Label className="font-medium">General Flight Summary:</Label>
-                       <p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.generalFlightSummary}</p>
-                    </div>
-                   
-                    {selectedReport.reportInput.safetyIncidents && <div className="border-t pt-2 mt-2"><Label className="font-medium">Safety Incidents:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.safetyIncidents}</p></div>}
-                    {selectedReport.reportInput.securityIncidents && <div className="border-t pt-2 mt-2"><Label className="font-medium">Security Incidents:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.securityIncidents}</p></div>}
-                    {selectedReport.reportInput.medicalIncidents && <div className="border-t pt-2 mt-2"><Label className="font-medium">Medical Incidents:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.medicalIncidents}</p></div>}
-                    {selectedReport.reportInput.passengerFeedback && <div className="border-t pt-2 mt-2"><Label className="font-medium">Passenger Feedback:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.passengerFeedback}</p></div>}
-                    {selectedReport.reportInput.cateringNotes && <div className="border-t pt-2 mt-2"><Label className="font-medium">Catering Notes:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.cateringNotes}</p></div>}
-                    {selectedReport.reportInput.maintenanceIssues && <div className="border-t pt-2 mt-2"><Label className="font-medium">Maintenance Issues:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.maintenanceIssues}</p></div>}
-                    {selectedReport.reportInput.otherObservations && <div className="border-t pt-2 mt-2"><Label className="font-medium">Other Observations:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.otherObservations}</p></div>}
-                    {selectedReport.reportInput.crewPerformanceNotes && <div className="border-t pt-2 mt-2"><Label className="font-medium">Crew Performance Notes:</Label><p className="text-muted-foreground whitespace-pre-wrap">{selectedReport.reportInput.crewPerformanceNotes}</p></div>}
-                  </CardContent>
-                </Card>
-              </div>
+                    <Card>
+                         <CardHeader className="pb-3"><CardTitle className="text-base">General Summary</CardTitle></CardHeader>
+                         <CardContent>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.generalFlightSummary}</p>
+                         </CardContent>
+                    </Card>
+                    
+                    <Separator />
+                    
+                    <h3 className="text-lg font-semibold">Detailed Observations</h3>
+                    
+                    {selectedReport.safetyIncidents && <div><Label className="font-medium">Safety Incidents:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.safetyIncidents}</p></div>}
+                    {selectedReport.securityIncidents && <div><Label className="font-medium">Security Incidents:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.securityIncidents}</p></div>}
+                    {selectedReport.medicalIncidents && <div><Label className="font-medium">Medical Incidents:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.medicalIncidents}</p></div>}
+                    {selectedReport.passengerFeedback && <div><Label className="font-medium">Passenger Feedback:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.passengerFeedback}</p></div>}
+                    {selectedReport.cateringNotes && <div><Label className="font-medium">Catering Notes:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.cateringNotes}</p></div>}
+                    {selectedReport.maintenanceIssues && <div><Label className="font-medium">Maintenance Issues:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.maintenanceIssues}</p></div>}
+                    {selectedReport.crewPerformanceNotes && <div><Label className="font-medium">Crew Performance Notes:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.crewPerformanceNotes}</p></div>}
+                    {selectedReport.otherObservations && <div><Label className="font-medium">Other Observations:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.otherObservations}</p></div>}
+
+                </div>
             </ScrollArea>
             <DialogFooter className="mt-auto pt-4 border-t">
               <DialogClose asChild>
@@ -246,4 +217,3 @@ export default function MyPurserReportsPage() {
     </div>
   );
 }
-
