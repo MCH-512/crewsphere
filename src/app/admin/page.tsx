@@ -9,7 +9,8 @@ import { ServerCog, Users, Activity, GraduationCap, ClipboardList, Plane, Settin
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getCountFromServer, Timestamp, startOfDay, endOfDay } from "firebase/firestore";
+import { collection, query, where, getCountFromServer, Timestamp } from "firebase/firestore";
+import { startOfDay, endOfDay } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
