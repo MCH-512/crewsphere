@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, Files, GraduationCap, ClipboardList, Plane, Settings, Loader2, FilePlus, CalendarPlus } from "lucide-react";
+import { ServerCog, Users, Activity, GraduationCap, ClipboardList, Plane, Settings, Loader2, FilePlus, Bell, FileSignature } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -58,20 +58,29 @@ export default function AdminConsolePage() {
       delay: 0.1 
     },
     { 
+      icon: ClipboardList, 
+      title: "User Request Management", 
+      description: "Review, manage, and respond to user-submitted requests (e.g., leave, schedule changes).", 
+      buttonText: "Manage Requests", 
+      href: "/admin/user-requests",
+      isRequestManagement: true,
+      delay: 0.15
+    },
+    { 
       icon: FilePlus, 
       title: "Document Management", 
       description: "Create, upload, categorize, and manage all shared documents, notes, and procedures.", 
       buttonText: "Manage Documents", 
       href: "/admin/documents", 
-      delay: 0.15
+      delay: 0.2
     },
     { 
-      icon: ServerCog, 
+      icon: Bell, 
       title: "Alerts Management", 
       description: "Create and manage global or user-specific alerts. Creation option is available from the management page.", 
       buttonText: "Manage Alerts", 
       href: "/admin/alerts",
-      delay: 0.2
+      delay: 0.25
     },
     { 
       icon: GraduationCap, 
@@ -79,39 +88,22 @@ export default function AdminConsolePage() {
       description: "Manage courses (including their modules, quizzes, and certification rules), training assignments, and track user progress.", 
       buttonText: "Manage Courses", 
       href: "/admin/courses", 
-      delay: 0.25
-    },
-    { 
-      icon: ClipboardList, 
-      title: "User Request Management", 
-      description: "Review, manage, and respond to user-submitted requests (e.g., leave, schedule changes).", 
-      buttonText: "Manage Requests", 
-      href: "/admin/user-requests",
-      isRequestManagement: true,
       delay: 0.3
-    },
-    { 
-      icon: Files, 
-      title: "Purser Report Review", 
-      description: "Access, review, and analyze submitted Purser Reports for operational insights and follow-up actions.", 
-      buttonText: "Manage Reports", 
-      href: "/admin/purser-reports",
-      delay: 0.35
-    },
-    { 
-      icon: CalendarPlus,
-      title: "Add New Flight(s)",
-      description: "Quickly add individual or recurring flights to the schedule.",
-      buttonText: "Add Flight(s)",
-      href: "/admin/flights/create",
-      delay: 0.38 // Adjusted delay
     },
     { 
       icon: Plane, 
       title: "Flight Management", 
-      description: "View, edit, and manage existing flight schedules and details.", // Updated description
+      description: "View, edit, and manage flight schedules. You can create new individual or recurring flights from this page.", 
       buttonText: "Manage Flights", 
       href: "/admin/flights",
+      delay: 0.35
+    },
+    { 
+      icon: FileSignature, 
+      title: "Purser Report Review", 
+      description: "Access, review, and analyze submitted Purser Reports for operational insights and follow-up actions.", 
+      buttonText: "Manage Reports", 
+      href: "/admin/purser-reports",
       delay: 0.4
     },
     { 
