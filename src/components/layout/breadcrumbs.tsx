@@ -41,6 +41,7 @@ const predefinedLabels: { [key: string]: string } = {
   "suggestion-box": "Suggestion Box",
   suggestions: "Suggestion Box",
   submit: "Submit",
+  "crew-community": "Crew Community",
 };
 
 export function Breadcrumbs() {

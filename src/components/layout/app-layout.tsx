@@ -54,6 +54,7 @@ import {
   Brain,
   Calculator,
   Lightbulb,
+  MessagesSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -69,6 +70,7 @@ const navItems = [
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
   // Actions & Reports
   { href: "/requests", label: "My Requests", icon: Inbox },
+  { href: "/crew-community", label: "Crew Community", icon: MessagesSquare },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
   { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
   // Tools & Learning
