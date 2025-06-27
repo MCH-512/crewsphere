@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -18,6 +19,7 @@ import Link from "next/link";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import ReactMarkdown from "react-markdown";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
 
 
 // --- SHARED INTERFACES ---
@@ -81,11 +83,11 @@ const MyLearningTab = ({ onAction, onRefresh, courses, isLoading, error }: { onA
     return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-2">Loading active trainings...</p></div>;
   }
   if (error) {
-    return <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error} <Button variant="link" onClick={onRefresh}>Try again</Button></AlertDescription></Alert>;
+    return <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><ShadAlertTitle>Error</ShadAlertTitle><AlertDescription>{error} <Button variant="link" onClick={onRefresh}>Try again</Button></AlertDescription></Alert>;
   }
 
   const mandatoryNotPassed = courses.filter(c => c.mandatory && c.progress?.quizStatus !== 'Passed');
-  const inProgressNotMandatory = courses.filter(c => !c.mandatory && c.progress?.quizStatus !== 'Passed');
+  const inProgressNotMandatory = courses.filter(c => !c.mandatory && c.progress?.quizStatus !== 'Passed' && (c.progress?.contentStatus === 'InProgress' || c.progress?.quizStatus === 'Attempted' || c.progress?.quizStatus === 'Failed'));
 
   return (
     <div className="space-y-8 mt-4">
@@ -105,7 +107,7 @@ const MyLearningTab = ({ onAction, onRefresh, courses, isLoading, error }: { onA
           </div>
         </section>
       )}
-      {courses.length === 0 && (
+      {mandatoryNotPassed.length === 0 && inProgressNotMandatory.length === 0 && (
         <Card className="text-muted-foreground p-6 text-center shadow-md">
           <GraduationCap className="mx-auto h-12 w-12 text-primary mb-4" />
           <p className="font-semibold">No active or required trainings for you at this time.</p>
@@ -122,7 +124,7 @@ const CourseLibraryTab = ({ onAction, onRefresh, courses, isLoading, error }: { 
     return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-2">Loading course library...</p></div>;
   }
   if (error) {
-    return <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error} <Button variant="link" onClick={onRefresh}>Try again</Button></AlertDescription></Alert>;
+    return <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><ShadAlertTitle>Error</ShadAlertTitle><AlertDescription>{error} <Button variant="link" onClick={onRefresh}>Try again</Button></AlertDescription></Alert>;
   }
 
   return (
@@ -148,7 +150,7 @@ const CertificatesTab = ({ onAction, onRefresh, courses, isLoading, error }: { o
     return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-2">Loading certificates...</p></div>;
   }
   if (error) {
-    return <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error} <Button variant="link" onClick={onRefresh}>Try again</Button></AlertDescription></Alert>;
+    return <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><ShadAlertTitle>Error</ShadAlertTitle><AlertDescription>{error} <Button variant="link" onClick={onRefresh}>Try again</Button></AlertDescription></Alert>;
   }
 
   return (
@@ -429,18 +431,18 @@ const QuizDialog = ({ course, isOpen, onOpenChange, onSimulate, isUpdating }: { 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Take Quiz: {course.quizTitle}</DialogTitle>
-          <DialogDescription>This is a simulation. For now, choose to simulate passing or failing.</DialogDescription>
+          <DialogDescription>This is a quiz simulation. For this prototype, choose whether you want to simulate passing or failing the quiz.</DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-3">
           <p className="text-sm text-muted-foreground">Course: {course.title}</p>
           {course.mandatory && <p className="text-sm font-semibold text-destructive flex items-center gap-1"><AlertTriangle className="h-4 w-4"/>This is a mandatory quiz.</p>}
         </div>
         <DialogFooter className="gap-2 sm:justify-between">
-          <Button variant="outline" onClick={() => onSimulate(course.id, false)} disabled={isUpdating}>
+          <Button variant="destructive" onClick={() => onSimulate(course.id, false)} disabled={isUpdating}>
             {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
             <XCircle className="mr-2 h-4 w-4"/>Simulate Fail
           </Button>
-          <Button onClick={() => onSimulate(course.id, true)} disabled={isUpdating}>
+          <Button variant="success" onClick={() => onSimulate(course.id, true)} disabled={isUpdating}>
             {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
             <CheckCircle className="mr-2 h-4 w-4"/>Simulate Pass
           </Button>
@@ -457,8 +459,31 @@ const CertificateDialog = ({ course, isOpen, onOpenChange, user }: { course: Com
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[650px]">
               <DialogHeader><DialogTitle>Certificate of Completion</DialogTitle><DialogDescription>For the successful completion of the {course.title} program.</DialogDescription></DialogHeader>
-              <div className="grid gap-4 py-4"><div className="mx-auto my-4"><Image src={details.logoURL || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4 mx-auto" data-ai-hint="company logo airline"/><div className="border-2 border-dashed border-primary p-6 rounded-lg bg-secondary/30 aspect-[8.5/5.5] w-full max-w-md flex flex-col items-center justify-around text-center" data-ai-hint="certificate award"><h4 className="text-2xl font-bold text-primary">Certificate of Completion</h4><p className="text-sm my-2">This certifies that</p><p className="text-xl font-semibold">{user?.displayName || user?.email}</p><p className="text-sm my-2">has successfully completed the course</p><p className="text-lg font-medium">&quot;{course.title}&quot;</p><p className="text-xs mt-3">Date: {new Date(details.issuedDate).toLocaleDateString()}</p><p className="text-xs mt-1">ID: {details.certificateId}</p>{details.expiryDate && <p className="text-xs mt-1">Valid Until: {new Date(details.expiryDate).toLocaleDateString()}</p>}<p className="text-xs mt-3">Issued by: {details.provider}</p><p className="text-xs mt-3">Signature: {details.signatureTextOrURL}</p></div></div><div className="space-y-1 text-sm mt-4"><p className="font-semibold text-center">Achieved Score: {course.progress?.quizScore}%</p>{course.mandatory && <p className="font-semibold text-destructive text-center mt-1">This was a mandatory training.</p>}</div></div>
-              <DialogFooter><DialogClose asChild><Button type="button" variant="secondary">Close</Button></DialogClose><Button type="button" onClick={() => toast({title: "Feature Not Implemented", description: "PDF download is not available."})}>Download PDF</Button></DialogFooter>
+              <div className="grid gap-4 py-4">
+                <div className="mx-auto my-4">
+                  <div className="border-2 border-dashed border-primary p-6 rounded-lg bg-secondary/30 aspect-[8.5/5.5] w-full max-w-md flex flex-col items-center justify-around text-center" data-ai-hint="certificate award">
+                    <Image src={details.logoURL || "https://placehold.co/150x50.png"} alt="Airline Logo" width={120} height={40} className="mb-4 mx-auto" data-ai-hint="company logo airline"/>
+                    <h4 className="text-2xl font-bold text-primary">Certificate of Completion</h4>
+                    <p className="text-sm my-2">This certifies that</p>
+                    <p className="text-xl font-semibold">{user?.displayName || user?.email}</p>
+                    <p className="text-sm my-2">has successfully completed the course</p>
+                    <p className="text-lg font-medium">&quot;{course.title}&quot;</p>
+                    <p className="text-xs mt-3">Date: {new Date(details.issuedDate).toLocaleDateString()}</p>
+                    <p className="text-xs mt-1">ID: {details.certificateId}</p>
+                    {details.expiryDate && <p className="text-xs mt-1">Valid Until: {new Date(details.expiryDate).toLocaleDateString()}</p>}
+                    <p className="text-xs mt-3">Issued by: {details.provider}</p>
+                    <p className="text-xs mt-3">Signature: {details.signatureTextOrURL}</p>
+                  </div>
+                </div>
+                <div className="space-y-1 text-sm mt-4">
+                  <p className="font-semibold text-center">Achieved Score: {course.progress?.quizScore}%</p>
+                  {course.mandatory && <p className="font-semibold text-destructive text-center mt-1">This was a mandatory training.</p>}
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild><Button type="button" variant="secondary">Close</Button></DialogClose>
+                <Button type="button" onClick={() => toast({title: "Feature Not Implemented", description: "PDF download is not available."})}>Download PDF</Button>
+              </DialogFooter>
             </DialogContent>
         </Dialog>
     );
