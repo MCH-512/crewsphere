@@ -18,6 +18,22 @@ import { useToast } from "@/hooks/use-toast";
 import { type StoredPurserReport } from "@/schemas/purser-report-schema";
 import { Separator } from "@/components/ui/separator";
 
+// Helper component for displaying a report section only if it has content
+const ReportSection = ({ label, content }: { label: string; content?: string | null }) => {
+  if (!content || content.trim() === "") {
+    return null;
+  }
+  return (
+    <div>
+      <Label className="font-semibold text-base">{label}</Label>
+      <div className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border text-foreground/80">
+        {content}
+      </div>
+    </div>
+  );
+};
+
+
 export default function AdminPurserReportsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -75,7 +91,10 @@ export default function AdminPurserReportsPage() {
           variant: "warning",
         });
       }
-      router.replace('/admin/purser-reports', { scroll: false });
+      // Clean up URL after processing
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('reportId');
+      router.replace(newUrl.toString(), { scroll: false });
     }
   }, [searchParams, reports, isLoading, router, toast]);
 
@@ -175,7 +194,7 @@ export default function AdminPurserReportsPage() {
       </Card>
 
       {selectedReport && (
-        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <Dialog open={isViewDialogOpen} onOpenChange={(open) => { setIsViewDialogOpen(open); if (!open) setSelectedReport(null); }}>
           <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>
@@ -188,8 +207,8 @@ export default function AdminPurserReportsPage() {
             <ScrollArea className="flex-grow pr-6">
                 <div className="py-4 space-y-4">
                     <Card>
-                        <CardHeader className="pb-3"><CardTitle className="text-base">Flight & Passenger Details</CardTitle></CardHeader>
-                        <CardContent className="text-sm space-y-2">
+                        <CardHeader className="pb-3"><CardTitle className="text-lg">Flight & Passenger Details</CardTitle></CardHeader>
+                        <CardContent className="text-sm space-y-3">
                             <p><strong>Aircraft:</strong> {selectedReport.aircraftTypeRegistration}</p>
                             <p><strong>Total Passengers:</strong> {selectedReport.passengerLoad.total} (Adults: {selectedReport.passengerLoad.adults}, Infants: {selectedReport.passengerLoad.infants})</p>
                             <div>
@@ -200,7 +219,7 @@ export default function AdminPurserReportsPage() {
                     </Card>
 
                     <Card>
-                         <CardHeader className="pb-3"><CardTitle className="text-base">General Summary</CardTitle></CardHeader>
+                         <CardHeader className="pb-3"><CardTitle className="text-lg">General Flight Summary</CardTitle></CardHeader>
                          <CardContent>
                             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.generalFlightSummary}</p>
                          </CardContent>
@@ -209,56 +228,16 @@ export default function AdminPurserReportsPage() {
                     <Separator />
                     
                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold">Detailed Observations</h3>
+                        <h3 className="text-xl font-semibold">Detailed Observations</h3>
                         
-                        {selectedReport.safetyIncidents && (
-                            <div>
-                                <Label className="font-semibold">Safety Incidents</Label>
-                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.safetyIncidents}</p>
-                            </div>
-                        )}
-                        {selectedReport.securityIncidents && (
-                            <div>
-                                <Label className="font-semibold">Security Incidents</Label>
-                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.securityIncidents}</p>
-                            </div>
-                        )}
-                        {selectedReport.medicalIncidents && (
-                            <div>
-                                <Label className="font-semibold">Medical Incidents</Label>
-                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.medicalIncidents}</p>
-                            </div>
-                        )}
-                        {selectedReport.passengerFeedback && (
-                            <div>
-                                <Label className="font-semibold">Passenger Feedback</Label>
-                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.passengerFeedback}</p>
-                            </div>
-                        )}
-                        {selectedReport.cateringNotes && (
-                            <div>
-                                <Label className="font-semibold">Catering Notes</Label>
-                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.cateringNotes}</p>
-                            </div>
-                        )}
-                        {selectedReport.maintenanceIssues && (
-                            <div>
-                                <Label className="font-semibold">Maintenance Issues</Label>
-                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.maintenanceIssues}</p>
-                            </div>
-                        )}
-                        {selectedReport.crewPerformanceNotes && (
-                            <div>
-                                <Label className="font-semibold">Crew Performance Notes</Label>
-                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.crewPerformanceNotes}</p>
-                            </div>
-                        )}
-                        {selectedReport.otherObservations && (
-                            <div>
-                                <Label className="font-semibold">Other Observations</Label>
-                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.otherObservations}</p>
-                            </div>
-                        )}
+                        <ReportSection label="Safety Incidents" content={selectedReport.safetyIncidents} />
+                        <ReportSection label="Security Incidents" content={selectedReport.securityIncidents} />
+                        <ReportSection label="Medical Incidents" content={selectedReport.medicalIncidents} />
+                        <ReportSection label="Passenger Feedback" content={selectedReport.passengerFeedback} />
+                        <ReportSection label="Catering Notes" content={selectedReport.cateringNotes} />
+                        <ReportSection label="Maintenance Issues" content={selectedReport.maintenanceIssues} />
+                        <ReportSection label="Crew Performance Notes" content={selectedReport.crewPerformanceNotes} />
+                        <ReportSection label="Other Observations" content={selectedReport.otherObservations} />
                     </div>
                 </div>
             </ScrollArea>
