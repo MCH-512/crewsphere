@@ -152,7 +152,7 @@ export default function MyPurserReportsPage() {
                         {report.createdAt ? format(report.createdAt.toDate(), "PPp") : 'N/A'}
                       </TableCell>
                       <TableCell className="font-medium">{report.flightNumber}</TableCell>
-                      <TableCell>{format(new Date(report.flightDate), "PPP")}</TableCell>
+                      <TableCell>{report.flightDate && !isNaN(new Date(report.flightDate).getTime()) ? format(new Date(report.flightDate), "PPP") : 'N/A'}</TableCell>
                       <TableCell>{report.departureAirport} - {report.arrivalAirport}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" onClick={() => handleOpenViewDialog(report)}>
