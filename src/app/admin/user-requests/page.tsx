@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown, Info } from "lucide-react";
+import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown, Info, MessageSquareText } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority"; 
@@ -371,7 +371,7 @@ export default function AdminUserRequestsPage() {
                     </div>
                     {selectedRequest.adminResponse && (
                       <div className="space-y-1 pt-2 border-t mt-3">
-                        <Label className="font-medium text-primary">Previous Admin Response:</Label>
+                        <Label className="font-medium text-primary flex items-center gap-1"><MessageSquareText className="h-4 w-4"/>Previous Admin Response:</Label>
                         <p className="text-muted-foreground p-2 border border-primary/30 rounded-md bg-primary/5 max-h-28 overflow-y-auto whitespace-pre-wrap">{selectedRequest.adminResponse}</p>
                       </div>
                     )}
