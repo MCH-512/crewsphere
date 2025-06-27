@@ -34,7 +34,7 @@ import ReactMarkdown from "react-markdown";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { documentCategories, documentSources } from "@/config/document-options";
 import { logAuditEvent } from "@/lib/audit-logger";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"; // Import Tooltip components
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"; 
 
 interface Document {
   id: string;
@@ -184,15 +184,34 @@ export default function AdminDocumentsPage() {
   };
 
   const getIconForDocumentType = (doc: Document) => {
-    switch (doc.documentContentType) {
-        case 'markdown': return <StickyNote className="h-5 w-5 text-yellow-500" />;
-        case 'file': return <FileTextIcon className="h-5 w-5 text-primary" />;
-        case 'fileWithMarkdown': return <Layers className="h-5 w-5 text-green-500" />; 
-        default: 
-            if (doc.downloadURL) return <FileTextIcon className="h-5 w-5 text-primary" />;
-            if (doc.content) return <StickyNote className="h-5 w-5 text-yellow-500" />;
-            return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
+    const iconMap = {
+      markdown: { icon: StickyNote, className: "text-yellow-500", label: "Note Texte" },
+      file: { icon: FileTextIcon, className: "text-primary", label: "Fichier Attaché" },
+      fileWithMarkdown: { icon: Layers, className: "text-green-500", label: "Combiné (Texte + Fichier)" },
+      unknown: { icon: FileTextIcon, className: "text-muted-foreground", label: "Document" },
+    };
+
+    let typeKey: keyof typeof iconMap = 'unknown';
+    if (doc.documentContentType) {
+        typeKey = doc.documentContentType;
+    } else if (doc.downloadURL && doc.content) {
+        typeKey = 'fileWithMarkdown';
+    } else if (doc.downloadURL) {
+        typeKey = 'file';
+    } else if (doc.content) {
+        typeKey = 'markdown';
     }
+    
+    const { icon: IconComponent, className, label } = iconMap[typeKey];
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <IconComponent className={`h-5 w-5 ${className}`} />
+            </TooltipTrigger>
+            <TooltipContent><p>{label}</p></TooltipContent>
+        </Tooltip>
+    );
   };
 
   const formatDate = (dateValue: Timestamp | string) => {
@@ -505,4 +524,3 @@ export default function AdminDocumentsPage() {
     </TooltipProvider>
   );
 }
-    

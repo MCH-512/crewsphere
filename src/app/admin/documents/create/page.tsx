@@ -34,6 +34,7 @@ import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
 import { documentCategories, documentSources } from "@/config/document-options";
 import { documentFormSchema, type DocumentFormValues, MAX_FILE_SIZE_MB } from "@/schemas/document-schema";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 export default function CreateDocumentPage() {
   const { toast } = useToast();
@@ -123,7 +124,7 @@ export default function CreateDocumentPage() {
     }
 
     try {
-      await addDoc(collection(db, "documents"), {
+      const newDocRef = await addDoc(collection(db, "documents"), {
         title: data.title,
         category: data.category,
         source: data.source,
@@ -138,6 +139,15 @@ export default function CreateDocumentPage() {
         lastUpdated: serverTimestamp(),
         uploadedBy: user.uid,
         uploaderEmail: user.email,
+      });
+
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "CREATE_DOCUMENT",
+        entityType: "DOCUMENT",
+        entityId: newDocRef.id,
+        details: { title: data.title, category: data.category, source: data.source },
       });
 
       toast({

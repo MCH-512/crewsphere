@@ -35,6 +35,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { documentCategories, documentSources } from "@/config/document-options";
 import { documentFormSchema, type DocumentFormValues, MAX_FILE_SIZE_MB } from "@/schemas/document-schema";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 interface DocumentForEdit {
   id: string;
@@ -234,6 +235,15 @@ export default function EditDocumentPage() {
     try {
       const docRef = doc(db, "documents", documentId);
       await updateDoc(docRef, updatePayload);
+
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "UPDATE_DOCUMENT",
+        entityType: "DOCUMENT",
+        entityId: documentId,
+        details: { title: data.title, category: data.category, source: data.source },
+      });
 
       toast({
         title: "Document Updated Successfully",
