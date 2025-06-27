@@ -50,7 +50,9 @@ import {
   ClipboardCheck, 
   FilePlus,
   Users,
-  FileSignature
+  FileSignature,
+  Brain,
+  Calculator
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -62,14 +64,18 @@ import { HeaderClocks } from "@/components/features/header-clocks";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
-  { href: "/requests", label: "Submit Request", icon: SendHorizonal },
-  { href: "/my-requests", label: "My Requests", icon: Inbox }, 
-  { href: "/my-purser-reports", label: "My Purser Reports", icon: FileSignature },
+  { href: "/my-purser-reports", label: "Purser Reports", icon: FileSignature },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
+  { type: "separator", key: "sep1" },
+  { href: "/requests", label: "Submit Request", icon: SendHorizonal },
+  { href: "/my-requests", label: "My Requests", icon: Inbox }, 
   { type: "separator", key: "sep2" },
+  { href: "/airport-briefings", label: "Airport Briefing", icon: Brain },
+  { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
+  { type: "separator", key: "sep3" },
   { href: "/training", label: "Training Hub", icon: GraduationCap },
-  { type: "separator", key: "sep3", adminOnly: true },
+  { type: "separator", key: "sep4", adminOnly: true },
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];
 

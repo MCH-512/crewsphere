@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { type StoredPurserReport } from "@/schemas/purser-report-schema";
 import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
 
 export default function MyPurserReportsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -104,10 +105,18 @@ export default function MyPurserReportsPage() {
             </CardTitle>
             <CardDescription>View all Purser Reports you have submitted.</CardDescription>
           </div>
-          <Button variant="outline" onClick={fetchReports} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={fetchReports} disabled={isLoading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button asChild>
+                <Link href="/purser-reports">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Submit New Report
+                </Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {error && (
