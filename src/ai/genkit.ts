@@ -7,7 +7,7 @@
 'use server';
 
 import {genkit} from 'genkit';
-import {googleAI} from 'genkit/googleai';
+import {googleAI} from '@genkit-ai/googleai';
 
 // Initialize and export the AI object.
 // All flows and tools should import and use this `ai` object.
