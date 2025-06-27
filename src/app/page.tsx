@@ -12,7 +12,7 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, limit, getDocs, Timestamp, or, doc, getDoc, DocumentData } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, getDocs, Timestamp, doc, getDoc, DocumentData } from "firebase/firestore";
 import { formatDistanceToNowStrict, format, parseISO, addHours, subHours, startOfDay } from "date-fns";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -327,9 +327,15 @@ export default function DashboardPage() {
             const departureDateTime = parseISO(nextFlightDetails.scheduledDepartureDateTimeUTC);
             const reportingDateTime = subHours(departureDateTime, 2); 
 
+            // Fetch airport IATA codes
+            const depAirportInfo = await getAirportByCode(nextFlightDetails.departureAirport);
+            const arrAirportInfo = await getAirportByCode(nextFlightDetails.arrivalAirport);
+            const depDisplay = depAirportInfo?.iata || nextFlightDetails.departureAirport;
+            const arrDisplay = arrAirportInfo?.iata || nextFlightDetails.arrivalAirport;
+
             setUpcomingDuty({
               flightNumber: nextFlightDetails.flightNumber,
-              route: `${nextFlightDetails.departureAirport} - ${nextFlightDetails.arrivalAirport}`,
+              route: `${depDisplay} - ${arrDisplay}`,
               aircraft: nextFlightDetails.aircraftType,
               reportingTime: format(reportingDateTime, "HH:mm 'UTC'"),
               reportingDate: format(reportingDateTime, "MMM d, yyyy"),
