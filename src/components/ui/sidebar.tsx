@@ -514,24 +514,25 @@ SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
   [
-    // Base styles for the button-like appearance
+    // Base styles
     "peer/menu-button flex w-full items-center justify-start gap-2 rounded-md px-3 py-2 text-left text-sm font-medium",
     "outline-none ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
     "disabled:pointer-events-none disabled:opacity-50 h-10 overflow-hidden",
     
-    // Inactive state: bordered button on the sidebar
-    "border border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+    // Inactive state: a bordered button
+    "border border-sidebar-border bg-card text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
     
-    // Active state: solid color button
+    // Active state: a solid color button
     "data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:border-transparent data-[active=true]:hover:bg-sidebar-primary/90",
     
-    // Styles for when the sidebar is collapsed to icon-only mode
+    // Collapsed state
     "group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center",
     
     // Child element styling
     "[&>span]:truncate [&>svg]:h-4 [&>svg]:shrink-0",
   ].join(" ")
-)
+);
+
 
 const SidebarMenuButton = React.forwardRef<
   HTMLButtonElement,

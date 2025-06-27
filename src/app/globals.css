@@ -40,13 +40,13 @@ body {
     --chart-5: 27 87% 67%;
 
     /* Sidebar specific colors */
-    --sidebar-background: 0 0% 96.1%; /* Use a very light gray for the base */
-    --sidebar-foreground: 222.2 47.4% 11.2%; /* Dark text for high contrast */
-    --sidebar-primary: 207 51% 52%; /* Keep the main brand blue for active items */
+    --sidebar-background: 207 40% 96%; /* Subtle light blue background */
+    --sidebar-foreground: 222.2 47.4% 11.2%;
+    --sidebar-primary: 207 51% 52%; /* Active button background */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 90%; /* A slightly darker gray for hover */
+    --sidebar-accent: 207 40% 92%; /* Hover state for inactive buttons */
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-    --sidebar-border: 214.3 31.8% 85.4%; /* A visible border for inactive items */
+    --sidebar-border: 214.3 31.8% 85.4%; /* Border for inactive buttons */
     --sidebar-ring: 207 51% 52%;
   }
 
@@ -81,13 +81,13 @@ body {
     --chart-5: 27 75% 60%;
 
     /* Sidebar specific colors for dark mode */
-    --sidebar-background: 222.2 84% 3.9%;
+    --sidebar-background: 220 30% 10%; /* Dark blue-gray, distinct from main bg */
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 207 51% 65%;
     --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent: 220 30% 15%; /* Hover state for dark mode */
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-border: 217.2 32.6% 25.5%; /* Border for inactive buttons */
     --sidebar-ring: 207 51% 65%;
   }
 }
