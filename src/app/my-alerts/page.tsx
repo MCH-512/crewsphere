@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, Timestamp, getDocs, serverTimestamp, doc, getDoc, setDoc, limit } from "firebase/firestore";
+import { collection, query, where, orderBy, Timestamp, getDocs, serverTimestamp, doc, getDoc, setDoc, limit, writeBatch } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { BellRing, Loader2, AlertTriangle, RefreshCw, Info, Briefcase, GraduationCap, LucideIcon, CheckCircle, Link as LinkIcon } from "lucide-react";
+import { BellRing, Loader2, AlertTriangle, RefreshCw, Info, Briefcase, GraduationCap, LucideIcon, CheckCircle, Link as LinkIcon, CheckCheck } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns"; 
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority";
@@ -39,7 +39,10 @@ export default function MyAlertsPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [isAcknowledging, setIsAcknowledging] = React.useState<Record<string, boolean>>({});
+  const [isAcknowledgingAll, setIsAcknowledgingAll] = React.useState(false);
   const { refreshUnreadCount } = useNotification();
+
+  const unreadAlertsExist = React.useMemo(() => alerts.some(a => !a.isAcknowledged), [alerts]);
 
 
   const fetchAlerts = React.useCallback(async () => {
@@ -172,6 +175,40 @@ export default function MyAlertsPage() {
     }
   };
 
+  const handleAcknowledgeAll = async () => {
+    if (!user || !unreadAlertsExist) return;
+
+    setIsAcknowledgingAll(true);
+    const unacknowledgedAlerts = alerts.filter(a => !a.isAcknowledged);
+    const now = Timestamp.now();
+    const batch = writeBatch(db);
+
+    unacknowledgedAlerts.forEach(alert => {
+      const ackDocId = `${user.uid}_${alert.id}`;
+      const ackDocRef = doc(db, "alertAcknowledgements", ackDocId);
+      batch.set(ackDocRef, {
+        alertId: alert.id,
+        userId: user.uid,
+        userEmail: user.email,
+        acknowledgedAt: serverTimestamp(), // Use server timestamp for accuracy
+        alertTitle: alert.title || "N/A"
+      });
+    });
+
+    try {
+      await batch.commit();
+      setAlerts(prevAlerts => prevAlerts.map(a => a.isAcknowledged ? a : { ...a, isAcknowledged: true, acknowledgedOn: now }));
+      await refreshUnreadCount();
+      toast({ title: "All Alerts Acknowledged", description: `${unacknowledgedAlerts.length} alert(s) marked as read.`, action: <CheckCircle className="text-success-foreground" /> });
+    } catch (error) {
+      console.error("Error acknowledging all alerts:", error);
+      toast({ title: "Operation Failed", description: "Could not mark all alerts as read.", variant: "destructive" });
+    } finally {
+      setIsAcknowledgingAll(false);
+    }
+  };
+
+
   const getAlertVariant = (level: AlertData["level"]): VariantProps<typeof alertVariants>["variant"] => {
     switch (level) {
       case 'critical':
@@ -222,7 +259,7 @@ export default function MyAlertsPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-row justify-between items-start">
+        <CardHeader className="flex flex-col sm:flex-row justify-between items-start gap-3">
           <div>
             <CardTitle className="text-2xl font-headline flex items-center">
               <BellRing className="mr-3 h-7 w-7 text-primary" />
@@ -230,10 +267,16 @@ export default function MyAlertsPage() {
             </CardTitle>
             <CardDescription>All relevant global and personal notifications.</CardDescription>
           </div>
-          <Button variant="outline" onClick={fetchAlerts} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh Alerts
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={fetchAlerts} disabled={isLoading} className="flex-1 sm:flex-none">
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+             <Button onClick={handleAcknowledgeAll} disabled={isLoading || isAcknowledgingAll || !unreadAlertsExist} className="flex-1 sm:flex-none">
+                {isAcknowledgingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCheck className="mr-2 h-4 w-4" />}
+                Acknowledge All
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {error && (
