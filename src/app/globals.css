@@ -40,14 +40,14 @@ body {
     --chart-5: 27 87% 67%;
 
     /* Sidebar specific colors */
-    --sidebar-background: 220 40% 15%; /* Deeper, more professional blue */
+    --sidebar-background: 230 45% 30%; /* Rich Indigo */
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 207 51% 65%; /* Lighter blue for active state */
-    --sidebar-primary-foreground: 220 40% 10%;
-    --sidebar-accent: 220 40% 22%; /* Hover state */
+    --sidebar-primary: 230 60% 55%; /* Bright Indigo for active state */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 230 45% 38%; /* Lighter Indigo for hover */
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 220 40% 20%;
-    --sidebar-ring: 207 51% 70%;
+    --sidebar-border: 230 45% 25%;
+    --sidebar-ring: 230 60% 60%;
   }
 
   .dark {
