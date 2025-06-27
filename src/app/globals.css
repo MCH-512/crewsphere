@@ -9,19 +9,19 @@ body {
 
 @layer base {
   :root {
-    --background: 206 60% 96.3%; /* Very light blue */
+    --background: 0 0% 98%; /* Lighter, cleaner background */
     --foreground: 222.2 47.4% 11.2%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 47.4% 11.2%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 47.4% 11.2%;
-    --primary: 207 49.3% 52%; /* Deep sky blue */
+    --primary: 207 51% 52%; /* Kept the original primary blue */
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 229 23.1% 54.1%; /* Slate blue */
+    --accent: 172 70% 40%; /* Vibrant Teal/Cyan Accent */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -39,15 +39,15 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
-    /* Sidebar specific colors - NEW DARK THEME */
-    --sidebar-background: 230 30% 12%; /* Rich Indigo */
-    --sidebar-foreground: 230 20% 95%; /* Off-white for text */
-    --sidebar-primary: 225 50% 60%; /* Brighter, active state */
-    --sidebar-primary-foreground: 230 30% 10%; /* Dark text on active state */
-    --sidebar-accent: 230 30% 20%; /* Hover state */
-    --sidebar-accent-foreground: 230 20% 95%; /* Text on hover */
-    --sidebar-border: 230 30% 25%; /* Border for inactive buttons */
-    --sidebar-ring: 225 50% 70%; /* Focus ring */
+    /* Sidebar specific colors */
+    --sidebar-background: 0 0% 96.1%; /* Use a very light gray for the base */
+    --sidebar-foreground: 222.2 47.4% 11.2%; /* Dark text for high contrast */
+    --sidebar-primary: 207 51% 52%; /* Keep the main brand blue for active items */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 90%; /* A slightly darker gray for hover */
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+    --sidebar-border: 214.3 31.8% 85.4%; /* A visible border for inactive items */
+    --sidebar-ring: 207 51% 52%;
   }
 
   .dark {
@@ -63,8 +63,8 @@ body {
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 229 23.1% 64.1%; /* Lighter slate blue for dark mode */
-    --accent-foreground: 210 40% 98%;
+    --accent: 172 70% 50%; /* Lighter teal/cyan for dark mode */
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --success: 142.1 70.6% 45.3%;
@@ -80,15 +80,15 @@ body {
     --chart-4: 43 65% 60%;
     --chart-5: 27 75% 60%;
 
-    /* Sidebar specific colors for dark mode - consistent with light theme's sidebar */
-    --sidebar-background: 230 30% 12%; /* Rich Indigo */
-    --sidebar-foreground: 230 20% 95%; /* Off-white for text */
-    --sidebar-primary: 225 50% 60%; /* Brighter, active state */
-    --sidebar-primary-foreground: 230 30% 10%; /* Dark text on active state */
-    --sidebar-accent: 230 30% 20%; /* Hover state */
-    --sidebar-accent-foreground: 230 20% 95%; /* Text on hover */
-    --sidebar-border: 230 30% 25%; /* Border for inactive buttons */
-    --sidebar-ring: 225 50% 70%; /* Focus ring */
+    /* Sidebar specific colors for dark mode */
+    --sidebar-background: 222.2 84% 3.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 207 51% 65%;
+    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 207 51% 65%;
   }
 }
 
