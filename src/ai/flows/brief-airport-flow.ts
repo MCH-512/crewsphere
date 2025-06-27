@@ -10,7 +10,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
-import {Airport} from '@/services/airport-service';
 
 const AirportBriefingInputSchema = z.object({
   icao: z.string().length(4).describe('The ICAO code of the airport (e.g., KJFK, EGLL).'),
@@ -34,6 +33,7 @@ export async function briefAirport(input: AirportBriefingInput): Promise<Airport
 
 const briefingPrompt = ai.definePrompt({
   name: 'airportBriefingPrompt',
+  model: 'googleai/gemini-2.0-flash',
   input: {schema: AirportBriefingInputSchema},
   output: {schema: AirportBriefingOutputSchema},
   prompt: `You are an expert aviation operations analyst providing a vital briefing for flight crew.
