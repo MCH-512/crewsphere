@@ -21,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
-import { MessageSquareWarning, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle, CheckSquare } from "lucide-react";
+import { MessageSquareWarning, Loader2, AlertTriangle, RefreshCw, Edit, Trash2, PlusCircle, CheckCircle, Clock, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -154,7 +154,7 @@ export default function AdminAlertsPage() {
               <MessageSquareWarning className="mr-3 h-7 w-7 text-primary" />
               All Broadcast Alerts
             </CardTitle>
-            <CardDescription>View all alerts that have been sent to users. Manage acknowledgements.</CardDescription>
+            <CardDescription>View, create, and manage alerts. Track user acknowledgements.</CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={fetchAlerts} disabled={isLoading}>
@@ -193,7 +193,7 @@ export default function AdminAlertsPage() {
                     <TableHead>Target</TableHead>
                     <TableHead>Icon</TableHead>
                     <TableHead>Created At</TableHead>
-                    <TableHead>Acknowledged By</TableHead> 
+                    <TableHead>Acknowledgements</TableHead> 
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -211,14 +211,28 @@ export default function AdminAlertsPage() {
                       <TableCell>{alert.userId ? `User: ${alert.userId.substring(0,10)}...` : "Global"}</TableCell>
                       <TableCell>{alert.iconName || 'N/A'}</TableCell>
                       <TableCell>{format(alert.createdAt.toDate(), "PPp")}</TableCell>
-                      <TableCell className="text-sm">
+                      <TableCell>
                         {alert.acknowledgementCount !== undefined ? (
-                            <span className="flex items-center text-success-foreground">
-                                <CheckSquare className="mr-1.5 h-4 w-4"/> 
-                                {alert.acknowledgementCount} {alert.userId ? "" : "user(s)"}
+                          alert.userId ? ( // It's a targeted alert
+                            alert.acknowledgementCount > 0 ? (
+                              <Badge variant="success" className="text-xs">
+                                <CheckCircle className="mr-1.5 h-3 w-3" />
+                                Acknowledged
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">
+                                <Clock className="mr-1.5 h-3 w-3" />
+                                Pending
+                              </Badge>
+                            )
+                          ) : ( // It's a global alert
+                            <span className="flex items-center text-sm text-foreground">
+                              <Users className="mr-1.5 h-4 w-4 text-muted-foreground" />
+                              {alert.acknowledgementCount} user(s)
                             </span>
+                          )
                         ) : (
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground"/>
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                         )}
                       </TableCell>
                       <TableCell className="text-right space-x-2">
@@ -257,8 +271,7 @@ export default function AdminAlertsPage() {
             </div>
           )}
            <CardDescription className="mt-4 text-xs">
-            Content of alerts is not shown in this table for brevity. Full content is visible to users on their dashboards.
-            Acknowledgement counts provide an overview of how many users have seen global alerts, or if a targeted alert has been seen.
+            The 'Acknowledgements' column shows how many users have viewed a global alert, or if a specific user has viewed a targeted alert.
           </CardDescription>
         </CardContent>
       </Card>

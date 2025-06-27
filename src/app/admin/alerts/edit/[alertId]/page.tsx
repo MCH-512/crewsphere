@@ -39,7 +39,7 @@ const alertFormSchema = z.object({
   level: z.enum(["info", "warning", "critical"], { required_error: "Please select an alert level." }),
   userId: z.string().max(50).optional().describe("Firebase UID of a specific user, or leave blank for global."),
   iconName: z.string().max(50).optional().describe("Lucide icon name (e.g., BellRing, PlaneTakeoff)."),
-  linkUrl: z.string().url({ message: "Veuillez entrer une URL valide." }).optional().or(z.literal('')),
+  linkUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
 });
 
 type AlertFormValues = z.infer<typeof alertFormSchema>;
