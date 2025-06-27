@@ -7,6 +7,7 @@ export interface Airport {
   name: string;
   city: string;
   country: string;
+  continent?: string;
 }
 
 // Simulate an async operation, though with local JSON it's immediate.

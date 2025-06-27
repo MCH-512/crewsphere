@@ -4,13 +4,17 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Brain, MapPin, Cloudy, FileWarning, Globe, Building2, Sparkles, Loader2, AlertTriangle as AlertTriangleIcon } from "lucide-react";
+import { Brain, MapPin, Cloudy, FileWarning, Globe, Building2, Sparkles, Loader2, AlertTriangle as AlertTriangleIcon, Flag, PlaneTakeoff } from "lucide-react";
 import { searchAirports, type Airport } from "@/services/airport-service";
+import airportsData from '@/data/airports.json';
 import { CustomAutocompleteAirport } from "@/components/ui/custom-autocomplete-airport";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 
 // AI Flow imports
 import { briefAirport, type AirportBriefingOutput } from "@/ai/flows/brief-airport-flow";
@@ -29,6 +33,11 @@ export default function AirportBriefingPage() {
   const [isBriefingLoading, setIsBriefingLoading] = React.useState(false);
   const [briefingError, setBriefingError] = React.useState<string | null>(null);
 
+  // State for browsing
+  const [groupedAirports, setGroupedAirports] = React.useState<Record<string, Record<string, Airport[]>>>({});
+  const [continents, setContinents] = React.useState<string[]>([]);
+
+  // Effect for search autocomplete
   React.useEffect(() => {
     if (!searchTerm || searchTerm.length < 2) {
       setSuggestions([]);
@@ -48,9 +57,47 @@ export default function AirportBriefingPage() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
+  // Effect for processing and grouping airports for browsing
+  React.useEffect(() => {
+    const processAirports = () => {
+        const grouped: Record<string, Record<string, Airport[]>> = {};
+        airportsData.forEach((airport) => {
+            const continent = (airport as Airport).continent || 'Other';
+            const country = airport.country;
+
+            if (!grouped[continent]) {
+                grouped[continent] = {};
+            }
+            if (!grouped[continent][country]) {
+                grouped[continent][country] = [];
+            }
+            grouped[continent][country].push(airport as Airport);
+        });
+
+        for (const continent in grouped) {
+            const countries = Object.keys(grouped[continent]).sort();
+            const sortedCountries: Record<string, Airport[]> = {};
+            for (const country of countries) {
+                // sort airports within country
+                grouped[continent][country].sort((a, b) => a.name.localeCompare(b.name));
+                sortedCountries[country] = grouped[continent][country];
+            }
+            grouped[continent] = sortedCountries;
+        }
+
+        const continentNames = Object.keys(grouped).sort();
+        
+        setGroupedAirports(grouped);
+        setContinents(continentNames);
+    };
+
+    processAirports();
+  }, []);
+
   const handleSelectAirport = (airport: Airport | null) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     setSelectedAirport(airport);
-    setBriefing(null); // Clear previous briefing
+    setBriefing(null);
     setBriefingError(null);
     if (airport) {
       generateBriefing(airport);
@@ -89,7 +136,7 @@ export default function AirportBriefingPage() {
               AI-Powered Airport Briefing
             </CardTitle>
             <CardDescription>
-              Search for an airport to get essential data and an AI-generated operational briefing. This is a reference tool and does not replace official sources.
+              Search for an airport or browse by continent to get essential data and an AI-generated operational briefing. This is a reference tool and does not replace official sources.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -184,6 +231,62 @@ export default function AirportBriefingPage() {
           </Card>
         </AnimatedCard>
       )}
+      
+       <AnimatedCard delay={0.2}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-6 w-6 text-primary"/>
+              Browse Airports by Region
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {continents.length > 0 ? (
+              <Tabs defaultValue={continents[0]} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+                  {continents.map(continent => (
+                    <TabsTrigger key={continent} value={continent}>{continent}</TabsTrigger>
+                  ))}
+                </TabsList>
+                {continents.map(continent => (
+                  <TabsContent key={continent} value={continent} className="pt-4">
+                    <Accordion type="single" collapsible className="w-full">
+                      {Object.entries(groupedAirports[continent] || {}).map(([country, airportsInCountry]) => (
+                        <AccordionItem key={country} value={country}>
+                          <AccordionTrigger className="hover:no-underline">
+                            <div className="flex items-center gap-2">
+                              <Flag className="h-4 w-4 text-muted-foreground"/>
+                              {country} <Badge variant="secondary">{airportsInCountry.length}</Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="flex flex-col items-start gap-1 pl-4">
+                              {airportsInCountry.map(airport => (
+                                <Button
+                                  key={airport.icao}
+                                  variant="link"
+                                  className="h-auto p-1 text-left text-sm text-muted-foreground hover:text-primary"
+                                  onClick={() => handleSelectAirport(airport)}
+                                >
+                                  {airport.name} ({airport.iata})
+                                </Button>
+                              ))}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            ) : (
+               <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary"/>
+               </div>
+            )}
+          </CardContent>
+        </Card>
+       </AnimatedCard>
     </div>
   );
 }
