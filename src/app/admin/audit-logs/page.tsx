@@ -9,10 +9,12 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Activity, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Activity, Loader2, AlertTriangle, RefreshCw, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 interface AuditLogDisplayEntry {
   id: string;
@@ -32,6 +34,7 @@ export default function AuditLogsPage() {
   const [logs, setLogs] = React.useState<AuditLogDisplayEntry[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = React.useState("");
 
   const fetchLogs = React.useCallback(async () => {
     setIsLoading(true);
@@ -62,6 +65,21 @@ export default function AuditLogsPage() {
       }
     }
   }, [user, authLoading, router, fetchLogs]);
+
+  const filteredLogs = React.useMemo(() => {
+    if (!searchTerm) return logs;
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return logs.filter(log => {
+      const detailsString = typeof log.details === 'object' ? JSON.stringify(log.details) : log.details;
+      return (
+        (log.userEmail || '').toLowerCase().includes(lowercasedTerm) ||
+        log.actionType.toLowerCase().includes(lowercasedTerm) ||
+        (log.entityType || '').toLowerCase().includes(lowercasedTerm) ||
+        (log.entityId || '').toLowerCase().includes(lowercasedTerm) ||
+        (detailsString || '').toLowerCase().includes(lowercasedTerm)
+      );
+    });
+  }, [logs, searchTerm]);
 
   const formatDetails = (details: string | object | undefined): string => {
     if (typeof details === 'string') return details;
@@ -106,6 +124,16 @@ export default function AuditLogsPage() {
           </Button>
         </CardHeader>
         <CardContent>
+          <div className="relative mb-4">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search logs by user, action, ID..."
+                className="pl-8 w-full md:max-w-md"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           {error && (
             <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" /> {error}
@@ -117,10 +145,12 @@ export default function AuditLogsPage() {
                 <p className="ml-3 text-muted-foreground">Loading log entries...</p>
             </div>
           )}
-          {!isLoading && logs.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">No audit log entries found.</p>
+          {!isLoading && filteredLogs.length === 0 && !error && (
+            <p className="text-muted-foreground text-center py-8">
+              {searchTerm ? `No logs found matching "${searchTerm}".` : "No audit log entries found."}
+            </p>
           )}
-          {logs.length > 0 && (
+          {filteredLogs.length > 0 && (
             <ScrollArea className="h-[600px] rounded-md border">
               <Table>
                 <TableHeader>
@@ -134,17 +164,19 @@ export default function AuditLogsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {logs.map((log) => (
+                  {filteredLogs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="text-xs">
                         {log.timestamp ? format(log.timestamp.toDate(), "PPpp") : 'N/A'}
                       </TableCell>
                       <TableCell className="text-xs">{log.userEmail || log.userId}</TableCell>
-                      <TableCell className="font-medium">{log.actionType}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-xs whitespace-nowrap">{log.actionType}</Badge>
+                      </TableCell>
                       <TableCell>{log.entityType || 'N/A'}</TableCell>
                       <TableCell className="text-xs truncate max-w-[100px]" title={log.entityId}>{log.entityId || 'N/A'}</TableCell>
                       <TableCell className="text-xs">
-                        <pre className="whitespace-pre-wrap max-w-xs truncate" title={formatDetails(log.details)}>
+                        <pre className="whitespace-pre-wrap max-w-xs truncate rounded-md bg-muted/50 p-2 font-mono text-xs" title={formatDetails(log.details)}>
                           {formatDetails(log.details)}
                         </pre>
                       </TableCell>
