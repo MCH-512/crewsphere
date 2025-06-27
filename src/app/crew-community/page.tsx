@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -12,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
-import { collection, addDoc, query, orderBy, getDocs, doc, runTransaction, Timestamp, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, query, orderBy, getDocs, doc, runTransaction, Timestamp, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNowStrict } from "date-fns";
