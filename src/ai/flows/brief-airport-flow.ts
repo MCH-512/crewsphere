@@ -4,15 +4,15 @@
  * @fileOverview An AI flow for generating airport operational briefings.
  *
  * - briefAirport - A function that provides a structured briefing for a given airport.
- * - AirportBriefingInputSchema - The input type for the briefAirport function.
- * - AirportBriefingOutputSchema - The return type for the briefAirport function.
+ * - AirportBriefingInput - The input type for the briefAirport function.
+ * - AirportBriefingOutput - The return type for the briefAirport function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import {Airport} from '@/services/airport-service';
 
-export const AirportBriefingInputSchema = z.object({
+const AirportBriefingInputSchema = z.object({
   icao: z.string().length(4).describe('The ICAO code of the airport (e.g., KJFK, EGLL).'),
   iata: z.string().length(3).describe('The IATA code of the airport (e.g., JFK, LHR).'),
   name: z.string().describe('The full name of the airport.'),
@@ -21,7 +21,7 @@ export const AirportBriefingInputSchema = z.object({
 });
 export type AirportBriefingInput = z.infer<typeof AirportBriefingInputSchema>;
 
-export const AirportBriefingOutputSchema = z.object({
+const AirportBriefingOutputSchema = z.object({
   operationalSummary: z.string().describe("A summary of the airport's key operational characteristics, including runway layout, typical traffic patterns, and important taxiway information."),
   potentialChallenges: z.string().describe("Highlights potential challenges such as common adverse weather, complex terrain, noise abatement procedures, or specific ATC complexities."),
   crewRecommendations: z.string().describe("Actionable recommendations for the flight crew, like fuel planning considerations, specific approach procedures to be aware of, or communication tips."),
