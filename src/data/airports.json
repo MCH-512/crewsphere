@@ -599,5 +599,53 @@
     "city": "Lisbon",
     "country": "Portugal",
     "continent": "Europe"
+  },
+  {
+    "iata": "BAM",
+    "icao": "GABS",
+    "name": "Modibo Keita International Airport",
+    "city": "Bamako",
+    "country": "Mali",
+    "continent": "Africa"
+  },
+  {
+    "iata": "DLA",
+    "icao": "FKKD",
+    "name": "Douala International Airport",
+    "city": "Douala",
+    "country": "Cameroon",
+    "continent": "Africa"
+  },
+  {
+    "iata": "NSI",
+    "icao": "FKYS",
+    "name": "Yaoundé Nsimalen International Airport",
+    "city": "Yaoundé",
+    "country": "Cameroon",
+    "continent": "Africa"
+  },
+  {
+    "iata": "DAR",
+    "icao": "HTDA",
+    "name": "Julius Nyerere International Airport",
+    "city": "Dar es Salaam",
+    "country": "Tanzania",
+    "continent": "Africa"
+  },
+  {
+    "iata": "LAD",
+    "icao": "FNLU",
+    "name": "Quatro de Fevereiro International Airport",
+    "city": "Luanda",
+    "country": "Angola",
+    "continent": "Africa"
+  },
+  {
+    "iata": "FIH",
+    "icao": "FZAA",
+    "name": "N'djili Airport",
+    "city": "Kinshasa",
+    "country": "Democratic Republic of the Congo",
+    "continent": "Africa"
   }
 ]
