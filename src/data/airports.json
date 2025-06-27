@@ -497,6 +497,70 @@
     "continent": "Asia"
   },
   {
+    "iata": "PEK",
+    "icao": "ZBAA",
+    "name": "Beijing Capital International Airport",
+    "city": "Beijing",
+    "country": "China",
+    "continent": "Asia"
+  },
+  {
+    "iata": "PVG",
+    "icao": "ZSPD",
+    "name": "Shanghai Pudong International Airport",
+    "city": "Shanghai",
+    "country": "China",
+    "continent": "Asia"
+  },
+  {
+    "iata": "DEL",
+    "icao": "VIDP",
+    "name": "Indira Gandhi International Airport",
+    "city": "Delhi",
+    "country": "India",
+    "continent": "Asia"
+  },
+  {
+    "iata": "BOM",
+    "icao": "VABB",
+    "name": "Chhatrapati Shivaji Maharaj International Airport",
+    "city": "Mumbai",
+    "country": "India",
+    "continent": "Asia"
+  },
+  {
+    "iata": "CGK",
+    "icao": "WIII",
+    "name": "Soekarno–Hatta International Airport",
+    "city": "Jakarta",
+    "country": "Indonesia",
+    "continent": "Asia"
+  },
+  {
+    "iata": "SGN",
+    "icao": "VVTS",
+    "name": "Tan Son Nhat International Airport",
+    "city": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "continent": "Asia"
+  },
+  {
+    "iata": "HAN",
+    "icao": "VVNB",
+    "name": "Noi Bai International Airport",
+    "city": "Hanoi",
+    "country": "Vietnam",
+    "continent": "Asia"
+  },
+  {
+    "iata": "MNL",
+    "icao": "RPLL",
+    "name": "Ninoy Aquino International Airport",
+    "city": "Manila",
+    "country": "Philippines",
+    "continent": "Asia"
+  },
+  {
     "iata": "IST",
     "icao": "LTFM",
     "name": "Istanbul Airport",
