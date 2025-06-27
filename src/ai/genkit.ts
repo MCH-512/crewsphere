@@ -4,7 +4,6 @@
  * This file initializes the main `ai` object with the Google AI plugin.
  * This `ai` object is then used throughout the application to define flows, prompts, etc.
  */
-'use server';
 
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
