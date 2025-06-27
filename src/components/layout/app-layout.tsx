@@ -55,6 +55,7 @@ import {
   Calculator,
   Lightbulb,
   MessagesSquare,
+  Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -78,6 +79,7 @@ const navItems = [
   { href: "/training", label: "Training Hub", icon: GraduationCap },
   { href: "/airport-briefings", label: "Airport Briefing", icon: Brain },
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
+  { href: "/toolbox", label: "Toolbox", icon: Wrench },
   // Admin
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];

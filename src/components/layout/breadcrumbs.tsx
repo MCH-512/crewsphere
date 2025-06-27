@@ -42,6 +42,11 @@ const predefinedLabels: { [key: string]: string } = {
   suggestions: "Suggestion Box",
   submit: "Submit",
   "crew-community": "Crew Community",
+  "toolbox": "Toolbox",
+  "converters": "Converters",
+  "guides": "Professional Guides",
+  "aviation-history": "Aviation History",
+  "aeronautical-jargon": "Aeronautical Jargon",
 };
 
 export function Breadcrumbs() {
