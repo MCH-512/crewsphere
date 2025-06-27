@@ -39,15 +39,15 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
-    /* Sidebar specific colors */
-    --sidebar-background: 210 40% 98%; /* A very light, clean gray, almost white */
-    --sidebar-foreground: 222.2 47.4% 11.2%; /* Dark text for high contrast */
-    --sidebar-primary: 207 49.3% 52%; /* The app's primary blue for active items */
-    --sidebar-primary-foreground: 0 0% 100%; /* White text on the primary blue */
-    --sidebar-accent: 210 40% 94%; /* A slightly darker gray for hover */
-    --sidebar-accent-foreground: 222.2 47.4% 11.2%; /* Dark text on hover */
-    --sidebar-border: 214.3 31.8% 91.4%; /* Match the main app border */
-    --sidebar-ring: 207 49.3% 52%; /* Primary blue for focus rings */
+    /* Sidebar specific colors - NEW DARK THEME */
+    --sidebar-background: 230 30% 12%; /* Rich Indigo */
+    --sidebar-foreground: 230 20% 95%; /* Off-white for text */
+    --sidebar-primary: 225 50% 60%; /* Brighter, active state */
+    --sidebar-primary-foreground: 230 30% 10%; /* Dark text on active state */
+    --sidebar-accent: 230 30% 20%; /* Hover state */
+    --sidebar-accent-foreground: 230 20% 95%; /* Text on hover */
+    --sidebar-border: 230 30% 25%; /* Border for inactive buttons */
+    --sidebar-ring: 225 50% 70%; /* Focus ring */
   }
 
   .dark {
@@ -80,15 +80,15 @@ body {
     --chart-4: 43 65% 60%;
     --chart-5: 27 75% 60%;
 
-    /* Sidebar specific colors for dark mode - now light to match light theme */
-    --sidebar-background: 210 40% 98%; /* A very light, clean gray, almost white */
-    --sidebar-foreground: 222.2 47.4% 11.2%; /* Dark text for high contrast */
-    --sidebar-primary: 207 49.3% 52%; /* The app's primary blue for active items */
-    --sidebar-primary-foreground: 0 0% 100%; /* White text on the primary blue */
-    --sidebar-accent: 210 40% 94%; /* A slightly darker gray for hover */
-    --sidebar-accent-foreground: 222.2 47.4% 11.2%; /* Dark text on hover */
-    --sidebar-border: 214.3 31.8% 91.4%; /* Match the main app border */
-    --sidebar-ring: 207 49.3% 52%; /* Primary blue for focus rings */
+    /* Sidebar specific colors for dark mode - consistent with light theme's sidebar */
+    --sidebar-background: 230 30% 12%; /* Rich Indigo */
+    --sidebar-foreground: 230 20% 95%; /* Off-white for text */
+    --sidebar-primary: 225 50% 60%; /* Brighter, active state */
+    --sidebar-primary-foreground: 230 30% 10%; /* Dark text on active state */
+    --sidebar-accent: 230 30% 20%; /* Hover state */
+    --sidebar-accent-foreground: 230 20% 95%; /* Text on hover */
+    --sidebar-border: 230 30% 25%; /* Border for inactive buttons */
+    --sidebar-ring: 225 50% 70%; /* Focus ring */
   }
 }
 
