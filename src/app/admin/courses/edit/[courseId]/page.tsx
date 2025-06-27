@@ -59,6 +59,8 @@ import {
   AlertDialogTitle as AlertDialogPrimitiveTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   courseCategories,
   courseTypes,
@@ -106,6 +108,7 @@ export default function EditComprehensiveCoursePage() {
   const [questionToDelete, setQuestionToDelete] = React.useState<StoredQuestion | null>(null);
   const [isSavingQuestion, setIsSavingQuestion] = React.useState(false);
   const [isDeletingQuestion, setIsDeletingQuestion] = React.useState(false);
+  const [isQuestionManagerOpen, setIsQuestionManagerOpen] = React.useState(false);
 
 
   const courseEditForm = useForm<CourseFormValues>({
@@ -576,156 +579,19 @@ export default function EditComprehensiveCoursePage() {
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="text-xl font-semibold flex items-center">
-                <HelpCircle className="mr-2 h-5 w-5 text-primary" /> {isEditingQuestion ? "Edit Quiz Question" : "Manage Quiz Questions"}
+                <HelpCircle className="mr-2 h-5 w-5 text-primary" /> Quiz Questions
               </CardTitle>
-              <CardDescription>{isEditingQuestion ? "Modify the selected question." : "Add new questions or edit/delete existing ones for this course's quiz."}</CardDescription>
+              <CardDescription>
+                Manage the questions for the &quot;{courseEditForm.getValues('quizTitle')}&quot; quiz.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <Form {...addQuestionForm}>
-                <form onSubmit={addQuestionForm.handleSubmit(handleSaveQuestion)} className="space-y-4 p-4 border rounded-md">
-                    <h4 className="text-md font-medium mb-2">{isEditingQuestion ? `Editing: ${quizQuestions.find(q=>q.id === editingQuestionId)?.questionText.substring(0,50)}...` : "Add New Question"}</h4>
-                    <FormField
-                      control={addQuestionForm.control}
-                      name="questionText"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Question Text</FormLabel>
-                          <FormControl><Textarea placeholder="Enter the question..." {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={addQuestionForm.control}
-                      name="questionType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Question Type</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {qTypesList.map(type => <SelectItem key={type} value={type}>{type.toUpperCase()}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {watchedQuestionType === 'mcq' && (
-                      <div className="space-y-2">
-                        <FormLabel>Options (MCQ)</FormLabel>
-                        {mcqOptionFields.map((optionField, optIndex) => (
-                          <div key={optionField.id} className="flex items-center gap-2">
-                            <FormField
-                              control={addQuestionForm.control}
-                              name={`options.${optIndex}.text`}
-                              render={({ field }) => (
-                                <FormItem className="flex-grow">
-                                  <FormControl><Input placeholder={`Option ${optIndex + 1}`} {...field} /></FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <Button type="button" variant="ghost" size="icon" onClick={() => mcqOptionFields.length > 2 && removeMcqOption(optIndex)} disabled={mcqOptionFields.length <= 2}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        ))}
-                        <Button type="button" variant="outline" size="sm" onClick={() => appendMcqOption(defaultQuestionOptionValue)}>
-                          <PlusCircle className="mr-2 h-4 w-4" /> Add Option
-                        </Button>
-                      </div>
-                    )}
-                    
-                    <FormField
-                      control={addQuestionForm.control}
-                      name="correctAnswer"
-                      render={({ field }) => {
-                        if (watchedQuestionType === 'tf') {
-                          return (
-                            <FormItem>
-                              <FormLabel>Correct Answer (True/False)</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value || "True"}>
-                                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                <SelectContent><SelectItem value="True">True</SelectItem><SelectItem value="False">False</SelectItem></SelectContent>
-                              </Select><FormMessage />
-                            </FormItem>
-                          );
-                        }
-                        if (watchedQuestionType === 'mcq') {
-                          const options = addQuestionForm.getValues("options")?.map(opt => opt.text).filter(Boolean) || [];
-                          return (
-                            <FormItem>
-                              <FormLabel>Correct Answer (MCQ)</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger>
-                                  <SelectValue placeholder={options.length > 0 ? "Select correct option" : "Add options first"}/>
-                                </SelectTrigger></FormControl>
-                                <SelectContent>
-                                  {options.map((optText, i) => <SelectItem key={i} value={optText}>{optText}</SelectItem>)}
-                                </SelectContent>
-                              </Select><FormMessage />
-                            </FormItem>
-                          );
-                        }
-                        return (
-                          <FormItem>
-                            <FormLabel>Correct Answer (Short Answer)</FormLabel>
-                            <FormControl><Input placeholder="Enter the exact correct answer" {...field} /></FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        );
-                      }}
-                    />
-                    <div className="flex gap-2">
-                        <Button type="submit" disabled={isSavingQuestion} size="sm">
-                            {isSavingQuestion && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {isEditingQuestion ? "Update Question" : "Add Question to Quiz"}
-                        </Button>
-                        {isEditingQuestion && (
-                            <Button type="button" variant="outline" size="sm" onClick={handleCancelEditQuestion} disabled={isSavingQuestion}>
-                                Cancel Edit
-                            </Button>
-                        )}
-                    </div>
-                  </form>
-                </Form>
-              <Separator className="my-6"/>
-              <div>
-                <h4 className="text-md font-medium mb-3">Existing Questions ({quizQuestions.length})</h4>
-                {isLoadingQuestions ? (
-                  <div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /><p className="ml-2 text-sm text-muted-foreground">Loading questions...</p></div>
-                ) : quizQuestions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No questions added to this quiz yet.</p>
-                ) : (
-                  <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
-                    {quizQuestions.map((q, index) => (
-                      <Card key={q.id} className="p-3 bg-muted/40 text-sm flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">Q{index + 1}: {q.questionText}</p>
-                          <p className="text-xs text-muted-foreground">Type: {q.questionType.toUpperCase()} | Answer: <span className="font-mono text-primary">{q.correctAnswer}</span></p>
-                          {q.questionType === 'mcq' && q.options && q.options.length > 0 && (
-                            <p className="text-xs text-muted-foreground">Options: {q.options.join('; ')}</p>
-                          )}
-                        </div>
-                        <div className="flex gap-1 flex-shrink-0 ml-2">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenEditQuestionDialog(q)}>
-                                <EditQuestionIcon className="h-4 w-4 text-blue-600"/>
-                            </Button>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setQuestionToDelete(q)}>
-                                        <Trash2 className="h-4 w-4 text-destructive"/>
-                                    </Button>
-                                </AlertDialogTrigger>
-                            </AlertDialog>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
+            <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                    There are currently {quizQuestions.length} question(s) in this quiz.
+                </p>
+                <Button type="button" onClick={() => setIsQuestionManagerOpen(true)}>
+                    <EditQuestionIcon className="mr-2 h-4 w-4" /> Open Question Manager
+                </Button>
             </CardContent>
           </Card>
 
@@ -794,6 +660,88 @@ export default function EditComprehensiveCoursePage() {
           )}
         </form>
       </Form>
+      
+      <Dialog open={isQuestionManagerOpen} onOpenChange={setIsQuestionManagerOpen}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
+            <DialogHeader>
+                <DialogTitle>Manage Quiz Questions for &quot;{courseEditForm.getValues('quizTitle')}&quot;</DialogTitle>
+                <DialogDescription>
+                    Add new questions or edit existing ones. Changes are saved individually.
+                </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-grow pr-4 -mr-4">
+              <div className="py-4 space-y-6">
+                <Form {...addQuestionForm}>
+                  <form onSubmit={addQuestionForm.handleSubmit(handleSaveQuestion)} className="space-y-4 p-4 border rounded-md">
+                      <h4 className="text-md font-medium mb-2">{isEditingQuestion ? `Editing: ${quizQuestions.find(q=>q.id === editingQuestionId)?.questionText.substring(0,50)}...` : "Add New Question"}</h4>
+                      <FormField control={addQuestionForm.control} name="questionText" render={({ field }) => (
+                          <FormItem><FormLabel>Question Text</FormLabel><FormControl><Textarea placeholder="Enter the question..." {...field} /></FormControl><FormMessage /></FormItem>
+                      )}/>
+                      <FormField control={addQuestionForm.control} name="questionType" render={({ field }) => (
+                          <FormItem><FormLabel>Question Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl><SelectContent>{qTypesList.map(type => <SelectItem key={type} value={type}>{type.toUpperCase()}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                      )}/>
+                      {watchedQuestionType === 'mcq' && (
+                        <div className="space-y-2"><FormLabel>Options (MCQ)</FormLabel>
+                          {mcqOptionFields.map((optionField, optIndex) => (
+                            <div key={optionField.id} className="flex items-center gap-2">
+                              <FormField control={addQuestionForm.control} name={`options.${optIndex}.text`} render={({ field }) => (<FormItem className="flex-grow"><FormControl><Input placeholder={`Option ${optIndex + 1}`} {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                              <Button type="button" variant="ghost" size="icon" onClick={() => mcqOptionFields.length > 2 && removeMcqOption(optIndex)} disabled={mcqOptionFields.length <= 2}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            </div>
+                          ))}
+                          <Button type="button" variant="outline" size="sm" onClick={() => appendMcqOption(defaultQuestionOptionValue)}><PlusCircle className="mr-2 h-4 w-4" /> Add Option</Button>
+                        </div>
+                      )}
+                      <FormField control={addQuestionForm.control} name="correctAnswer" render={({ field }) => {
+                          if (watchedQuestionType === 'tf') {
+                            return (<FormItem><FormLabel>Correct Answer (True/False)</FormLabel><Select onValueChange={field.onChange} value={field.value || "True"}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="True">True</SelectItem><SelectItem value="False">False</SelectItem></SelectContent></Select><FormMessage /></FormItem>);
+                          }
+                          if (watchedQuestionType === 'mcq') {
+                            const options = addQuestionForm.getValues("options")?.map(opt => opt.text).filter(Boolean) || [];
+                            return (<FormItem><FormLabel>Correct Answer (MCQ)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={options.length > 0 ? "Select correct option" : "Add options first"}/></SelectTrigger></FormControl><SelectContent>{options.map((optText, i) => <SelectItem key={i} value={optText}>{optText}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>);
+                          }
+                          return (<FormItem><FormLabel>Correct Answer (Short Answer)</FormLabel><FormControl><Input placeholder="Enter the exact correct answer" {...field} /></FormControl><FormMessage /></FormItem>);
+                      }}/>
+                      <div className="flex gap-2">
+                          <Button type="submit" disabled={isSavingQuestion} size="sm">{isSavingQuestion && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{isEditingQuestion ? "Update Question" : "Add Question to Quiz"}</Button>
+                          {isEditingQuestion && (<Button type="button" variant="outline" size="sm" onClick={handleCancelEditQuestion} disabled={isSavingQuestion}>Cancel Edit</Button>)}
+                      </div>
+                    </form>
+                  </Form>
+                <Separator className="my-6"/>
+                <div>
+                  <h4 className="text-md font-medium mb-3">Existing Questions ({quizQuestions.length})</h4>
+                  {isLoadingQuestions ? (<div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /><p className="ml-2 text-sm text-muted-foreground">Loading questions...</p></div>
+                  ) : quizQuestions.length === 0 ? (<p className="text-sm text-muted-foreground">No questions added to this quiz yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {quizQuestions.map((q, index) => (
+                        <Card key={q.id} className="p-3 bg-muted/40 text-sm flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">Q{index + 1}: {q.questionText}</p>
+                            <p className="text-xs text-muted-foreground">Type: {q.questionType.toUpperCase()} | Answer: <span className="font-mono text-primary">{q.correctAnswer}</span></p>
+                            {q.questionType === 'mcq' && q.options && q.options.length > 0 && (<p className="text-xs text-muted-foreground">Options: {q.options.join('; ')}</p>)}
+                          </div>
+                          <div className="flex gap-1 flex-shrink-0 ml-2">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenEditQuestionDialog(q)}><EditQuestionIcon className="h-4 w-4 text-blue-600"/></Button>
+                              <AlertDialog>
+                                  <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setQuestionToDelete(q)}><Trash2 className="h-4 w-4 text-destructive"/></Button></AlertDialogTrigger>
+                              </AlertDialog>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </ScrollArea>
+             <DialogFooter className="mt-auto pt-4 border-t">
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Close Manager</Button>
+              </DialogClose>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {questionToDelete && (
         <AlertDialog open={!!questionToDelete} onOpenChange={(open) => !open && setQuestionToDelete(null)}>

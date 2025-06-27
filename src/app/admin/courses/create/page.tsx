@@ -47,6 +47,7 @@ import {
   defaultValues as initialDefaultValues
 } from "@/schemas/course-schema";
 import CourseContentBlock from "@/components/admin/course-content-block";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 
 export default function CreateComprehensiveCoursePage() {
@@ -158,6 +159,15 @@ export default function CreateComprehensiveCoursePage() {
       batch.update(courseRef, { certificateRuleId: certRuleRef.id }); 
 
       await batch.commit();
+
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "CREATE_COURSE",
+        entityType: "COURSE",
+        entityId: courseRef.id,
+        details: { title: data.title, category: data.category, published: data.published },
+      });
 
       toast({
         title: "Course Created Successfully!",
