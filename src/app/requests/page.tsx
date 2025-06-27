@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SendHorizonal, Loader2, AlertTriangle } from "lucide-react";
+import { SendHorizonal, Loader2, AlertTriangle, Info, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -158,7 +158,12 @@ const defaultValues: Partial<RequestFormValues> = {
   details: "",
 };
 
-const urgencyLevels: RequestFormValues["urgencyLevel"][] = ["Low", "Medium", "High", "Critical"];
+const urgencyLevels: { level: RequestFormValues["urgencyLevel"]; description: string }[] = [
+    { level: "Low", description: "Standard, non-urgent request." },
+    { level: "Medium", description: "Requires attention in the next few days." },
+    { level: "High", description: "Urgent, requires prompt attention." },
+    { level: "Critical", description: "Immediate, flight-impacting issue." },
+];
 
 export default function RequestsPage() {
   const { toast } = useToast();
@@ -259,6 +264,15 @@ export default function RequestsPage() {
               </ShadAlertDescription>
             </Alert>
           )}
+
+          <Alert className="mb-6">
+            <Info className="h-4 w-4" />
+            <AlertTitle>How It Works</AlertTitle>
+            <ShadAlertDescription>
+              After submitting, your request will be routed to the appropriate department. You can track the status of all your submissions on the <a href="/my-requests" className="font-bold underline hover:text-primary">My Requests</a> page.
+            </ShadAlertDescription>
+          </Alert>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -330,13 +344,13 @@ export default function RequestsPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {urgencyLevels.map((level) => (
+                          {urgencyLevels.map(({level}) => (
                             <SelectItem key={level} value={level}>{level}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        How urgent is this request?
+                        Please use 'Critical' only for urgent, flight-impacting issues.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -408,18 +422,29 @@ export default function RequestsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Request Submission</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to submit this request?
+              Please review your request details before submitting.
             </AlertDialogDescription>
-            {formDataToSubmit && (
-              <div className="mt-4 text-sm text-left space-y-1 border p-3 rounded-md bg-muted/50">
-                <div><strong>Category:</strong> {formDataToSubmit.requestCategory}</div>
-                {formDataToSubmit.specificRequestType && <div><strong>Type:</strong> {formDataToSubmit.specificRequestType}</div>}
-                <div><strong>Urgency:</strong> {formDataToSubmit.urgencyLevel}</div>
-                <div><strong>Subject:</strong> {formDataToSubmit.subject}</div>
-                {formDataToSubmit.details && <div><strong>Details (start):</strong> {formDataToSubmit.details.substring(0, 100)}{formDataToSubmit.details.length > 100 ? "..." : ""}</div>}
-              </div>
-            )}
           </AlertDialogHeader>
+          
+          {formDataToSubmit?.urgencyLevel === 'Critical' && (
+            <Alert variant="destructive" className="my-4">
+              <Zap className="h-4 w-4" />
+              <AlertTitle>Confirm Critical Urgency</AlertTitle>
+              <ShadAlertDescription>
+                You have marked this as a critical request. This should only be used for emergencies impacting immediate flight operations.
+              </ShadAlertDescription>
+            </Alert>
+          )}
+
+          {formDataToSubmit && (
+            <div className="mt-2 text-sm text-left space-y-1 border p-3 rounded-md bg-muted/50">
+              <div><strong>Category:</strong> {formDataToSubmit.requestCategory}</div>
+              {formDataToSubmit.specificRequestType && <div><strong>Type:</strong> {formDataToSubmit.specificRequestType}</div>}
+              <div><strong>Urgency:</strong> {formDataToSubmit.urgencyLevel}</div>
+              <div><strong>Subject:</strong> {formDataToSubmit.subject}</div>
+            </div>
+          )}
+
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setFormDataToSubmit(null)} disabled={isSubmitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmSubmit} disabled={isSubmitting}>
