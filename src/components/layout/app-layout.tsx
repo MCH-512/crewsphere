@@ -70,7 +70,7 @@ const navItems = [
   // Actions & Reports
   { href: "/requests", label: "Submit Request", icon: SendHorizonal },
   { href: "/my-requests", label: "My Requests", icon: Inbox },
-  { href: "/my-purser-reports", label: "Purser Reports", icon: FileSignature },
+  { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
   { type: "separator", key: "sep2" },
   // Tools & Learning
   { href: "/documents", label: "Documents", icon: FileText },
@@ -109,7 +109,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const { user, loading, logout } = useAuth();
   const { toast } = useToast();
-  const { unreadAlertsCount, isLoadingCount: isNotificationCountLoading } = useNotification();
+  const { unreadAlertsCount, isLoading: isNotificationCountLoading } = useNotification();
 
   const handleLogout = async () => {
     try {
