@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -46,18 +45,18 @@ export function HeaderClocks() {
   }, []);
 
   return (
-    <div className="hidden md:flex items-center gap-4 text-xs font-medium text-muted-foreground">
-      <div className="flex items-center gap-1.5" title="Current Date">
-        <CalendarDays className="h-4 w-4" />
+    <div className="hidden md:flex items-center gap-2 text-xs font-medium text-foreground">
+      <div className="flex items-center gap-2 border bg-card h-9 px-3 rounded-md" title="Current Date">
+        <CalendarDays className="h-4 w-4 text-muted-foreground" />
         <span className="font-mono">{currentDate || "--- -- ---"}</span>
       </div>
-      <div className="flex items-center gap-1.5" title="Local Time (Tunis)">
-        <Clock className="h-4 w-4" />
+      <div className="flex items-center gap-2 border bg-card h-9 px-3 rounded-md" title="Local Time (Tunis)">
+        <Clock className="h-4 w-4 text-muted-foreground" />
         <span>TUN:</span>
         <span className="font-mono">{tunisTime || "--:--:--"}</span>
       </div>
-      <div className="flex items-center gap-1.5" title="Coordinated Universal Time">
-        <Clock className="h-4 w-4" />
+      <div className="flex items-center gap-2 border bg-card h-9 px-3 rounded-md" title="Coordinated Universal Time">
+        <Clock className="h-4 w-4 text-muted-foreground" />
         <span>UTC:</span>
         <span className="font-mono">{utcTime || "--:--:--"}</span>
       </div>

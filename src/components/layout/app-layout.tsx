@@ -259,15 +259,15 @@ function LayoutWithSidebar({
           <div className="flex-1 flex items-center">
              <Breadcrumbs />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <HeaderClocks />
-            <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>
-              {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`} className="h-9 w-9">
+              {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             </Button>
             {user && (
-              <Button variant="ghost" size="icon" aria-label="View notifications" asChild className="relative">
+              <Button variant="outline" size="icon" aria-label="View notifications" asChild className="relative h-9 w-9">
                 <Link href="/my-alerts">
-                  <Bell className="h-5 w-5" />
+                  <Bell className="h-4 w-4" />
                   {unreadAlertsCount > 0 && (
                     <Badge 
                         variant="destructive" 
@@ -281,8 +281,8 @@ function LayoutWithSidebar({
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full" aria-label="Open user menu">
-                  <Avatar className="h-9 w-9">
+                <Button variant="outline" className="relative h-9 w-9 rounded-full" aria-label="Open user menu">
+                  <Avatar className="h-8 w-8">
                     <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User Avatar" data-ai-hint="user avatar" />
                     <AvatarFallback>{user?.email ? user.email.substring(0, 2).toUpperCase() : "U"}</AvatarFallback>
                   </Avatar>
