@@ -8,12 +8,12 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ListTodo, Loader2, AlertTriangle, Inbox, MessageSquareText, CalendarCheck2, Zap, CheckCircle } from "lucide-react";
+import { ListTodo, Loader2, AlertTriangle, Inbox, MessageSquareText, Zap, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 interface UserRequestForDisplay {
@@ -24,7 +24,7 @@ interface UserRequestForDisplay {
   specificRequestType?: string | null;
   urgencyLevel: "Low" | "Medium" | "High" | "Critical";
   subject: string;
-  details: string; 
+  details: string;
   createdAt: Timestamp;
   status: "pending" | "approved" | "rejected" | "in-progress";
   adminResponse?: string;
@@ -83,21 +83,21 @@ export default function MyRequestsPage() {
       case "pending": return "secondary";
       case "approved": return "success";
       case "rejected": return "destructive";
-      case "in-progress": return "outline"; 
+      case "in-progress": return "outline";
       default: return "secondary";
     }
   };
-  
+
   const getUrgencyBadgeVariant = (level?: UserRequestForDisplay["urgencyLevel"]): VariantProps<typeof Badge>["variant"] => {
     if (!level || !["Low", "Medium", "High", "Critical"].includes(level)) {
-        return "outline"; 
+        return "outline";
     }
     switch (level) {
       case "Critical": return "destructive";
-      case "High": return "default"; 
+      case "High": return "default";
       case "Medium": return "secondary";
       case "Low": return "outline";
-      default: return "outline"; 
+      default: return "outline";
     }
   };
 
@@ -129,7 +129,7 @@ export default function MyRequestsPage() {
       </div>
     );
   }
-  
+
   if (error) {
      return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
@@ -181,9 +181,9 @@ export default function MyRequestsPage() {
                     <span>Category: <Badge variant="outline" className="px-1.5 py-0.5 text-xs">{request.requestType}</Badge></span>
                     {request.specificRequestType && <span>| Type: <Badge variant="outline" className="px-1.5 py-0.5 text-xs">{request.specificRequestType}</Badge></span>}
                     <span>
-                      | Urgency: 
-                      <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize px-1.5 py-0.5 text-xs ml-1">
-                           {request.urgencyLevel === "Critical" && <Zap className="h-3 w-3 mr-1" />}
+                      | Urgency:
+                      <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize px-1.5 py-0.5 text-xs ml-1 flex items-center gap-1">
+                           {request.urgencyLevel === "Critical" && <Zap className="h-3 w-3" />}
                           {request.urgencyLevel || "N/A"}
                       </Badge>
                     </span>
@@ -196,7 +196,7 @@ export default function MyRequestsPage() {
                     <span className="ml-2 italic">(Last updated: {format(request.updatedAt.toDate(), "PPpp")})</span>
                   )}
                 </div>
-                
+
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="details">
                     <AccordionTrigger className="text-sm py-2">View Submitted Details</AccordionTrigger>
