@@ -247,9 +247,9 @@ export default function AdminUserRequestsPage() {
           <div>
             <CardTitle className="text-2xl font-headline flex items-center">
               <ClipboardList className="mr-3 h-7 w-7 text-primary" />
-              User Submitted Requests
+              Manage User Requests
             </CardTitle>
-            <CardDescription>Review and manage all requests submitted by users.</CardDescription>
+            <CardDescription>Review, prioritize, and respond to all requests submitted by users.</CardDescription>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={fetchRequests} disabled={isLoading} className="w-full sm:w-auto">

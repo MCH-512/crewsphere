@@ -68,8 +68,7 @@ const navItems = [
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
   { type: "separator", key: "sep1" },
   // Actions & Reports
-  { href: "/requests", label: "Submit Request", icon: SendHorizonal },
-  { href: "/my-requests", label: "My Requests", icon: Inbox },
+  { href: "/requests", label: "My Requests", icon: Inbox },
   { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
   { type: "separator", key: "sep2" },
   // Tools & Learning
