@@ -13,8 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 
 // AI Flow imports
 import { briefAirport, type AirportBriefingOutput } from "@/ai/flows/brief-airport-flow";
@@ -36,6 +38,11 @@ export default function AirportBriefingPage() {
   // State for browsing
   const [groupedAirports, setGroupedAirports] = React.useState<Record<string, Record<string, Airport[]>>>({});
   const [continents, setContinents] = React.useState<string[]>([]);
+  
+  // State for dialog
+  const [isAirportListOpen, setIsAirportListOpen] = React.useState(false);
+  const [airportsInDialog, setAirportsInDialog] = React.useState<Airport[]>([]);
+  const [countryInDialog, setCountryInDialog] = React.useState<string>("");
 
   // Effect for search autocomplete
   React.useEffect(() => {
@@ -102,6 +109,17 @@ export default function AirportBriefingPage() {
     if (airport) {
       generateBriefing(airport);
     }
+  };
+  
+  const handleOpenAirportList = (country: string, airports: Airport[]) => {
+    setCountryInDialog(country);
+    setAirportsInDialog(airports);
+    setIsAirportListOpen(true);
+  };
+  
+  const handleSelectAirportFromDialog = (airport: Airport) => {
+    handleSelectAirport(airport);
+    setIsAirportListOpen(false);
   };
 
   const generateBriefing = async (airport: Airport) => {
@@ -250,32 +268,23 @@ export default function AirportBriefingPage() {
                 </TabsList>
                 {continents.map(continent => (
                   <TabsContent key={continent} value={continent} className="pt-4">
-                    <Accordion type="single" collapsible className="w-full">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {Object.entries(groupedAirports[continent] || {}).map(([country, airportsInCountry]) => (
-                        <AccordionItem key={country} value={country}>
-                          <AccordionTrigger className="hover:no-underline">
+                        <Card
+                          key={country}
+                          className="cursor-pointer hover:shadow-md transition-shadow"
+                          onClick={() => handleOpenAirportList(country, airportsInCountry)}
+                        >
+                          <CardHeader className="flex flex-row items-center justify-between p-4">
                             <div className="flex items-center gap-2">
                               <Flag className="h-4 w-4 text-muted-foreground"/>
-                              {country} <Badge variant="secondary">{airportsInCountry.length}</Badge>
+                              <p className="font-semibold">{country}</p>
                             </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="flex flex-col items-start gap-1 pl-4">
-                              {airportsInCountry.map(airport => (
-                                <Button
-                                  key={airport.icao}
-                                  variant="link"
-                                  className="h-auto p-1 text-left text-sm text-muted-foreground hover:text-primary"
-                                  onClick={() => handleSelectAirport(airport)}
-                                >
-                                  {airport.name} ({airport.iata})
-                                </Button>
-                              ))}
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
+                            <Badge variant="secondary">{airportsInCountry.length}</Badge>
+                          </CardHeader>
+                        </Card>
                       ))}
-                    </Accordion>
+                    </div>
                   </TabsContent>
                 ))}
               </Tabs>
@@ -287,6 +296,36 @@ export default function AirportBriefingPage() {
           </CardContent>
         </Card>
        </AnimatedCard>
+       
+       {isAirportListOpen && (
+        <Dialog open={isAirportListOpen} onOpenChange={setIsAirportListOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Airports in {countryInDialog}</DialogTitle>
+              <DialogDescription>
+                Select an airport to view its briefing.
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="max-h-[60vh]">
+              <div className="flex flex-col gap-1 p-1">
+                {airportsInDialog.map((airport) => (
+                  <Button
+                    key={airport.icao}
+                    variant="ghost"
+                    className="w-full justify-start text-left h-auto py-2"
+                    onClick={() => handleSelectAirportFromDialog(airport)}
+                  >
+                    <div>
+                      <p className="font-semibold">{airport.name} ({airport.iata})</p>
+                      <p className="text-xs text-muted-foreground">{airport.city}</p>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
