@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Brain, MapPin, Cloudy, FileWarning, Globe, Building2 } from "lucide-react";
-import { searchAirports, getAirportByCode, type Airport } from "@/services/airport-service";
+import { searchAirports, type Airport } from "@/services/airport-service";
 import { CustomAutocompleteAirport } from "@/components/ui/custom-autocomplete-airport";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
@@ -36,13 +36,9 @@ export default function AirportBriefingPage() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
   
-  const handleSelectAirport = async (airport: Airport | null) => {
-    if(airport) {
-        const airportDetails = await getAirportByCode(airport.icao || airport.iata);
-        setSelectedAirport(airportDetails || null);
-    } else {
-        setSelectedAirport(null);
-    }
+  // Simplified handler: directly use the airport object from the selection.
+  const handleSelectAirport = (airport: Airport | null) => {
+    setSelectedAirport(airport);
   }
 
   return (
