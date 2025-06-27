@@ -9,7 +9,7 @@ import { ChevronRight, Home } from "lucide-react";
 const formatSegment = (segment: string): string => {
   if (!segment) return "";
   // Handle UUIDs or long numeric IDs gracefully
-  if (/^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/.test(segment) || /^\d{5,}$/.test(segment)) {
+  if (/^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/.test(segment) || /^\d{5,}$/.test(segment) || /^[a-zA-Z0-9]{20,}$/.test(segment)) {
     return "Details";
   }
   return segment
@@ -27,16 +27,19 @@ const predefinedLabels: { [key: string]: string } = {
   alerts: "Alerts",
   courses: "Courses",
   flights: "Flights",
-  "purser-reports": "Purser Reports Review",
-  "my-purser-reports": "My Purser Reports",
+  "purser-reports": "Purser Reports",
+  "my-purser-reports": "Purser Reports",
   "user-requests": "User Requests",
   training: "Training Hub",
   settings: "Settings",
-  schedule: "My Schedule",
+  schedule: "Schedule",
   requests: "Submit Request",
   "my-alerts": "My Alerts",
-  "my-requests": "My Submitted Requests",
+  "my-requests": "My Requests",
   "system-settings": "System Configuration",
+  "airport-briefings": "Airport Briefing",
+  "flight-duty-calculator": "Duty Calculator",
+  submit: "Submit",
 };
 
 export function Breadcrumbs() {
@@ -48,7 +51,7 @@ export function Breadcrumbs() {
   }
 
   return (
-    <nav aria-label="Breadcrumb" className="mb-4 text-sm text-muted-foreground">
+    <nav aria-label="Breadcrumb" className="mb-4 text-sm text-muted-foreground hidden md:block">
       <ol className="flex items-center space-x-1.5">
         <li>
           <Link
