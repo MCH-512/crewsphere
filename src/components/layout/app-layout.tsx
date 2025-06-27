@@ -215,10 +215,6 @@ function LayoutWithSidebar({
                       asChild
                       isActive={!!isActive}
                       tooltip={{ children: item.label, side: "right", align: "center" }}
-                      className={cn(
-                        "justify-start",
-                        isActive && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground"
-                      )}
                     >
                       <a>
                         <item.icon className="w-5 h-5" />
@@ -245,10 +241,6 @@ function LayoutWithSidebar({
                   asChild
                   isActive={pathname === "/settings"}
                   tooltip={{ children: "Settings", side: "right", align: "center" }}
-                   className={cn(
-                      "justify-start",
-                      pathname === "/settings" && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground"
-                    )}
                 >
                   <a>
                     <Settings className="w-5 h-5" />
