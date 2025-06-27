@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
-import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, ListChecks, Brain } from "lucide-react";
+import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, SendHorizonal, FileSignature, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,8 @@ import { formatDistanceToNowStrict, format, parseISO, addHours, subHours, startO
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { getAirportByCode } from "@/services/airport-service";
+
 
 interface Alert {
   id: string;
@@ -26,15 +28,6 @@ interface Alert {
   createdAt: Timestamp;
   userId?: string;
   iconName?: string;
-}
-
-interface FeaturedCourse {
-  id: string;
-  title: string;
-  description: string;
-  imageHint: string;
-  mandatory: boolean;
-  category: string;
 }
 
 interface RecentDocument {
@@ -68,7 +61,6 @@ interface UserActivity extends DocumentData {
     activityType: "flight" | "off" | "standby" | "leave" | "sick" | "training" | "other";
     date: Timestamp; // The day of the activity
     flightId?: string | null;
-    // flightDetails are populated client-side if activityType is 'flight'
 }
 
 interface UpcomingDutyData {
@@ -83,6 +75,14 @@ interface UpcomingDutyData {
   gate: string;
 }
 
+interface MyLearningCourse {
+  id: string;
+  title: string;
+  category: string;
+  mandatory: boolean;
+  imageHint: string;
+}
+
 
 export default function DashboardPage() {
   const { toast } = useToast();
@@ -93,9 +93,9 @@ export default function DashboardPage() {
   const [alertsLoading, setAlertsLoading] = React.useState(true);
   const [alertsError, setAlertsError] = React.useState<string | null>(null);
 
-  const [featuredTrainings, setFeaturedTrainings] = React.useState<FeaturedCourse[]>([]);
-  const [featuredTrainingsLoading, setFeaturedTrainingsLoading] = React.useState(true);
-  const [featuredTrainingsError, setFeaturedTrainingsError] = React.useState<string | null>(null);
+  const [myLearningCourses, setMyLearningCourses] = React.useState<MyLearningCourse[]>([]);
+  const [myLearningLoading, setMyLearningLoading] = React.useState(true);
+  const [myLearningError, setMyLearningError] = React.useState<string | null>(null);
 
   const [recentDocuments, setRecentDocuments] = React.useState<RecentDocument[]>([]);
   const [recentDocumentsLoading, setRecentDocumentsLoading] = React.useState(true);
@@ -166,78 +166,84 @@ export default function DashboardPage() {
     }
     fetchAlerts();
   }, [user, toast]);
-
+  
   React.useEffect(() => {
-    async function fetchFeaturedTrainings() {
-      if (!user) {
-        setFeaturedTrainingsLoading(false);
-        setFeaturedTrainings([]); 
-        setFeaturedTrainingsError("Please log in to view featured trainings.");
-        return;
-      }
-      setFeaturedTrainingsLoading(true);
-      setFeaturedTrainingsError(null);
-      
-      const finalFeaturedCourses: FeaturedCourse[] = [];
-
-      try {
-        
-        const mandatoryQuery = query(
-          collection(db, "courses"),
-          where("mandatory", "==", true),
-          orderBy("title"), 
-          limit(5) 
-        );
-        const mandatorySnapshot = await getDocs(mandatoryQuery);
-        const potentialMandatoryCourses = mandatorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FeaturedCourse));
-
-        for (const course of potentialMandatoryCourses) {
-          if (finalFeaturedCourses.length >= 2) break; 
-          const progressDocId = `\${user.uid}_\${course.id}`;
-          const progressSnap = await getDoc(doc(db, "userTrainingProgress", progressDocId));
-          if (progressSnap.exists() && progressSnap.data().quizStatus === 'Passed') {
-            continue; 
-          }
-          finalFeaturedCourses.push(course);
+    async function fetchMyLearning() {
+        if (!user) {
+            setMyLearningLoading(false);
+            return;
         }
+        setMyLearningLoading(true);
+        setMyLearningError(null);
 
-        
-        if (finalFeaturedCourses.length < 2) {
-          const existingIds = finalFeaturedCourses.map(c => c.id); 
-          const generalQuery = query(
-            collection(db, "courses"),
-            orderBy("category"), 
-            orderBy("title"),
-            limit(10) 
-          );
-          const generalSnapshot = await getDocs(generalQuery);
-          const potentialGeneralCourses = generalSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as FeaturedCourse));
+        try {
+            // Fetch user's non-passed progress records first
+            const progressQuery = query(
+                collection(db, "userTrainingProgress"),
+                where("userId", "==", user.uid)
+            );
+            const progressSnapshot = await getDocs(progressQuery);
+            const userProgressMap = new Map();
+            progressSnapshot.forEach(doc => {
+                const data = doc.data();
+                userProgressMap.set(data.courseId, data.quizStatus);
+            });
 
-          for (const course of potentialGeneralCourses) {
-            if (finalFeaturedCourses.length >= 2) break;
-            if (existingIds.includes(course.id)) continue; 
+            // Fetch all published, mandatory courses
+            const mandatoryQuery = query(
+                collection(db, "courses"),
+                where("mandatory", "==", true),
+                where("published", "==", true)
+            );
+            const mandatorySnapshot = await getDocs(mandatoryQuery);
+            const mandatoryCourses = mandatorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MyLearningCourse));
 
-            const progressDocId = `\${user.uid}_\${course.id}`;
-            const progressSnap = await getDoc(doc(db, "userTrainingProgress", progressDocId));
-            if (progressSnap.exists() && progressSnap.data().quizStatus === 'Passed') {
-              continue; 
+            // Filter for mandatory courses not yet passed
+            let requiredCourses = mandatoryCourses.filter(course => userProgressMap.get(course.id) !== 'Passed');
+
+            // If not enough mandatory, look for in-progress courses
+            if (requiredCourses.length < 2) {
+                const inProgressIds = [];
+                for (const [courseId, status] of userProgressMap.entries()) {
+                    if (status === 'InProgress' || status === 'Attempted' || status === 'Failed') {
+                        inProgressIds.push(courseId);
+                    }
+                }
+                
+                if (inProgressIds.length > 0) {
+                    const coursesToFetch = inProgressIds.filter(id => !requiredCourses.some(rc => rc.id === id));
+                    if (coursesToFetch.length > 0) {
+                        const inProgressQuery = query(
+                            collection(db, "courses"),
+                            where("__name__", "in", coursesToFetch.slice(0, 10)), // Limit to 10 to be safe
+                            where("published", "==", true)
+                        );
+                        const inProgressSnapshot = await getDocs(inProgressQuery);
+                        const inProgressCourses = inProgressSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MyLearningCourse));
+                        requiredCourses = [...requiredCourses, ...inProgressCourses];
+                    }
+                }
             }
             
-            finalFeaturedCourses.push(course);
-          }
+            // Deduplicate and set final list
+            const finalCourses = requiredCourses.reduce((acc, current) => {
+                if (!acc.find(item => item.id === current.id)) {
+                    acc.push(current);
+                }
+                return acc;
+            }, [] as MyLearningCourse[]);
+            
+            setMyLearningCourses(finalCourses.slice(0, 2));
+
+        } catch (err) {
+            console.error("Error fetching my learning courses:", err);
+            setMyLearningError("Failed to load your learning tasks.");
+        } finally {
+            setMyLearningLoading(false);
         }
-        
-        setFeaturedTrainings(finalFeaturedCourses.slice(0, 2)); 
-      } catch (err) {
-        console.error("Error fetching featured trainings:", err);
-        setFeaturedTrainingsError("Failed to load featured trainings.");
-        toast({ title: "Training Error", description: "Could not load featured trainings.", variant: "destructive" });
-      } finally {
-        setFeaturedTrainingsLoading(false);
-      }
     }
-    fetchFeaturedTrainings();
-  }, [user, toast]);
+    fetchMyLearning();
+  }, [user]);
 
   React.useEffect(() => {
     async function fetchRecentDocuments() {
@@ -286,7 +292,8 @@ export default function DashboardPage() {
           where("userId", "==", user.uid),
           where("activityType", "==", "flight"),
           where("date", ">=", Timestamp.fromDate(today)), 
-          orderBy("date", "asc") 
+          orderBy("date", "asc"),
+          limit(10) // Performance: Limit to check only the next 10 assigned flight days
         );
 
         const activitiesSnapshot = await getDocs(activitiesQuery);
@@ -307,7 +314,6 @@ export default function DashboardPage() {
               const flightData = { id: flightDocSnap.id, ...flightDocSnap.data() } as Flight;
               
               if (new Date(flightData.scheduledDepartureDateTimeUTC) > new Date()) {
-                
                 if (!nextFlightDetails || new Date(flightData.scheduledDepartureDateTimeUTC) < new Date(nextFlightDetails.scheduledDepartureDateTimeUTC)) {
                   nextFlightActivity = activityData;
                   nextFlightDetails = flightData;
@@ -317,15 +323,13 @@ export default function DashboardPage() {
           }
         }
         
-        
         if (nextFlightDetails) {
             const departureDateTime = parseISO(nextFlightDetails.scheduledDepartureDateTimeUTC);
-            
             const reportingDateTime = subHours(departureDateTime, 2); 
 
             setUpcomingDuty({
               flightNumber: nextFlightDetails.flightNumber,
-              route: `\${nextFlightDetails.departureAirport} - \${nextFlightDetails.arrivalAirport}`,
+              route: `${nextFlightDetails.departureAirport} - ${nextFlightDetails.arrivalAirport}`,
               aircraft: nextFlightDetails.aircraftType,
               reportingTime: format(reportingDateTime, "HH:mm 'UTC'"),
               reportingDate: format(reportingDateTime, "MMM d, yyyy"),
@@ -389,8 +393,8 @@ export default function DashboardPage() {
         </Card>
       </AnimatedCard>
       
-      <div className="grid md:grid-cols-3 gap-6">
-        <AnimatedCard delay={0.1} className="md:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <AnimatedCard delay={0.1} className="lg:col-span-2">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-medium font-headline">Upcoming Duty</CardTitle>
@@ -448,32 +452,32 @@ export default function DashboardPage() {
           </Card>
         </AnimatedCard>
 
-        <AnimatedCard delay={0.15} className="md:col-span-1">
+        <AnimatedCard delay={0.15} className="lg:col-span-1">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
               <CardHeader>
                   <CardTitle className="font-headline text-lg">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 gap-3">
                   <Button variant="default" className="w-full justify-start" asChild>
-                    <Link href="/purser-reports"><FileText className="mr-2 h-4 w-4"/>Submit Flight Report</Link>
+                    <Link href="/purser-reports"><FileSignature className="mr-2 h-4 w-4"/>Submit Flight Report</Link>
                   </Button>
                   <Button variant="outline" className="w-full justify-start" asChild>
                     <Link href="/schedule"><CalendarClock className="mr-2 h-4 w-4"/>View Full Roster</Link>
                   </Button>
                    <Button variant="outline" className="w-full justify-start" asChild>
-                    <Link href="/requests"><ArrowRight className="mr-2 h-4 w-4"/>Make a Request</Link>
+                    <Link href="/requests"><SendHorizonal className="mr-2 h-4 w-4"/>Make a Request</Link>
                   </Button>
                    <Button variant="outline" className="w-full justify-start" asChild>
                     <Link href="/documents"><BookOpen className="mr-2 h-4 w-4"/>Access Documents</Link>
                   </Button>
                   <Button variant="outline" className="w-full justify-start" asChild>
-                    <Link href="/training"><ListChecks className="mr-2 h-4 w-4"/>My Trainings</Link>
+                    <Link href="/training"><GraduationCap className="mr-2 h-4 w-4"/>My Trainings</Link>
                   </Button>
               </CardContent>
           </Card>
         </AnimatedCard>
         
-        <AnimatedCard delay={0.2} className="md:col-span-3">
+        <AnimatedCard delay={0.2} className="lg:col-span-3">
             <Card className="shadow-md hover:shadow-lg transition-shadow">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-lg font-medium font-headline">Real-Time Alerts</CardTitle>
@@ -522,40 +526,62 @@ export default function DashboardPage() {
             </Card>
         </AnimatedCard>
 
-        <AnimatedCard delay={0.25} className="md:col-span-1">
+        <AnimatedCard delay={0.25} className="lg:col-span-2">
             <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader>
-                <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-success"/>Safety &amp; Best Practice</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-                {safetyTips.slice(0,2).map((tip) => (
-                    <div key={tip.id} className="flex items-start gap-3 p-3 border-l-4 border-success bg-success/10 rounded-r-md">
-                        <ShieldCheck className="h-5 w-5 text-success mt-0.5 shrink-0"/>
-                        <p className="text-sm text-success/90">{tip.tip}</p>
-                    </div>
-                ))}
-                <Button variant="link" className="p-0 h-auto text-sm" asChild>
-                    <Link href={`/documents?category=${encodeURIComponent("🚨 SEP (Safety & Emergency Procedures)")}`}>More Safety Information</Link>
-                </Button>
-            </CardContent>
+                <CardHeader>
+                    <CardTitle className="font-headline flex items-center"><GraduationCap className="mr-2 h-5 w-5 text-primary"/>My Learning</CardTitle>
+                    <CardDescription>Your prioritized training requirements and courses.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {myLearningLoading ? (
+                        <div className="space-y-4">
+                            {[1, 2].map(i => <div key={i} className="flex items-center gap-4"><Skeleton className="h-12 w-12 rounded-lg"/><div className="space-y-2 flex-1"><Skeleton className="h-4 w-3/4"/><Skeleton className="h-3 w-1/2"/></div><Skeleton className="h-8 w-24"/></div>)}
+                        </div>
+                    ) : myLearningError ? (
+                        <ShadAlert variant="destructive"><AlertTriangle className="h-5 w-5" /><ShadAlertTitle>Learning Error</ShadAlertTitle><ShadAlertDescription>{myLearningError}</ShadAlertDescription></ShadAlert>
+                    ) : myLearningCourses.length === 0 ? (
+                        <div className="text-center py-4">
+                          <CheckCircle className="h-10 w-10 mx-auto text-success mb-2" />
+                          <p className="text-sm text-muted-foreground">You are up-to-date with all required and in-progress training!</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {myLearningCourses.map(course => (
+                                <div key={course.id} className="flex items-center gap-4 p-2 rounded-lg border">
+                                    <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={48} height={48} className="rounded-md" data-ai-hint={course.imageHint || "training"} />
+                                    <div className="flex-grow">
+                                        <h3 className="font-semibold text-sm">{course.title}</h3>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <Badge variant="outline" className="text-xs">{course.category}</Badge>
+                                            {course.mandatory && <Badge variant="destructive" className="text-xs">Mandatory</Badge>}
+                                        </div>
+                                    </div>
+                                    <Button size="sm" asChild>
+                                        <Link href="/training">Continue <ChevronRight className="ml-1 h-4 w-4"/></Link>
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                     <Button variant="link" className="p-0 h-auto text-sm mt-3" asChild>
+                        <Link href="/training">Go to Training Hub <ArrowRight className="ml-1 h-3 w-3" /></Link>
+                    </Button>
+                </CardContent>
             </Card>
         </AnimatedCard>
 
-         <AnimatedCard delay={0.30} className="md:col-span-2">
+         <AnimatedCard delay={0.30} className="lg:col-span-1">
            <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
-              <CardTitle className="font-headline flex items-center"><BookCopy className="mr-2 h-5 w-5 text-primary"/>Key Updates &amp; Announcements</CardTitle>
+              <CardTitle className="font-headline flex items-center"><BookCopy className="mr-2 h-5 w-5 text-primary"/>Recent Documents</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               {recentDocumentsLoading ? (
                  <div className="space-y-3 py-2">
                     {[1,2,3].map(i => (
-                      <div key={i} className="pb-3 border-b last:border-b-0">
-                        <Skeleton className="h-5 w-3/4 mb-1" />
-                        <Skeleton className="h-3 w-1/4 mb-2" />
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-5/6 mt-1" />
-                        <Skeleton className="h-3 w-1/3 mt-2" />
+                      <div key={i} className="pb-3 border-b last:border-b-0 space-y-1">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/4" />
                       </div>
                     ))}
                  </div>
@@ -568,15 +594,14 @@ export default function DashboardPage() {
               ) : recentDocuments.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4">No recent documents or announcements.</p>
               ) : recentDocuments.map((doc) => (
-                <div key={doc.id} className="pb-3 border-b last:border-b-0">
-                  <h3 className="font-semibold">{doc.title}</h3>
-                  <Badge variant="outline" className="text-xs mb-1">{doc.category}</Badge>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {doc.content || doc.description || (doc.documentContentType === 'file' && doc.fileName ? `File: \${doc.fileName}` : doc.documentContentType === 'file' ? 'Attached File' : 'No preview available.')}
-                  </p>
-                  <p className="text-xs text-muted-foreground/80 mt-1">
-                    Updated: {format(doc.lastUpdated.toDate(), "PP")}
-                  </p>
+                <div key={doc.id} className="pb-2 border-b last:border-b-0">
+                  <h3 className="font-semibold text-sm truncate" title={doc.title}>{doc.title}</h3>
+                  <div className="flex justify-between items-center">
+                    <Badge variant="secondary" className="text-xs">{doc.category}</Badge>
+                     <p className="text-xs text-muted-foreground/80">
+                        {format(doc.lastUpdated.toDate(), "PP")}
+                    </p>
+                  </div>
                 </div>
               ))}
                <Button variant="link" className="p-0 h-auto text-sm mt-2" asChild>
@@ -586,6 +611,21 @@ export default function DashboardPage() {
           </Card>
         </AnimatedCard>
 
+        <AnimatedCard delay={0.35} className="lg:col-span-3">
+            <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader>
+                <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-success"/>Safety &amp; Best Practice</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+                {safetyTips.map((tip) => (
+                    <div key={tip.id} className="flex items-start gap-3 p-3 border-l-4 border-success bg-success/10 rounded-r-md">
+                        <ShieldCheck className="h-5 w-5 text-success mt-0.5 shrink-0"/>
+                        <p className="text-sm text-success/90">{tip.tip}</p>
+                    </div>
+                ))}
+            </CardContent>
+            </Card>
+        </AnimatedCard>
       </div>
     </div>
   );
