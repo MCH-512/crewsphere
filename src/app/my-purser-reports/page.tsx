@@ -131,7 +131,13 @@ export default function MyPurserReportsPage() {
             </div>
           )}
           {!isLoading && reports.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">You have not submitted any purser reports yet.</p>
+            <div className="text-center py-10 border-2 border-dashed rounded-lg">
+              <Inbox className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-4 text-lg font-medium">No Reports Submitted</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                After you submit a report for a flight, it will appear here.
+              </p>
+            </div>
           )}
           {reports.length > 0 && (
             <div className="rounded-md border">
@@ -202,17 +208,59 @@ export default function MyPurserReportsPage() {
                     
                     <Separator />
                     
-                    <h3 className="text-lg font-semibold">Detailed Observations</h3>
-                    
-                    {selectedReport.safetyIncidents && <div><Label className="font-medium">Safety Incidents:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.safetyIncidents}</p></div>}
-                    {selectedReport.securityIncidents && <div><Label className="font-medium">Security Incidents:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.securityIncidents}</p></div>}
-                    {selectedReport.medicalIncidents && <div><Label className="font-medium">Medical Incidents:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.medicalIncidents}</p></div>}
-                    {selectedReport.passengerFeedback && <div><Label className="font-medium">Passenger Feedback:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.passengerFeedback}</p></div>}
-                    {selectedReport.cateringNotes && <div><Label className="font-medium">Catering Notes:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.cateringNotes}</p></div>}
-                    {selectedReport.maintenanceIssues && <div><Label className="font-medium">Maintenance Issues:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.maintenanceIssues}</p></div>}
-                    {selectedReport.crewPerformanceNotes && <div><Label className="font-medium">Crew Performance Notes:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.crewPerformanceNotes}</p></div>}
-                    {selectedReport.otherObservations && <div><Label className="font-medium">Other Observations:</Label><p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.otherObservations}</p></div>}
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Detailed Observations</h3>
+                        
+                        {selectedReport.safetyIncidents && (
+                            <div>
+                                <Label className="font-semibold">Safety Incidents</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.safetyIncidents}</p>
+                            </div>
+                        )}
+                        {selectedReport.securityIncidents && (
+                            <div>
+                                <Label className="font-semibold">Security Incidents</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.securityIncidents}</p>
+                            </div>
+                        )}
+                        {selectedReport.medicalIncidents && (
+                            <div>
+                                <Label className="font-semibold">Medical Incidents</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.medicalIncidents}</p>
+                            </div>
+                        )}
+                        {selectedReport.passengerFeedback && (
+                            <div>
+                                <Label className="font-semibold">Passenger Feedback</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.passengerFeedback}</p>
+                            </div>
+                        )}
+                        {selectedReport.cateringNotes && (
+                            <div>
+                                <Label className="font-semibold">Catering Notes</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.cateringNotes}</p>
+                            </div>
+                        )}
+                        {selectedReport.maintenanceIssues && (
+                            <div>
+                                <Label className="font-semibold">Maintenance Issues</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.maintenanceIssues}</p>
+                            </div>
+                        )}
+                        {selectedReport.crewPerformanceNotes && (
+                            <div>
+                                <Label className="font-semibold">Crew Performance Notes</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.crewPerformanceNotes}</p>
+                            </div>
+                        )}
+                        {selectedReport.otherObservations && (
+                            <div>
+                                <Label className="font-semibold">Other Observations</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.otherObservations}</p>
+                            </div>
+                        )}
 
+                    </div>
                 </div>
             </ScrollArea>
             <DialogFooter className="mt-auto pt-4 border-t">
