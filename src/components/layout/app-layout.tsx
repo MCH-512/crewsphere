@@ -69,17 +69,22 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
-  // Actions & Reports
+
+  // Learning & Reference
+  { href: "/training", label: "Training Hub", icon: GraduationCap },
+  { href: "/documents", label: "Documents", icon: FileText },
+
+  // Actions & Communication
   { href: "/requests", label: "My Requests", icon: Inbox },
+  { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
   { href: "/crew-community", label: "Crew Community", icon: MessagesSquare },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
-  { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
-  // Tools & Learning
-  { href: "/documents", label: "Documents", icon: FileText },
-  { href: "/training", label: "Training Hub", icon: GraduationCap },
+  
+  // Tools
   { href: "/airport-briefings", label: "Airport Briefing", icon: Brain },
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/toolbox", label: "Toolbox", icon: Wrench },
+  
   // Admin
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];
