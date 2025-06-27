@@ -17,8 +17,8 @@ import {
   useSidebar,
   SidebarProvider, 
   SidebarMenuBadge,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -192,13 +192,13 @@ function LayoutWithSidebar({
             <span className="font-bold text-xl group-data-[collapsible=icon]:hidden">AirCrew Hub</span>
           </Link>
         </SidebarHeader>
-        <Separator />
+        <SidebarSeparator />
         <SidebarContent className="p-2">
           <SidebarMenu>
             {currentNavItems.map((item) => {
               if (item.type === "separator") {
                 if (item.adminOnly && user?.role !== 'admin' && !pathname.startsWith('/admin')) return null; 
-                return <Separator key={item.key} className="my-2" />;
+                return <SidebarSeparator key={item.key} className="my-2" />;
               }
               
               if (item.adminOnly && user?.role !== 'admin' && !pathname.startsWith('/admin')) { 
@@ -232,7 +232,7 @@ function LayoutWithSidebar({
             })}
           </SidebarMenu>
         </SidebarContent>
-        <Separator />
+        <SidebarSeparator />
         <SidebarFooter className="p-2">
           <SidebarMenu>
             <SidebarMenuItem>
