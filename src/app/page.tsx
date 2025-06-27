@@ -464,7 +464,7 @@ export default function DashboardPage() {
                   <CardTitle className="font-headline text-lg">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 gap-3">
-                  <Button variant="default" className="w-full justify-start" asChild>
+                  <Button variant="outline" className="w-full justify-start" asChild>
                     <Link href="/purser-reports"><FileSignature className="mr-2 h-4 w-4"/>Submit Flight Report</Link>
                   </Button>
                   <Button variant="outline" className="w-full justify-start" asChild>
