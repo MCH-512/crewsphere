@@ -31,9 +31,10 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { AnimatedCard } from "@/components/motion/animated-card";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 const systemSettingsSchema = z.object({
-  appName: z.string().min(3, "Le nom de l'application doit comporter au moins 3 caractères.").max(50, "Le nom ne doit pas dépasser 50 caractères.").default("AirCrew Hub"),
+  appName: z.string().min(3, "App name must be at least 3 characters.").max(50, "App name cannot exceed 50 characters.").default("AirCrew Hub"),
   maintenanceMode: z.boolean().default(false),
   defaultBriefingModel: z.string().min(1, "Please select a default briefing model.").default("gemini-2.0-flash"),
   supportEmail: z.string().email("Invalid email address.").min(5, "Support email is required."),
@@ -116,6 +117,15 @@ export default function SystemSettingsPage() {
         lastUpdatedBy: user.uid,
         updatedAt: serverTimestamp(),
       }, { merge: true }); // Use merge true to create if not exists, or update if exists
+
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "UPDATE_SYSTEM_SETTINGS",
+        entityType: "SYSTEM_CONFIGURATION",
+        entityId: SETTINGS_DOC_ID,
+        details: data,
+      });
 
       toast({
         title: "Settings Saved",
