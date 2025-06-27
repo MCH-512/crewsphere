@@ -9,7 +9,7 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 98%; /* Lighter, cleaner background */
+    --background: 210 40% 96.1%; /* A very light blue-grey background */
     --foreground: 222.2 47.4% 11.2%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 47.4% 11.2%;
@@ -17,9 +17,9 @@ body {
     --popover-foreground: 222.2 47.4% 11.2%;
     --primary: 207 51% 52%; /* Kept the original primary blue */
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96.1%;
+    --secondary: 0 0% 98%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
+    --muted: 0 0% 98%;
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 172 70% 40%; /* Vibrant Teal/Cyan Accent */
     --accent-foreground: 0 0% 100%;
@@ -51,7 +51,7 @@ body {
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 217.2 32.6% 17.5%; /* Lighter dark background */
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
@@ -59,9 +59,9 @@ body {
     --popover-foreground: 210 40% 98%;
     --primary: 207 51% 65%; /* Lighter blue for dark mode */
     --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 222.2 84% 4.9%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 222.2 84% 4.9%;
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 172 70% 50%; /* Lighter teal/cyan for dark mode */
     --accent-foreground: 222.2 47.4% 11.2%;
