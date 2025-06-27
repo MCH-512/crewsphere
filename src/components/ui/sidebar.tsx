@@ -521,7 +521,7 @@ const sidebarMenuButtonVariants = cva(
         active:
           "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90",
         border:
-          "border border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+          "bg-card text-card-foreground border border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         ghost: "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
       },
     },

@@ -66,18 +66,15 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
-  { type: "separator", key: "sep1" },
   // Actions & Reports
   { href: "/requests", label: "My Requests", icon: Inbox },
   { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
-  { type: "separator", key: "sep2" },
   // Tools & Learning
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/training", label: "Training Hub", icon: GraduationCap },
   { href: "/airport-briefings", label: "Airport Briefing", icon: Brain },
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   // Admin
-  { type: "separator", key: "sep3", adminOnly: true },
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];
 
@@ -192,15 +189,9 @@ function LayoutWithSidebar({
             <span className="font-bold text-xl group-data-[collapsible=icon]:hidden">AirCrew Hub</span>
           </Link>
         </SidebarHeader>
-        <SidebarSeparator />
         <SidebarContent className="p-2">
           <SidebarMenu>
             {currentNavItems.map((item) => {
-              if (item.type === "separator") {
-                if (item.adminOnly && user?.role !== 'admin' && !pathname.startsWith('/admin')) return null; 
-                return <SidebarSeparator key={item.key} className="my-2" />;
-              }
-              
               if (item.adminOnly && user?.role !== 'admin' && !pathname.startsWith('/admin')) { 
                 return null; 
               }
@@ -213,7 +204,7 @@ function LayoutWithSidebar({
                   <Link href={item.href!} passHref legacyBehavior>
                     <SidebarMenuButton
                       asChild
-                      isActive={!!isActive}
+                      variant={isActive ? "active" : "border"}
                       tooltip={{ children: item.label, side: "right", align: "center" }}
                     >
                       <a>
@@ -232,14 +223,13 @@ function LayoutWithSidebar({
             })}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarSeparator />
         <SidebarFooter className="p-2">
           <SidebarMenu>
             <SidebarMenuItem>
                <Link href="/settings" passHref legacyBehavior>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname === "/settings"}
+                  variant={pathname === "/settings" ? "active" : "border"}
                   tooltip={{ children: "Settings", side: "right", align: "center" }}
                 >
                   <a>
