@@ -519,11 +519,11 @@ const sidebarMenuButtonVariants = cva(
     "outline-none ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
     "disabled:pointer-events-none disabled:opacity-50 h-10 overflow-hidden",
     
-    // Inactive state: a bordered button
-    "border border-sidebar-border bg-card text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+    // Inactive state: now transparent
+    "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
     
     // Active state: a solid color button
-    "data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:border-transparent data-[active=true]:hover:bg-sidebar-primary/90",
+    "data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:hover:bg-sidebar-primary/90",
     
     // Collapsed state
     "group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center",
