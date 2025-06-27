@@ -34,6 +34,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { addDays, addMonths, getDay, isAfter, startOfDay, parseISO, formatISO } from "date-fns";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 import { CustomAutocompleteAirport } from "@/components/ui/custom-autocomplete-airport";
 import { searchAirports, type Airport } from "@/services/airport-service";
@@ -275,8 +276,8 @@ export default function CreateFlightPage() {
     for (const date of generatedDates) {
       try {
         const dateStr = formatISO(date, { representation: 'date' }); 
-        const depDateTimeStr = `\${dateStr}T\${data.baseDepartureTimeUTC}:00.000Z`;
-        const arrDateTimeStr = `\${dateStr}T\${data.baseArrivalTimeUTC}:00.000Z`;
+        const depDateTimeStr = `${dateStr}T${data.baseDepartureTimeUTC}:00.000Z`;
+        const arrDateTimeStr = `${dateStr}T${data.baseArrivalTimeUTC}:00.000Z`;
 
         let departureDateTime = parseISO(depDateTimeStr);
         let arrivalDateTime = parseISO(arrDateTimeStr);
@@ -303,16 +304,30 @@ export default function CreateFlightPage() {
         flightsCreatedCount++;
       } catch (e) {
         flightsFailedCount++;
-        console.error(`Error processing date \${date}:`, e);
+        console.error(`Error processing date ${date}:`, e);
       }
     }
 
     try {
         if (flightsCreatedCount > 0) {
             await batch.commit();
+
+            await logAuditEvent({
+              userId: user.uid,
+              userEmail: user.email || "N/A",
+              actionType: "CREATE_FLIGHT_BATCH",
+              entityType: "FLIGHT",
+              details: {
+                flightNumber: data.flightNumber,
+                route: `${data.departureAirport}-${data.arrivalAirport}`,
+                count: flightsCreatedCount,
+                frequency: data.frequency,
+              },
+            });
+
             toast({
                 title: "Flight Creation Successful",
-                description: `\${flightsCreatedCount} flight(s) created. \${flightsFailedCount > 0 ? `\${flightsFailedCount} failed.` : ''}`,
+                description: `${flightsCreatedCount} flight(s) created. ${flightsFailedCount > 0 ? `${flightsFailedCount} failed.` : ''}`,
                 action: flightsFailedCount > 0 ? <AlertTriangle className="text-destructive"/> : <CheckCircle className="text-green-500" />,
             });
             form.reset();
@@ -321,7 +336,7 @@ export default function CreateFlightPage() {
             setArrivalSearchTerm("");
             router.push('/admin/flights'); 
         } else if (flightsFailedCount > 0) {
-             toast({ title: "Flight Creation Failed", description: `No flights created. \${flightsFailedCount} date(s) could not be processed. Check console.`, variant: "destructive" });
+             toast({ title: "Flight Creation Failed", description: `No flights created. ${flightsFailedCount} date(s) could not be processed. Check console.`, variant: "destructive" });
         } else {
             toast({ title: "No Flights to Create", description: "No dates were generated based on your rules.", variant: "default" });
         }

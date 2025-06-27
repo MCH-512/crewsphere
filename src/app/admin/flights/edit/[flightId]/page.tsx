@@ -230,12 +230,12 @@ export default function EditFlightPage() {
         actionType: "UPDATE_FLIGHT",
         entityType: "FLIGHT",
         entityId: flightId,
-        details: { flightNumber: data.flightNumber, route: `\${data.departureAirport}-\${data.arrivalAirport}`, status: data.status },
+        details: { flightNumber: data.flightNumber, route: `${data.departureAirport}-${data.arrivalAirport}`, status: data.status },
       });
 
       toast({
         title: "Flight Updated Successfully",
-        description: `Flight \${data.flightNumber} has been updated.`,
+        description: `Flight ${data.flightNumber} has been updated.`,
         action: <CheckCircle className="text-green-500" />,
       });
       router.push('/admin/flights');
