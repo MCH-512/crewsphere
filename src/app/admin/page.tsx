@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, GraduationCap, ClipboardList, Plane, Settings, Loader2, FilePlus, Bell, FileSignature, ClipboardCheck, CheckSquare } from "lucide-react";
+import { ServerCog, Users, Activity, GraduationCap, ClipboardList, Plane, Settings, Loader2, FilePlus, Bell, FileSignature, ClipboardCheck, CheckSquare, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -155,6 +155,14 @@ export default function AdminConsolePage() {
       buttonText: "Review Reports", 
       href: "/admin/purser-reports",
       delay: 0.45
+    },
+    { 
+      icon: MessageSquare, 
+      title: "Suggestion Box", 
+      description: "Review and manage all user-submitted suggestions and ideas for improvement.", 
+      buttonText: "Manage Suggestions", 
+      href: "/admin/suggestions",
+      delay: 0.48
     },
     { 
       icon: Settings, 

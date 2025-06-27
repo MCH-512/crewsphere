@@ -52,7 +52,8 @@ import {
   Users,
   FileSignature,
   Brain,
-  Calculator
+  Calculator,
+  Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -68,6 +69,7 @@ const navItems = [
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
   // Actions & Reports
   { href: "/requests", label: "My Requests", icon: Inbox },
+  { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
   { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
   // Tools & Learning
   { href: "/documents", label: "Documents", icon: FileText },
