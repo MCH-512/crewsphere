@@ -361,10 +361,10 @@ export default function AdminDocumentsPage() {
               disabled={isLoading}
             >
               <SelectTrigger className="w-full sm:w-[240px]">
-                <SelectValue placeholder="Filter by provenance" />
+                <SelectValue placeholder="Filter by source" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Provenances</SelectItem>
+                <SelectItem value="all">All Sources</SelectItem>
                 {documentSources.map(src => (
                   <SelectItem key={src} value={src}>{src}</SelectItem>
                 ))}
@@ -397,7 +397,7 @@ export default function AdminDocumentsPage() {
                     <TableHead className="w-[50px]">Type</TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead>Provenance</TableHead> 
+                    <TableHead>Source</TableHead> 
                     <TableHead>Version</TableHead>
                     <TableHead>Size</TableHead>
                     <TableHead>Uploaded By</TableHead>
@@ -512,11 +512,11 @@ export default function AdminDocumentsPage() {
                   )}
                 </div>
             </ScrollArea>
-            <DialogFooter className="mt-auto pt-4 border-t">
+            <DialogPrimitiveFooter className="mt-auto pt-4 border-t">
               <DialogClose asChild>
                 <Button variant="outline">Close</Button>
               </DialogClose>
-            </DialogFooter>
+            </DialogPrimitiveFooter>
           </DialogContent>
         </Dialog>
       )}

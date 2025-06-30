@@ -250,7 +250,7 @@ export default function CreateDocumentPage() {
                   name="source"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Provenance / Type*</FormLabel>
+                      <FormLabel>Source / Type*</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -263,7 +263,7 @@ export default function CreateDocumentPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormDescription>E.g., Internal Memo, Safety Bulletin, Procedure Update.</FormDescription>
+                      <FormDescription>The family this document belongs to.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

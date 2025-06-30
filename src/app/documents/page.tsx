@@ -6,17 +6,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter as DialogPrimitiveFooter, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Layers, Building, Flag, Shield, Globe, HelpCircle } from "lucide-react";
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Layers, Building, Flag, Shield, Globe, HelpCircle, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Input } from "@/components/ui/input";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import ReactMarkdown from "react-markdown";
-import { documentCategories, documentSources } from "@/config/document-options";
-import { cn } from "@/lib/utils";
+import { documentSources } from "@/config/document-options";
 
 interface Document {
   id: string;
@@ -60,14 +59,13 @@ const formatDate = (dateValue: Timestamp | string) => {
   return "Invalid Date";
 };
 
-const familyConfig = {
-    "Documentation Compagnie": { icon: Building, description: "Procédures opérationnelles standard, manuels et notes de service internes." },
-    "Documentation Tunisienne": { icon: Flag, description: "Réglementations et publications des autorités de l'aviation civile tunisienne." },
-    "Documentation Européenne": { icon: Shield, description: "Règles et directives de l'Agence de l'Union européenne pour la sécurité aérienne (EASA)." },
-    "Documentation Internationale": { icon: Globe, description: "Normes et pratiques recommandées par l'OACI et l'IATA." },
-    "Autre": { icon: HelpCircle, description: "Documents divers et autres références externes." }
+const familyConfig: Record<string, { icon: React.ElementType, description: string }> = {
+    "Company Documentation": { icon: Building, description: "Internal SOPs, manuals, and memos." },
+    "Tunisian Documentation": { icon: Flag, description: "Regulations from Tunisian civil aviation authorities." },
+    "European Documentation": { icon: Shield, description: "Rules and guidance from EASA." },
+    "International Documentation": { icon: Globe, description: "Standards from ICAO and IATA." },
+    "Other": { icon: HelpCircle, description: "Miscellaneous documents and external references." }
 };
-
 
 export default function DocumentsPage() {
   const [allDocuments, setAllDocuments] = React.useState<Document[]>([]);
@@ -77,6 +75,7 @@ export default function DocumentsPage() {
 
   const [selectedDocumentForView, setSelectedDocumentForView] = React.useState<Document | null>(null);
   const [isViewNoteDialogOpen, setIsViewNoteDialogOpen] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState("");
 
   const fetchDocuments = React.useCallback(async () => {
     setIsLoading(true);
@@ -90,7 +89,7 @@ export default function DocumentsPage() {
           id: doc.id,
           title: data.title || "Untitled Document",
           category: data.category || "Uncategorized",
-          source: data.source || "Autre",
+          source: data.source || "Other",
           version: data.version,
           lastUpdated: data.lastUpdated,
           size: data.size,
@@ -118,13 +117,23 @@ export default function DocumentsPage() {
   React.useEffect(() => {
     fetchDocuments();
   }, [fetchDocuments]);
+
+  const filteredDocuments = React.useMemo(() => {
+    if (!searchTerm) return allDocuments;
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return allDocuments.filter(doc => 
+        doc.title.toLowerCase().includes(lowercasedTerm) ||
+        doc.category.toLowerCase().includes(lowercasedTerm) ||
+        (doc.content || "").toLowerCase().includes(lowercasedTerm)
+    );
+  }, [allDocuments, searchTerm]);
   
   const groupedDocuments = React.useMemo(() => {
     return documentSources.reduce((acc, source) => {
-        acc[source] = allDocuments.filter(doc => doc.source === source);
+        acc[source] = filteredDocuments.filter(doc => doc.source === source);
         return acc;
     }, {} as Record<string, Document[]>);
-  }, [allDocuments]);
+  }, [filteredDocuments]);
 
 
   const handleViewDocument = (doc: Document) => {
@@ -142,87 +151,99 @@ export default function DocumentsPage() {
     <div className="space-y-6">
       <AnimatedCard>
         <Card className="shadow-lg">
-          <CardHeader className="flex flex-row justify-between items-start">
-            <div>
-              <CardTitle className="text-2xl font-headline">Bibliothèque de Documents</CardTitle>
-              <CardDescription>Accédez à tous les manuels, procédures, politiques et supports de formation essentiels.</CardDescription>
-            </div>
-             <Button variant="outline" onClick={fetchDocuments} disabled={isLoading}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Actualiser
-            </Button>
+          <CardHeader>
+            <CardTitle className="text-2xl font-headline">Document Library</CardTitle>
+            <CardDescription>Access all essential manuals, procedures, policies, and training materials.</CardDescription>
           </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-grow">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                        placeholder="Search all documents..."
+                        className="pl-10"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <Button variant="outline" onClick={fetchDocuments} disabled={isLoading}>
+                    <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                </Button>
+            </div>
+          </CardContent>
         </Card>
       </AnimatedCard>
 
        {isLoading ? (
           <div className="flex items-center justify-center py-10">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="ml-3 text-muted-foreground">Chargement des documents...</p>
+            <p className="ml-3 text-muted-foreground">Loading documents...</p>
           </div>
         ) : error ? (
            <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2 justify-center">
             <AlertTriangle className="h-5 w-5" /> {error}
           </div>
         ) : (
-            <Accordion type="multiple" className="w-full space-y-4">
+            <div className="space-y-6">
             {documentSources.map((family) => {
                 const docs = groupedDocuments[family];
-                const familyInfo = familyConfig[family as keyof typeof familyConfig] || { icon: HelpCircle, description: "" };
-                const IconComponent = familyInfo.icon;
+                if (!family) return null;
+                const familyInfo = familyConfig[family as keyof typeof familyConfig];
+                const IconComponent = familyInfo?.icon || HelpCircle;
                 
-                if (!docs || docs.length === 0) return null;
+                if (docs.length === 0 && !searchTerm) return null; // Don't show empty families unless searching
+                if (docs.length === 0 && searchTerm) return null;
 
                 return (
-                    <Card key={family} className="shadow-md">
-                        <AccordionItem value={family} className="border-b-0">
-                            <AccordionTrigger className="p-4 hover:no-underline">
-                                <div className="flex items-center gap-3">
-                                    <IconComponent className="h-6 w-6 text-primary" />
-                                    <div className="text-left">
-                                        <h3 className="text-lg font-semibold">{family}</h3>
-                                        <p className="text-xs text-muted-foreground font-normal">{familyInfo.description}</p>
-                                    </div>
-                                    <Badge variant="secondary">{docs.length}</Badge>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent>
-                                <div className="space-y-2 px-4 pb-4">
-                                {docs.map(doc => (
-                                    <div key={doc.id} className="border rounded-md p-3 flex justify-between items-center hover:bg-muted/50 transition-colors">
-                                        <div className="flex items-center gap-3">
+                    <AnimatedCard key={family} delay={0.1}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-3">
+                                <IconComponent className="h-6 w-6 text-primary" />
+                                {family}
+                            </CardTitle>
+                            <CardDescription>{familyInfo?.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {docs.map(doc => (
+                                <Card key={doc.id} className="hover:shadow-md transition-shadow">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-base font-semibold flex items-center gap-2">
                                             {getIconForDocumentType(doc)}
-                                            <div>
-                                                <p className="font-medium text-sm">{doc.title}</p>
-                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                    <Badge variant="outline" className="px-1.5 py-0">{doc.category}</Badge>
-                                                    <span>|</span>
-                                                    <span>Mis à jour: {formatDate(doc.lastUpdated)}</span>
-                                                    {doc.version && <span>| Ver: {doc.version}</span>}
-                                                </div>
-                                            </div>
+                                            <span className="truncate" title={doc.title}>{doc.title}</span>
+                                        </CardTitle>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                                            <Badge variant="outline" className="px-1.5 py-0">{doc.category}</Badge>
+                                            <span>|</span>
+                                            <span>Updated: {formatDate(doc.lastUpdated)}</span>
+                                            {doc.version && <span>| Ver: {doc.version}</span>}
                                         </div>
-                                        <div className="flex gap-1">
-                                             <Button variant="ghost" size="sm" onClick={() => handleViewDocument(doc)}>
-                                                <Eye className="mr-2 h-4 w-4" /> Voir
+                                    </CardHeader>
+                                    <CardFooter className="gap-2">
+                                         <Button variant="ghost" size="sm" onClick={() => handleViewDocument(doc)} className="flex-1">
+                                            <Eye className="mr-2 h-4 w-4" /> View
+                                        </Button>
+                                        {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
+                                            <Button variant="outline" size="sm" asChild className="flex-1">
+                                                <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="mr-2 h-4 w-4" /> Download</a>
                                             </Button>
-                                            {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
-                                                <Button variant="ghost" size="sm" asChild>
-                                                    <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="mr-2 h-4 w-4" /> Télécharger</a>
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
+                                        )}
+                                    </CardFooter>
+                                </Card>
+                            ))}
+                        </CardContent>
                     </Card>
+                    </AnimatedCard>
                 )
             })}
-            </Accordion>
+            {filteredDocuments.length === 0 && searchTerm && (
+                <div className="text-center py-10">
+                    <p className="text-muted-foreground">No documents found matching "{searchTerm}".</p>
+                </div>
+            )}
+            </div>
         )}
-
 
       {selectedDocumentForView && (selectedDocumentForView.documentContentType === 'markdown' || selectedDocumentForView.documentContentType === 'fileWithMarkdown') && (
         <Dialog open={isViewNoteDialogOpen} onOpenChange={setIsViewNoteDialogOpen}>

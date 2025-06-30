@@ -337,7 +337,7 @@ export default function EditDocumentPage() {
                   name="source"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Provenance / Type*</FormLabel>
+                      <FormLabel>Source / Type*</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
