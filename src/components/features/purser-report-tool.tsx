@@ -1,4 +1,1 @@
-// This component is deprecated.
-export function PurserReportTool() {
-  return null;
-}
+// This component is obsolete and has been removed.
