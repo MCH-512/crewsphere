@@ -1,5 +1,6 @@
 
 import { z } from "zod";
+import { courseCategories } from "@/config/course-options";
 
 export const questionTypes = ["mcq", "tf", "short"] as const;
 export type QuestionType = typeof questionTypes[number];
@@ -13,6 +14,7 @@ export type QuestionOption = z.infer<typeof questionOptionSchema>;
 export const questionFormSchema = z.object({
   questionText: z.string().min(5, "Question text must be at least 5 characters."),
   questionType: z.enum(questionTypes, { required_error: "Please select a question type." }),
+  category: z.string({ required_error: "Please select a question category."}),
   options: z.array(questionOptionSchema).optional(),
   correctAnswer: z.string().min(1, "Correct answer cannot be empty."),
   // For MCQ, correctAnswer will be the text of one of the options.
@@ -27,6 +29,7 @@ export const defaultQuestionOptionValue: QuestionOption = { text: "" };
 export const defaultQuestionFormValues: Partial<QuestionFormValues> = {
   questionText: "",
   questionType: "mcq",
+  category: "",
   options: [{ text: "" }, { text: "" }], // Default to 2 options for MCQ
   correctAnswer: "",
 };

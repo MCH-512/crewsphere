@@ -59,6 +59,7 @@ import {
   Wrench,
   CheckSquare,
   Activity,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -187,6 +188,7 @@ function LayoutWithSidebar({
     { href: "/admin/alerts", label: "Alerts", icon: Bell },
     { href: "/admin/courses", label: "Courses", icon: GraduationCap },
     { href: "/admin/quizzes", label: "Quizzes", icon: CheckSquare },
+    { href: "/admin/question-bank", label: "Question Bank", icon: HelpCircle },
     { href: "/admin/flights", label: "Flights", icon: Plane },
     { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
     { href: "/admin/suggestions", label: "Suggestions", icon: MessageSquare },
