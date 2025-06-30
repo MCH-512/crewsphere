@@ -64,7 +64,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  courseCategoryGroups,
+  courseCategories,
   courseTypes,
   referenceBodyOptions,
   courseDurationOptions,
@@ -472,13 +472,8 @@ export default function EditComprehensiveCoursePage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {Object.entries(courseCategoryGroups).map(([groupName, categories]) => (
-                          <SelectGroup key={groupName}>
-                            <SelectLabel>{groupName}</SelectLabel>
-                            {categories.map(cat => (
-                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                            ))}
-                          </SelectGroup>
+                        {courseCategories.map(cat => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

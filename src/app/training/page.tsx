@@ -75,15 +75,10 @@ const getResourceIconDialog = (type?: Resource['type']) => {
 };
 
 const trainingFamilies = [
-  { name: "Safety & Security", icon: ShieldCheck, categories: ["Safety Equipment", "Standard Operating Procedures (SOPs)", "Emergency Procedures", "Civil Aviation Security (AVSEC)", "Drills Briefing"] },
-  { name: "Dangerous Goods", icon: AlertTriangle, categories: ["Dangerous Goods (DG)"] },
-  { name: "CRM", icon: Users, categories: ["Crew Resource Management (CRM)", "Fatigue Risk Management System (FRMS)"] },
-  { name: "First Aid", icon: HeartPulse, categories: ["First Aid"] },
-  { name: "SMS", icon: ClipboardCheck, categories: ["Safety Management System (SMS)"] },
-  { name: "Type Rating", icon: Plane, categories: ["Aircraft Type Rating"] },
-  { name: "Brand & Grooming", icon: Sparkles, categories: ["Brand & Grooming", "Etiquette and Personal Development", "Onboard Service", "Premium Service & Customer Relationship"] },
-  { name: "Specialized Training", icon: Award, categories: ["Cabin Crew Instructor Training", "Cabin Senior (Purser) Training"] },
-  { name: "Other Training", icon: BookOpen, categories: ["General Information", "Flight Time Limitations (FTL)", "General Knowledge"] }
+  { name: "Safety & Security", icon: ShieldCheck, categories: ["Safety and Security", "Dangerous Goods", "First Aid", "Safety Management System (SMS)"] },
+  { name: "Operational & Human Factors", icon: Plane, categories: ["Aircraft Type Rating", "Crew Resource Management (CRM)"] },
+  { name: "Professional Development", icon: Award, categories: ["Brand & Grooming", "Specialized Training"] },
+  { name: "Other", icon: BookOpen, categories: ["Other Training"] }
 ];
 
 const getCourseFamily = (category: string) => {
@@ -92,8 +87,8 @@ const getCourseFamily = (category: string) => {
             return family;
         }
     }
-    // Fallback to "Other Training"
-    return trainingFamilies.find(f => f.name === "Other Training")!;
+    // Fallback to "Other"
+    return trainingFamilies.find(f => f.name === "Other")!;
 };
 
 

@@ -37,7 +37,7 @@ import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { 
-  courseCategoryGroups, 
+  courseCategories, 
   courseTypes, 
   referenceBodyOptions, 
   courseDurationOptions 
@@ -240,13 +240,8 @@ export default function CreateComprehensiveCoursePage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {Object.entries(courseCategoryGroups).map(([groupName, categories]) => (
-                          <SelectGroup key={groupName}>
-                            <SelectLabel>{groupName}</SelectLabel>
-                            {categories.map(cat => (
-                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                            ))}
-                          </SelectGroup>
+                        {courseCategories.map(cat => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
