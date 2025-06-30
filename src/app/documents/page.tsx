@@ -177,72 +177,71 @@ export default function DocumentsPage() {
            <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2 justify-center">
             <AlertTriangle className="h-5 w-5" /> {error}
           </div>
-        ) : allDocuments.length === 0 && !searchTerm ? (
-            <div className="text-center py-10">
-                <p className="text-muted-foreground">No documents have been added to the library yet.</p>
-            </div>
         ) : (
             <div className="space-y-6">
-            {documentSources.map((family) => {
-                const docs = groupedDocuments[family];
-                if (searchTerm && docs.length === 0) return null; // Hide empty families only when searching
-                
-                const familyInfo = familyConfig[family as keyof typeof familyConfig];
-                const IconComponent = familyInfo?.icon || FileTextIcon;
+                {filteredDocuments.length === 0 && searchTerm ? (
+                    <div className="text-center py-10">
+                        <p className="text-muted-foreground">No documents found matching "{searchTerm}".</p>
+                    </div>
+                ) : (
+                    documentSources.map((family) => {
+                        const docs = groupedDocuments[family];
+                        
+                        // If searching, hide categories that have no matching documents
+                        if (searchTerm && docs.length === 0) return null;
+                        
+                        const familyInfo = familyConfig[family as keyof typeof familyConfig];
+                        const IconComponent = familyInfo?.icon || FileTextIcon;
 
-                return (
-                    <AnimatedCard key={family} delay={0.1}>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-3">
-                                <IconComponent className="h-6 w-6 text-primary" />
-                                {family}
-                            </CardTitle>
-                            <CardDescription>{familyInfo?.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          {docs.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {docs.map(doc => (
-                                  <Card key={doc.id} className="hover:shadow-md transition-shadow">
-                                      <CardHeader className="pb-3">
-                                          <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                              {getIconForDocumentType(doc)}
-                                              <span className="truncate" title={doc.title}>{doc.title}</span>
-                                          </CardTitle>
-                                          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                                              <Badge variant="outline" className="px-1.5 py-0">{doc.category}</Badge>
-                                              <span>|</span>
-                                              <span>Updated: {formatDate(doc.lastUpdated)}</span>
-                                              {doc.version && <span>| Ver: {doc.version}</span>}
-                                          </div>
-                                      </CardHeader>
-                                      <CardFooter className="gap-2">
-                                           <Button variant="ghost" size="sm" onClick={() => handleViewDocument(doc)} className="flex-1">
-                                              <Eye className="mr-2 h-4 w-4" /> View
-                                          </Button>
-                                          {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
-                                              <Button variant="outline" size="sm" asChild className="flex-1">
-                                                  <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="mr-2 h-4 w-4" /> Download</a>
-                                              </Button>
-                                          )}
-                                      </CardFooter>
-                                  </Card>
-                              ))}
-                            </div>
-                           ) : (
-                             <p className="text-sm text-muted-foreground p-4 text-center">No documents in this category.</p>
-                           )}
-                        </CardContent>
-                    </Card>
-                    </AnimatedCard>
-                )
-            })}
-            {filteredDocuments.length === 0 && searchTerm && (
-                <div className="text-center py-10">
-                    <p className="text-muted-foreground">No documents found matching "{searchTerm}".</p>
-                </div>
-            )}
+                        return (
+                            <AnimatedCard key={family} delay={0.1}>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-3">
+                                        <IconComponent className="h-6 w-6 text-primary" />
+                                        {family}
+                                    </CardTitle>
+                                    <CardDescription>{familyInfo?.description}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                  {docs.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {docs.map(doc => (
+                                          <Card key={doc.id} className="hover:shadow-md transition-shadow">
+                                              <CardHeader className="pb-3">
+                                                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                                      {getIconForDocumentType(doc)}
+                                                      <span className="truncate" title={doc.title}>{doc.title}</span>
+                                                  </CardTitle>
+                                                  <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                                                      <Badge variant="outline" className="px-1.5 py-0">{doc.category}</Badge>
+                                                      <span>|</span>
+                                                      <span>Updated: {formatDate(doc.lastUpdated)}</span>
+                                                      {doc.version && <span>| Ver: {doc.version}</span>}
+                                                  </div>
+                                              </CardHeader>
+                                              <CardFooter className="gap-2">
+                                                   <Button variant="ghost" size="sm" onClick={() => handleViewDocument(doc)} className="flex-1">
+                                                      <Eye className="mr-2 h-4 w-4" /> View
+                                                  </Button>
+                                                  {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
+                                                      <Button variant="outline" size="sm" asChild className="flex-1">
+                                                          <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="mr-2 h-4 w-4" /> Download</a>
+                                                      </Button>
+                                                  )}
+                                              </CardFooter>
+                                          </Card>
+                                      ))}
+                                    </div>
+                                   ) : (
+                                     <p className="text-sm text-muted-foreground p-4 text-center">No documents in this category.</p>
+                                   )}
+                                </CardContent>
+                            </Card>
+                            </AnimatedCard>
+                        )
+                    })
+                )}
             </div>
         )}
 
