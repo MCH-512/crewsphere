@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter as DialogPrimitiveFooter, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Layers, Building, Flag, Shield, Globe, HelpCircle, Search } from "lucide-react";
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Layers, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { db } from "@/lib/firebase";
@@ -15,7 +15,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import ReactMarkdown from "react-markdown";
-import { documentSources } from "@/config/document-options";
+import { documentSources, familyConfig } from "@/config/document-options";
 
 interface Document {
   id: string;
@@ -59,13 +59,6 @@ const formatDate = (dateValue: Timestamp | string) => {
   return "Invalid Date";
 };
 
-const familyConfig: Record<string, { icon: React.ElementType, description: string }> = {
-    "Company Documentation": { icon: Building, description: "Internal SOPs, manuals, and memos." },
-    "Tunisian Documentation": { icon: Flag, description: "Regulations from Tunisian civil aviation authorities." },
-    "European Documentation": { icon: Shield, description: "Rules and guidance from EASA." },
-    "International Documentation": { icon: Globe, description: "Standards from ICAO and IATA." },
-    "Other": { icon: HelpCircle, description: "Miscellaneous documents and external references." }
-};
 
 export default function DocumentsPage() {
   const [allDocuments, setAllDocuments] = React.useState<Document[]>([]);
@@ -195,7 +188,7 @@ export default function DocumentsPage() {
                 if (searchTerm && docs.length === 0) return null; // Hide empty families only when searching
                 
                 const familyInfo = familyConfig[family as keyof typeof familyConfig];
-                const IconComponent = familyInfo?.icon || HelpCircle;
+                const IconComponent = familyInfo?.icon || FileTextIcon;
 
                 return (
                     <AnimatedCard key={family} delay={0.1}>

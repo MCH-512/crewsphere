@@ -12,7 +12,7 @@ import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription as AlertDialogPrimitiveDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertDialogPrimitiveTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area"; 
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, FilePlus, StickyNote, Layers, Edit, Trash2 } from "lucide-react";
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, FilePlus, StickyNote, Layers, Edit, Trash2, Search, Building, Flag, Shield, Globe, HelpCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -32,7 +32,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { AnimatedCard } from "@/components/motion/animated-card";
-import { documentCategories, documentSources } from "@/config/document-options";
+import { documentCategories, documentSources, familyConfig } from "@/config/document-options";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"; 
 
@@ -54,8 +54,6 @@ interface Document {
   content?: string; 
 }
 
-const categories = documentCategories; 
-
 export default function AdminDocumentsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -72,37 +70,30 @@ export default function AdminDocumentsPage() {
   
   const [documentToDelete, setDocumentToDelete] = React.useState<Document | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
-
-  const [totalDocumentsCount, setTotalDocumentsCount] = React.useState<number>(0);
-  const [fileCount, setFileCount] = React.useState<number>(0);
-  const [textNoteCount, setTextNoteCount] = React.useState<number>(0);
-  const [combinedCount, setCombinedCount] = React.useState<number>(0);
+  
+  const [familyCounts, setFamilyCounts] = React.useState<Record<string, number>>({});
 
 
   const fetchDocuments = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    setTotalDocumentsCount(0);
-    setFileCount(0);
-    setTextNoteCount(0);
-    setCombinedCount(0);
     try {
       const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc"));
       const querySnapshot = await getDocs(q);
-      let tempFileCount = 0;
-      let tempTextNoteCount = 0;
-      let tempCombinedCount = 0;
+      
+      const counts: Record<string, number> = {};
+      documentSources.forEach(source => {
+        counts[source] = 0;
+      });
 
       const fetchedDocuments = querySnapshot.docs.map(doc => {
         const data = doc.data();
         const docContentType = data.documentContentType || (data.downloadURL ? 'file' : 'markdown'); 
-        if (docContentType === 'file') {
-          tempFileCount++;
-        } else if (docContentType === 'markdown') {
-          tempTextNoteCount++;
-        } else if (docContentType === 'fileWithMarkdown') {
-          tempCombinedCount++;
+        
+        if (counts[data.source] !== undefined) {
+          counts[data.source]++;
         }
+
         return {
           id: doc.id,
           title: data.title || "Untitled Document",
@@ -121,10 +112,7 @@ export default function AdminDocumentsPage() {
         } as Document;
       });
       setDocuments(fetchedDocuments);
-      setTotalDocumentsCount(fetchedDocuments.length);
-      setFileCount(tempFileCount);
-      setTextNoteCount(tempTextNoteCount);
-      setCombinedCount(tempCombinedCount);
+      setFamilyCounts(counts);
 
     } catch (err) {
       console.error("Error fetching documents:", err);
@@ -290,37 +278,35 @@ export default function AdminDocumentsPage() {
         </CardHeader>
       </Card>
       
-      <AnimatedCard delay={0.1}>
+       <AnimatedCard delay={0.1}>
         <Card className="shadow-md">
             <CardHeader>
                 <CardTitle className="text-lg font-headline flex items-center">
-                    Document Statistics
+                    Documents by Family
                 </CardTitle>
+                <CardDescription>
+                    Total documents in the library: {isLoading ? '...' : documents.length}
+                </CardDescription>
             </CardHeader>
             <CardContent>
-                {isLoading && totalDocumentsCount === 0 ? (
+                {isLoading ? (
                     <div className="flex items-center justify-center py-4">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
                         <p className="ml-2 text-muted-foreground">Loading statistics...</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-center sm:text-left">
-                        <div>
-                            <p className="text-sm text-muted-foreground">Total Documents</p>
-                            <p className="text-2xl font-bold">{totalDocumentsCount}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">Files Only</p>
-                            <p className="text-2xl font-bold">{fileCount}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">Text Only</p>
-                            <p className="text-2xl font-bold">{textNoteCount}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">Combined (Text + File)</p>
-                            <p className="text-2xl font-bold">{combinedCount}</p>
-                        </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {documentSources.map(source => {
+                            const familyInfo = familyConfig[source as keyof typeof familyConfig] || { icon: HelpCircle };
+                            const IconComponent = familyInfo.icon;
+                            return (
+                                <div key={source} className="flex flex-col items-center justify-center p-4 border rounded-lg">
+                                    <IconComponent className="h-8 w-8 text-primary mb-2" />
+                                    <p className="text-2xl font-bold">{familyCounts[source] || 0}</p>
+                                    <p className="text-sm text-muted-foreground text-center">{source}</p>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </CardContent>
@@ -342,7 +328,7 @@ export default function AdminDocumentsPage() {
             />
             <Select 
               value={categoryFilter}
-              onValueChange={setCategoryFilter}
+              onValueChange={(value) => setCategoryFilter(value)}
               disabled={isLoading}
             >
               <SelectTrigger className="w-full sm:w-[200px]">
@@ -350,7 +336,7 @@ export default function AdminDocumentsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(cat => (
+                {documentCategories.map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
               </SelectContent>
