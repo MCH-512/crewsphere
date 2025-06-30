@@ -185,9 +185,9 @@ export default function AdminDocumentsPage() {
 
   const getIconForDocumentType = (doc: Document) => {
     const iconMap = {
-      markdown: { icon: StickyNote, className: "text-yellow-500", label: "Note Texte" },
-      file: { icon: FileTextIcon, className: "text-primary", label: "Fichier Attaché" },
-      fileWithMarkdown: { icon: Layers, className: "text-green-500", label: "Combiné (Texte + Fichier)" },
+      markdown: { icon: StickyNote, className: "text-yellow-500", label: "Text Note" },
+      file: { icon: FileTextIcon, className: "text-primary", label: "File Attachment" },
+      fileWithMarkdown: { icon: Layers, className: "text-green-500", label: "Combined (Text + File)" },
       unknown: { icon: FileTextIcon, className: "text-muted-foreground", label: "Document" },
     };
 
