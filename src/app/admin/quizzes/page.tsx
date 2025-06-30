@@ -54,14 +54,18 @@ export default function AdminQuizzesPage() {
 
         // Fetch associated course info
         if (quizData.courseId) {
-          const courseDocRef = doc(db, "courses", quizData.courseId);
-          const courseDocSnap = await getDoc(courseDocRef);
-          if (courseDocSnap.exists()) {
-            const courseInfo = courseDocSnap.data() as CourseInfo;
-            quiz.courseTitle = courseInfo.title;
-            quiz.courseCategory = courseInfo.category;
-          } else {
-            quiz.courseTitle = "Course not found";
+          try {
+            const courseDocRef = doc(db, "courses", quizData.courseId);
+            const courseDocSnap = await getDoc(courseDocRef);
+            if (courseDocSnap.exists()) {
+              const courseInfo = courseDocSnap.data() as CourseInfo;
+              quiz.courseTitle = courseInfo.title;
+              quiz.courseCategory = courseInfo.category;
+            } else {
+              quiz.courseTitle = "Course not found";
+            }
+          } catch {
+             quiz.courseTitle = "Error loading course";
           }
         }
         
@@ -74,7 +78,7 @@ export default function AdminQuizzesPage() {
       });
 
       const fetchedQuizzes = await Promise.all(fetchedQuizzesPromises);
-      setQuizzes(fetchedQuizzes);
+      setQuizzes(fetchedQuizzes.filter(q => q.courseTitle !== "Course not found"));
 
     } catch (err) {
       console.error("Error fetching quizzes:", err);

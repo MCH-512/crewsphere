@@ -26,6 +26,7 @@ const predefinedLabels: { [key: string]: string } = {
   edit: "Edit",
   alerts: "Alerts",
   courses: "Courses",
+  quizzes: "Quizzes Overview",
   flights: "Flights",
   "purser-reports": "Purser Reports",
   "my-purser-reports": "Purser Reports",
@@ -47,6 +48,7 @@ const predefinedLabels: { [key: string]: string } = {
   "guides": "Professional Guides",
   "aviation-history": "Aviation History",
   "aeronautical-jargon": "Aeronautical Jargon",
+  "audit-logs": "Audit Logs",
 };
 
 export function Breadcrumbs() {

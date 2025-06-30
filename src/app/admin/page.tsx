@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, GraduationCap, ClipboardList, Plane, Settings, Loader2, FilePlus, Bell, FileSignature, ClipboardCheck, CheckSquare, MessageSquare } from "lucide-react";
+import { ServerCog, Users, Activity, GraduationCap, Plane, Settings, Loader2, FilePlus, Bell, FileSignature, ClipboardCheck, CheckSquare, MessageSquare, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -38,12 +38,14 @@ export default function AdminConsolePage() {
   const { toast } = useToast();
   
   const [stats, setStats] = React.useState({
-    pendingRequests: { value: null, isLoading: true, label: "Pending Requests" } as Stat,
+    pendingRequests: { value: null, isLoading: true, label: "Pending" } as Stat,
     users: { value: null, isLoading: true, label: "Total Users" } as Stat,
-    documents: { value: null, isLoading: true, label: "Total Documents" } as Stat,
+    documents: { value: null, isLoading: true, label: "Documents" } as Stat,
     publishedCourses: { value: null, isLoading: true, label: "Published Courses" } as Stat,
     flightsToday: { value: null, isLoading: true, label: "Flights Today" } as Stat,
     quizzes: { value: null, isLoading: true, label: "Total Quizzes" } as Stat,
+    purserReports: { value: null, isLoading: true, label: "Total Reports" } as Stat,
+    suggestions: { value: null, isLoading: true, label: "New Suggestions" } as Stat,
   });
 
   const fetchCounts = React.useCallback(async () => {
@@ -63,20 +65,16 @@ export default function AdminConsolePage() {
       }
     };
     
-    // Pending Requests
     fetcher('pendingRequests', query(collection(db, "requests"), where("status", "==", "pending")));
-    // Users
     fetcher('users', collection(db, "users"));
-    // Documents
     fetcher('documents', collection(db, "documents"));
-    // Published Courses
     fetcher('publishedCourses', query(collection(db, "courses"), where("published", "==", true)));
-    // Flights Today
     const todayStart = startOfDay(new Date()).toISOString();
     const todayEnd = endOfDay(new Date()).toISOString();
     fetcher('flightsToday', query(collection(db, "flights"), where("scheduledDepartureDateTimeUTC", ">=", todayStart), where("scheduledDepartureDateTimeUTC", "<=", todayEnd)));
-    // Quizzes
     fetcher('quizzes', collection(db, "quizzes"));
+    fetcher('purserReports', collection(db, "purserReports"));
+    fetcher('suggestions', query(collection(db, "suggestions"), where("status", "==", "new")));
 
   }, [user, toast]);
 
@@ -96,8 +94,8 @@ export default function AdminConsolePage() {
     },
     { 
       icon: ClipboardCheck, 
-      title: "User Request Management", 
-      description: "Review, manage, and respond to user-submitted requests (e.g., leave, schedule changes).", 
+      title: "User Requests", 
+      description: "Review and respond to user-submitted requests (leave, roster changes, etc.).", 
       buttonText: "Manage Requests", 
       href: "/admin/user-requests",
       stat: stats.pendingRequests,
@@ -106,8 +104,8 @@ export default function AdminConsolePage() {
     },
     { 
       icon: FilePlus, 
-      title: "Document Management", 
-      description: "Create, upload, categorize, and manage all shared documents, notes, and procedures.", 
+      title: "Documents", 
+      description: "Create, upload, and manage all shared documents, notes, and procedures.", 
       buttonText: "Manage Documents", 
       href: "/admin/documents", 
       stat: stats.documents,
@@ -115,16 +113,16 @@ export default function AdminConsolePage() {
     },
     { 
       icon: Bell, 
-      title: "Alerts Management", 
-      description: "Broadcast and manage global or user-specific alerts that appear on user dashboards.", 
+      title: "Alerts", 
+      description: "Broadcast global or user-specific alerts that appear on user dashboards.", 
       buttonText: "Manage Alerts", 
       href: "/admin/alerts",
       delay: 0.25
     },
     { 
       icon: GraduationCap, 
-      title: "Learning & Assessment Hub", 
-      description: "Create, edit, and manage courses, including their content, quizzes, and certifications.", 
+      title: "Courses", 
+      description: "Create and manage courses, including content, quizzes, and certifications.", 
       buttonText: "Manage Courses", 
       href: "/admin/courses",
       stat: stats.publishedCourses,
@@ -132,7 +130,7 @@ export default function AdminConsolePage() {
     },
     { 
       icon: CheckSquare,
-      title: "Quizzes Overview",
+      title: "Quizzes",
       description: "View all quizzes in the system. Quizzes are managed within their respective courses.",
       buttonText: "View Quizzes",
       href: "/admin/quizzes",
@@ -141,8 +139,8 @@ export default function AdminConsolePage() {
     },
     { 
       icon: Plane, 
-      title: "Flight Management", 
-      description: "Create, view, and manage all flight schedules. Includes tools for recurring flight generation.", 
+      title: "Flights", 
+      description: "Create, view, and manage flight schedules, including recurring flight generation.", 
       buttonText: "Manage Flights", 
       href: "/admin/flights",
       stat: stats.flightsToday,
@@ -150,24 +148,27 @@ export default function AdminConsolePage() {
     },
     { 
       icon: FileSignature, 
-      title: "Purser Report Review", 
-      description: "Access, review, and analyze submitted Purser Reports for operational insights and follow-up actions.", 
+      title: "Purser Reports", 
+      description: "Access and review submitted Purser Reports for operational insights.", 
       buttonText: "Review Reports", 
       href: "/admin/purser-reports",
+      stat: stats.purserReports,
       delay: 0.45
     },
     { 
       icon: MessageSquare, 
-      title: "Suggestion Box", 
-      description: "Review and manage all user-submitted suggestions and ideas for improvement.", 
+      title: "Suggestions", 
+      description: "Review and manage all user-submitted suggestions for improvement.", 
       buttonText: "Manage Suggestions", 
       href: "/admin/suggestions",
+      stat: stats.suggestions,
+      highlightWhen: (value) => value !== null && value > 0,
       delay: 0.48
     },
     { 
       icon: Settings, 
       title: "System Settings", 
-      description: "Configure application-wide settings such as maintenance mode and AI model preferences.", 
+      description: "Configure application-wide settings like maintenance mode and AI models.", 
       buttonText: "Configure Settings", 
       href: "/admin/system-settings", 
       delay: 0.5
@@ -175,7 +176,7 @@ export default function AdminConsolePage() {
     { 
       icon: Activity, 
       title: "Audit Logs", 
-      description: "Review a detailed, chronological record of system activities, changes, and important events.", 
+      description: "Review a detailed, chronological record of system activities and changes.", 
       buttonText: "View Logs", 
       href: "/admin/audit-logs", 
       delay: 0.55
@@ -195,11 +196,6 @@ export default function AdminConsolePage() {
               </CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Utilize the sections below to oversee and configure various aspects of the AirCrew Hub platform.
-            </p>
-          </CardContent>
         </Card>
       </AnimatedCard>
       
@@ -214,28 +210,31 @@ export default function AdminConsolePage() {
                 delay={section.delay}
             >
               <Card className={cn(
-                "shadow-sm h-full flex flex-col transition-all",
-                shouldHighlight && "ring-2 ring-destructive/50 shadow-lg bg-destructive/5"
+                "shadow-sm h-full flex flex-col transition-all hover:shadow-md",
+                shouldHighlight && "ring-2 ring-destructive/50 bg-destructive/5"
               )}>
-                <CardHeader className="flex flex-row items-center gap-3 pb-3">
-                  <IconComponent className="h-6 w-6 text-primary" />
-                  <CardTitle className="text-lg">{section.title}</CardTitle>
+                <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
+                  <div className="flex items-center gap-3">
+                    <IconComponent className="h-6 w-6 text-primary" />
+                    <CardTitle className="text-lg">{section.title}</CardTitle>
+                  </div>
+                   {section.stat && (
+                    <div className="flex justify-end">
+                       <Badge variant={shouldHighlight ? "destructive" : "secondary"} className="shrink-0">
+                          {section.stat.isLoading ? <Loader2 className="h-3 w-3 animate-spin"/> : section.stat.value}
+                          <span className="ml-1.5 hidden sm:inline">{section.stat.label}</span>
+                       </Badge>
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col justify-between">
                   <p className="text-sm text-muted-foreground mb-4">
                     {section.description}
                   </p>
-                  {section.stat && (
-                    <div className="flex justify-end mb-3">
-                       <Badge variant={shouldHighlight ? "destructive" : "secondary"}>
-                          {section.stat.label}: {section.stat.isLoading ? <Loader2 className="ml-1.5 h-3 w-3 animate-spin"/> : section.stat.value}
-                       </Badge>
-                    </div>
-                  )}
                   <Button asChild className="w-full mt-auto">
                     <Link href={section.href}>
-                      <IconComponent className="mr-2 h-4 w-4" />
                       {section.buttonText}
+                      <ArrowRight className="ml-2 h-4 w-4" />
                       {shouldHighlight && !section.stat?.isLoading && (
                         <Badge variant="secondary" className="ml-2 px-1.5 py-0.5 text-xs bg-white text-destructive hover:bg-white">
                           {section.stat?.value}

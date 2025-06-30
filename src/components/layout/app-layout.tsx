@@ -56,6 +56,8 @@ import {
   Lightbulb,
   MessagesSquare,
   Wrench,
+  CheckSquare,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -178,14 +180,17 @@ function LayoutWithSidebar({
 
   const adminNavItems = [
     { href: "/admin", label: "Admin Console", icon: ServerCog },
-    { href: "/admin/users", label: "User Management", icon: Users },
-    { href: "/admin/documents", label: "Document Management", icon: FilePlus }, 
-    { href: "/admin/alerts", label: "Alert Management", icon: Bell },
-    { href: "/admin/courses", label: "Course Management", icon: GraduationCap },
-    { href: "/admin/user-requests", label: "User Requests", icon: ClipboardCheck },
-    { href: "/admin/purser-reports", label: "Purser Reports Review", icon: FileSignature },
-    { href: "/admin/flights", label: "Flight Management", icon: Plane },
+    { href: "/admin/users", label: "Users", icon: Users },
+    { href: "/admin/user-requests", label: "Requests", icon: ClipboardCheck },
+    { href: "/admin/documents", label: "Documents", icon: FilePlus },
+    { href: "/admin/alerts", label: "Alerts", icon: Bell },
+    { href: "/admin/courses", label: "Courses", icon: GraduationCap },
+    { href: "/admin/quizzes", label: "Quizzes", icon: CheckSquare },
+    { href: "/admin/flights", label: "Flights", icon: Plane },
+    { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
+    { href: "/admin/suggestions", label: "Suggestions", icon: MessageSquare },
     { href: "/admin/system-settings", label: "System Settings", icon: Settings },
+    { href: "/admin/audit-logs", label: "Audit Logs", icon: Activity },
   ];
 
   const currentNavItems = pathname.startsWith('/admin') && user?.role === 'admin' ? adminNavItems : navItems;
