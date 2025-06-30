@@ -55,6 +55,7 @@ import {
   Calculator,
   Lightbulb,
   MessagesSquare,
+  MessageSquare,
   Wrench,
   CheckSquare,
   Activity,
