@@ -1,28 +1,30 @@
 
 export const courseCategoryGroups = {
-  "Safety & Security": [
-    "Safety Equipment",
+  "Safety & Emergency": [
+    "Safety & Emergency Procedures (SEP)",
+    "Security (AVSEC)",
+    "Dangerous Goods (DG)",
+    "First Aid",
+  ],
+  "Human Factors": [
+    "Crew Resource Management (CRM)",
+    "Fatigue Risk Management (FRMS)",
+  ],
+  "Operational Knowledge": [
     "Standard Operating Procedures (SOPs)",
-    "Emergency Procedures",
-    "Civil Aviation Security (AVSEC)",
-    "Drills Briefing",
+    "Flight Time Limitations (FTL)",
+    "Aircraft Type Rating",
+    "Safety Management System (SMS)",
   ],
-  "Dangerous Goods": ["Dangerous Goods (DG)"],
-  "CRM & Human Factors": ["Crew Resource Management (CRM)", "Fatigue Risk Management System (FRMS)"],
-  "First Aid": ["First Aid"],
-  "Systems & Management": ["Safety Management System (SMS)", "Flight Time Limitations (FTL)"],
-  "Aircraft Specific": ["Aircraft Type Rating"],
-  "Service & Brand": [
+  "Service & Professionalism": [
+    "Onboard Service Standards",
     "Brand & Grooming",
-    "Onboard Service",
-    "Premium Service & Customer Relationship",
-    "Etiquette and Personal Development",
+    "Commercial & Premium Services",
   ],
-  "Specialized Roles": [
-    "Cabin Crew Instructor Training",
-    "Cabin Senior (Purser) Training",
-  ],
-  "General Knowledge": ["General Information", "General Knowledge"],
+  "Career Development": [
+    "Instructor & Purser Training",
+    "General Knowledge & Updates",
+  ]
 };
 
 // Main flattened list for validation and simple dropdowns
