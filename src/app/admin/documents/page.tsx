@@ -35,6 +35,7 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 import { documentCategories, documentSources, familyConfig } from "@/config/document-options";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"; 
+import { cn } from "@/lib/utils";
 
 interface Document {
   id: string;
@@ -285,7 +286,7 @@ export default function AdminDocumentsPage() {
                     Documents by Family
                 </CardTitle>
                 <CardDescription>
-                    Total documents in the library: {isLoading ? '...' : documents.length}
+                    Click a card to filter the list below. Total documents: {isLoading ? '...' : documents.length}
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -295,16 +296,34 @@ export default function AdminDocumentsPage() {
                         <p className="ml-2 text-muted-foreground">Loading statistics...</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+                        <Card
+                            className={cn(
+                                "flex flex-col items-center justify-center p-4 rounded-lg cursor-pointer hover:shadow-md hover:bg-muted/50 transition-all",
+                                sourceFilter === 'all' && "ring-2 ring-primary shadow-lg"
+                            )}
+                            onClick={() => setSourceFilter('all')}
+                        >
+                            <Layers className="h-8 w-8 text-primary mb-2" />
+                            <p className="text-2xl font-bold">{documents.length}</p>
+                            <p className="text-sm text-muted-foreground text-center">All Documents</p>
+                        </Card>
                         {documentSources.map(source => {
                             const familyInfo = familyConfig[source as keyof typeof familyConfig] || { icon: HelpCircle };
                             const IconComponent = familyInfo.icon;
                             return (
-                                <div key={source} className="flex flex-col items-center justify-center p-4 border rounded-lg">
+                                <Card
+                                    key={source}
+                                    className={cn(
+                                        "flex flex-col items-center justify-center p-4 rounded-lg cursor-pointer hover:shadow-md hover:bg-muted/50 transition-all",
+                                        sourceFilter === source && "ring-2 ring-primary shadow-lg"
+                                    )}
+                                    onClick={() => setSourceFilter(source)}
+                                >
                                     <IconComponent className="h-8 w-8 text-primary mb-2" />
                                     <p className="text-2xl font-bold">{familyCounts[source] || 0}</p>
                                     <p className="text-sm text-muted-foreground text-center">{source}</p>
-                                </div>
+                                </Card>
                             );
                         })}
                     </div>
