@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2, GraduationCap, List, Download, Link as LinkIcon, ImageIcon, Video, Library, ListChecks } from "lucide-react";
+import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2, GraduationCap, List, Download, Link as LinkIcon, ImageIcon, Video, Library, ListChecks, ShieldCheck, Users, HeartPulse, ClipboardCheck, Plane, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
@@ -62,7 +62,7 @@ interface CombinedCourse extends CourseData {
 }
 
 
-// --- HELPER FUNCTIONS ---
+// --- HELPER FUNCTIONS & DATA ---
 
 const getResourceIconDialog = (type?: Resource['type']) => {
   switch (type) {
@@ -74,10 +74,31 @@ const getResourceIconDialog = (type?: Resource['type']) => {
   }
 };
 
+const trainingFamilies = [
+  { name: "Safety & Security", icon: ShieldCheck, categories: ["Safety Equipment", "Standard Operating Procedures (SOPs)", "Emergency Procedures", "Civil Aviation Security (AVSEC)", "Drills Briefing"] },
+  { name: "Dangerous Goods", icon: AlertTriangle, categories: ["Dangerous Goods (DG)"] },
+  { name: "CRM", icon: Users, categories: ["Crew Resource Management (CRM)", "Fatigue Risk Management System (FRMS)"] },
+  { name: "First Aid", icon: HeartPulse, categories: ["First Aid"] },
+  { name: "SMS", icon: ClipboardCheck, categories: ["Safety Management System (SMS)"] },
+  { name: "Type Rating", icon: Plane, categories: ["Aircraft Type Rating"] },
+  { name: "Brand & Grooming", icon: Sparkles, categories: ["Brand & Grooming", "Etiquette and Personal Development", "Onboard Service", "Premium Service & Customer Relationship"] },
+  { name: "Specialized Training", icon: Award, categories: ["Cabin Crew Instructor Training", "Cabin Senior (Purser) Training"] },
+  { name: "Other Training", icon: BookOpen, categories: ["General Information", "Flight Time Limitations (FTL)", "General Knowledge"] }
+];
+
+const getCourseFamily = (category: string) => {
+    for (const family of trainingFamilies) {
+        if (family.categories.includes(category)) {
+            return family;
+        }
+    }
+    // Fallback to "Other Training"
+    return trainingFamilies.find(f => f.name === "Other Training")!;
+};
+
 
 // --- TAB COMPONENTS ---
 
-// MyLearningTab: Shows mandatory and in-progress courses
 const MyLearningTab = ({ onAction, onRefresh, courses, isLoading, error }: { onAction: (id: string) => void, onRefresh: () => void, courses: CombinedCourse[], isLoading: boolean, error: string | null }) => {
   if (isLoading) {
     return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-2">Loading active trainings...</p></div>;
@@ -86,28 +107,39 @@ const MyLearningTab = ({ onAction, onRefresh, courses, isLoading, error }: { onA
     return <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><ShadAlertTitle>Error</ShadAlertTitle><AlertDescription>{error} <Button variant="link" onClick={onRefresh}>Try again</Button></AlertDescription></Alert>;
   }
 
-  const mandatoryNotPassed = courses.filter(c => c.mandatory && c.progress?.quizStatus !== 'Passed');
-  const inProgressNotMandatory = courses.filter(c => !c.mandatory && c.progress?.quizStatus !== 'Passed' && (c.progress?.contentStatus === 'InProgress' || c.progress?.quizStatus === 'Attempted' || c.progress?.quizStatus === 'Failed'));
+  const groupedCourses = courses.reduce((acc, course) => {
+    const family = getCourseFamily(course.category).name;
+    if (!acc[family]) {
+      acc[family] = [];
+    }
+    acc[family].push(course);
+    return acc;
+  }, {} as Record<string, CombinedCourse[]>);
+
+  const hasCourses = Object.keys(groupedCourses).length > 0;
 
   return (
     <div className="space-y-8 mt-4">
-      {mandatoryNotPassed.length > 0 && (
-        <section>
-          <h2 className="text-xl font-semibold mb-4 text-destructive">Mandatory & Required Training</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {mandatoryNotPassed.map(course => <CourseCard key={course.id} course={course} onAction={onAction} />)}
-          </div>
-        </section>
-      )}
-      {inProgressNotMandatory.length > 0 && (
-        <section>
-          <h2 className="text-xl font-semibold mb-4">In Progress</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {inProgressNotMandatory.map(course => <CourseCard key={course.id} course={course} onAction={onAction} />)}
-          </div>
-        </section>
-      )}
-      {mandatoryNotPassed.length === 0 && inProgressNotMandatory.length === 0 && (
+      {hasCourses ? (
+        trainingFamilies.map(family => {
+          const coursesInFamily = groupedCourses[family.name];
+          if (coursesInFamily && coursesInFamily.length > 0) {
+            const Icon = family.icon;
+            return (
+              <section key={family.name}>
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Icon className="h-6 w-6 text-primary"/>
+                  {family.name}
+                </h2>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {coursesInFamily.map(course => <CourseCard key={course.id} course={course} onAction={onAction} />)}
+                </div>
+              </section>
+            );
+          }
+          return null;
+        })
+      ) : (
         <Card className="text-muted-foreground p-6 text-center shadow-md">
           <GraduationCap className="mx-auto h-12 w-12 text-primary mb-4" />
           <p className="font-semibold">No active or required trainings for you at this time.</p>
@@ -488,3 +520,5 @@ const CertificateDialog = ({ course, isOpen, onOpenChange, user }: { course: Com
         </Dialog>
     );
 };
+
+    
