@@ -1,26 +1,33 @@
 
-export const courseCategories = [
-  "General Information",
-  "Safety Equipment",
-  "Standard Operating Procedures (SOPs)",
-  "Emergency Procedures",
-  "First Aid",
-  "Dangerous Goods (DG)",
-  "Safety Management System (SMS)",
-  "Crew Resource Management (CRM)",
-  "Aircraft Type Rating",
-  "Fatigue Risk Management System (FRMS)",
-  "Flight Time Limitations (FTL)",
-  "Civil Aviation Security (AVSEC)",
-  "Etiquette and Personal Development",
-  "Cabin Crew Instructor Training",
-  "Cabin Senior (Purser) Training",
-  "Brand & Grooming",
-  "Onboard Service",
-  "Premium Service & Customer Relationship",
-  "Drills Briefing",
-  "General Knowledge",
-];
+export const courseCategoryGroups = {
+  "Safety & Security": [
+    "Safety Equipment",
+    "Standard Operating Procedures (SOPs)",
+    "Emergency Procedures",
+    "Civil Aviation Security (AVSEC)",
+    "Drills Briefing",
+  ],
+  "Dangerous Goods": ["Dangerous Goods (DG)"],
+  "CRM & Human Factors": ["Crew Resource Management (CRM)", "Fatigue Risk Management System (FRMS)"],
+  "First Aid": ["First Aid"],
+  "Systems & Management": ["Safety Management System (SMS)", "Flight Time Limitations (FTL)"],
+  "Aircraft Specific": ["Aircraft Type Rating"],
+  "Service & Brand": [
+    "Brand & Grooming",
+    "Onboard Service",
+    "Premium Service & Customer Relationship",
+    "Etiquette and Personal Development",
+  ],
+  "Specialized Roles": [
+    "Cabin Crew Instructor Training",
+    "Cabin Senior (Purser) Training",
+  ],
+  "General Knowledge": ["General Information", "General Knowledge"],
+};
+
+// Main flattened list for validation and simple dropdowns
+export const courseCategories = Object.values(courseCategoryGroups).flat();
+
 
 export const courseTypes = [
   "Initial Training", 

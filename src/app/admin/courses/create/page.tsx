@@ -18,7 +18,9 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -35,7 +37,7 @@ import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { 
-  courseCategories, 
+  courseCategoryGroups, 
   courseTypes, 
   referenceBodyOptions, 
   courseDurationOptions 
@@ -229,7 +231,27 @@ export default function CreateComprehensiveCoursePage() {
               )} />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <FormField control={form.control} name="category" render={({ field }) => (
-                  <FormItem><FormLabel>Course Category*</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course category" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Course Category*</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select course category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.entries(courseCategoryGroups).map(([groupName, categories]) => (
+                          <SelectGroup key={groupName}>
+                            <SelectLabel>{groupName}</SelectLabel>
+                            {categories.map(cat => (
+                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="courseType" render={({ field }) => (
                   <FormItem><FormLabel>Course Type*</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course type" /></SelectTrigger></FormControl><SelectContent>{courseTypes.map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
