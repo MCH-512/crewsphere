@@ -11,11 +11,11 @@ export const documentCategories = [
   "📜 Règlementation & Références"
 ];
 
+// These now represent the main "families" for document grouping.
 export const documentSources = [
-  "EASA",
-  "IATA",
-  "ICAO",
-  "Tunisian Authorities",
-  "Company Procedures Manuals",
-  "Other",
+  "Documentation Compagnie",
+  "Documentation Tunisienne",
+  "Documentation Européenne",
+  "Documentation Internationale",
+  "Autre"
 ];

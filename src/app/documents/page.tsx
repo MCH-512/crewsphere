@@ -6,17 +6,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter as DialogPrimitiveFooter, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, StickyNote, Layers, LayoutGrid, List } from "lucide-react";
+import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Layers, Building, Flag, Shield, Globe, HelpCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
 import { format } from "date-fns";
@@ -32,7 +24,6 @@ interface Document {
   category: string;
   source: string;
   version?: string;
-  description?: string;
   lastUpdated: Timestamp | string;
   size?: string;
   downloadURL?: string;
@@ -42,15 +33,14 @@ interface Document {
   content?: string;
 }
 
-
 const getIconForDocumentType = (doc: Document) => {
    switch (doc.documentContentType) {
-      case 'markdown': return <StickyNote className="h-5 w-5 text-yellow-500" />;
+      case 'markdown': return <FileTextIcon className="h-5 w-5 text-yellow-500" />;
       case 'file': return <FileTextIcon className="h-5 w-5 text-primary" />;
       case 'fileWithMarkdown': return <Layers className="h-5 w-5 text-green-500" />;
       default:
            if (doc.downloadURL) return <FileTextIcon className="h-5 w-5 text-primary" />;
-           if (doc.content) return <StickyNote className="h-5 w-5 text-yellow-500" />;
+           if (doc.content) return <FileTextIcon className="h-5 w-5 text-yellow-500" />;
           return <FileTextIcon className="h-5 w-5 text-muted-foreground" />;
   }
 };
@@ -70,71 +60,23 @@ const formatDate = (dateValue: Timestamp | string) => {
   return "Invalid Date";
 };
 
-// New component for the document card
-const DocumentCard = ({ document, onView }: { document: Document; onView: (doc: Document) => void }) => {
-  const Icon = getIconForDocumentType(document);
-  return (
-    <AnimatedCard className="h-full">
-      <Card className="flex flex-col h-full shadow-md hover:shadow-xl transition-shadow duration-300">
-        <CardHeader>
-          <div className="flex items-start gap-4">
-            <div className="pt-1">{Icon}</div>
-            <div>
-              <CardTitle className="text-lg leading-tight">{document.title}</CardTitle>
-              {document.version && (
-                <CardDescription className="text-xs mt-1">Version: {document.version}</CardDescription>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="flex-grow space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline">{document.category}</Badge>
-            <Badge variant="secondary">{document.source}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground line-clamp-3" title={document.description}>
-            {document.description || "No description available."}
-          </p>
-        </CardContent>
-        <CardFooter className="flex-col items-stretch space-y-2 pt-4">
-           <p className="text-xs text-muted-foreground text-center mb-2">
-            Last Updated: {formatDate(document.lastUpdated)}
-          </p>
-          <div className="flex gap-2 w-full">
-            <Button variant="outline" size="sm" className="flex-1" onClick={() => onView(document)}>
-              <Eye className="mr-2 h-4 w-4" /> View
-            </Button>
-            {(document.documentContentType === 'file' || document.documentContentType === 'fileWithMarkdown') && document.downloadURL && (
-              <Button variant="secondary" size="sm" className="flex-1" asChild>
-                <a href={document.downloadURL} download={document.fileName || document.title}>
-                  <Download className="mr-2 h-4 w-4" /> Download
-                </a>
-              </Button>
-            )}
-          </div>
-        </CardFooter>
-      </Card>
-    </AnimatedCard>
-  );
+const familyConfig = {
+    "Documentation Compagnie": { icon: Building, description: "Procédures opérationnelles standard, manuels et notes de service internes." },
+    "Documentation Tunisienne": { icon: Flag, description: "Réglementations et publications des autorités de l'aviation civile tunisienne." },
+    "Documentation Européenne": { icon: Shield, description: "Règles et directives de l'Agence de l'Union européenne pour la sécurité aérienne (EASA)." },
+    "Documentation Internationale": { icon: Globe, description: "Normes et pratiques recommandées par l'OACI et l'IATA." },
+    "Autre": { icon: HelpCircle, description: "Documents divers et autres références externes." }
 };
 
 
 export default function DocumentsPage() {
   const [allDocuments, setAllDocuments] = React.useState<Document[]>([]);
-  const [filteredDocuments, setFilteredDocuments] = React.useState<Document[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const { toast } = useToast();
 
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [categoryFilter, setCategoryFilter] = React.useState("all");
-  const [sourceFilter, setSourceFilter] = React.useState("all");
-  
-  const [layout, setLayout] = React.useState<'grid' | 'list'>('grid');
-
   const [selectedDocumentForView, setSelectedDocumentForView] = React.useState<Document | null>(null);
   const [isViewNoteDialogOpen, setIsViewNoteDialogOpen] = React.useState(false);
-
 
   const fetchDocuments = React.useCallback(async () => {
     setIsLoading(true);
@@ -144,14 +86,12 @@ export default function DocumentsPage() {
       const querySnapshot = await getDocs(q);
       const fetchedDocuments = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        const contentPreview = data.description || (data.content ? data.content.substring(0, 150) + "..." : "No description available.");
         return {
           id: doc.id,
           title: data.title || "Untitled Document",
           category: data.category || "Uncategorized",
-          source: data.source || "Unknown",
+          source: data.source || "Autre",
           version: data.version,
-          description: contentPreview,
           lastUpdated: data.lastUpdated,
           size: data.size,
           downloadURL: data.downloadURL,
@@ -162,7 +102,6 @@ export default function DocumentsPage() {
         } as Document;
       });
       setAllDocuments(fetchedDocuments);
-      setFilteredDocuments(fetchedDocuments);
     } catch (err) {
       console.error("Error fetching documents:", err);
       setError("Failed to load documents. Please ensure you have a 'documents' collection in Firestore.");
@@ -179,23 +118,13 @@ export default function DocumentsPage() {
   React.useEffect(() => {
     fetchDocuments();
   }, [fetchDocuments]);
-
-  React.useEffect(() => {
-    let currentDocuments = [...allDocuments];
-    if (categoryFilter !== "all") {
-      currentDocuments = currentDocuments.filter(doc => doc.category === categoryFilter);
-    }
-    if (sourceFilter !== "all") {
-      currentDocuments = currentDocuments.filter(doc => doc.source === sourceFilter);
-    }
-    if (searchTerm) {
-      currentDocuments = currentDocuments.filter(doc =>
-        doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.source.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    setFilteredDocuments(currentDocuments);
-  }, [searchTerm, categoryFilter, sourceFilter, allDocuments]);
+  
+  const groupedDocuments = React.useMemo(() => {
+    return documentSources.reduce((acc, source) => {
+        acc[source] = allDocuments.filter(doc => doc.source === source);
+        return acc;
+    }, {} as Record<string, Document[]>);
+  }, [allDocuments]);
 
 
   const handleViewDocument = (doc: Document) => {
@@ -215,133 +144,85 @@ export default function DocumentsPage() {
         <Card className="shadow-lg">
           <CardHeader className="flex flex-row justify-between items-start">
             <div>
-              <CardTitle className="text-2xl font-headline">Document Library</CardTitle>
-              <CardDescription>Access all essential manuals, procedures, policies, and training materials.</CardDescription>
+              <CardTitle className="text-2xl font-headline">Bibliothèque de Documents</CardTitle>
+              <CardDescription>Accédez à tous les manuels, procédures, politiques et supports de formation essentiels.</CardDescription>
             </div>
              <Button variant="outline" onClick={fetchDocuments} disabled={isLoading}>
               <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
+              Actualiser
             </Button>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center">
-              <div className="flex flex-col sm:flex-row flex-wrap gap-4 w-full">
-                <Input
-                  placeholder="Search by title or source..."
-                  className="max-w-xs"
-                  disabled={isLoading}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <Select
-                  value={categoryFilter}
-                  onValueChange={setCategoryFilter}
-                  disabled={isLoading}
-                >
-                  <SelectTrigger className="w-full sm:w-[200px]">
-                    <SelectValue placeholder="Filter by category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {documentCategories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={sourceFilter}
-                  onValueChange={setSourceFilter}
-                  disabled={isLoading}
-                >
-                  <SelectTrigger className="w-full sm:w-[240px]">
-                    <SelectValue placeholder="Filter by provenance" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Provenances</SelectItem>
-                    {documentSources.map(src => (
-                      <SelectItem key={src} value={src}>{src}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-2 w-full sm:w-auto justify-end">
-                <Button variant={layout === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setLayout('grid')} aria-label="Grid view">
-                  <LayoutGrid className="h-5 w-5" />
-                </Button>
-                <Button variant={layout === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setLayout('list')} aria-label="List view">
-                  <List className="h-5 w-5" />
-                </Button>
-              </div>
-            </div>
-
-            {isLoading && (
-              <div className="flex items-center justify-center py-10">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <p className="ml-3 text-muted-foreground">Loading documents...</p>
-              </div>
-            )}
-
-            {error && !isLoading && (
-              <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2 justify-center">
-                <AlertTriangle className="h-5 w-5" /> {error}
-              </div>
-            )}
-
-            {!isLoading && !error && filteredDocuments.length === 0 && (
-              <p className="text-muted-foreground text-center py-10">No documents found{categoryFilter !== "all" || sourceFilter !== "all" || searchTerm ? " matching your criteria" : ""}.</p>
-            )}
-
-            {!isLoading && !error && filteredDocuments.length > 0 && (
-              layout === 'grid' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                    {filteredDocuments.map((doc) => (
-                        <DocumentCard key={doc.id} document={doc} onView={handleViewDocument} />
-                    ))}
-                </div>
-              ) : (
-                <div className="rounded-md border mt-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]">Type</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Last Updated</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredDocuments.map((doc) => (
-                        <TableRow key={doc.id}>
-                          <TableCell>{getIconForDocumentType(doc)}</TableCell>
-                          <TableCell className="font-medium max-w-xs truncate" title={doc.title}>
-                            {doc.title}
-                            {doc.version && <span className="text-muted-foreground text-xs ml-1">(v{doc.version})</span>}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{doc.category}</Badge>
-                          </TableCell>
-                          <TableCell className="text-xs">{formatDate(doc.lastUpdated)}</TableCell>
-                          <TableCell className="text-right space-x-1">
-                            <Button variant="ghost" size="sm" onClick={() => handleViewDocument(doc)}>
-                                <Eye className="mr-2 h-4 w-4" /> View
-                            </Button>
-                             {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
-                                <Button variant="ghost" size="sm" asChild>
-                                    <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="mr-2 h-4 w-4" /> Download</a>
-                                </Button>
-                             )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )
-            )}
-          </CardContent>
         </Card>
       </AnimatedCard>
+
+       {isLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="ml-3 text-muted-foreground">Chargement des documents...</p>
+          </div>
+        ) : error ? (
+           <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2 justify-center">
+            <AlertTriangle className="h-5 w-5" /> {error}
+          </div>
+        ) : (
+            <Accordion type="multiple" className="w-full space-y-4">
+            {documentSources.map((family) => {
+                const docs = groupedDocuments[family];
+                const familyInfo = familyConfig[family as keyof typeof familyConfig] || { icon: HelpCircle, description: "" };
+                const IconComponent = familyInfo.icon;
+                
+                if (!docs || docs.length === 0) return null;
+
+                return (
+                    <Card key={family} className="shadow-md">
+                        <AccordionItem value={family} className="border-b-0">
+                            <AccordionTrigger className="p-4 hover:no-underline">
+                                <div className="flex items-center gap-3">
+                                    <IconComponent className="h-6 w-6 text-primary" />
+                                    <div className="text-left">
+                                        <h3 className="text-lg font-semibold">{family}</h3>
+                                        <p className="text-xs text-muted-foreground font-normal">{familyInfo.description}</p>
+                                    </div>
+                                    <Badge variant="secondary">{docs.length}</Badge>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                <div className="space-y-2 px-4 pb-4">
+                                {docs.map(doc => (
+                                    <div key={doc.id} className="border rounded-md p-3 flex justify-between items-center hover:bg-muted/50 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            {getIconForDocumentType(doc)}
+                                            <div>
+                                                <p className="font-medium text-sm">{doc.title}</p>
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <Badge variant="outline" className="px-1.5 py-0">{doc.category}</Badge>
+                                                    <span>|</span>
+                                                    <span>Mis à jour: {formatDate(doc.lastUpdated)}</span>
+                                                    {doc.version && <span>| Ver: {doc.version}</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-1">
+                                             <Button variant="ghost" size="sm" onClick={() => handleViewDocument(doc)}>
+                                                <Eye className="mr-2 h-4 w-4" /> Voir
+                                            </Button>
+                                            {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
+                                                <Button variant="ghost" size="sm" asChild>
+                                                    <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="mr-2 h-4 w-4" /> Télécharger</a>
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Card>
+                )
+            })}
+            </Accordion>
+        )}
+
 
       {selectedDocumentForView && (selectedDocumentForView.documentContentType === 'markdown' || selectedDocumentForView.documentContentType === 'fileWithMarkdown') && (
         <Dialog open={isViewNoteDialogOpen} onOpenChange={setIsViewNoteDialogOpen}>
