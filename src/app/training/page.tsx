@@ -405,7 +405,7 @@ export default function TrainingHubPage() {
   if (authLoading) return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (!user) return <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center"><AlertTriangle className="h-12 w-12 text-destructive mb-4" /><CardTitle className="text-xl mb-2">Access Denied</CardTitle><p className="text-muted-foreground">Please log in to access the Training Hub.</p><Button onClick={() => window.location.href='/login'} className="mt-4">Go to Login</Button></div>;
 
-  const myLearningCourses = allCourses.filter(c => (c.mandatory && c.progress?.quizStatus !== 'Passed') || (c.progress && (c.progress.contentStatus === 'InProgress' || c.progress.quizStatus === 'Failed' || c.progress.quizStatus === 'Attempted')));
+  const myLearningCourses = allCourses.filter(c => c.progress?.quizStatus !== 'Passed' && (c.mandatory || c.progress?.contentStatus !== 'NotStarted'));
   const certificates = allCourses.filter(c => c.progress?.quizStatus === 'Passed' && c.progress?.certificateDetails);
 
   return (
@@ -520,5 +520,3 @@ const CertificateDialog = ({ course, isOpen, onOpenChange, user }: { course: Com
         </Dialog>
     );
 };
-
-    
