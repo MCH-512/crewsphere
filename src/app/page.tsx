@@ -618,19 +618,25 @@ export default function DashboardPage() {
         </AnimatedCard>
 
         <AnimatedCard delay={0.35} className="lg:col-span-3">
-            <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
+          <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
-                <CardTitle className="font-headline flex items-center"><ShieldCheck className="mr-2 h-6 w-6 text-success"/>Safety &amp; Best Practice</CardTitle>
+              <CardTitle className="font-headline flex items-center">
+                <ShieldCheck className="mr-2 h-6 w-6 text-success" />
+                Safety & Best Practice
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-                {safetyTips.map((tip) => (
-                    <div key={tip.id} className="flex items-start gap-3 p-3 border-l-4 border-success bg-success/10 rounded-r-md">
-                        <ShieldCheck className="h-5 w-5 text-success mt-0.5 shrink-0"/>
-                        <p className="text-sm text-success/90">{tip.tip}</p>
-                    </div>
-                ))}
+              {safetyTips.map((tip) => (
+                <div
+                  key={tip.id}
+                  className="flex items-start gap-3 p-3 border-l-4 border-success bg-success/10 rounded-r-md"
+                >
+                  <ShieldCheck className="h-5 w-5 text-success mt-0.5 shrink-0" />
+                  <p className="text-sm text-success/90">{tip.tip}</p>
+                </div>
+              ))}
             </CardContent>
-            </Card>
+          </Card>
         </AnimatedCard>
       </div>
     </div>
