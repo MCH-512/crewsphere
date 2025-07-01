@@ -16,10 +16,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserPlus, Loader2 } from "lucide-react";
+import { UserPlus, Loader2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, isConfigValid } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -49,8 +49,34 @@ export default function SignupPage() {
     },
   });
 
+  if (!isConfigValid) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-lg shadow-xl text-center">
+          <CardHeader>
+            <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
+            <CardTitle className="text-2xl font-headline mt-4">Firebase Not Configured</CardTitle>
+            <CardDescription>
+              The application's Firebase configuration is missing or contains placeholder values.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Please create or update the <code>.env</code> file in the root of the project with the correct keys from your Firebase Console. The application will not function until this is resolved.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   async function onSubmit(data: SignupFormValues) {
     setIsLoading(true);
+    if (!auth) {
+        toast({ title: "Configuration Error", description: "Firebase is not configured. Cannot sign up.", variant: "destructive" });
+        setIsLoading(false);
+        return;
+    }
     try {
       await createUserWithEmailAndPassword(auth, data.email, data.password);
       toast({

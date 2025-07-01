@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useAuth, type User } from "./auth-context";
-import { db } from "@/lib/firebase";
+import { db, isConfigValid } from "@/lib/firebase";
 import {
   collection,
   query,
@@ -58,7 +58,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const unreadAlertsCount = React.useMemo(() => alerts.filter(a => !a.isAcknowledged).length, [alerts]);
 
   const fetchAlerts = React.useCallback(async (currentUser: User | null) => {
-    if (!currentUser) {
+    if (!currentUser || !isConfigValid || !db) {
       setAlerts([]);
       setIsLoading(false);
       return;
@@ -147,7 +147,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [user, fetchAlerts]);
   
   const acknowledgeAlert = async (alertId: string) => {
-    if (!user) throw new Error("User not authenticated");
+    if (!user || !db) throw new Error("User not authenticated or DB not configured");
     
     // Optimistic UI update
     const now = Timestamp.now();
@@ -169,7 +169,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   };
 
   const acknowledgeAllAlerts = async () => {
-    if (!user) throw new Error("User not authenticated");
+    if (!user || !db) throw new Error("User not authenticated or DB not configured");
 
     const unacknowledgedAlerts = alerts.filter(a => !a.isAcknowledged);
     if (unacknowledgedAlerts.length === 0) return;

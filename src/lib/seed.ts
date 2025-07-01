@@ -1,8 +1,8 @@
 
 'use server';
 
-import { collection, getDocs, query, where, writeBatch, doc } from "firebase/firestore";
-import { db } from "./firebase";
+import { collection, getDocs, query, where, writeBatch, doc, serverTimestamp } from "firebase/firestore";
+import { db, isConfigValid } from "./firebase";
 import { type Chapter } from "@/schemas/course-schema";
 import { type StoredQuestion } from "@/schemas/quiz-question-schema";
 
@@ -45,6 +45,12 @@ const courseData = {
 };
 
 export async function seedInitialCourses() {
+    if (!isConfigValid || !db) {
+        const message = "Seeding failed. Firebase is not configured. Please check your .env file.";
+        console.error(message);
+        return { success: false, message: message };
+    }
+
     const coursesRef = collection(db, "courses");
     const q = query(coursesRef, where("title", "==", courseData.title));
     const existingCourse = await getDocs(q);

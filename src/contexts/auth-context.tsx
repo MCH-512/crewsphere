@@ -3,9 +3,9 @@
 
 import * as React from "react";
 import type { User as FirebaseUser } from "firebase/auth";
-import { auth, db } from "@/lib/firebase"; // Import db
+import { auth, db, isConfigValid } from "@/lib/firebase"; 
 import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore"; // Import Firestore functions
+import { doc, getDoc } from "firebase/firestore";
 import { usePathname, useRouter } from "next/navigation";
 
 // Define a new User type that can include a role and other Firestore fields
@@ -36,12 +36,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   React.useEffect(() => {
+    // If config is invalid, don't even try to set up the listener
+    if (!isConfigValid || !auth) {
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(
       auth,
       async (currentUser) => { // Make this async
         if (currentUser) {
           try {
             // Fetch user details from Firestore
+            if (!db) throw new Error("Firestore is not configured.");
             const userDocRef = doc(db, "users", currentUser.uid);
             const userDocSnap = await getDoc(userDocRef);
 
@@ -114,6 +121,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 
   const logout = async () => {
+    if (!auth) {
+        console.warn("Logout skipped: Firebase Auth not initialized.");
+        setUser(null);
+        return;
+    }
     try {
       await firebaseSignOut(auth);
       setUser(null); 

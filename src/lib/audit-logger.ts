@@ -1,5 +1,5 @@
 
-import { db } from "@/lib/firebase";
+import { db, isConfigValid } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 
 export interface AuditLogData {
@@ -20,6 +20,10 @@ interface AuditLogEntry extends AuditLogData {
  * @param logData The data for the audit log entry.
  */
 export async function logAuditEvent(logData: AuditLogData): Promise<void> {
+  if (!isConfigValid || !db) {
+    console.warn("Audit log skipped: Firebase not configured.", logData);
+    return;
+  }
   try {
     const logEntry: AuditLogEntry = {
       ...logData,

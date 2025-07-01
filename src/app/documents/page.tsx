@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, Eye, FileText as FileTextIcon, Loader2, AlertTriangle, RefreshCw, Layers, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { db } from "@/lib/firebase";
+import { db, isConfigValid } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -74,6 +74,11 @@ export default function DocumentsPage() {
   const [familyCounts, setFamilyCounts] = React.useState<Record<string, number>>({});
 
   const fetchDocuments = React.useCallback(async () => {
+    if (!isConfigValid || !db) {
+        setError("The application is not configured to connect to the document database.");
+        setIsLoading(false);
+        return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -171,9 +176,10 @@ export default function DocumentsPage() {
                         className="pl-10"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        disabled={!isConfigValid}
                     />
                 </div>
-                <Button variant="outline" onClick={fetchDocuments} disabled={isLoading}>
+                <Button variant="outline" onClick={fetchDocuments} disabled={isLoading || !isConfigValid}>
                     <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     Refresh
                 </Button>
@@ -182,102 +188,120 @@ export default function DocumentsPage() {
         </Card>
       </AnimatedCard>
 
-      <AnimatedCard delay={0.1}>
-        <Card className="shadow-md">
+      {!isConfigValid && 
+        <Card className="w-full shadow-xl text-center border-destructive">
+          <CardHeader>
+            <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
+            <CardTitle className="text-2xl font-headline mt-4">Firebase Not Configured</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              The document library cannot be accessed because the application's Firebase configuration is missing or invalid. Please contact an administrator or check the <code>.env</code> file.
+            </p>
+          </CardContent>
+        </Card>
+      }
+
+      {isConfigValid && 
+        <>
+        <AnimatedCard delay={0.1}>
+            <Card className="shadow-md">
+                <CardHeader>
+                    <CardTitle className="text-lg font-headline">Browse by Family</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+                        <Card
+                            className={cn(
+                                "flex flex-col items-center justify-center p-4 rounded-lg cursor-pointer hover:shadow-md hover:bg-muted/50 transition-all",
+                                sourceFilter === 'all' && "ring-2 ring-primary shadow-lg"
+                            )}
+                            onClick={() => setSourceFilter('all')}
+                        >
+                            <Layers className="h-8 w-8 text-primary mb-2" />
+                            <p className="text-2xl font-bold">{allDocuments.length}</p>
+                            <p className="text-sm text-muted-foreground text-center">All Documents</p>
+                        </Card>
+                        {documentSources.map(source => {
+                            const familyInfo = familyConfig[source as keyof typeof familyConfig];
+                            const IconComponent = familyInfo?.icon || FileTextIcon;
+                            return (
+                                <Card
+                                    key={source}
+                                    className={cn(
+                                        "flex flex-col items-center justify-center p-4 rounded-lg cursor-pointer hover:shadow-md hover:bg-muted/50 transition-all",
+                                        sourceFilter === source && "ring-2 ring-primary shadow-lg"
+                                    )}
+                                    onClick={() => setSourceFilter(source)}
+                                >
+                                    <IconComponent className="h-8 w-8 text-primary mb-2" />
+                                    <p className="text-2xl font-bold">{familyCounts[source] || 0}</p>
+                                    <p className="text-sm text-muted-foreground text-center">{source}</p>
+                                </Card>
+                            );
+                        })}
+                    </div>
+                </CardContent>
+            </Card>
+        </AnimatedCard>
+
+        <Card className="shadow-lg mt-6">
             <CardHeader>
-                <CardTitle className="text-lg font-headline">Browse by Family</CardTitle>
+            <CardTitle className="text-xl font-headline">
+                {sourceFilter === "all" ? "All Documents" : `Documents: ${sourceFilter}`}
+            </CardTitle>
+            <CardDescription>
+                {filteredDocuments.length} document(s) found.
+            </CardDescription>
             </CardHeader>
             <CardContent>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-                    <Card
-                        className={cn(
-                            "flex flex-col items-center justify-center p-4 rounded-lg cursor-pointer hover:shadow-md hover:bg-muted/50 transition-all",
-                            sourceFilter === 'all' && "ring-2 ring-primary shadow-lg"
-                        )}
-                        onClick={() => setSourceFilter('all')}
-                    >
-                        <Layers className="h-8 w-8 text-primary mb-2" />
-                        <p className="text-2xl font-bold">{allDocuments.length}</p>
-                        <p className="text-sm text-muted-foreground text-center">All Documents</p>
-                    </Card>
-                    {documentSources.map(source => {
-                        const familyInfo = familyConfig[source as keyof typeof familyConfig];
-                        const IconComponent = familyInfo?.icon || FileTextIcon;
-                        return (
-                            <Card
-                                key={source}
-                                className={cn(
-                                    "flex flex-col items-center justify-center p-4 rounded-lg cursor-pointer hover:shadow-md hover:bg-muted/50 transition-all",
-                                    sourceFilter === source && "ring-2 ring-primary shadow-lg"
-                                )}
-                                onClick={() => setSourceFilter(source)}
-                            >
-                                <IconComponent className="h-8 w-8 text-primary mb-2" />
-                                <p className="text-2xl font-bold">{familyCounts[source] || 0}</p>
-                                <p className="text-sm text-muted-foreground text-center">{source}</p>
-                            </Card>
-                        );
-                    })}
+            {isLoading ? (
+                <div className="flex items-center justify-center py-10">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="ml-3 text-muted-foreground">Loading documents...</p>
                 </div>
+            ) : error ? (
+                <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2 justify-center">
+                <AlertTriangle className="h-5 w-5" /> {error}
+                </div>
+            ) : filteredDocuments.length === 0 ? (
+                <div className="text-center py-10">
+                <p className="text-muted-foreground">No documents found matching your criteria.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredDocuments.map(doc => (
+                    <Card key={doc.id} className="hover:shadow-md transition-shadow">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                {getIconForDocumentType(doc)}
+                                <span className="truncate" title={doc.title}>{doc.title}</span>
+                            </CardTitle>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                                <Badge variant="outline" className="px-1.5 py-0">{doc.category}</Badge>
+                                <span>|</span>
+                                <span>Updated: {formatDate(doc.lastUpdated)}</span>
+                                {doc.version && <span>| Ver: {doc.version}</span>}
+                            </div>
+                        </CardHeader>
+                        <CardFooter className="gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => handleViewDocument(doc)} className="flex-1">
+                                <Eye className="mr-2 h-4 w-4" /> View
+                            </Button>
+                            {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
+                                <Button variant="outline" size="sm" asChild className="flex-1">
+                                    <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="mr-2 h-4 w-4" /> Download</a>
+                                </Button>
+                            )}
+                        </CardFooter>
+                    </Card>
+                ))}
+                </div>
+            )}
             </CardContent>
         </Card>
-      </AnimatedCard>
-
-      <Card className="shadow-lg mt-6">
-        <CardHeader>
-          <CardTitle className="text-xl font-headline">
-            {sourceFilter === "all" ? "All Documents" : `Documents: ${sourceFilter}`}
-          </CardTitle>
-          <CardDescription>
-            {filteredDocuments.length} document(s) found.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-10">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              <p className="ml-3 text-muted-foreground">Loading documents...</p>
-            </div>
-          ) : error ? (
-            <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2 justify-center">
-              <AlertTriangle className="h-5 w-5" /> {error}
-            </div>
-          ) : filteredDocuments.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-muted-foreground">No documents found matching your criteria.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredDocuments.map(doc => (
-                  <Card key={doc.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-3">
-                          <CardTitle className="text-base font-semibold flex items-center gap-2">
-                              {getIconForDocumentType(doc)}
-                              <span className="truncate" title={doc.title}>{doc.title}</span>
-                          </CardTitle>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                              <Badge variant="outline" className="px-1.5 py-0">{doc.category}</Badge>
-                              <span>|</span>
-                              <span>Updated: {formatDate(doc.lastUpdated)}</span>
-                              {doc.version && <span>| Ver: {doc.version}</span>}
-                          </div>
-                      </CardHeader>
-                      <CardFooter className="gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => handleViewDocument(doc)} className="flex-1">
-                              <Eye className="mr-2 h-4 w-4" /> View
-                          </Button>
-                          {(doc.documentContentType === 'file' || doc.documentContentType === 'fileWithMarkdown') && doc.downloadURL && (
-                              <Button variant="outline" size="sm" asChild className="flex-1">
-                                  <a href={doc.downloadURL} download={doc.fileName || doc.title}><Download className="mr-2 h-4 w-4" /> Download</a>
-                              </Button>
-                          )}
-                      </CardFooter>
-                  </Card>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        </>
+      }
 
 
       {selectedDocumentForView && (selectedDocumentForView.documentContentType === 'markdown' || selectedDocumentForView.documentContentType === 'fileWithMarkdown') && (
