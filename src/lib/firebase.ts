@@ -29,8 +29,8 @@ if (isConfigValid) {
   storage = getStorage(app);
 } else {
   if (typeof window !== 'undefined') {
-    console.error(
-      "CRITICAL: Firebase configuration is missing or invalid. Please check your .env file with your project settings. Firebase services are disabled."
+    console.warn(
+      "Firebase configuration is missing or invalid. Please check your .env file with your project settings. Firebase services are disabled."
     );
   }
 }
