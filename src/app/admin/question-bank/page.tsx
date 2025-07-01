@@ -233,7 +233,7 @@ export default function QuestionBankPage() {
                              <FormField control={form.control} name="correctAnswer" render={({ field }) => {
                                 if (watchedQuestionType === 'tf') return (<FormItem><FormLabel>Correct Answer (True/False)</FormLabel><Select onValueChange={field.onChange} value={field.value || "True"}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="True">True</SelectItem><SelectItem value="False">False</SelectItem></SelectContent></Select><FormMessage /></FormItem>);
                                 if (watchedQuestionType === 'mcq') {
-                                    const options = form.getValues("options")?.map(opt => opt.text).filter(Boolean) || [];
+                                    const options = form.watch("options")?.map(o => o.text).filter(Boolean) || [];
                                     return (<FormItem><FormLabel>Correct Answer (MCQ)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={options.length > 0 ? "Select correct option" : "Add options first"}/></SelectTrigger></FormControl><SelectContent>{options.map((optText, i) => <SelectItem key={i} value={optText}>{optText}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>);
                                 }
                                 return (<FormItem><FormLabel>Correct Answer (Short Answer)</FormLabel><FormControl><Input placeholder="Enter the exact correct answer" {...field} /></FormControl><FormMessage /></FormItem>);
