@@ -27,7 +27,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpenCheck, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList } from "lucide-react";
+import { BookOpenCheck, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, HelpCircle, Edit3 as EditQuestionIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
@@ -36,6 +36,7 @@ import { ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebas
 import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from 'next/link';
 import { 
   courseCategories, 
   courseTypes, 
@@ -343,7 +344,24 @@ export default function CreateComprehensiveCoursePage() {
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><FormLabel>Randomize Answer Order (for MCQs)?</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                 )} />
               </div>
-              <FormDescription>Note: Specific quiz questions are managed separately after course creation.</FormDescription>
+            </CardContent>
+          </Card>
+          
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold flex items-center">
+                <HelpCircle className="mr-2 h-5 w-5 text-primary" /> Quiz Questions
+              </CardTitle>
+              <CardDescription>
+                Questions are now managed centrally in the Question Bank. Use the link below to add or edit questions for all quizzes.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button type="button" asChild>
+                    <Link href="/admin/question-bank">
+                        <EditQuestionIcon className="mr-2 h-4 w-4" /> Go to Question Bank
+                    </Link>
+                </Button>
             </CardContent>
           </Card>
 

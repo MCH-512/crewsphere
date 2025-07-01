@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, doc, getDoc, where, getCountFromServer } from "firebase/firestore"; 
+import { collection, getDocs, query, orderBy, doc, getDoc } from "firebase/firestore"; 
 import { useRouter } from "next/navigation";
 import { CheckSquare, Loader2, AlertTriangle, RefreshCw, Edit3, PlusCircle, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -22,7 +22,6 @@ interface Quiz {
   randomizeAnswers?: boolean;
   courseTitle?: string;
   courseCategory?: string;
-  questionCount?: number;
 }
 
 interface CourseInfo {
@@ -46,7 +45,7 @@ export default function AdminQuizzesPage() {
       const querySnapshot = await getDocs(q);
       
       const fetchedQuizzesPromises = querySnapshot.docs.map(async (docSnapshot) => {
-        const quizData = docSnapshot.data() as Omit<Quiz, 'id' | 'courseTitle' | 'courseCategory' | 'questionCount'>;
+        const quizData = docSnapshot.data() as Omit<Quiz, 'id' | 'courseTitle' | 'courseCategory'>;
         const quiz: Quiz = {
           id: docSnapshot.id,
           ...quizData,
@@ -69,11 +68,6 @@ export default function AdminQuizzesPage() {
           }
         }
         
-        // Fetch question count
-        const questionsQuery = query(collection(db, "questions"), where("quizId", "==", quiz.id));
-        const questionsSnapshot = await getCountFromServer(questionsQuery);
-        quiz.questionCount = questionsSnapshot.data().count;
-
         return quiz;
       });
 
@@ -164,7 +158,6 @@ export default function AdminQuizzesPage() {
                   <TableRow>
                     <TableHead>Quiz Title</TableHead>
                     <TableHead>Associated Course</TableHead>
-                    <TableHead>Questions</TableHead>
                     <TableHead>Randomize Qs</TableHead>
                     <TableHead>Randomize As</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -179,7 +172,6 @@ export default function AdminQuizzesPage() {
                             <BookOpen className="h-4 w-4"/>{quiz.courseTitle || 'N/A'}
                         </Link>
                       </TableCell>
-                      <TableCell>{quiz.questionCount ?? 'N/A'}</TableCell>
                       <TableCell>
                         <Badge variant={quiz.randomizeQuestions ? "default" : "secondary"}>
                           {quiz.randomizeQuestions ? "Yes" : "No"}

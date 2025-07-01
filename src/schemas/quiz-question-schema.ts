@@ -34,11 +34,10 @@ export const defaultQuestionFormValues: Partial<QuestionFormValues> = {
   correctAnswer: "",
 };
 
-// Schema for Firestore document (includes quizId and timestamps)
+// Schema for Firestore document (includes timestamps)
 export const storedQuestionSchema = questionFormSchema.extend({
-  quizId: z.string(),
   createdAt: z.custom<FirebaseFirestore.Timestamp>((val) => val instanceof Object && 'toDate' in val && typeof val.toDate === 'function'), // For reading
   updatedAt: z.custom<FirebaseFirestore.Timestamp>((val) => val instanceof Object && 'toDate' in val && typeof val.toDate === 'function'), // For reading
 });
 
-export type StoredQuestion = z.infer<typeof storedQuestionSchema>;
+export type StoredQuestion = z.infer<typeof storedQuestionSchema> & { id: string };
