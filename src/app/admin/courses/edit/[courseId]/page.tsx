@@ -85,7 +85,7 @@ export default function EditComprehensiveCoursePage() {
     mode: "onBlur",
   });
 
-  const { fields: chapterFields, replace: replaceChapters, remove: removeChapter } = useFieldArray({
+  const { fields: chapterFields, replace: replaceChapters, remove: removeChapter, append: appendChapter } = useFieldArray({
     control: courseEditForm.control,
     name: "chapters",
   });
@@ -425,6 +425,7 @@ export default function EditComprehensiveCoursePage() {
                   level={0}
                 />
               ))}
+               <Button type="button" variant="outline" onClick={() => appendChapter(defaultChapterValue)}><PlusCircle className="mr-2 h-4 w-4" />Add Chapter</Button>
             </CardContent>
           </Card>
 

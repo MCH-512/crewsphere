@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { HelpCircle, Loader2, AlertTriangle, CheckCircle, PlusCircle, Trash2, Edit3, RefreshCw } from "lucide-react";
+import { HelpCircle, Loader2, AlertTriangle, CheckCircle, PlusCircle, Trash2, Edit3, RefreshCw, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -47,6 +47,7 @@ import { logAuditEvent } from "@/lib/audit-logger";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
+import { parseQuestionFromText } from "@/ai/flows/parse-question-flow";
 
 export default function QuestionBankPage() {
     const { user, loading: authLoading } = useAuth();
@@ -59,6 +60,10 @@ export default function QuestionBankPage() {
     const [editingQuestion, setEditingQuestion] = React.useState<StoredQuestion | null>(null);
     const [isSaving, setIsSaving] = React.useState(false);
     const [questionToDelete, setQuestionToDelete] = React.useState<StoredQuestion | null>(null);
+    
+    const [rawQuestionText, setRawQuestionText] = React.useState("");
+    const [isParsing, setIsParsing] = React.useState(false);
+
 
     const form = useForm<QuestionFormValues>({
         resolver: zodResolver(questionFormSchema),
@@ -116,7 +121,6 @@ export default function QuestionBankPage() {
         form.reset({
             questionText: question.questionText,
             questionType: question.questionType,
-            category: question.category,
             options: question.options ? question.options.map(opt => ({ text: opt })) : [],
             correctAnswer: question.correctAnswer,
         });
@@ -163,6 +167,36 @@ export default function QuestionBankPage() {
         }
     };
     
+     const handleParseAndOpen = async () => {
+        if (!rawQuestionText.trim()) {
+            toast({ title: "No Text Provided", description: "Please paste the question text into the box.", variant: "default" });
+            return;
+        }
+        setIsParsing(true);
+        try {
+            const parsedData = await parseQuestionFromText({ rawText: rawQuestionText });
+
+            setIsEditMode(false);
+            setEditingQuestion(null);
+            form.reset({
+                questionText: parsedData.questionText,
+                questionType: 'mcq',
+                options: parsedData.options,
+                correctAnswer: parsedData.correctAnswer,
+                category: "",
+            });
+            setIsFormDialogOpen(true);
+            setRawQuestionText("");
+            toast({ title: "Question Parsed!", description: "The form has been pre-filled. Please review and save." });
+
+        } catch (error) {
+            console.error("Error parsing question:", error);
+            toast({ title: "Parsing Failed", description: "The AI could not understand the format. Please check the text and try again.", variant: "destructive" });
+        } finally {
+            setIsParsing(false);
+        }
+    };
+
     if (authLoading || (isLoading && !user)) {
       return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
@@ -185,6 +219,36 @@ export default function QuestionBankPage() {
                         <Button onClick={openCreateDialog}><PlusCircle className="mr-2 h-4 w-4"/>Add New Question</Button>
                     </div>
                 </CardHeader>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-xl font-headline flex items-center gap-3">
+                        <Sparkles className="h-6 w-6 text-accent" />
+                        AI-Powered Quick Add
+                    </CardTitle>
+                    <CardDescription>
+                        Paste a formatted question below and let AI pre-fill the creation form for you.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <Textarea
+                        placeholder="Paste your question here, e.g.&#10;What is the capital of France?&#10;A. London&#10;B. Paris&#10;C. Berlin&#10;✅ Correct answer: B. Paris"
+                        className="min-h-[150px] font-mono text-xs"
+                        value={rawQuestionText}
+                        onChange={(e) => setRawQuestionText(e.target.value)}
+                    />
+                    <Button onClick={handleParseAndOpen} disabled={isParsing || !rawQuestionText.trim()}>
+                        {isParsing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                        Parse and Create Question
+                    </Button>
+                </CardContent>
+            </Card>
+
+            <Card>
+                 <CardHeader>
+                    <CardTitle>Existing Questions</CardTitle>
+                 </CardHeader>
                 <CardContent>
                     {isLoading ? <div className="text-center py-8"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary"/></div>
                      : questions.length === 0 ? <p className="text-center text-muted-foreground py-8">No questions found in the bank. Add one to get started.</p>
@@ -198,7 +262,7 @@ export default function QuestionBankPage() {
                                             <TableCell className="font-medium max-w-sm truncate" title={q.questionText}>{q.questionText}</TableCell>
                                             <TableCell><Badge variant="outline">{q.category}</Badge></TableCell>
                                             <TableCell><Badge variant="secondary">{q.questionType.toUpperCase()}</Badge></TableCell>
-                                            <TableCell className="text-xs">{format(q.updatedAt.toDate(), "PPp")}</TableCell>
+                                            <TableCell className="text-xs">{q.updatedAt ? format(q.updatedAt.toDate(), "PPp") : "N/A"}</TableCell>
                                             <TableCell className="text-right space-x-1">
                                                 <Button variant="ghost" size="icon" onClick={() => openEditDialog(q)}><Edit3 className="h-4 w-4"/></Button>
                                                 <AlertDialog>
@@ -231,9 +295,9 @@ export default function QuestionBankPage() {
                              </div>
                               {watchedQuestionType === 'mcq' && (<div className="space-y-2 pt-2"><FormLabel>Options (MCQ)</FormLabel>{mcqOptionFields.map((field, index) => (<div key={field.id} className="flex items-center gap-2"><FormField control={form.control} name={`options.${index}.text`} render={({ field: optionField }) => (<FormItem className="flex-grow"><FormControl><Input placeholder={`Option ${index + 1}`} {...optionField} /></FormControl><FormMessage /></FormItem>)}/><Button type="button" variant="ghost" size="icon" onClick={() => mcqOptionFields.length > 2 && removeMcqOption(index)} disabled={mcqOptionFields.length <= 2}><Trash2 className="h-4 w-4 text-destructive" /></Button></div>))}<Button type="button" variant="outline" size="sm" onClick={() => appendMcqOption(defaultQuestionOptionValue)}><PlusCircle className="mr-2 h-4 w-4" />Add Option</Button></div>)}
                              <FormField control={form.control} name="correctAnswer" render={({ field }) => {
+                                const options = form.watch("options")?.map(o => o.text).filter(Boolean) || [];
                                 if (watchedQuestionType === 'tf') return (<FormItem><FormLabel>Correct Answer (True/False)</FormLabel><Select onValueChange={field.onChange} value={field.value || "True"}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="True">True</SelectItem><SelectItem value="False">False</SelectItem></SelectContent></Select><FormMessage /></FormItem>);
                                 if (watchedQuestionType === 'mcq') {
-                                    const options = form.watch("options")?.map(o => o.text).filter(Boolean) || [];
                                     return (<FormItem><FormLabel>Correct Answer (MCQ)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={options.length > 0 ? "Select correct option" : "Add options first"}/></SelectTrigger></FormControl><SelectContent>{options.map((optText, i) => <SelectItem key={i} value={optText}>{optText}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>);
                                 }
                                 return (<FormItem><FormLabel>Correct Answer (Short Answer)</FormLabel><FormControl><Input placeholder="Enter the exact correct answer" {...field} /></FormControl><FormMessage /></FormItem>);

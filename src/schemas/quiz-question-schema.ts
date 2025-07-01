@@ -18,6 +18,7 @@ export const questionFormSchema = z.object({
   questionType: z.enum(questionTypes, { required_error: "Please select a question type." }),
   options: z.array(questionOptionSchema).optional(),
   correctAnswer: z.string().min(1, "Correct answer cannot be empty."),
+  category: z.string({ required_error: "Please select a category." }),
 });
 
 export type QuestionFormValues = z.infer<typeof questionFormSchema>;
@@ -29,6 +30,7 @@ export const defaultQuestionFormValues: Partial<QuestionFormValues> = {
   questionType: "mcq",
   options: [{ text: "" }, { text: "" }],
   correctAnswer: "",
+  category: "",
 };
 
 // Schema for Firestore document (includes timestamps)
