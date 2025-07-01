@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, GraduationCap, Plane, Settings, Loader2, FilePlus, Bell, FileSignature, ClipboardCheck, CheckSquare, MessageSquare, ArrowRight } from "lucide-react";
+import { ServerCog, Users, Activity, GraduationCap, Plane, Settings, Loader2, FilePlus, Bell, FileSignature, ClipboardCheck, CheckSquare, MessageSquare, ArrowRight, School } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -43,6 +43,7 @@ export default function AdminConsolePage() {
     documents: { value: null, isLoading: true, label: "Documents" } as Stat,
     publishedCourses: { value: null, isLoading: true, label: "Published Courses" } as Stat,
     flightsToday: { value: null, isLoading: true, label: "Flights Today" } as Stat,
+    trainingSessions: { value: null, isLoading: true, label: "Upcoming Sessions" } as Stat,
     quizzes: { value: null, isLoading: true, label: "Total Quizzes" } as Stat,
     purserReports: { value: null, isLoading: true, label: "Total Reports" } as Stat,
     suggestions: { value: null, isLoading: true, label: "New Suggestions" } as Stat,
@@ -65,13 +66,15 @@ export default function AdminConsolePage() {
       }
     };
     
+    const todayStart = startOfDay(new Date()).toISOString();
+    const todayEnd = endOfDay(new Date()).toISOString();
+
     fetcher('pendingRequests', query(collection(db, "requests"), where("status", "==", "pending")));
     fetcher('users', collection(db, "users"));
     fetcher('documents', collection(db, "documents"));
     fetcher('publishedCourses', query(collection(db, "courses"), where("published", "==", true)));
-    const todayStart = startOfDay(new Date()).toISOString();
-    const todayEnd = endOfDay(new Date()).toISOString();
     fetcher('flightsToday', query(collection(db, "flights"), where("scheduledDepartureDateTimeUTC", ">=", todayStart), where("scheduledDepartureDateTimeUTC", "<=", todayEnd)));
+    fetcher('trainingSessions', query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", todayStart)));
     fetcher('quizzes', collection(db, "quizzes"));
     fetcher('purserReports', collection(db, "purserReports"));
     fetcher('suggestions', query(collection(db, "suggestions"), where("status", "==", "new")));
@@ -121,12 +124,21 @@ export default function AdminConsolePage() {
     },
     { 
       icon: GraduationCap, 
-      title: "Courses", 
-      description: "Create and manage courses, including content, quizzes, and certifications.", 
+      title: "Courses (E-Learning)", 
+      description: "Create and manage e-learning courses, including content, quizzes, and certifications.", 
       buttonText: "Manage Courses", 
       href: "/admin/courses",
       stat: stats.publishedCourses,
       delay: 0.3
+    },
+     { 
+      icon: School, 
+      title: "Training Sessions", 
+      description: "Schedule and manage in-person training sessions for crew members.", 
+      buttonText: "Manage Sessions", 
+      href: "/admin/training-sessions",
+      stat: stats.trainingSessions,
+      delay: 0.35
     },
     { 
       icon: CheckSquare,
@@ -135,7 +147,7 @@ export default function AdminConsolePage() {
       buttonText: "View Quizzes",
       href: "/admin/quizzes",
       stat: stats.quizzes,
-      delay: 0.35,
+      delay: 0.38,
     },
     { 
       icon: Plane, 
