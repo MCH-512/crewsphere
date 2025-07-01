@@ -60,11 +60,14 @@ import {
 } from "@/schemas/course-schema";
 import {
   defaultQuestionFormValues,
-  defaultQuestionOptionValue
+  defaultQuestionOptionValue,
+  type StoredQuestion
 } from "@/schemas/quiz-question-schema";
 import CourseContentBlock from "@/components/admin/course-content-block";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { parseCourseContent } from "@/ai/flows/parse-course-content-flow";
+import { QuestionBankDialog } from "@/components/admin/question-bank-dialog";
+
 
 export default function EditComprehensiveCoursePage() {
   const { toast } = useToast();
@@ -82,6 +85,8 @@ export default function EditComprehensiveCoursePage() {
   
   const [rawContentText, setRawContentText] = React.useState("");
   const [isParsingContent, setIsParsingContent] = React.useState(false);
+  const [isBankDialogOpen, setIsBankDialogOpen] = React.useState(false);
+
 
   const courseEditForm = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
@@ -99,8 +104,22 @@ export default function EditComprehensiveCoursePage() {
     name: "questions",
   });
   
+  const handleAddQuestionsFromBank = (questionsToAdd: StoredQuestion[]) => {
+    const formattedQuestions = questionsToAdd.map(q => ({
+      ...q,
+      options: q.options ? q.options.map(opt => ({ text: opt })) : [],
+    }));
+    appendQuestion(formattedQuestions as any, { shouldFocus: false });
+    toast({
+      title: "Questions Added",
+      description: `${questionsToAdd.length} question(s) have been added to the quiz form.`,
+    });
+  };
+
   const watchedFormValues = courseEditForm.watch();
   const watchedQuestionType = (index: number) => courseEditForm.watch(`questions.${index}.questionType`);
+  const existingQuestionIds = watchedFormValues.questions?.map(q => q.id).filter(Boolean) as string[] || [];
+
 
   React.useEffect(() => {
     if (!authLoading && (!user || user.role !== 'admin')) {
@@ -133,7 +152,7 @@ export default function EditComprehensiveCoursePage() {
               quizData = quizSnap.data();
               const questionsQuery = query(collection(db, "questions"), where("quizId", "==", courseData.quizId));
               const questionsSnap = await getDocs(questionsQuery);
-              fetchedQuestions = questionsSnap.docs.map(d => ({...d.data(), options: d.data().options.map((opt: string) => ({text: opt}))}));
+              fetchedQuestions = questionsSnap.docs.map(d => ({id: d.id, ...d.data(), options: d.data().options.map((opt: string) => ({text: opt}))}));
             }
           }
           
@@ -529,7 +548,14 @@ export default function EditComprehensiveCoursePage() {
                         </Card>
                     )
                  })}
-                 <Button type="button" variant="outline" onClick={() => appendQuestion(defaultQuestionFormValues)}><PlusCircle className="mr-2 h-4 w-4"/>Add Question</Button>
+                  <div className="flex items-center gap-2 pt-2">
+                    <Button type="button" variant="outline" onClick={() => appendQuestion(defaultQuestionFormValues)}>
+                        <PlusCircle className="mr-2 h-4 w-4"/>Add Manually
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={() => setIsBankDialogOpen(true)}>
+                        <HelpCircle className="mr-2 h-4 w-4" /> Add from Bank
+                    </Button>
+                  </div>
               </div>
             </CardContent>
           </Card>
@@ -600,6 +626,15 @@ export default function EditComprehensiveCoursePage() {
           )}
         </form>
       </Form>
+
+       {isBankDialogOpen && (
+        <QuestionBankDialog
+          isOpen={isBankDialogOpen}
+          onOpenChange={setIsBankDialogOpen}
+          onAddQuestions={handleAddQuestionsFromBank}
+          existingQuestionIds={existingQuestionIds}
+        />
+      )}
     </div>
   );
 }
