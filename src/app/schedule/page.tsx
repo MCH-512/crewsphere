@@ -21,7 +21,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, Timestamp, orderBy, serverTimestamp, deleteDoc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfDay, endOfDay, parseISO, setHours, setMinutes, setSeconds, setMilliseconds, isSameMonth } from "date-fns";
+import { format, startOfDay, endOfDay, parseISO, setHours, setMinutes, setSeconds, setMilliseconds, isSameMonth, addMonths, endOfMonth } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getAirportByCode } from "@/services/airport-service";
 
@@ -220,46 +220,50 @@ export default function SchedulePage() {
   
   const fetchAvailableFlights = React.useCallback(async () => {
     if (!user) {
-      setAvailableFlightsData([]);
-      setIsLoadingAvailableFlights(false);
-      return;
+        setAvailableFlightsData([]);
+        setIsLoadingAvailableFlights(false);
+        return;
     }
     setIsLoadingAvailableFlights(true);
     try {
-      const allFlightsQuery = query(collection(db, "flights"), orderBy("scheduledDepartureDateTimeUTC", "asc"));
-      const allFlightsSnapshot = await getDocs(allFlightsQuery);
-      
-      const allFlightsPromises = allFlightsSnapshot.docs.map(async d => {
-        const flightData = { id: d.id, ...d.data() } as Flight;
-        const depAirportInfo = await getAirportByCode(flightData.departureAirport);
-        if (depAirportInfo && depAirportInfo.iata) {
-            flightData.departureAirportIATA = depAirportInfo.iata;
-        }
-        const arrAirportInfo = await getAirportByCode(flightData.arrivalAirport);
-        if (arrAirportInfo && arrAirportInfo.iata) {
-            flightData.arrivalAirportIATA = arrAirportInfo.iata;
-        }
-        return flightData;
-      });
-      const allFlights = await Promise.all(allFlightsPromises);
-      
-      const assignedFlightIdsInActivities = userActivities
-        .filter(act => act.activityType === 'flight' && act.flightId)
-        .map(act => act.flightId);
+        const rangeStart = startOfDay(new Date(month.getFullYear(), month.getMonth(), 1));
+        const rangeEnd = endOfMonth(addMonths(rangeStart, 1));
 
-      const filteredAvailable = allFlights.filter(f => 
-        !assignedFlightIdsInActivities.includes(f.id) && 
-        new Date(f.scheduledDepartureDateTimeUTC) >= startOfDay(new Date()) // Only future or today's flights
-      );
-      setAvailableFlightsData(filteredAvailable);
+        const flightsQuery = query(
+            collection(db, "flights"),
+            where("scheduledDepartureDateTimeUTC", ">=", rangeStart.toISOString()),
+            where("scheduledDepartureDateTimeUTC", "<=", rangeEnd.toISOString()),
+            orderBy("scheduledDepartureDateTimeUTC", "asc")
+        );
+        
+        const flightsSnapshot = await getDocs(flightsQuery);
+        
+        const allFlightsPromises = flightsSnapshot.docs.map(async d => {
+            const flightData = { id: d.id, ...d.data() } as Flight;
+            const depAirportInfo = await getAirportByCode(flightData.departureAirport);
+            flightData.departureAirportIATA = depAirportInfo?.iata;
+            const arrAirportInfo = await getAirportByCode(flightData.arrivalAirport);
+            flightData.arrivalAirportIATA = arrAirportInfo?.iata;
+            return flightData;
+        });
+        const allFlightsInRange = await Promise.all(allFlightsPromises);
+        
+        const assignedFlightIdsInActivities = userActivities
+            .filter(act => act.activityType === 'flight' && act.flightId)
+            .map(act => act.flightId);
+
+        const filteredAvailable = allFlightsInRange.filter(f => 
+            !assignedFlightIdsInActivities.includes(f.id)
+        );
+        setAvailableFlightsData(filteredAvailable);
 
     } catch (err) {
-      console.error("Error fetching available flights:", err);
-      setError((prevError) => prevError ? `${prevError}\nFailed to load available flights.` : "Failed to load available flights.");
+        console.error("Error fetching available flights:", err);
+        setError((prevError) => prevError ? `${prevError}\nFailed to load available flights.` : "Failed to load available flights.");
     } finally {
-      setIsLoadingAvailableFlights(false);
+        setIsLoadingAvailableFlights(false);
     }
-  }, [user, userActivities]); 
+}, [user, month, userActivities]);
 
 
   React.useEffect(() => {
