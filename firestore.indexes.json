@@ -1,3 +1,4 @@
+
 {
   "indexes": [
     {
@@ -56,6 +57,13 @@
       "fields": [
         { "fieldPath": "quizId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "trainingSessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sessionDateTimeUTC", "order": "DESCENDING" }
       ]
     }
   ],
