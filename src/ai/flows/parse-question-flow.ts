@@ -34,6 +34,7 @@ export async function parseQuestionFromText(input: ParseQuestionInput): Promise<
 
 const parsingPrompt = ai.definePrompt({
   name: 'questionParsingPrompt',
+  model: 'googleai/gemini-2.0-flash',
   input: {schema: ParseQuestionInputSchema},
   output: {schema: ParseQuestionOutputSchema},
   prompt: `You are an intelligent assistant that parses raw text into a structured quiz question format.
