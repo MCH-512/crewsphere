@@ -56,7 +56,7 @@ import {
   courseFormSchema,
   type CourseFormValues,
   defaultChapterValue, 
-  defaultValues as initialFormDefaultValues 
+  defaultValues
 } from "@/schemas/course-schema";
 import {
   defaultQuestionFormValues,
@@ -81,11 +81,11 @@ export default function EditComprehensiveCoursePage() {
   
   const courseEditForm = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
-    defaultValues: initialFormDefaultValues, 
+    defaultValues: defaultValues, 
     mode: "onBlur",
   });
 
-  const { fields: chapterFields, replace: replaceChapters } = useFieldArray({
+  const { fields: chapterFields, replace: replaceChapters, remove: removeChapter } = useFieldArray({
     control: courseEditForm.control,
     name: "chapters",
   });

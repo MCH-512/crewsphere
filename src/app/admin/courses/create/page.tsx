@@ -45,7 +45,7 @@ import {
   courseFormSchema, 
   type CourseFormValues, 
   defaultChapterValue, 
-  defaultValues as initialDefaultValues
+  defaultValues
 } from "@/schemas/course-schema";
 import {
   defaultQuestionFormValues,
@@ -65,7 +65,7 @@ export default function CreateComprehensiveCoursePage() {
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
-    defaultValues: initialDefaultValues,
+    defaultValues: defaultValues,
     mode: "onBlur",
   });
 
@@ -197,7 +197,7 @@ export default function CreateComprehensiveCoursePage() {
         description: `Course "${data.title}" with its content and certification rules has been saved.`,
         action: <CheckCircle className="text-green-500" />,
       });
-      form.reset(initialDefaultValues);
+      form.reset(defaultValues);
       if (fileInputRef.current) fileInputRef.current.value = ""; 
       router.push('/admin/courses');
     } catch (error) {

@@ -100,6 +100,6 @@ export const defaultValues: CourseFormValues = {
   questions: [defaultQuestionFormValues as any],
   passingThreshold: 80,
   certificateExpiryDays: 365,
-  certificateLogoUrl: "https://placehold.co/150x50.png",
-  certificateSignature: "Express Airline Training Department",
+  certificateLogoUrl: "",
+  certificateSignature: "AirCrew Hub Training Department",
 };

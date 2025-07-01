@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
-import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, SendHorizonal, FileSignature, ChevronRight } from "lucide-react";
+import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, SendHorizonal, FileSignature, ChevronRight, Bell } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -376,8 +376,10 @@ export default function DashboardPage() {
   const getIconForAlert = (alert: Alert): LucideIcon => {
     if (alert.iconName) {
         const lowerIconName = alert.iconName.toLowerCase();
-        if (lowerIconName === "briefcase") return Briefcase;
-        if (lowerIconName === "graduationcap") return GraduationCap;
+        if (lowerIconName.includes("briefcase")) return Briefcase;
+        if (lowerIconName.includes("graduation")) return GraduationCap;
+        if (lowerIconName.includes("bell")) return Bell;
+        if (lowerIconName.includes("plane")) return PlaneTakeoff;
     }
     switch (alert.level) {
         case "critical": return AlertTriangle;
@@ -554,7 +556,7 @@ export default function DashboardPage() {
                         <div className="space-y-4">
                             {myLearningCourses.map(course => (
                                 <div key={course.id} className="flex items-center gap-4 p-2 rounded-lg border">
-                                    <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={48} height={48} className="rounded-md" data-ai-hint={course.imageHint || "training"} />
+                                    <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={48} height={48} className="rounded-md" data-ai-hint={course.imageHint || "training manual"} />
                                     <div className="flex-grow">
                                         <h3 className="font-semibold text-sm">{course.title}</h3>
                                         <div className="flex items-center gap-2 mt-1">
