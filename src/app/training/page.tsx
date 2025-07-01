@@ -11,7 +11,7 @@ import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, doc, getDoc, setDoc, Timestamp, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, getDoc, setDoc, Timestamp, orderBy, limit } from "firebase/firestore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Chapter, Resource } from "@/schemas/course-schema";
 import ChapterDisplay from "@/components/features/course-chapter-display";
@@ -20,6 +20,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import ReactMarkdown from "react-markdown";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { StoredQuestion } from "@/schemas/quiz-question-schema";
 
 
 // --- SHARED INTERFACES ---
@@ -453,30 +455,78 @@ const CourseContentDialog = ({ course, isOpen, onOpenChange, onComplete, isUpdat
     </Dialog>
 );
 
-const QuizDialog = ({ course, isOpen, onOpenChange, onSimulate, isUpdating }: { course: CombinedCourse, isOpen: boolean, onOpenChange: (open: boolean) => void, onSimulate: (id: string, passed: boolean) => void, isUpdating: boolean }) => (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Take Quiz: {course.quizTitle}</DialogTitle>
-          <DialogDescription>This is a quiz simulation. For this prototype, choose whether you want to simulate passing or failing the quiz.</DialogDescription>
-        </DialogHeader>
-        <div className="py-4 space-y-3">
-          <p className="text-sm text-muted-foreground">Course: {course.title}</p>
-          {course.mandatory && <p className="text-sm font-semibold text-destructive flex items-center gap-1"><AlertTriangle className="h-4 w-4"/>This is a mandatory quiz.</p>}
-        </div>
-        <DialogFooter className="gap-2 sm:justify-between">
-          <Button variant="destructive" onClick={() => onSimulate(course.id, false)} disabled={isUpdating}>
-            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-            <XCircle className="mr-2 h-4 w-4"/>Simulate Fail
-          </Button>
-          <Button variant="success" onClick={() => onSimulate(course.id, true)} disabled={isUpdating}>
-            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-            <CheckCircle className="mr-2 h-4 w-4"/>Simulate Pass
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-);
+const QuizDialog = ({ course, isOpen, onOpenChange, onSimulate, isUpdating }: { course: CombinedCourse, isOpen: boolean, onOpenChange: (open: boolean) => void, onSimulate: (id: string, passed: boolean) => void, isUpdating: boolean }) => {
+    const { toast } = useToast();
+    const [questions, setQuestions] = React.useState<StoredQuestion[]>([]);
+    const [isLoadingQuestions, setIsLoadingQuestions] = React.useState(true);
+
+    React.useEffect(() => {
+        if (isOpen && course) {
+            const fetchQuestions = async () => {
+                setIsLoadingQuestions(true);
+                try {
+                    const q = query(
+                        collection(db, "questions"),
+                        where("category", "==", course.category),
+                        limit(5) // Just show a few sample questions
+                    );
+                    const snapshot = await getDocs(q);
+                    const fetchedQuestions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredQuestion));
+                    setQuestions(fetchedQuestions);
+                } catch (err) {
+                    console.error("Error fetching questions for quiz:", err);
+                    toast({ title: "Error", description: "Could not load sample questions." });
+                } finally {
+                    setIsLoadingQuestions(false);
+                }
+            };
+            fetchQuestions();
+        }
+    }, [isOpen, course, toast]);
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Take Quiz: {course.quizTitle}</DialogTitle>
+              <DialogDescription>This is a quiz simulation based on the new Question Bank.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-3">
+              <p className="text-sm text-muted-foreground">Course: {course.title}</p>
+              {course.mandatory && <p className="text-sm font-semibold text-destructive flex items-center gap-1"><AlertTriangle className="h-4 w-4"/>This is a mandatory quiz.</p>}
+              <Separator />
+              <h4 className="font-semibold text-sm">Sample Questions ({course.category}):</h4>
+                {isLoadingQuestions ? (
+                    <div className="text-center p-4">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                        <p className="text-sm text-muted-foreground mt-2">Loading questions...</p>
+                    </div>
+                ) : questions.length > 0 ? (
+                    <ScrollArea className="h-40 border rounded-md p-3">
+                        <ul className="space-y-2 text-sm list-decimal list-inside">
+                            {questions.map(q => <li key={q.id}>{q.questionText}</li>)}
+                        </ul>
+                    </ScrollArea>
+                ) : (
+                    <p className="text-sm text-muted-foreground text-center p-2">No sample questions found for this category.</p>
+                )}
+              <Separator />
+              <p className="text-xs text-center text-muted-foreground">Choose an outcome below to continue the simulation.</p>
+            </div>
+            <DialogFooter className="gap-2 sm:justify-between">
+              <Button variant="destructive" onClick={() => onSimulate(course.id, false)} disabled={isUpdating}>
+                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                <XCircle className="mr-2 h-4 w-4"/>Simulate Fail
+              </Button>
+              <Button variant="success" onClick={() => onSimulate(course.id, true)} disabled={isUpdating}>
+                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                <CheckCircle className="mr-2 h-4 w-4"/>Simulate Pass
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+    );
+};
 
 const CertificateDialog = ({ course, isOpen, onOpenChange, user }: { course: CombinedCourse, isOpen: boolean, onOpenChange: (open: boolean) => void, user: any }) => {
     const { toast } = useToast();
