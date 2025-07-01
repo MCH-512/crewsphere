@@ -25,7 +25,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpenCheck, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, HelpCircle, Trash2 } from "lucide-react";
+import { BookOpenCheck, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, HelpCircle, Trash2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
@@ -53,6 +53,7 @@ import {
 } from "@/schemas/quiz-question-schema";
 import CourseContentBlock from "@/components/admin/course-content-block";
 import { logAuditEvent } from "@/lib/audit-logger";
+import { parseCourseContent } from "@/ai/flows/parse-course-content-flow";
 
 
 export default function CreateComprehensiveCoursePage() {
@@ -63,13 +64,16 @@ export default function CreateComprehensiveCoursePage() {
   const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  const [rawContentText, setRawContentText] = React.useState("");
+  const [isParsingContent, setIsParsingContent] = React.useState(false);
+
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
     defaultValues: defaultValues,
     mode: "onBlur",
   });
 
-  const { fields: chapterFields, append: appendChapter, remove: removeChapter } = useFieldArray({
+  const { fields: chapterFields, append: appendChapter, remove: removeChapter, replace: replaceChapters } = useFieldArray({
     control: form.control,
     name: "chapters",
   });
@@ -209,6 +213,29 @@ export default function CreateComprehensiveCoursePage() {
     }
   }
 
+  const handleParseContent = async () => {
+    if (!rawContentText.trim()) {
+      toast({ title: "No Text Provided", description: "Please paste the course content into the box.", variant: "default" });
+      return;
+    }
+    setIsParsingContent(true);
+    try {
+      const parsedChapters = await parseCourseContent({ rawText: rawContentText });
+      if (parsedChapters && parsedChapters.length > 0) {
+        replaceChapters(parsedChapters);
+        toast({ title: "Content Structured!", description: "The course content has been automatically structured. Please review." });
+        setRawContentText("");
+      } else {
+        toast({ title: "Parsing Incomplete", description: "The AI could not structure the content. Please try reformatting the text.", variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Error parsing content:", error);
+      toast({ title: "Parsing Failed", description: "An unexpected error occurred during content structuring.", variant: "destructive" });
+    } finally {
+      setIsParsingContent(false);
+    }
+  };
+
   if (authLoading || (!user && !authLoading)) {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
@@ -330,6 +357,28 @@ export default function CreateComprehensiveCoursePage() {
             </CardContent>
           </Card>
           
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold flex items-center">
+                <Sparkles className="mr-2 h-5 w-5 text-primary" />
+                AI-Powered Content Structuring
+              </CardTitle>
+              <CardDescription>Paste formatted text from a manual below, and the AI will attempt to structure it into chapters and sections for you.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Textarea
+                placeholder="Paste your formatted content here..."
+                className="min-h-[200px] font-mono text-xs"
+                value={rawContentText}
+                onChange={(e) => setRawContentText(e.target.value)}
+              />
+              <Button type="button" onClick={handleParseContent} disabled={isParsingContent || !rawContentText.trim()}>
+                {isParsingContent ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                Structure Content
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle className="text-xl font-semibold flex items-center"><LayoutList className="mr-2 h-5 w-5 text-primary" /> Course Content</CardTitle>
