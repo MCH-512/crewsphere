@@ -18,6 +18,14 @@
       ]
     },
     {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "published", "order": "ASCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "userActivities",
       "queryScope": "COLLECTION",
       "fields": [
@@ -33,6 +41,13 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "activityType", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "userTrainingProgress",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" }
       ]
     },
     {
