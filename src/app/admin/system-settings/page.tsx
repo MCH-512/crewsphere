@@ -15,6 +15,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -25,13 +36,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Loader2, AlertTriangle, CheckCircle, Save } from "lucide-react";
+import { Settings, Loader2, AlertTriangle, CheckCircle, Save, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { logAuditEvent } from "@/lib/audit-logger";
+import { seedInitialCourses } from "@/lib/seed";
 
 const systemSettingsSchema = z.object({
   appName: z.string().min(3, "App name must be at least 3 characters.").max(50, "App name cannot exceed 50 characters.").default("AirCrew Hub"),
@@ -56,6 +68,7 @@ export default function SystemSettingsPage() {
   const { user, loading: authLoading } = useAuth();
   const [isLoadingData, setIsLoadingData] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSeeding, setIsSeeding] = React.useState(false);
 
   const form = useForm<SystemSettingsFormValues>({
     resolver: zodResolver(systemSettingsSchema),
@@ -69,9 +82,7 @@ export default function SystemSettingsPage() {
 
   React.useEffect(() => {
     if (!authLoading && (!user || user.role !== 'admin')) {
-      // Redirect or show access denied message - parent layout should handle based on path
       toast({ title: "Access Denied", description: "You need admin privileges to access this page.", variant: "destructive"});
-      // Potentially router.push('/');
       return;
     }
 
@@ -84,14 +95,11 @@ export default function SystemSettingsPage() {
                 if (docSnap.exists()) {
                     const data = docSnap.data() as SystemSettingsFormValues;
                     form.reset({
-                        appName: data.appName || "AirCrew Hub", // Ensure default if undefined
+                        appName: data.appName || "AirCrew Hub",
                         maintenanceMode: data.maintenanceMode || false,
                         defaultBriefingModel: data.defaultBriefingModel || "gemini-2.0-flash",
                         supportEmail: data.supportEmail || "",
                     });
-                } else {
-                    // If no settings exist, form will use defaultValues
-                    console.log("No system settings document found, using defaults.");
                 }
             } catch (error) {
                 console.error("Error fetching system settings:", error);
@@ -112,26 +120,9 @@ export default function SystemSettingsPage() {
     setIsSubmitting(true);
     try {
       const settingsDocRef = doc(db, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
-      await setDoc(settingsDocRef, {
-        ...data,
-        lastUpdatedBy: user.uid,
-        updatedAt: serverTimestamp(),
-      }, { merge: true }); // Use merge true to create if not exists, or update if exists
-
-      await logAuditEvent({
-        userId: user.uid,
-        userEmail: user.email || "N/A",
-        actionType: "UPDATE_SYSTEM_SETTINGS",
-        entityType: "SYSTEM_CONFIGURATION",
-        entityId: SETTINGS_DOC_ID,
-        details: data,
-      });
-
-      toast({
-        title: "Settings Saved",
-        description: "System settings have been updated successfully.",
-        action: <CheckCircle className="text-green-500" />,
-      });
+      await setDoc(settingsDocRef, { ...data, lastUpdatedBy: user.uid, updatedAt: serverTimestamp() }, { merge: true });
+      await logAuditEvent({ userId: user.uid, userEmail: user.email || "N/A", actionType: "UPDATE_SYSTEM_SETTINGS", entityType: "SYSTEM_CONFIGURATION", entityId: SETTINGS_DOC_ID, details: data });
+      toast({ title: "Settings Saved", description: "System settings have been updated successfully.", action: <CheckCircle className="text-green-500" /> });
     } catch (error) {
       console.error("Error saving system settings:", error);
       toast({ title: "Save Failed", description: "Could not save system settings. Please try again.", variant: "destructive" });
@@ -139,6 +130,24 @@ export default function SystemSettingsPage() {
       setIsSubmitting(false);
     }
   }
+
+  const handleSeedData = async () => {
+    if (!user) return;
+    setIsSeeding(true);
+    try {
+        const result = await seedInitialCourses();
+        if (result.success) {
+            toast({ title: "Seeding Successful", description: result.message });
+            await logAuditEvent({ userId: user.uid, userEmail: user.email || "N/A", actionType: "SEED_DATA", entityType: "COURSE", details: { seededCourse: result.courseTitle } });
+        } else {
+            toast({ title: "Seeding Info", description: result.message, variant: "default" });
+        }
+    } catch (error: any) {
+        toast({ title: "Seeding Failed", description: error.message || "An unexpected error occurred during seeding.", variant: "destructive" });
+    } finally {
+        setIsSeeding(false);
+    }
+  };
   
   if (authLoading || isLoadingData) {
     return (
@@ -150,8 +159,6 @@ export default function SystemSettingsPage() {
   }
   
   if (!user || user.role !== 'admin') {
-     // This case should ideally be handled by redirection in AuthContext or parent layout,
-     // but as a fallback:
      return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
@@ -165,125 +172,100 @@ export default function SystemSettingsPage() {
     <div className="space-y-6">
       <AnimatedCard>
         <Card className="shadow-lg">
-            <CardHeader>
+          <CardHeader>
             <CardTitle className="text-2xl font-headline flex items-center">
-                <Settings className="mr-3 h-7 w-7 text-primary" />
-                System Configuration
+              <Settings className="mr-3 h-7 w-7 text-primary" />
+              System Configuration
             </CardTitle>
             <CardDescription>
                 Manage application-wide settings. Changes here may affect all users.
             </CardDescription>
-            </CardHeader>
+          </CardHeader>
         </Card>
       </AnimatedCard>
 
       <AnimatedCard delay={0.1}>
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <Card>
-                <CardHeader>
-                    <CardTitle>Application Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                <FormField
-                    control={form.control}
-                    name="appName"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Application Name</FormLabel>
-                        <FormControl>
-                        <Input placeholder="e.g., AirCrew Hub Pro" {...field} disabled={isSubmitting} />
-                        </FormControl>
-                        <FormDescription>The name displayed throughout the application (e.g., in titles).</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="maintenanceMode"
-                    render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
-                        <div className="space-y-0.5">
-                        <FormLabel className="text-base">Maintenance Mode</FormLabel>
-                        <FormDescription>
-                            Enable to temporarily restrict user access for maintenance.
-                        </FormDescription>
-                        </div>
-                        <FormControl>
-                        <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={isSubmitting}
-                        />
-                        </FormControl>
-                    </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="defaultBriefingModel"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Default Airport Briefing AI Model</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
-                        <FormControl>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Select default AI model" />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {defaultBriefingModels.map(model => (
-                                <SelectItem key={model.id} value={model.id}>{model.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
-                        <FormDescription>Choose the AI model used for generating airport briefings.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                
-                <FormField
-                    control={form.control}
-                    name="supportEmail"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Support Email Address</FormLabel>
-                        <FormControl>
-                        <Input type="email" placeholder="support@aircrew-hub.com" {...field} disabled={isSubmitting} />
-                        </FormControl>
-                        <FormDescription>The primary email address for user support inquiries.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                </CardContent>
+              <CardHeader>
+                <CardTitle>Application Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <FormField control={form.control} name="appName" render={({ field }) => (
+                  <FormItem><FormLabel>Application Name</FormLabel><FormControl><Input placeholder="e.g., AirCrew Hub Pro" {...field} disabled={isSubmitting} /></FormControl><FormDescription>The name displayed throughout the application (e.g., in titles).</FormDescription><FormMessage /></FormItem>
+                )}/>
+                <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
+                    <div className="space-y-0.5"><FormLabel className="text-base">Maintenance Mode</FormLabel><FormDescription>Enable to temporarily restrict user access for maintenance.</FormDescription></div>
+                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isSubmitting} /></FormControl>
+                  </FormItem>
+                )}/>
+                <FormField control={form.control} name="defaultBriefingModel" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Default Airport Briefing AI Model</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Select default AI model" /></SelectTrigger></FormControl>
+                      <SelectContent>{defaultBriefingModels.map(model => (<SelectItem key={model.id} value={model.id}>{model.name}</SelectItem>))}</SelectContent>
+                    </Select>
+                    <FormDescription>Choose the AI model used for generating airport briefings.</FormDescription><FormMessage />
+                  </FormItem>
+                )}/>
+                <FormField control={form.control} name="supportEmail" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Support Email Address</FormLabel>
+                    <FormControl><Input type="email" placeholder="support@aircrew-hub.com" {...field} disabled={isSubmitting} /></FormControl><FormDescription>The primary email address for user support inquiries.</FormDescription><FormMessage />
+                  </FormItem>
+                )}/>
+              </CardContent>
             </Card>
 
             <div className="flex justify-end">
-                <Button type="submit" disabled={isSubmitting || !form.formState.isDirty}>
-                    {isSubmitting ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving Settings...
-                    </>
-                    ) : (
-                    <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save System Settings
-                    </>
-                    )}
-                </Button>
+              <Button type="submit" disabled={isSubmitting || !form.formState.isDirty}>
+                {isSubmitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving Settings...</>) : (<><Save className="mr-2 h-4 w-4" />Save System Settings</>)}
+              </Button>
             </div>
-            {!form.formState.isDirty && !isSubmitting && (
-                <p className="text-sm text-muted-foreground text-right">No changes to save.</p>
-            )}
-            </form>
+            {!form.formState.isDirty && !isSubmitting && (<p className="text-sm text-muted-foreground text-right">No changes to save.</p>)}
+          </form>
         </Form>
       </AnimatedCard>
+
+      <AnimatedCard delay={0.2}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Data Seeding</CardTitle>
+            <CardDescription>
+              Use these actions to populate the database with initial data. These are one-time operations.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" disabled={isSeeding}>
+                  <Database className="mr-2 h-4 w-4" />
+                  Seed Initial Course (Operational Manual)
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Data Seeding</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will add the "Administration et Contrôle du Manuel Opérationnel" course and its questions to the database. The action will be skipped if a course with this exact title already exists. Are you sure you want to proceed?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSeedData} disabled={isSeeding}>
+                    {isSeeding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Seed Data
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
+      </AnimatedCard>
+
     </div>
   );
 }

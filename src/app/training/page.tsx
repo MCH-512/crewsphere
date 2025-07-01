@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2, GraduationCap, List, Download, Link as LinkIcon, ImageIcon, Video, Library, ListChecks, ShieldCheck, Users, HeartPulse, ClipboardCheck, Plane, Sparkles } from "lucide-react";
+import { CheckCircle, BookOpen, PlayCircle, Award, XCircle, HelpCircle, ChevronRight, FileText as FileTextIcon, AlertTriangle, Loader2, GraduationCap, List, Download, Link as LinkIcon, ImageIcon, Video, Library, ListChecks, ShieldCheck, Users, HeartPulse, ClipboardCheck, Plane, Sparkles, BookCopy } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
@@ -79,10 +79,10 @@ const getResourceIconDialog = (type?: Resource['type']) => {
 };
 
 const trainingFamilies = [
-  { name: "Safety & Security", icon: ShieldCheck, categories: ["Safety and Security", "Dangerous Goods", "First Aid", "Safety Management System (SMS)"] },
+  { name: "Safety & Security", icon: ShieldCheck, categories: ["Safety and Security", "Dangerous Goods", "First Aid", "Safety Management System (SMS)", "Regulations & Compliance"] },
   { name: "Operational & Human Factors", icon: Plane, categories: ["Aircraft Type Rating", "Crew Resource Management (CRM)"] },
   { name: "Professional Development", icon: Award, categories: ["Brand & Grooming", "Specialized Training"] },
-  { name: "Other", icon: BookOpen, categories: ["Other Training"] }
+  { name: "Other", icon: BookCopy, categories: ["Other Training"] }
 ];
 
 const getCourseFamily = (category: string) => {
@@ -490,10 +490,15 @@ const QuizDialog = ({ course, isOpen, onOpenChange, onQuizSubmit, isUpdating }: 
                     const q = query(
                         collection(db, "questions"),
                         where("category", "==", course.category),
-                        limit(10) // Limit number of questions for the quiz
+                        // In a real app, you might want more complex logic like `limit` or randomization
                     );
                     const snapshot = await getDocs(q);
-                    const fetchedQuestions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredQuestion));
+                    // For now, let's limit to 10 questions client-side for simplicity
+                    const fetchedQuestions = snapshot.docs
+                        .map(doc => ({ id: doc.id, ...doc.data() } as StoredQuestion))
+                        .sort(() => 0.5 - Math.random()) // Randomize questions
+                        .slice(0, 10);
+
                     setQuestions(fetchedQuestions);
                 } catch (err) {
                     console.error("Error fetching questions for quiz:", err);
@@ -514,7 +519,7 @@ const QuizDialog = ({ course, isOpen, onOpenChange, onQuizSubmit, isUpdating }: 
 
         let correctCount = 0;
         questions.forEach(q => {
-            if (answers[q.id] === q.correctAnswer) {
+            if (answers[q.id] && answers[q.id].toLowerCase() === q.correctAnswer.toLowerCase()) {
                 correctCount++;
             }
         });
