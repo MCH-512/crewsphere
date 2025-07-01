@@ -18,16 +18,14 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpenCheck, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, HelpCircle, Edit3 as EditQuestionIcon } from "lucide-react";
+import { BookOpenCheck, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, HelpCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
@@ -36,12 +34,12 @@ import { ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebas
 import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import Link from 'next/link';
 import { 
   courseCategories, 
   courseTypes, 
   referenceBodyOptions, 
-  courseDurationOptions 
+  courseDurationOptions,
+  questionTypes
 } from "@/config/course-options";
 import { 
   courseFormSchema, 
@@ -49,6 +47,10 @@ import {
   defaultChapterValue, 
   defaultValues as initialDefaultValues
 } from "@/schemas/course-schema";
+import {
+  defaultQuestionFormValues,
+  defaultQuestionOptionValue
+} from "@/schemas/quiz-question-schema";
 import CourseContentBlock from "@/components/admin/course-content-block";
 import { logAuditEvent } from "@/lib/audit-logger";
 
@@ -72,7 +74,13 @@ export default function CreateComprehensiveCoursePage() {
     name: "chapters",
   });
 
+   const { fields: questionFields, append: appendQuestion, remove: removeQuestion } = useFieldArray({
+    control: form.control,
+    name: "questions",
+  });
+
   const watchedFormValues = form.watch();
+  const watchedQuestionType = (index: number) => form.watch(`questions.${index}.questionType`);
 
   React.useEffect(() => {
     if (!authLoading && (!user || user.role !== 'admin')) {
@@ -123,6 +131,9 @@ export default function CreateComprehensiveCoursePage() {
     try {
       const batch = writeBatch(db);
       const courseRef = doc(collection(db, "courses"));
+      const quizRef = doc(collection(db, "quizzes"));
+      const certRuleRef = doc(collection(db, "certificateRules"));
+
       batch.set(courseRef, {
         title: data.title,
         category: data.category,
@@ -135,12 +146,13 @@ export default function CreateComprehensiveCoursePage() {
         imageHint: data.imageHint || data.category.toLowerCase().split(" ")[0] || "training",
         chapters: data.chapters.map(ch => ({...ch, description: ch.description || ""})) || [],
         published: data.published, 
+        quizId: quizRef.id,
+        certificateRuleId: certRuleRef.id,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         createdBy: user.uid,
       });
 
-      const quizRef = doc(collection(db, "quizzes"));
       batch.set(quizRef, {
         courseId: courseRef.id,
         title: data.quizTitle,
@@ -148,9 +160,18 @@ export default function CreateComprehensiveCoursePage() {
         randomizeAnswers: data.randomizeAnswers,
         createdAt: serverTimestamp(),
       });
-      batch.update(courseRef, { quizId: quizRef.id }); 
 
-      const certRuleRef = doc(collection(db, "certificateRules"));
+      data.questions.forEach((question) => {
+        const questionRef = doc(collection(db, "questions"));
+        batch.set(questionRef, {
+          ...question,
+          quizId: quizRef.id,
+          options: question.options ? question.options.map(opt => opt.text) : [],
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      });
+
       batch.set(certRuleRef, {
         courseId: courseRef.id,
         passingThreshold: data.passingThreshold,
@@ -159,7 +180,6 @@ export default function CreateComprehensiveCoursePage() {
         signatureTextOrURL: data.certificateSignature,
         createdAt: serverTimestamp(),
       });
-      batch.update(courseRef, { certificateRuleId: certRuleRef.id }); 
 
       await batch.commit();
 
@@ -331,7 +351,7 @@ export default function CreateComprehensiveCoursePage() {
           </Card>
 
           <Card className="shadow-lg">
-            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><FileTextIcon className="mr-2 h-5 w-5 text-primary" /> Main Course Quiz Settings</CardTitle><CardDescription>Configure the main quiz.</CardDescription></CardHeader>
+            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><HelpCircle className="mr-2 h-5 w-5 text-primary" /> Quiz Builder</CardTitle><CardDescription>Configure the main quiz and add its questions here.</CardDescription></CardHeader>
             <CardContent className="space-y-6">
               <FormField control={form.control} name="quizTitle" render={({ field }) => (
                 <FormItem><FormLabel>Quiz Title*</FormLabel><FormControl><Input placeholder="e.g., Final Assessment for Advanced CRM" {...field} /></FormControl><FormMessage /></FormItem>
@@ -344,26 +364,49 @@ export default function CreateComprehensiveCoursePage() {
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><FormLabel>Randomize Answer Order (for MCQs)?</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                 )} />
               </div>
+              
+              <div className="space-y-4 pt-4 border-t">
+                 <h3 className="text-lg font-medium">Quiz Questions</h3>
+                 {questionFields.map((questionItem, index) => {
+                    const type = watchedQuestionType(index);
+                    const { fields: optionFields, append: appendOption, remove: removeOption } = useFieldArray({ control: form.control, name: `questions.${index}.options` });
+                    const optionsForSelect = form.watch(`questions.${index}.options`)?.map(opt => opt.text).filter(Boolean) || [];
+
+                    return (
+                        <Card key={questionItem.id} className="p-4 bg-muted/50">
+                            <div className="flex justify-between items-center mb-2">
+                                <FormLabel className="font-semibold">Question {index + 1}</FormLabel>
+                                <Button type="button" variant="ghost" size="icon" className="text-destructive h-7 w-7" onClick={() => removeQuestion(index)}><Trash2 className="h-4 w-4"/></Button>
+                            </div>
+                            <div className="space-y-3">
+                                <FormField control={form.control} name={`questions.${index}.questionText`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Question Text</FormLabel><FormControl><Textarea placeholder="Enter the question..." {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <FormField control={form.control} name={`questions.${index}.questionType`} render={({ field }) => (
+                                    <FormItem><FormLabel className="text-xs">Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{questionTypes.map(type => <SelectItem key={type} value={type}>{type.toUpperCase()}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                                  )}/>
+                                   {type === 'mcq' && (
+                                    <FormField control={form.control} name={`questions.${index}.correctAnswer`} render={({ field }) => (
+                                      <FormItem><FormLabel className="text-xs">Correct Answer</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select correct option"/></SelectTrigger></FormControl><SelectContent>{optionsForSelect.map((optText, i) => <SelectItem key={i} value={optText}>{optText}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                                    )}/>
+                                  )}
+                                   {type === 'tf' && (
+                                    <FormField control={form.control} name={`questions.${index}.correctAnswer`} render={({ field }) => (
+                                      <FormItem><FormLabel className="text-xs">Correct Answer</FormLabel><Select onValueChange={field.onChange} value={field.value || "True"}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="True">True</SelectItem><SelectItem value="False">False</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                                    )}/>
+                                  )}
+                                </div>
+                                {type === 'mcq' && (<div className="space-y-2"><FormLabel className="text-xs">Options</FormLabel>{optionFields.map((opt, optIndex) => (<div key={opt.id} className="flex items-center gap-2"><FormField control={form.control} name={`questions.${index}.options.${optIndex}.text`} render={({ field }) => (<FormItem className="flex-grow"><FormControl><Input placeholder={`Option ${optIndex + 1}`} {...field} /></FormControl><FormMessage /></FormItem>)}/><Button type="button" variant="ghost" size="icon" onClick={() => removeOption(optIndex)}><Trash2 className="h-4 w-4 text-destructive/70" /></Button></div>))}<Button type="button" variant="outline" size="sm" onClick={() => appendOption(defaultQuestionOptionValue)}>Add Option</Button></div>)}
+                                {type === 'short' && (<FormField control={form.control} name={`questions.${index}.correctAnswer`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Correct Answer (Exact Match)</FormLabel><FormControl><Input placeholder="Enter the exact correct answer" {...field} /></FormControl><FormMessage /></FormItem>)} />)}
+                            </div>
+                        </Card>
+                    )
+                 })}
+                 <Button type="button" variant="outline" onClick={() => appendQuestion(defaultQuestionFormValues)}><PlusCircle className="mr-2 h-4 w-4"/>Add Question</Button>
+              </div>
+
             </CardContent>
           </Card>
           
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold flex items-center">
-                <HelpCircle className="mr-2 h-5 w-5 text-primary" /> Quiz Questions
-              </CardTitle>
-              <CardDescription>
-                Questions are now managed centrally in the Question Bank. Use the link below to add or edit questions for all quizzes.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button type="button" asChild>
-                    <Link href="/admin/question-bank">
-                        <EditQuestionIcon className="mr-2 h-4 w-4" /> Go to Question Bank
-                    </Link>
-                </Button>
-            </CardContent>
-          </Card>
 
           <Card className="shadow-lg">
             <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><Award className="mr-2 h-5 w-5 text-primary" /> Certification Rules</CardTitle></CardHeader>
@@ -395,6 +438,7 @@ export default function CreateComprehensiveCoursePage() {
                         <li>Category: {watchedFormValues.category || "Not set"}</li>
                         <li>Mandatory: {watchedFormValues.mandatory ? "Yes" : "No"}</li>
                         <li>Chapters: {watchedFormValues.chapters?.length || 0}</li>
+                        <li>Questions: {watchedFormValues.questions?.length || 0}</li>
                         <li>Passing Score: {watchedFormValues.passingThreshold}%</li>
                         <li>Certificate Valid For: {watchedFormValues.certificateExpiryDays === 0 ? "No Expiry" : `${watchedFormValues.certificateExpiryDays} days`}</li>
                     </ul>

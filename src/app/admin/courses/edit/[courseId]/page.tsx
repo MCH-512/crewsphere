@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -18,16 +18,14 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit3 as EditIconMain, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, HelpCircle, Trash2, ToggleRight, ToggleLeft, Edit3 as EditQuestionIcon } from "lucide-react";
+import { Edit3 as EditIconMain, Loader2, AlertTriangle, CheckCircle, PlusCircle, UploadCloud, Eye, Award, FileText as FileTextIcon, LayoutList, HelpCircle, Trash2, ToggleRight, ToggleLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
@@ -41,21 +39,18 @@ import {
   where,
   getDocs,
   deleteDoc,
-  addDoc,
-  Timestamp,
-  orderBy,
-  updateDoc
+  addDoc
 } from "firebase/firestore";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { Progress } from "@/components/ui/progress";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import Link from 'next/link';
 import { 
   courseCategories,
   courseTypes,
   referenceBodyOptions,
   courseDurationOptions,
+  questionTypes
 } from "@/config/course-options";
 import { 
   courseFormSchema,
@@ -63,6 +58,10 @@ import {
   defaultChapterValue, 
   defaultValues as initialFormDefaultValues 
 } from "@/schemas/course-schema";
+import {
+  defaultQuestionFormValues,
+  defaultQuestionOptionValue
+} from "@/schemas/quiz-question-schema";
 import CourseContentBlock from "@/components/admin/course-content-block";
 import { logAuditEvent } from "@/lib/audit-logger";
 
@@ -86,11 +85,19 @@ export default function EditComprehensiveCoursePage() {
     mode: "onBlur",
   });
 
-  const { fields: chapterFields, append: appendChapter, remove: removeChapter, replace: replaceChapters } = useFieldArray({
+  const { fields: chapterFields, replace: replaceChapters } = useFieldArray({
     control: courseEditForm.control,
     name: "chapters",
   });
+
+  const { fields: questionFields, append: appendQuestion, remove: removeQuestion, replace: replaceQuestions } = useFieldArray({
+    control: courseEditForm.control,
+    name: "questions",
+  });
   
+  const watchedFormValues = courseEditForm.watch();
+  const watchedQuestionType = (index: number) => courseEditForm.watch(`questions.${index}.questionType`);
+
   React.useEffect(() => {
     if (!authLoading && (!user || user.role !== 'admin')) {
       router.push('/');
@@ -115,9 +122,15 @@ export default function EditComprehensiveCoursePage() {
           setInitialCertRuleId(courseData.certificateRuleId || null);
 
           let quizData = null;
+          let fetchedQuestions: any[] = [];
           if (courseData.quizId) {
             const quizSnap = await getDoc(doc(db, "quizzes", courseData.quizId));
-            if (quizSnap.exists()) quizData = quizSnap.data();
+            if (quizSnap.exists()) {
+              quizData = quizSnap.data();
+              const questionsQuery = query(collection(db, "questions"), where("quizId", "==", courseData.quizId));
+              const questionsSnap = await getDocs(questionsQuery);
+              fetchedQuestions = questionsSnap.docs.map(d => ({...d.data(), options: d.data().options.map((opt: string) => ({text: opt}))}));
+            }
           }
           
           let certRuleData = null;
@@ -141,12 +154,14 @@ export default function EditComprehensiveCoursePage() {
             quizTitle: quizData?.title || "",
             randomizeQuestions: quizData?.randomizeQuestions || false,
             randomizeAnswers: quizData?.randomizeAnswers || false,
+            questions: fetchedQuestions.length > 0 ? fetchedQuestions : [defaultQuestionFormValues],
             passingThreshold: certRuleData?.passingThreshold || 80,
             certificateExpiryDays: certRuleData?.expiryDurationDays !== undefined ? certRuleData.expiryDurationDays : 365,
             certificateLogoUrl: certRuleData?.logoURL || "https://placehold.co/150x50.png",
             certificateSignature: certRuleData?.signatureTextOrURL || "Express Airline Training Department",
           });
           replaceChapters(courseData.chapters && courseData.chapters.length > 0 ? courseData.chapters.map((ch: any) => ({...ch})) : [defaultChapterValue]);
+          replaceQuestions(fetchedQuestions.length > 0 ? fetchedQuestions : [defaultQuestionFormValues]);
 
         } catch (error) {
           console.error("Error loading course data:", error);
@@ -157,7 +172,7 @@ export default function EditComprehensiveCoursePage() {
       };
       loadCourseData();
     }
-  }, [courseId, user, authLoading, router, toast, courseEditForm, replaceChapters]);
+  }, [courseId, user, authLoading, router, toast, courseEditForm, replaceChapters, replaceQuestions]);
 
   async function onCourseSubmit(data: CourseFormValues) {
     if (!user || user.role !== 'admin' || !courseId || !initialQuizId || !initialCertRuleId) {
@@ -214,6 +229,23 @@ export default function EditComprehensiveCoursePage() {
         title: data.quizTitle, randomizeQuestions: data.randomizeQuestions, randomizeAnswers: data.randomizeAnswers,
       });
 
+      // Delete old questions
+      const oldQuestionsQuery = query(collection(db, "questions"), where("quizId", "==", initialQuizId));
+      const oldQuestionsSnap = await getDocs(oldQuestionsQuery);
+      oldQuestionsSnap.forEach(qDoc => batch.delete(qDoc.ref));
+      
+      // Add new questions
+      data.questions.forEach((question) => {
+        const questionRef = doc(collection(db, "questions"));
+        batch.set(questionRef, {
+          ...question,
+          quizId: initialQuizId,
+          options: question.options ? question.options.map(opt => opt.text) : [],
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      });
+
       const certRuleDocRef = doc(db, "certificateRules", initialCertRuleId);
       batch.update(certRuleDocRef, {
         passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays,
@@ -245,8 +277,6 @@ export default function EditComprehensiveCoursePage() {
     }
   }
   
-  const watchedFormValues = courseEditForm.watch();
-
   if (authLoading || isLoadingData) {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> <p className="ml-3">Loading course data...</p></div>;
   }
@@ -395,12 +425,11 @@ export default function EditComprehensiveCoursePage() {
                   level={0}
                 />
               ))}
-              <Button type="button" variant="outline" onClick={() => appendChapter(defaultChapterValue)}><PlusCircle className="mr-2 h-4 w-4" />Add Chapter</Button>
             </CardContent>
           </Card>
 
           <Card className="shadow-lg">
-            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><FileTextIcon className="mr-2 h-5 w-5 text-primary" /> Main Course Quiz Settings</CardTitle><CardDescription>Configure the main quiz parameters.</CardDescription></CardHeader>
+            <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><HelpCircle className="mr-2 h-5 w-5 text-primary" /> Quiz Builder</CardTitle><CardDescription>Configure the main quiz and add its questions here.</CardDescription></CardHeader>
             <CardContent className="space-y-6">
               <FormField control={courseEditForm.control} name="quizTitle" render={({ field }) => (
                 <FormItem><FormLabel>Quiz Title*</FormLabel><FormControl><Input placeholder="e.g., Final Assessment for Advanced First Aid" {...field} /></FormControl><FormMessage /></FormItem>
@@ -413,27 +442,47 @@ export default function EditComprehensiveCoursePage() {
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><FormLabel>Randomize Answer Order (for MCQs)?</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                 )} />
               </div>
+              <div className="space-y-4 pt-4 border-t">
+                 <h3 className="text-lg font-medium">Quiz Questions</h3>
+                 {questionFields.map((questionItem, index) => {
+                    const type = watchedQuestionType(index);
+                    const { fields: optionFields, append: appendOption, remove: removeOption } = useFieldArray({ control: courseEditForm.control, name: `questions.${index}.options` });
+                    const optionsForSelect = courseEditForm.watch(`questions.${index}.options`)?.map(opt => opt.text).filter(Boolean) || [];
+
+                    return (
+                        <Card key={questionItem.id} className="p-4 bg-muted/50">
+                            <div className="flex justify-between items-center mb-2">
+                                <FormLabel className="font-semibold">Question {index + 1}</FormLabel>
+                                <Button type="button" variant="ghost" size="icon" className="text-destructive h-7 w-7" onClick={() => removeQuestion(index)}><Trash2 className="h-4 w-4"/></Button>
+                            </div>
+                            <div className="space-y-3">
+                                <FormField control={courseEditForm.control} name={`questions.${index}.questionText`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Question Text</FormLabel><FormControl><Textarea placeholder="Enter the question..." {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <FormField control={courseEditForm.control} name={`questions.${index}.questionType`} render={({ field }) => (
+                                    <FormItem><FormLabel className="text-xs">Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{questionTypes.map(type => <SelectItem key={type} value={type}>{type.toUpperCase()}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                                  )}/>
+                                   {type === 'mcq' && (
+                                    <FormField control={courseEditForm.control} name={`questions.${index}.correctAnswer`} render={({ field }) => (
+                                      <FormItem><FormLabel className="text-xs">Correct Answer</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select correct option"/></SelectTrigger></FormControl><SelectContent>{optionsForSelect.map((optText, i) => <SelectItem key={i} value={optText}>{optText}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                                    )}/>
+                                  )}
+                                   {type === 'tf' && (
+                                    <FormField control={courseEditForm.control} name={`questions.${index}.correctAnswer`} render={({ field }) => (
+                                      <FormItem><FormLabel className="text-xs">Correct Answer</FormLabel><Select onValueChange={field.onChange} value={field.value || "True"}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="True">True</SelectItem><SelectItem value="False">False</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                                    )}/>
+                                  )}
+                                </div>
+                                {type === 'mcq' && (<div className="space-y-2"><FormLabel className="text-xs">Options</FormLabel>{optionFields.map((opt, optIndex) => (<div key={opt.id} className="flex items-center gap-2"><FormField control={courseEditForm.control} name={`questions.${index}.options.${optIndex}.text`} render={({ field }) => (<FormItem className="flex-grow"><FormControl><Input placeholder={`Option ${optIndex + 1}`} {...field} /></FormControl><FormMessage /></FormItem>)}/><Button type="button" variant="ghost" size="icon" onClick={() => removeOption(optIndex)}><Trash2 className="h-4 w-4 text-destructive/70" /></Button></div>))}<Button type="button" variant="outline" size="sm" onClick={() => appendOption(defaultQuestionOptionValue)}>Add Option</Button></div>)}
+                                {type === 'short' && (<FormField control={courseEditForm.control} name={`questions.${index}.correctAnswer`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Correct Answer (Exact Match)</FormLabel><FormControl><Input placeholder="Enter the exact correct answer" {...field} /></FormControl><FormMessage /></FormItem>)} />)}
+                            </div>
+                        </Card>
+                    )
+                 })}
+                 <Button type="button" variant="outline" onClick={() => appendQuestion(defaultQuestionFormValues)}><PlusCircle className="mr-2 h-4 w-4"/>Add Question</Button>
+              </div>
             </CardContent>
           </Card>
           
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold flex items-center">
-                <HelpCircle className="mr-2 h-5 w-5 text-primary" /> Quiz Questions
-              </CardTitle>
-              <CardDescription>
-                Questions are now managed centrally in the Question Bank. Use the link below to add or edit questions for all quizzes.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button type="button" asChild>
-                    <Link href="/admin/question-bank">
-                        <EditQuestionIcon className="mr-2 h-4 w-4" /> Go to Question Bank
-                    </Link>
-                </Button>
-            </CardContent>
-          </Card>
-
           <Card className="shadow-lg">
             <CardHeader><CardTitle className="text-xl font-semibold flex items-center"><Award className="mr-2 h-5 w-5 text-primary" /> Certification Rules</CardTitle></CardHeader>
             <CardContent className="space-y-6">
@@ -465,6 +514,7 @@ export default function EditComprehensiveCoursePage() {
                         <li>Mandatory: {watchedFormValues.mandatory ? "Yes" : "No"}</li>
                         <li>Published: {watchedFormValues.published ? "Yes (Visible)" : "No (Draft)"}</li>
                         <li>Chapters: {watchedFormValues.chapters?.length || 0}</li>
+                        <li>Questions: {watchedFormValues.questions?.length || 0}</li>
                         <li>Passing Score: {watchedFormValues.passingThreshold}%</li>
                         <li>Certificate Valid For: {watchedFormValues.certificateExpiryDays === 0 ? "No Expiry" : `${watchedFormValues.certificateExpiryDays} days`}</li>
                     </ul>

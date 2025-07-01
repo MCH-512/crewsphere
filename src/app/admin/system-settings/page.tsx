@@ -15,17 +15,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -36,14 +25,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Loader2, AlertTriangle, CheckCircle, Save, Database } from "lucide-react";
+import { Settings, Loader2, AlertTriangle, CheckCircle, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { logAuditEvent } from "@/lib/audit-logger";
-import { seedInitialCourses } from "@/lib/seed";
 
 const systemSettingsSchema = z.object({
   appName: z.string().min(3, "App name must be at least 3 characters.").max(50, "App name cannot exceed 50 characters.").default("AirCrew Hub"),
@@ -68,7 +56,6 @@ export default function SystemSettingsPage() {
   const { user, loading: authLoading } = useAuth();
   const [isLoadingData, setIsLoadingData] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [isSeeding, setIsSeeding] = React.useState(false);
 
   const form = useForm<SystemSettingsFormValues>({
     resolver: zodResolver(systemSettingsSchema),
@@ -131,24 +118,6 @@ export default function SystemSettingsPage() {
     }
   }
 
-  const handleSeedData = async () => {
-    if (!user) return;
-    setIsSeeding(true);
-    try {
-        const result = await seedInitialCourses();
-        if (result.success) {
-            toast({ title: "Seeding Successful", description: result.message });
-            await logAuditEvent({ userId: user.uid, userEmail: user.email || "N/A", actionType: "SEED_DATA", entityType: "COURSE", details: { seededCourse: result.courseTitle } });
-        } else {
-            toast({ title: "Seeding Info", description: result.message, variant: "default" });
-        }
-    } catch (error: any) {
-        toast({ title: "Seeding Failed", description: error.message || "An unexpected error occurred during seeding.", variant: "destructive" });
-    } finally {
-        setIsSeeding(false);
-    }
-  };
-  
   if (authLoading || isLoadingData) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -229,43 +198,6 @@ export default function SystemSettingsPage() {
           </form>
         </Form>
       </AnimatedCard>
-
-      <AnimatedCard delay={0.2}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Data Seeding</CardTitle>
-            <CardDescription>
-              Use these actions to populate the database with initial data. These are one-time operations.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" disabled={isSeeding}>
-                  <Database className="mr-2 h-4 w-4" />
-                  Seed Initial Course (Operational Manual)
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Data Seeding</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will add the "Administration et Contrôle du Manuel Opérationnel" course and its questions to the database. The action will be skipped if a course with this exact title already exists. Are you sure you want to proceed?
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleSeedData} disabled={isSeeding}>
-                    {isSeeding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Seed Data
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </CardContent>
-        </Card>
-      </AnimatedCard>
-
     </div>
   );
 }

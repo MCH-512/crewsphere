@@ -8,7 +8,6 @@ export const courseCategories = [
   "Aircraft Type Rating",
   "Brand & Grooming",
   "Specialized Training",
-  "Regulations & Compliance", // Added new category
   "Other Training",
 ];
 

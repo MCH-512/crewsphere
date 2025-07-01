@@ -1,5 +1,6 @@
 
 import { z } from "zod";
+import { questionFormSchema, defaultQuestionFormValues } from "./quiz-question-schema";
 
 // Schemas for sub-documents
 export const resourceSchema = z.object({
@@ -48,10 +49,11 @@ export const courseFormSchema = z.object({
   // Hierarchical Chapters/Content Structure
   chapters: z.array(chapterSchema).min(1, "Course must have at least one chapter."),
 
-  // Quiz title
+  // Quiz title & questions
   quizTitle: z.string().min(5, "Quiz Title must be at least 5 characters.").max(100),
   randomizeQuestions: z.boolean().default(false),
   randomizeAnswers: z.boolean().default(false),
+  questions: z.array(questionFormSchema).min(1, "Quiz must have at least one question."),
 
   // Certification Rules
   passingThreshold: z.coerce.number().min(0).max(100, "Threshold must be between 0 and 100.").default(80),
@@ -95,6 +97,7 @@ export const defaultValues: CourseFormValues = {
   quizTitle: "",
   randomizeQuestions: false,
   randomizeAnswers: false,
+  questions: [defaultQuestionFormValues as any],
   passingThreshold: 80,
   certificateExpiryDays: 365,
   certificateLogoUrl: "https://placehold.co/150x50.png",

@@ -1,25 +1,23 @@
 
 import { z } from "zod";
-import { courseCategories } from "@/config/course-options";
+import { Timestamp } from "firebase/firestore";
 
 export const questionTypes = ["mcq", "tf", "short"] as const;
 export type QuestionType = typeof questionTypes[number];
 
 export const questionOptionSchema = z.object({
-  id: z.string().optional(), // For key in UI
+  id: z.string().optional(),
   text: z.string().min(1, "Option text cannot be empty."),
 });
 export type QuestionOption = z.infer<typeof questionOptionSchema>;
 
 export const questionFormSchema = z.object({
+  id: z.string().optional(),
+  quizId: z.string().optional(),
   questionText: z.string().min(5, "Question text must be at least 5 characters."),
   questionType: z.enum(questionTypes, { required_error: "Please select a question type." }),
-  category: z.string({ required_error: "Please select a question category."}),
   options: z.array(questionOptionSchema).optional(),
   correctAnswer: z.string().min(1, "Correct answer cannot be empty."),
-  // For MCQ, correctAnswer will be the text of one of the options.
-  // For TF, correctAnswer will be "True" or "False".
-  // For Short, correctAnswer will be the expected answer string.
 });
 
 export type QuestionFormValues = z.infer<typeof questionFormSchema>;
@@ -29,15 +27,15 @@ export const defaultQuestionOptionValue: QuestionOption = { text: "" };
 export const defaultQuestionFormValues: Partial<QuestionFormValues> = {
   questionText: "",
   questionType: "mcq",
-  category: "",
-  options: [{ text: "" }, { text: "" }], // Default to 2 options for MCQ
+  options: [{ text: "" }, { text: "" }],
   correctAnswer: "",
 };
 
 // Schema for Firestore document (includes timestamps)
 export const storedQuestionSchema = questionFormSchema.extend({
-  createdAt: z.custom<FirebaseFirestore.Timestamp>((val) => val instanceof Object && 'toDate' in val && typeof val.toDate === 'function'), // For reading
-  updatedAt: z.custom<FirebaseFirestore.Timestamp>((val) => val instanceof Object && 'toDate' in val && typeof val.toDate === 'function'), // For reading
+  quizId: z.string(),
+  createdAt: z.custom<Timestamp>((val) => val instanceof Timestamp),
+  updatedAt: z.custom<Timestamp>((val) => val instanceof Timestamp),
 });
 
 export type StoredQuestion = z.infer<typeof storedQuestionSchema> & { id: string };

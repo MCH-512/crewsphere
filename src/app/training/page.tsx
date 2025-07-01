@@ -489,15 +489,15 @@ const QuizDialog = ({ course, isOpen, onOpenChange, onQuizSubmit, isUpdating }: 
                 try {
                     const q = query(
                         collection(db, "questions"),
-                        where("category", "==", course.category),
-                        // In a real app, you might want more complex logic like `limit` or randomization
+                        where("quizId", "==", course.quizId),
                     );
                     const snapshot = await getDocs(q);
-                    // For now, let's limit to 10 questions client-side for simplicity
                     const fetchedQuestions = snapshot.docs
-                        .map(doc => ({ id: doc.id, ...doc.data() } as StoredQuestion))
-                        .sort(() => 0.5 - Math.random()) // Randomize questions
-                        .slice(0, 10);
+                        .map(doc => ({ id: doc.id, ...doc.data() } as StoredQuestion));
+                    
+                    if(course.randomizeQuestions){
+                        fetchedQuestions.sort(() => 0.5 - Math.random());
+                    }
 
                     setQuestions(fetchedQuestions);
                 } catch (err) {
