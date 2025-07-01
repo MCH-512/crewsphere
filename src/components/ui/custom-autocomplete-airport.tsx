@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -59,7 +58,7 @@ export function CustomAutocompleteAirport({
         const airportDetails = await getAirportByCode(value);
         if (isMounted) {
           if (airportDetails) {
-            setSelectedAirportDisplay(`\${airportDetails.name} (\${airportDetails.iata || airportDetails.icao})`);
+            setSelectedAirportDisplay(`${airportDetails.name} (${airportDetails.iata || airportDetails.icao})`);
           } else {
             setSelectedAirportDisplay(value); // Fallback to just code if not found
           }
@@ -80,7 +79,7 @@ export function CustomAutocompleteAirport({
 
   const handleSelect = (airport: Airport) => {
     onSelect(airport); // This will trigger the parent form to update its `value` (the code)
-    setSelectedAirportDisplay(`\${airport.name} (\${airport.iata || airport.icao})`); // Set display immediately
+    setSelectedAirportDisplay(`${airport.name} (${airport.iata || airport.icao})`); // Set display immediately
     onInputChange(""); // Clear search input after selection
     setOpen(false);
   };
@@ -147,7 +146,7 @@ export function CustomAutocompleteAirport({
                 {airports.map((airport) => (
                   <CommandItem
                     key={airport.icao || airport.iata} 
-                    value={`\${airport.name} \${airport.city} \${airport.iata || ''} \${airport.icao || ''}`.trim()} 
+                    value={`${airport.name} ${airport.city} ${airport.iata || ''} ${airport.icao || ''}`.trim()} 
                     onSelect={() => handleSelect(airport)}
                     className="text-xs cursor-pointer"
                   >
