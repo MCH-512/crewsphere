@@ -22,6 +22,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { StoredQuestion } from "@/schemas/quiz-question-schema";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 
 // --- SHARED INTERFACES ---
@@ -359,19 +361,33 @@ export default function TrainingHubPage() {
     }
   };
 
-  const simulateQuiz = async (courseId: string, passed: boolean) => {
+  const handleQuizSubmit = async (courseId: string, score: number) => {
     if (!user) return;
     const course = allCourses.find(c => c.id === courseId);
     if (!course) return;
     setIsUpdating(true);
+    
+    let passingThreshold = 80; // default
+    let ruleData: any = {};
+    if (course.certificateRuleId) {
+        const ruleSnap = await getDoc(doc(db, "certificateRules", course.certificateRuleId));
+        if (ruleSnap.exists()) {
+            ruleData = ruleSnap.data();
+            passingThreshold = ruleData.passingThreshold || 80;
+        }
+    }
+    
+    const passed = score >= passingThreshold;
     const progressDocId = `${user.uid}_${course.id}`;
     const progressDocRef = doc(db, "userTrainingProgress", progressDocId);
-    const score = passed ? Math.floor(Math.random() * 21) + 80 : Math.floor(Math.random() * 40) + 40;
-    const newProgressData: Partial<UserProgressData> = { quizStatus: passed ? 'Passed' : 'Failed', quizScore: score, lastUpdated: Timestamp.now() };
+    
+    const newProgressData: Partial<UserProgressData> = {
+      quizStatus: passed ? 'Passed' : 'Failed',
+      quizScore: score,
+      lastUpdated: Timestamp.now(),
+    };
 
     if (passed) {
-      const ruleSnap = course.certificateRuleId ? await getDoc(doc(db, "certificateRules", course.certificateRuleId)) : null;
-      const ruleData = ruleSnap?.exists() ? ruleSnap.data() : {};
       const expiryDays = ruleData.expiryDurationDays ?? 365;
       newProgressData.certificateDetails = {
         provider: ruleData.provider || "AirCrew Hub Training Dept.",
@@ -436,7 +452,7 @@ export default function TrainingHubPage() {
       
       {/* DIALOGS */}
       {selectedCourseForContent && <CourseContentDialog course={selectedCourseForContent} isOpen={isContentDialogOpen} onOpenChange={setIsContentDialogOpen} onComplete={markContentCompleted} isUpdating={isUpdating} />}
-      {selectedCourseForQuiz && <QuizDialog course={selectedCourseForQuiz} isOpen={isQuizDialogOpen} onOpenChange={setIsQuizDialogOpen} onSimulate={simulateQuiz} isUpdating={isUpdating} />}
+      {selectedCourseForQuiz && <QuizDialog course={selectedCourseForQuiz} isOpen={isQuizDialogOpen} onOpenChange={setIsQuizDialogOpen} onQuizSubmit={handleQuizSubmit} isUpdating={isUpdating} />}
       {selectedCourseForCert && <CertificateDialog course={selectedCourseForCert} isOpen={isCertDialogOpen} onOpenChange={setIsCertDialogOpen} user={user} />}
     </div>
   );
@@ -455,27 +471,33 @@ const CourseContentDialog = ({ course, isOpen, onOpenChange, onComplete, isUpdat
     </Dialog>
 );
 
-const QuizDialog = ({ course, isOpen, onOpenChange, onSimulate, isUpdating }: { course: CombinedCourse, isOpen: boolean, onOpenChange: (open: boolean) => void, onSimulate: (id: string, passed: boolean) => void, isUpdating: boolean }) => {
+const QuizDialog = ({ course, isOpen, onOpenChange, onQuizSubmit, isUpdating }: { course: CombinedCourse, isOpen: boolean, onOpenChange: (open: boolean) => void, onQuizSubmit: (id: string, score: number) => Promise<void>, isUpdating: boolean }) => {
     const { toast } = useToast();
     const [questions, setQuestions] = React.useState<StoredQuestion[]>([]);
     const [isLoadingQuestions, setIsLoadingQuestions] = React.useState(true);
+    const [answers, setAnswers] = React.useState<Record<string, string>>({});
+    
+    const handleAnswerChange = (questionId: string, answer: string) => {
+      setAnswers(prev => ({ ...prev, [questionId]: answer }));
+    };
 
     React.useEffect(() => {
         if (isOpen && course) {
             const fetchQuestions = async () => {
                 setIsLoadingQuestions(true);
+                setAnswers({}); // Reset answers when opening
                 try {
                     const q = query(
                         collection(db, "questions"),
                         where("category", "==", course.category),
-                        limit(5) // Just show a few sample questions
+                        limit(10) // Limit number of questions for the quiz
                     );
                     const snapshot = await getDocs(q);
                     const fetchedQuestions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredQuestion));
                     setQuestions(fetchedQuestions);
                 } catch (err) {
                     console.error("Error fetching questions for quiz:", err);
-                    toast({ title: "Error", description: "Could not load sample questions." });
+                    toast({ title: "Error", description: "Could not load questions for the quiz." });
                 } finally {
                     setIsLoadingQuestions(false);
                 }
@@ -483,44 +505,68 @@ const QuizDialog = ({ course, isOpen, onOpenChange, onSimulate, isUpdating }: { 
             fetchQuestions();
         }
     }, [isOpen, course, toast]);
+    
+    const handleSubmit = async () => {
+        if (Object.keys(answers).length < questions.length) {
+            toast({ title: "Incomplete", description: "Please answer all questions before submitting.", variant: "default" });
+            return;
+        }
+
+        let correctCount = 0;
+        questions.forEach(q => {
+            if (answers[q.id] === q.correctAnswer) {
+                correctCount++;
+            }
+        });
+
+        const score = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 100;
+        await onQuizSubmit(course.id, score);
+    };
+
+    const allQuestionsAnswered = Object.keys(answers).length === questions.length;
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
             <DialogHeader>
-              <DialogTitle>Take Quiz: {course.quizTitle}</DialogTitle>
-              <DialogDescription>This is a quiz simulation based on the new Question Bank.</DialogDescription>
+              <DialogTitle>Quiz: {course.quizTitle}</DialogTitle>
+              <DialogDescription>Answer all questions to complete the quiz for {course.title}.</DialogDescription>
             </DialogHeader>
-            <div className="py-4 space-y-3">
-              <p className="text-sm text-muted-foreground">Course: {course.title}</p>
-              {course.mandatory && <p className="text-sm font-semibold text-destructive flex items-center gap-1"><AlertTriangle className="h-4 w-4"/>This is a mandatory quiz.</p>}
-              <Separator />
-              <h4 className="font-semibold text-sm">Sample Questions ({course.category}):</h4>
-                {isLoadingQuestions ? (
-                    <div className="text-center p-4">
-                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                        <p className="text-sm text-muted-foreground mt-2">Loading questions...</p>
-                    </div>
-                ) : questions.length > 0 ? (
-                    <ScrollArea className="h-40 border rounded-md p-3">
-                        <ul className="space-y-2 text-sm list-decimal list-inside">
-                            {questions.map(q => <li key={q.id}>{q.questionText}</li>)}
-                        </ul>
-                    </ScrollArea>
-                ) : (
-                    <p className="text-sm text-muted-foreground text-center p-2">No sample questions found for this category.</p>
-                )}
-              <Separator />
-              <p className="text-xs text-center text-muted-foreground">Choose an outcome below to continue the simulation.</p>
+            <div className="flex-grow py-4 pr-1">
+                <ScrollArea className="h-[60vh] pr-4">
+                    {isLoadingQuestions ? (
+                        <div className="text-center p-4"><Loader2 className="h-6 w-6 animate-spin mx-auto" /><p className="text-sm text-muted-foreground mt-2">Loading questions...</p></div>
+                    ) : questions.length === 0 ? (
+                        <div className="text-center p-4"><HelpCircle className="h-8 w-8 mx-auto text-muted-foreground"/><p className="text-sm text-muted-foreground mt-2">No questions found for this course category.</p></div>
+                    ) : (
+                        <div className="space-y-6">
+                            {questions.map((q, index) => (
+                                <Card key={q.id} className="shadow-sm">
+                                    <CardHeader className="pb-4">
+                                        <CardTitle className="text-base font-semibold">Question {index + 1}</CardTitle>
+                                        <CardDescription className="text-sm !mt-1 text-foreground">{q.questionText}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <RadioGroup value={answers[q.id] || ""} onValueChange={(value) => handleAnswerChange(q.id, value)}>
+                                            {(q.options || []).map((opt, optIndex) => (
+                                                <div key={optIndex} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted transition-colors">
+                                                    <RadioGroupItem value={opt} id={`${q.id}-${optIndex}`} />
+                                                    <Label htmlFor={`${q.id}-${optIndex}`} className="font-normal cursor-pointer flex-grow">{opt}</Label>
+                                                </div>
+                                            ))}
+                                        </RadioGroup>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </ScrollArea>
             </div>
-            <DialogFooter className="gap-2 sm:justify-between">
-              <Button variant="destructive" onClick={() => onSimulate(course.id, false)} disabled={isUpdating}>
-                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                <XCircle className="mr-2 h-4 w-4"/>Simulate Fail
-              </Button>
-              <Button variant="success" onClick={() => onSimulate(course.id, true)} disabled={isUpdating}>
-                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                <CheckCircle className="mr-2 h-4 w-4"/>Simulate Pass
+            <DialogFooter>
+              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+              <Button onClick={handleSubmit} disabled={isUpdating || isLoadingQuestions || !allQuestionsAnswered}>
+                {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                Submit Quiz
               </Button>
             </DialogFooter>
           </DialogContent>
