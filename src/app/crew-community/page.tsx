@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -15,9 +16,10 @@ import { collection, addDoc, query, orderBy, getDocs, doc, runTransaction, Times
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNowStrict } from "date-fns";
-import { ThumbsUp, ImagePlus, Loader2, Send, Trash2, AlertTriangle } from "lucide-react";
+import { ThumbsUp, ImagePlus, Loader2, Send, Trash2, MessageSquare } from "lucide-react";
 import Image from "next/image";
 import { postFormSchema, type PostFormValues, type StoredPost } from "@/schemas/community-post-schema";
+import { commentFormSchema, type CommentFormValues, type StoredComment } from "@/schemas/community-comment-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import {
   AlertDialog,
@@ -31,6 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 
 
 export default function CrewCommunityPage() {
@@ -41,7 +44,11 @@ export default function CrewCommunityPage() {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
 
-    const form = useForm<PostFormValues>({
+    const [comments, setComments] = React.useState<Record<string, StoredComment[]>>({});
+    const [isLoadingComments, setIsLoadingComments] = React.useState(false);
+    const [expandedPostId, setExpandedPostId] = React.useState<string | null>(null);
+
+    const postForm = useForm<PostFormValues>({
         resolver: zodResolver(postFormSchema),
         defaultValues: { content: "" },
     });
@@ -107,9 +114,10 @@ export default function CrewCommunityPage() {
                 imageUrl: imageUrl,
                 likes: [],
                 likeCount: 0,
+                commentCount: 0,
                 createdAt: serverTimestamp(),
             });
-            form.reset();
+            postForm.reset();
             fetchPosts();
         } catch (error) {
             console.error("Error creating post:", error);
@@ -134,7 +142,6 @@ export default function CrewCommunityPage() {
                 
                 transaction.update(postRef, { likes: newLikes, likeCount: newLikes.length });
             });
-            // Optimistic update
             setPosts(prevPosts => prevPosts.map(p => {
                 if (p.id === postId) {
                     const isLiked = p.likes.includes(user.uid);
@@ -160,6 +167,66 @@ export default function CrewCommunityPage() {
         }
     };
 
+    const fetchCommentsForPost = async (postId: string, forceRefetch = false) => {
+        if (comments[postId] && !forceRefetch) return;
+        setIsLoadingComments(true);
+        try {
+            const commentsQuery = query(
+                collection(db, "communityPosts", postId, "comments"),
+                orderBy("createdAt", "asc")
+            );
+            const snapshot = await getDocs(commentsQuery);
+            const fetchedComments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredComment));
+            setComments(prev => ({ ...prev, [postId]: fetchedComments }));
+        } catch (e) {
+            toast({ title: "Error", description: "Could not fetch comments.", variant: "destructive" });
+        } finally {
+            setIsLoadingComments(false);
+        }
+    };
+
+    const handleToggleComments = (postId: string) => {
+        const newExpandedPostId = expandedPostId === postId ? null : postId;
+        setExpandedPostId(newExpandedPostId);
+        if (newExpandedPostId) {
+            fetchCommentsForPost(newExpandedPostId);
+        }
+    };
+
+    const handlePostComment = async (postId: string, content: string) => {
+        if (!user || !content.trim()) return;
+        
+        const postRef = doc(db, "communityPosts", postId);
+        const commentsColRef = collection(postRef, "comments");
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const postDoc = await transaction.get(postRef);
+                if (!postDoc.exists()) throw "Post does not exist!";
+
+                const newCommentRef = doc(commentsColRef);
+                transaction.set(newCommentRef, {
+                    postId: postId,
+                    userId: user.uid,
+                    userDisplayName: user.displayName || user.email,
+                    userAvatarUrl: user.photoURL || null,
+                    content: content,
+                    createdAt: serverTimestamp(),
+                });
+
+                const currentCommentCount = postDoc.data().commentCount || 0;
+                transaction.update(postRef, { commentCount: currentCommentCount + 1 });
+            });
+            fetchCommentsForPost(postId, true);
+            setPosts(prevPosts => prevPosts.map(p => 
+                p.id === postId ? { ...p, commentCount: (p.commentCount || 0) + 1 } : p
+            ));
+        } catch (e) {
+            console.error("Transaction failed: ", e);
+            toast({ title: "Error", description: "Could not post comment.", variant: "destructive" });
+        }
+    };
+
     return (
         <div className="space-y-6 max-w-2xl mx-auto">
             <Card>
@@ -168,43 +235,19 @@ export default function CrewCommunityPage() {
                     <CardDescription>Share an update, question, or photo with the crew.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleCreatePost)} className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="content"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <Textarea placeholder="What's on your mind?" className="resize-none" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                    <Form {...postForm}>
+                        <form onSubmit={postForm.handleSubmit(handleCreatePost)} className="space-y-4">
+                            <FormField control={postForm.control} name="content" render={({ field }) => (
+                                <FormItem><FormControl><Textarea placeholder="What's on your mind?" className="resize-none" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
                             <div className="flex justify-between items-center">
-                                <FormField
-                                    control={form.control}
-                                    name="imageFile"
-                                    render={({ field: { onChange, ...rest } }) => (
-                                        <FormItem>
-                                            <Button asChild variant="outline" size="sm">
-                                                <label>
-                                                    <ImagePlus className="mr-2 h-4 w-4"/> Add Image
-                                                    <Input type="file" accept="image/*" className="hidden" onChange={(e) => onChange(e.target.files)} {...rest}/>
-                                                </label>
-                                            </Button>
-                                            <FormMessage className="text-xs"/>
-                                        </FormItem>
-                                    )}
-                                />
-                                <Button type="submit" disabled={isSubmitting}>
-                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
-                                    Post
-                                </Button>
+                                <FormField control={postForm.control} name="imageFile" render={({ field: { onChange, ...rest } }) => (
+                                    <FormItem><Button asChild variant="outline" size="sm"><label><ImagePlus className="mr-2 h-4 w-4"/> Add Image<Input type="file" accept="image/*" className="hidden" onChange={(e) => onChange(e.target.files)} {...rest}/></label></Button><FormMessage className="text-xs"/></FormItem>
+                                )}/>
+                                <Button type="submit" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}Post</Button>
                             </div>
                             {uploadProgress !== null && <Progress value={uploadProgress} className="w-full h-1.5 mt-2" />}
-                            {form.getValues("imageFile")?.[0] && <p className="text-xs text-muted-foreground">Image selected: {form.getValues("imageFile")?.[0].name}</p>}
+                            {postForm.getValues("imageFile")?.[0] && <p className="text-xs text-muted-foreground">Image selected: {postForm.getValues("imageFile")?.[0].name}</p>}
                         </form>
                     </Form>
                 </CardContent>
@@ -217,52 +260,36 @@ export default function CrewCommunityPage() {
                     <AnimatedCard key={post.id} className="list-item">
                         <Card>
                             <CardHeader className="flex flex-row gap-3 space-y-0">
-                                <Avatar>
-                                    <AvatarImage src={post.userAvatarUrl || undefined} alt={post.userDisplayName} />
-                                    <AvatarFallback>{post.userDisplayName?.charAt(0).toUpperCase()}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="font-semibold">{post.userDisplayName}</p>
-                                            <p className="text-xs text-muted-foreground">{formatDistanceToNowStrict(post.createdAt.toDate(), { addSuffix: true })}</p>
-                                        </div>
-                                         {user?.uid === post.userId && (
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7"><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader><AlertDialogTitle>Confirm Deletion</AlertDialogTitle><AlertDialogDescription>Are you sure you want to delete this post? This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDeletePost(post.id)}>Delete</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        )}
-                                    </div>
-                                </div>
+                                <Avatar><AvatarImage src={post.userAvatarUrl || undefined} alt={post.userDisplayName} /><AvatarFallback>{post.userDisplayName?.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
+                                <div className="flex-1"><div className="flex justify-between items-start"><div><p className="font-semibold">{post.userDisplayName}</p><p className="text-xs text-muted-foreground">{formatDistanceToNowStrict(post.createdAt.toDate(), { addSuffix: true })}</p></div>
+                                 {user?.uid === post.userId && (
+                                    <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><Trash2 className="h-4 w-4 text-destructive"/></Button></AlertDialogTrigger>
+                                        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Confirm Deletion</AlertDialogTitle><AlertDialogDescription>Are you sure you want to delete this post? This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
+                                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeletePost(post.id)}>Delete</AlertDialogAction></AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>)}
+                                </div></div>
                             </CardHeader>
-                            <CardContent>
-                                <p className="whitespace-pre-wrap text-sm">{post.content}</p>
-                                {post.imageUrl && (
-                                    <div className="mt-4 rounded-lg overflow-hidden border">
-                                        <Image src={post.imageUrl} alt="Post image" width={500} height={300} className="w-full h-auto object-cover"/>
-                                    </div>
-                                )}
+                            <CardContent><p className="whitespace-pre-wrap text-sm">{post.content}</p>
+                                {post.imageUrl && (<div className="mt-4 rounded-lg overflow-hidden border"><Image src={post.imageUrl} alt="Post image" width={500} height={300} className="w-full h-auto object-cover"/></div>)}
                             </CardContent>
-                            <CardFooter>
-                                <Button
-                                    variant={post.likes.includes(user?.uid || "") ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => handleLikePost(post.id)}
-                                    disabled={!user}
-                                >
-                                    <ThumbsUp className="mr-2 h-4 w-4" />
-                                    Like ({post.likeCount})
+                            <CardFooter className="gap-2">
+                                <Button variant={post.likes.includes(user?.uid || "") ? "default" : "outline"} size="sm" onClick={() => handleLikePost(post.id)} disabled={!user}>
+                                    <ThumbsUp className="mr-2 h-4 w-4" />Like ({post.likeCount})
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => handleToggleComments(post.id)}>
+                                    <MessageSquare className="mr-2 h-4 w-4" />Comment ({post.commentCount || 0})
                                 </Button>
                             </CardFooter>
+                            {expandedPostId === post.id && (
+                                <CommentSection 
+                                    postId={post.id} 
+                                    commentsForPost={comments[post.id] || []} 
+                                    isLoading={isLoadingComments} 
+                                    onPostComment={handlePostComment}
+                                    currentUser={user}
+                                />
+                            )}
                         </Card>
                     </AnimatedCard>
                 ))}
@@ -270,3 +297,58 @@ export default function CrewCommunityPage() {
         </div>
     );
 }
+
+// --- Comment Section Component ---
+
+const CommentSection = ({ postId, commentsForPost, isLoading, onPostComment, currentUser }: { postId: string; commentsForPost: StoredComment[]; isLoading: boolean; onPostComment: (postId: string, content: string) => Promise<void>; currentUser: any }) => {
+    const commentForm = useForm<CommentFormValues>({
+        resolver: zodResolver(commentFormSchema),
+        defaultValues: { content: "" },
+    });
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+    const handleSubmit = async (data: CommentFormValues) => {
+        setIsSubmitting(true);
+        await onPostComment(postId, data.content);
+        commentForm.reset();
+        setIsSubmitting(false);
+    };
+
+    return (
+        <div className="px-6 pb-4 border-t mt-4 pt-4">
+            <Form {...commentForm}>
+                <form onSubmit={commentForm.handleSubmit(handleSubmit)} className="flex items-start gap-3">
+                    <Avatar className="h-8 w-8 mt-1"><AvatarImage src={currentUser?.photoURL || undefined} /><AvatarFallback>{currentUser?.displayName?.charAt(0).toUpperCase() || 'U'}</AvatarFallback></Avatar>
+                    <div className="flex-grow space-y-2">
+                        <FormField control={commentForm.control} name="content" render={({ field }) => (
+                            <FormItem><FormControl><Textarea placeholder="Write a comment..." rows={1} className="min-h-0" {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <div className="flex justify-end">
+                            <Button type="submit" size="sm" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Post Comment</Button>
+                        </div>
+                    </div>
+                </form>
+            </Form>
+            
+            <Separator className="my-4" />
+
+            <div className="space-y-4">
+                {isLoading && <div className="text-center text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline mr-2"/>Loading comments...</div>}
+                {!isLoading && commentsForPost.length === 0 && <p className="text-sm text-muted-foreground text-center">No comments yet. Be the first!</p>}
+                {commentsForPost.map(comment => (
+                    <div key={comment.id} className="flex items-start gap-3">
+                        <Avatar className="h-8 w-8"><AvatarImage src={comment.userAvatarUrl || undefined} /><AvatarFallback>{comment.userDisplayName.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
+                        <div className="flex-grow"><div className="bg-muted p-3 rounded-lg">
+                                <div className="flex justify-between items-center">
+                                    <p className="font-semibold text-sm">{comment.userDisplayName}</p>
+                                    <p className="text-xs text-muted-foreground">{formatDistanceToNowStrict(comment.createdAt.toDate(), { addSuffix: true })}</p>
+                                </div>
+                                <p className="text-sm mt-1">{comment.content}</p>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};

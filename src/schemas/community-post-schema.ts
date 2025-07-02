@@ -23,4 +23,5 @@ export interface StoredPost {
   createdAt: Timestamp;
   likes: string[]; // Array of user UIDs who liked the post
   likeCount: number;
+  commentCount: number;
 }

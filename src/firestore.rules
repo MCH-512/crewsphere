@@ -1,0 +1,136 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // --- UTILITIES ---
+    function isAuth() { return request.auth != null; }
+    function isOwner(userId) { return request.auth.uid == userId; }
+    function isAdmin() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
+    
+    // --- USERS ---
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow create: if isAdmin();
+      allow update: if isAdmin() || isOwner(userId);
+    }
+    
+    // --- ALERTS ---
+    match /alerts/{alertId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // --- ALERT ACKNOWLEDGEMENTS ---
+    // Users can only create/write to their own acknowledgement record
+    match /alertAcknowledgements/{ackId} {
+        allow read, write: if isAuth() && ackId == request.auth.uid + '_' + request.resource.data.alertId;
+        // No one can update or delete, it's a one-time record
+        allow update, delete: if false;
+    }
+    
+    // --- AUDIT LOGS ---
+    // Nobody can write to audit logs from the client. They should be created by a trusted backend.
+    // For this app, we trust client-side logic from admins.
+    match /auditLogs/{logId} {
+        allow read: if isAdmin();
+        allow create: if isAdmin();
+        allow update, delete: if false;
+    }
+    
+    // --- COMMUNITY ---
+    match /communityPosts/{postId} {
+        allow read: if isAuth();
+        allow create: if isAuth() && isOwner(request.resource.data.userId);
+        allow delete: if isAuth() && (isOwner(resource.data.userId) || isAdmin());
+        // Allow owner to edit their post, or anyone to update like/comment counts
+        allow update: if isAuth() && (isOwner(resource.data.userId) || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likeCount', 'commentCount']));
+        
+        // Comments subcollection
+        match /comments/{commentId} {
+            allow read: if isAuth();
+            allow create: if isAuth() && isOwner(request.resource.data.userId);
+            allow delete: if isAuth() && (isOwner(resource.data.userId) || isAdmin());
+            allow update: if false;
+        }
+    }
+    
+    // --- COURSES & CONTENT ---
+    match /courses/{courseId} {
+      allow read: if isAuth(); // All authenticated users can read published courses
+      allow create, update, delete: if isAdmin();
+    }
+    match /quizzes/{quizId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+    match /questions/{questionId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+    match /certificateRules/{ruleId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+    match /userTrainingProgress/{progressId} {
+       // Users can only read and write their own progress
+      allow read, write: if isAuth() && progressId.split('_')[0] == request.auth.uid;
+      allow create: if isAuth() && progressId.split('_')[0] == request.auth.uid;
+      allow delete: if false; // Progress should not be deleted
+    }
+
+    // --- DOCUMENTS ---
+    match /documents/{docId} {
+        allow read: if isAuth();
+        allow create, update, delete: if isAdmin();
+    }
+    
+    // --- FLIGHTS & REPORTS ---
+    match /flights/{flightId} {
+        allow read: if isAuth();
+        allow create, update, delete: if isAdmin();
+    }
+    match /purserReports/{reportId} {
+        allow read: if isAdmin() || isOwner(resource.data.userId);
+        allow create: if isAuth() && isOwner(request.resource.data.userId);
+        allow update, delete: if false;
+    }
+    
+    // --- SCHEDULE / USER ACTIVITIES ---
+    match /userActivities/{activityId} {
+        allow read: if isAuth() && isOwner(resource.data.userId);
+        allow create: if isAuth() && isOwner(request.resource.data.userId);
+        allow update, delete: if isAuth() && isOwner(resource.data.userId);
+    }
+    
+    // --- REQUESTS ---
+    match /requests/{requestId} {
+      allow read: if isAdmin() || isOwner(resource.data.userId);
+      allow create: if isAuth() && isOwner(request.resource.data.userId);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // --- SUGGESTIONS ---
+    match /suggestions/{suggestionId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && isOwner(request.resource.data.userId);
+      // Only admins can change status/notes, but any user can update the upvote count/array
+      allow update: if isAuth() && (isAdmin() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes', 'upvoteCount']));
+      allow delete: if isAdmin();
+    }
+    
+    // --- SYSTEM CONFIG ---
+    match /systemConfiguration/{configId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // --- TRAINING SESSIONS ---
+    match /trainingSessions/{sessionId} {
+      allow read: if isAuth();
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
