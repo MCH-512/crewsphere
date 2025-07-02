@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -49,6 +48,7 @@ const predefinedLabels: { [key: string]: string } = {
   "guides": "Professional Guides",
   "aviation-history": "Aviation History",
   "aeronautical-jargon": "Aeronautical Jargon",
+  "phonetic-alphabet": "Phonetic Alphabet",
   "audit-logs": "Audit Logs",
 };
 

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Book, Calculator, MessagesSquare, ScrollText, Wrench } from "lucide-react";
+import { ArrowRight, Book, Calculator, MessagesSquare, ScrollText, Wrench, Mic } from "lucide-react";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
@@ -17,32 +17,39 @@ interface Tool {
 
 const tools: Tool[] = [
   {
+    icon: MessagesSquare,
+    title: "Aeronautical Jargon",
+    description: "A glossary of common aeronautical terms, acronyms, and slang used by pilots and ATC.",
+    href: "/toolbox/aeronautical-jargon",
+    delay: 0.1
+  },
+   {
+    icon: ScrollText,
+    title: "Aviation History",
+    description: "Explore key dates, innovations, and historical figures that shaped modern aviation.",
+    href: "/toolbox/aviation-history",
+    delay: 0.15
+  },
+  {
     icon: Calculator,
     title: "Converters",
     description: "Convert units of measurement commonly used in aviation (knots, feet, kg, lbs, etc.).",
     href: "/toolbox/converters",
-    delay: 0.1
+    delay: 0.2
+  },
+  {
+    icon: Mic,
+    title: "Phonetic Alphabet",
+    description: "A quick reference for the ICAO spelling alphabet for clear communication.",
+    href: "/toolbox/phonetic-alphabet",
+    delay: 0.25
   },
   {
     icon: Book,
     title: "Professional Guides",
     description: "Access guides on etiquette, savoir-vivre, and professional best practices for crew members.",
     href: "/toolbox/guides",
-    delay: 0.15
-  },
-  {
-    icon: ScrollText,
-    title: "Aviation History",
-    description: "Explore key dates, innovations, and historical figures that shaped modern aviation.",
-    href: "/toolbox/aviation-history",
-    delay: 0.2
-  },
-  {
-    icon: MessagesSquare,
-    title: "Aeronautical Jargon",
-    description: "A glossary of common aeronautical terms, acronyms, and slang used by pilots and ATC.",
-    href: "/toolbox/aeronautical-jargon",
-    delay: 0.25
+    delay: 0.3
   },
 ];
 
