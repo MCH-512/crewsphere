@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -17,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Calculator, AlertTriangle, Clock, Hash, SunMoon, Bed, Table as TableIcon } from "lucide-react";
+import { Calculator, AlertTriangle, Clock, Hash, SunMoon, Bed, Table as TableIcon, PlaneLand } from "lucide-react";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
 const calculatorSchema = z.object({
@@ -33,6 +34,7 @@ interface CalculationResult {
   maxFDP: string;
   potentialFDPWithExtension: string | null;
   minRest: string;
+  latestOnBlocks: string;
   breakdown: {
     label: string;
     value: string;
@@ -122,10 +124,24 @@ export default function FlightDutyCalculatorPage() {
         breakdown.push({ label: "In-Flight Rest", value: `Potential: ${extensionInfo.text.split(" ")[2]}`, adjustment: "Extension subject to crew composition and rest duration.", icon: Bed });
     }
 
+    // --- Calculate Latest On-Blocks Time ---
+    const [reportHours, reportMinutes] = values.reportTime.split(':').map(Number);
+    const reportTotalMinutes = reportHours * 60 + reportMinutes;
+    const fdpTotalMinutes = baseFDP * 60;
+    const endTotalMinutes = reportTotalMinutes + fdpTotalMinutes;
+
+    const endDayOffset = Math.floor(endTotalMinutes / (24 * 60));
+    const endHour = Math.floor((endTotalMinutes % (24 * 60)) / 60);
+    const endMinute = Math.round(endTotalMinutes % 60);
+
+    const formattedEndTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')} Local`;
+    const latestOnBlocksDisplay = `${formattedEndTime}${endDayOffset > 0 ? ` (+${endDayOffset} day${endDayOffset > 1 ? 's' : ''})` : ''}`;
+
     setResult({
       maxFDP: formatHours(baseFDP),
       potentialFDPWithExtension,
       minRest: "12h or duty period length",
+      latestOnBlocks: latestOnBlocksDisplay,
       breakdown,
     });
   }
@@ -208,10 +224,15 @@ export default function FlightDutyCalculatorPage() {
                     <CardDescription>Based on EASA FTL regulations. This is not a substitute for official flight planning.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Alert variant="success" className="h-full">
                             <AlertTitle className="font-bold text-lg">Maximum FDP</AlertTitle>
                             <AlertDescription className="text-2xl font-mono font-bold text-success-foreground/90">{result.maxFDP}</AlertDescription>
+                        </Alert>
+                        <Alert>
+                            <PlaneLand className="h-5 w-5" />
+                            <AlertTitle className="font-bold text-lg">Latest On-Blocks Time</AlertTitle>
+                            <AlertDescription className="text-xl font-mono font-semibold">{result.latestOnBlocks}</AlertDescription>
                         </Alert>
                          <Alert className="h-full">
                             <AlertTitle className="font-bold text-lg">Potential Extended FDP</AlertTitle>
