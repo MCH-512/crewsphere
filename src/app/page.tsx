@@ -192,8 +192,8 @@ export default function DashboardPage() {
             // Fetch all published, mandatory courses
             const mandatoryQuery = query(
                 collection(db, "courses"),
-                where("mandatory", "==", true),
-                where("published", "==", true)
+                where("published", "==", true),
+                where("mandatory", "==", true)
             );
             const mandatorySnapshot = await getDocs(mandatoryQuery);
             const mandatoryCourses = mandatorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MyLearningCourse));
