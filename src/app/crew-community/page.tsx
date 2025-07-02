@@ -106,17 +106,20 @@ export default function CrewCommunityPage() {
         }
 
         try {
-            const postPayload = {
+            const postPayload: Omit<StoredPost, 'id' | 'createdAt'> & { createdAt: any } = {
                 userId: user.uid,
-                userDisplayName: user.displayName || user.email,
+                userDisplayName: user.displayName || user.email || 'Anonymous',
                 userAvatarUrl: user.photoURL || null,
                 content: data.content,
                 likes: [],
                 likeCount: 0,
                 commentCount: 0,
                 createdAt: serverTimestamp(),
-                ...(imageUrl && { imageUrl: imageUrl }),
             };
+            
+            if (imageUrl) {
+                postPayload.imageUrl = imageUrl;
+            }
 
             await addDoc(collection(db, "communityPosts"), postPayload);
             postForm.reset();
@@ -326,7 +329,10 @@ const CommentSection = ({ postId, commentsForPost, isLoading, onPostComment, cur
                             <FormItem><FormControl><Textarea placeholder="Write a comment..." rows={1} className="min-h-0" {...field} /></FormControl><FormMessage /></FormItem>
                         )}/>
                         <div className="flex justify-end">
-                            <Button type="submit" size="sm" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Post Comment</Button>
+                            <Button type="submit" size="sm" disabled={isSubmitting}>
+                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
+                                Post Comment
+                            </Button>
                         </div>
                     </div>
                 </form>
@@ -340,13 +346,12 @@ const CommentSection = ({ postId, commentsForPost, isLoading, onPostComment, cur
                 {commentsForPost.map(comment => (
                     <div key={comment.id} className="flex items-start gap-3">
                         <Avatar className="h-8 w-8"><AvatarImage src={comment.userAvatarUrl || undefined} /><AvatarFallback>{comment.userDisplayName.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
-                        <div className="flex-grow"><div className="bg-muted p-3 rounded-lg">
-                                <div className="flex justify-between items-center">
-                                    <p className="font-semibold text-sm">{comment.userDisplayName}</p>
-                                    <p className="text-xs text-muted-foreground">{formatDistanceToNowStrict(comment.createdAt.toDate(), { addSuffix: true })}</p>
-                                </div>
-                                <p className="text-sm mt-1">{comment.content}</p>
+                        <div className="flex-grow bg-muted p-3 rounded-lg">
+                            <div className="flex justify-between items-center">
+                                <p className="font-semibold text-sm">{comment.userDisplayName}</p>
+                                <p className="text-xs text-muted-foreground">{formatDistanceToNowStrict(comment.createdAt.toDate(), { addSuffix: true })}</p>
                             </div>
+                            <p className="text-sm mt-1 whitespace-pre-wrap">{comment.content}</p>
                         </div>
                     </div>
                 ))}
