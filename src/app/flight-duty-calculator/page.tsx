@@ -286,7 +286,7 @@ export default function FlightDutyCalculatorPage() {
                         </Alert>
                         <Alert>
                             <PlaneLanding className="h-5 w-5" />
-                            <AlertTitle className="font-bold text-lg">Latest On-Blocks</AlertTitle>
+                            <AlertTitle className="font-bold text-lg">Latest Arrival (On-Blocks)</AlertTitle>
                             <AlertDescription className="text-xl font-mono font-semibold">{result.latestOnBlocks}</AlertDescription>
                         </Alert>
                          <Alert className="h-full">
