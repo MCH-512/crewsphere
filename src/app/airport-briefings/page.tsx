@@ -4,7 +4,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Brain, MapPin, Cloudy, FileWarning, Globe, Building2, Sparkles, Loader2, AlertTriangle as AlertTriangleIcon, Flag, PlaneTakeoff } from "lucide-react";
+import { Brain, MapPin, Cloudy, FileWarning, Globe, Building2, Sparkles, Loader2, AlertTriangle as AlertTriangleIcon, Flag, PlaneTakeoff, CheckCircle } from "lucide-react";
 import { searchAirports, type Airport } from "@/services/airport-service";
 import airportsData from '@/data/airports.json';
 import { CustomAutocompleteAirport } from "@/components/ui/custom-autocomplete-airport";
@@ -176,13 +176,21 @@ export default function AirportBriefingPage() {
         <AnimatedCard delay={0.1}>
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><MapPin className="text-primary"/>{selectedAirport.name} ({selectedAirport.iata})</CardTitle>
+              <CardTitle className="flex items-center gap-2"><MapPin className="text-primary"/>{selectedAirport.name}</CardTitle>
               <CardDescription>{selectedAirport.city}, {selectedAirport.country}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2 p-3 bg-muted rounded-md"><Globe className="h-4 w-4 text-muted-foreground"/><strong>ICAO:</strong> {selectedAirport.icao}</div>
-                    <div className="flex items-center gap-2 p-3 bg-muted rounded-md"><Building2 className="h-4 w-4 text-muted-foreground"/><strong>IATA:</strong> {selectedAirport.iata}</div>
+                <div className="flex flex-wrap items-center gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-muted-foreground"/>
+                        <strong>ICAO:</strong> 
+                        <Badge variant="secondary">{selectedAirport.icao}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground"/>
+                        <strong>IATA:</strong> 
+                        <Badge variant="secondary">{selectedAirport.iata}</Badge>
+                    </div>
                 </div>
                 
                 <Separator />
@@ -192,9 +200,9 @@ export default function AirportBriefingPage() {
                   
                   {isBriefingLoading && (
                      <div className="space-y-4 p-4 border rounded-lg">
-                        <Skeleton className="h-5 w-1/3" />
+                        <div className="flex items-center space-x-3"><Skeleton className="h-6 w-6 rounded-full" /><Skeleton className="h-5 w-1/3" /></div>
                         <Skeleton className="h-16 w-full" />
-                        <Skeleton className="h-5 w-1/3" />
+                        <div className="flex items-center space-x-3"><Skeleton className="h-6 w-6 rounded-full" /><Skeleton className="h-5 w-1/3" /></div>
                         <Skeleton className="h-16 w-full" />
                       </div>
                   )}
@@ -211,19 +219,28 @@ export default function AirportBriefingPage() {
                   )}
 
                   {briefing && (
-                    <div className="space-y-4 text-sm">
-                      <div>
-                        <h4 className="font-semibold mb-1">Operational Summary</h4>
-                        <p className="text-muted-foreground whitespace-pre-line">{briefing.operationalSummary}</p>
-                      </div>
-                       <div>
-                        <h4 className="font-semibold mb-1">Potential Challenges</h4>
-                        <p className="text-muted-foreground whitespace-pre-line">{briefing.potentialChallenges}</p>
-                      </div>
-                       <div>
-                        <h4 className="font-semibold mb-1">Crew Recommendations</h4>
-                        <p className="text-muted-foreground whitespace-pre-line">{briefing.crewRecommendations}</p>
-                      </div>
+                    <div className="space-y-4">
+                       <Alert>
+                            <PlaneTakeoff className="h-4 w-4" />
+                            <AlertTitle>Operational Summary</AlertTitle>
+                            <AlertDescription className="whitespace-pre-line text-foreground/80">
+                                {briefing.operationalSummary}
+                            </AlertDescription>
+                        </Alert>
+                        <Alert variant="warning">
+                            <AlertTriangleIcon className="h-4 w-4" />
+                            <AlertTitle>Potential Challenges</AlertTitle>
+                            <AlertDescription className="whitespace-pre-line">
+                                {briefing.potentialChallenges}
+                            </AlertDescription>
+                        </Alert>
+                        <Alert variant="success">
+                            <CheckCircle className="h-4 w-4" />
+                            <AlertTitle>Crew Recommendations</AlertTitle>
+                            <AlertDescription className="whitespace-pre-line">
+                                {briefing.crewRecommendations}
+                            </AlertDescription>
+                        </Alert>
                     </div>
                   )}
 
