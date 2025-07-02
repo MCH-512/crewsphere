@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -18,20 +19,33 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Calculator, AlertTriangle, Clock, Hash, SunMoon, Bed, Table as TableIcon, PlaneLanding } from "lucide-react";
+import { Calculator, AlertTriangle, Clock, Hash, SunMoon, Bed, Table as TableIcon, PlaneLanding, UserCheck, Timer } from "lucide-react";
 import { AnimatedCard } from "@/components/motion/animated-card";
+
+const timeStringToHours = (timeStr: string) => {
+  if (!timeStr || !timeStr.includes(':')) return 0;
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return 0;
+  return hours + minutes / 60;
+};
 
 const calculatorSchema = z.object({
   reportTime: z.string().nonempty({ message: "Report time is required." }),
   sectors: z.coerce.number().min(1).max(10),
   acclimatisation: z.enum(["acclimatised", "unacclimatised"]),
   inFlightRest: z.enum(["none", "class3", "class2", "class1"]),
+  commandersDiscretion: z.enum(["none", "1h", "2h"]).default("none"),
+  previousDutyLength: z.string().optional().refine(
+      (val) => !val || /^\d{1,2}:\d{2}$/.test(val),
+      "Use HH:MM format (e.g., 10:30)"
+    ),
 });
 
 type CalculatorValues = z.infer<typeof calculatorSchema>;
 
 interface CalculationResult {
   maxFDP: string;
+  finalFDP: string;
   potentialFDPWithExtension: string | null;
   minRest: string;
   latestOnBlocks: string;
@@ -82,6 +96,8 @@ export default function FlightDutyCalculatorPage() {
       sectors: 4,
       acclimatisation: "acclimatised",
       inFlightRest: "none",
+      commandersDiscretion: "none",
+      previousDutyLength: "10:30",
     },
   });
 
@@ -117,6 +133,13 @@ export default function FlightDutyCalculatorPage() {
 
     breakdown.unshift({ label: tableLabel, value: formatHours(baseFDP), adjustment: `Report time ${values.reportTime} & ${sectors} sectors.`, icon: TableIcon });
 
+    let finalFDP = baseFDP;
+    if (values.commandersDiscretion !== 'none') {
+        const discretionHours = parseInt(values.commandersDiscretion, 10);
+        finalFDP += discretionHours;
+        breakdown.push({ label: "Commander's Discretion", value: `+${formatHours(discretionHours)}`, adjustment: "Extension applied at commander's discretion.", icon: UserCheck });
+    }
+
     const extensionInfo = fdpExtensions[values.inFlightRest];
     let potentialFDPWithExtension = null;
     if (values.inFlightRest !== 'none') {
@@ -124,10 +147,13 @@ export default function FlightDutyCalculatorPage() {
         breakdown.push({ label: "In-Flight Rest", value: `Potential: ${extensionInfo.text.split(" ")[2]}`, adjustment: "Extension subject to crew composition and rest duration.", icon: Bed });
     }
 
+    const previousDutyHours = values.previousDutyLength ? timeStringToHours(values.previousDutyLength) : 0;
+    const minRestHours = Math.max(previousDutyHours, 12); // Assuming rest at home base (12h)
+
     // --- Calculate Latest On-Blocks Time ---
     const [reportHours, reportMinutes] = values.reportTime.split(':').map(Number);
     const reportTotalMinutes = reportHours * 60 + reportMinutes;
-    const fdpTotalMinutes = baseFDP * 60;
+    const fdpTotalMinutes = finalFDP * 60;
     const endTotalMinutes = reportTotalMinutes + fdpTotalMinutes;
 
     const endDayOffset = Math.floor(endTotalMinutes / (24 * 60));
@@ -139,8 +165,9 @@ export default function FlightDutyCalculatorPage() {
 
     setResult({
       maxFDP: formatHours(baseFDP),
+      finalFDP: formatHours(finalFDP),
       potentialFDPWithExtension,
-      minRest: "12h or duty period length",
+      minRest: formatHours(minRestHours),
       latestOnBlocks: latestOnBlocksDisplay,
       breakdown,
     });
@@ -156,7 +183,7 @@ export default function FlightDutyCalculatorPage() {
               EASA Flight Duty Calculator
             </CardTitle>
             <CardDescription>
-              Estimate maximum Flight Duty Period (FDP) based on EASA ORO.FTL.205 regulations.
+              Estimate maximum Flight Duty Period (FDP) and minimum rest based on EASA ORO.FTL.205 regulations.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -194,7 +221,7 @@ export default function FlightDutyCalculatorPage() {
                     <FormMessage />
                   </FormItem>
                 )}/>
-                 <FormField control={form.control} name="inFlightRest" render={({ field }) => (
+                <FormField control={form.control} name="inFlightRest" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2"><Bed/> In-Flight Rest Facilities</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -206,6 +233,29 @@ export default function FlightDutyCalculatorPage() {
                         <SelectItem value="class1">Class 1 Bunk</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+                 <FormField control={form.control} name="commandersDiscretion" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2"><UserCheck/> Commander's Discretion</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="1h">+1 Hour</SelectItem>
+                        <SelectItem value="2h">+2 Hours</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>Optional: Apply a discretionary extension to the FDP.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+                 <FormField control={form.control} name="previousDutyLength" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2"><Timer/> Length of Preceding Duty</FormLabel>
+                    <FormControl><Input placeholder="HH:MM (e.g., 10:30)" {...field} /></FormControl>
+                    <FormDescription>Optional: For calculating minimum rest period.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}/>
@@ -224,14 +274,19 @@ export default function FlightDutyCalculatorPage() {
                     <CardDescription>Based on EASA FTL regulations. This is not a substitute for official flight planning.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <Alert variant="success" className="h-full">
-                            <AlertTitle className="font-bold text-lg">Maximum FDP</AlertTitle>
-                            <AlertDescription className="text-2xl font-mono font-bold text-success-foreground/90">{result.maxFDP}</AlertDescription>
+                            <AlertTitle className="font-bold text-lg">Final Max FDP</AlertTitle>
+                            <AlertDescription className="text-2xl font-mono font-bold text-success-foreground/90">{result.finalFDP}</AlertDescription>
+                        </Alert>
+                         <Alert className="h-full">
+                            <Bed className="h-5 w-5" />
+                            <AlertTitle className="font-bold text-lg">Minimum Rest</AlertTitle>
+                            <AlertDescription className="text-xl font-mono font-semibold">{result.minRest}</AlertDescription>
                         </Alert>
                         <Alert>
                             <PlaneLanding className="h-5 w-5" />
-                            <AlertTitle className="font-bold text-lg">Latest On-Blocks Time</AlertTitle>
+                            <AlertTitle className="font-bold text-lg">Latest On-Blocks</AlertTitle>
                             <AlertDescription className="text-xl font-mono font-semibold">{result.latestOnBlocks}</AlertDescription>
                         </Alert>
                          <Alert className="h-full">
@@ -245,10 +300,10 @@ export default function FlightDutyCalculatorPage() {
                       <div className="space-y-2">
                         {result.breakdown.map((item, index) => {
                           const Icon = item.icon;
-                          const isAdjustment = item.label !== "EASA ORO.FTL.205 Table B" && item.label !== "EASA ORO.FTL.205 (Unacclimatised)";
+                          const isAdjustment = item.value.startsWith('+');
                           return (
                             <div key={index} className="flex items-start gap-3 p-2 border rounded-md">
-                              <Icon className={`mt-1 h-5 w-5 ${isAdjustment ? 'text-destructive' : 'text-primary'}`} />
+                              <Icon className={`mt-1 h-5 w-5 ${isAdjustment ? 'text-blue-500' : 'text-primary'}`} />
                               <div className="flex-1">
                                 <div className="flex justify-between items-center">
                                   <span className="font-medium">{item.label}</span>
@@ -269,7 +324,7 @@ export default function FlightDutyCalculatorPage() {
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Disclaimer</AlertTitle>
           <AlertDescription>
-            This calculator is for estimation and training purposes only and is based on standard EASA ORO.FTL.205 rules. It does not account for commander's discretion, extensions due to in-flight rest, split duty, or other disruptive schedules. Always refer to official company tools and regulations for operational flight planning.
+            This calculator is for estimation and training purposes only and is based on standard EASA ORO.FTL.205 rules. It does not account for all variables such as split duty or other disruptive schedules. Always refer to official company tools and regulations for operational flight planning.
           </AlertDescription>
         </Alert>
     </div>
