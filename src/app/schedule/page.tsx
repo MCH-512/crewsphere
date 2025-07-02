@@ -16,7 +16,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PlaneTakeoff, Briefcase, Users, MapPin, Loader2, AlertTriangle, PlusCircle, CheckCircle, CalendarPlus, ListTodo, Bed, Shield, BookOpen, CircleHelp, Trash2, Edit3, Filter, Ban, School } from "lucide-react";
+import { PlaneTakeoff, Briefcase, Users, MapPin, Loader2, AlertTriangle, PlusCircle, CheckCircle, CalendarPlus, ListTodo, Bed, Shield, BookOpen, CircleHelp, Trash2, Edit3, Filter, Ban, School, HeartPulse } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, getDocs, query, where, doc, getDoc, Timestamp, orderBy, serverTimestamp, deleteDoc, updateDoc } from "firebase/firestore";
@@ -92,6 +92,15 @@ const activityFormSchema = z.object({
 });
 type ActivityFormValues = z.infer<typeof activityFormSchema>;
 
+const activityTypeOptions = [
+    { value: 'flight', label: 'Flight Duty', icon: PlaneTakeoff },
+    { value: 'training', label: 'Training Session', icon: School },
+    { value: 'off', label: 'Day Off', icon: Bed },
+    { value: 'standby', label: 'Standby', icon: Shield },
+    { value: 'leave', label: 'Leave / Vacation', icon: Briefcase },
+    { value: 'sick', label: 'Sick Leave', icon: HeartPulse },
+    { value: 'other', label: 'Other', icon: CircleHelp },
+];
 
 export default function SchedulePage() {
   const { user, loading: authLoading } = useAuth();
@@ -401,7 +410,7 @@ export default function SchedulePage() {
       case "off": return <Bed className="h-5 w-5 text-green-500" />;
       case "standby": return <Shield className="h-5 w-5 text-orange-500" />; 
       case "leave": return <Briefcase className="h-5 w-5 text-blue-500" />; 
-      case "sick": return <AlertTriangle className="h-5 w-5 text-destructive" />;
+      case "sick": return <HeartPulse className="h-5 w-5 text-destructive" />;
       case "other": default: return <CircleHelp className="h-5 w-5 text-muted-foreground" />;
     }
   };
@@ -493,7 +502,16 @@ export default function SchedulePage() {
                     <FormLabel>Activity Type</FormLabel>
                     <Select onValueChange={(value) => { field.onChange(value); activityForm.setValue('flightId', ''); activityForm.setValue('trainingSessionId', ''); if (value === 'flight' || value === 'training') { activityForm.setValue('startTime', ''); activityForm.setValue('endTime', ''); } }} value={field.value} disabled={(isEditMode && !!editingActivity?.flightId) || (isEditMode && !!editingActivity?.trainingSessionId)} >
                       <FormControl><SelectTrigger><SelectValue placeholder="Select an activity type" /></SelectTrigger></FormControl>
-                      <SelectContent><SelectItem value="flight">Flight Duty</SelectItem><SelectItem value="training">Training Session</SelectItem><SelectItem value="off">Day Off</SelectItem><SelectItem value="standby">Standby</SelectItem><SelectItem value="leave">Leave / Vacation</SelectItem><SelectItem value="sick">Sick Leave</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent>
+                      <SelectContent>
+                        {activityTypeOptions.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                                <div className="flex items-center gap-2">
+                                    <opt.icon className="h-4 w-4 text-muted-foreground" />
+                                    <span>{opt.label}</span>
+                                </div>
+                            </SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select><FormMessage />
                   </FormItem>
               )}/>
@@ -518,8 +536,8 @@ export default function SchedulePage() {
 
               {(watchedActivityType !== "flight" && watchedActivityType !== "training") && (
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField control={activityForm.control} name="startTime" render={({ field }) => (<FormItem><FormLabel>Start Time (Local)</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)}/>
-                  <FormField control={activityForm.control} name="endTime" render={({ field }) => (<FormItem><FormLabel>End Time (Local)</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormDescription>Optional</FormDescription><FormMessage /></FormItem>)}/>
+                  <FormField control={activityForm.control} name="startTime" render={({ field }) => (<FormItem><FormLabel>Start Time (Local)</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormDescription>For timed events.</FormDescription><FormMessage /></FormItem>)}/>
+                  <FormField control={activityForm.control} name="endTime" render={({ field }) => (<FormItem><FormLabel>End Time (Local)</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormDescription>For timed events.</FormDescription><FormMessage /></FormItem>)}/>
                 </div>
               )}
               <FormField control={activityForm.control} name="comments" render={({ field }) => (<FormItem><FormLabel>Comments</FormLabel><FormControl><Textarea placeholder="Optional notes or details..." {...field} /></FormControl><FormMessage /></FormItem>)}/>
