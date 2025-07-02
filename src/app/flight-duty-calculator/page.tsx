@@ -17,19 +17,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Calculator, AlertTriangle, Clock, Hash, SunMoon, Minus, Plus } from "lucide-react";
+import { Calculator, AlertTriangle, Clock, Hash, SunMoon, Bed, Table as TableIcon } from "lucide-react";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
 const calculatorSchema = z.object({
   reportTime: z.string().nonempty({ message: "Report time is required." }),
-  sectors: z.coerce.number().min(1).max(8),
-  acclimatised: z.enum(["yes", "no"]),
+  sectors: z.coerce.number().min(1).max(10),
+  acclimatisation: z.enum(["acclimatised", "unacclimatised"]),
+  inFlightRest: z.enum(["none", "class3", "class2", "class1"]),
 });
 
 type CalculatorValues = z.infer<typeof calculatorSchema>;
 
 interface CalculationResult {
   maxFDP: string;
+  potentialFDPWithExtension: string | null;
   minRest: string;
   breakdown: {
     label: string;
@@ -39,6 +41,35 @@ interface CalculationResult {
   }[];
 }
 
+// --- EASA FTL Data ---
+
+const fdpTableAcclimatised = [
+  // 06:00 - 13:29
+  { start: 6, end: 13.49, sectors: [ {max: 2, fdp: 13}, {max: 3, fdp: 12.5}, {max: 4, fdp: 12}, {max: 5, fdp: 11.5}, {max: 6, fdp: 11}, {max: 7, fdp: 10.5}, {max: 8, fdp: 10}, {max: 9, fdp: 9.5}, {max: 10, fdp: 9} ] },
+  // 13:30 - 16:59
+  { start: 13.5, end: 16.99, sectors: [ {max: 2, fdp: 12}, {max: 3, fdp: 11.5}, {max: 4, fdp: 11}, {max: 5, fdp: 10.5}, {max: 6, fdp: 10}, {max: 10, fdp: 9} ] },
+  // 17:00 - 04:59 (WOCL)
+  { start: 17, end: 4.99, sectors: [ {max: 1, fdp: 11.5}, {max: 2, fdp: 11}, {max: 3, fdp: 10.5}, {max: 4, fdp: 10}, {max: 10, fdp: 9} ] },
+  // 05:00 - 05:59
+  { start: 5, end: 5.99, sectors: [ {max: 2, fdp: 11}, {max: 3, fdp: 10.5}, {max: 4, fdp: 10}, {max: 10, fdp: 9} ] },
+];
+
+const fdpTableUnacclimatised = { fdp: 11, reduction: -1 }; // Base 11h, reduction of 1h for > 4 sectors.
+
+const fdpExtensions = {
+    none: { text: "No extension." },
+    class3: { text: "Up to 14h FDP possible." },
+    class2: { text: "Up to 16h FDP possible." },
+    class1: { text: "Up to 18h FDP possible." },
+};
+
+const formatHours = (hours: number): string => {
+  const h = Math.floor(hours);
+  const m = Math.round((hours % 1) * 60);
+  return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`;
+};
+
+
 export default function FlightDutyCalculatorPage() {
   const [result, setResult] = React.useState<CalculationResult | null>(null);
 
@@ -46,52 +77,54 @@ export default function FlightDutyCalculatorPage() {
     resolver: zodResolver(calculatorSchema),
     defaultValues: {
       reportTime: "08:00",
-      sectors: 1,
-      acclimatised: "yes",
+      sectors: 4,
+      acclimatisation: "acclimatised",
+      inFlightRest: "none",
     },
   });
 
   function onSubmit(values: CalculatorValues) {
-    const reportHour = parseInt(values.reportTime.split(":")[0], 10);
+    const reportHour = parseFloat(values.reportTime.replace(':', '.'));
+    const sectors = values.sectors;
     const breakdown: CalculationResult['breakdown'] = [];
 
-    // 1. Base FDP
-    let baseFDP = 13;
-    breakdown.push({ label: "Base FDP", value: "13h 00m", icon: Clock });
+    let baseFDP = 0;
+    let tableLabel = "";
 
-    // 2. WOCL Adjustment
-    let woclAdjustment = 0;
-    if (reportHour >= 2 && reportHour <= 5) {
-      woclAdjustment = -1.5;
-    } else if (reportHour >= 22 || reportHour < 2) {
-      woclAdjustment = -1;
-    }
-    if (woclAdjustment !== 0) {
-      breakdown.push({ label: "WOCL Adjustment", value: `${woclAdjustment > 0 ? '+' : ''}${woclAdjustment * 60}m`, adjustment: `Reporting time ${values.reportTime} is within the Window of Circadian Low.`, icon: SunMoon });
-    }
+    if (values.acclimatisation === "acclimatised") {
+      tableLabel = "EASA ORO.FTL.205 Table B";
+      const timeBand = fdpTableAcclimatised.find(band => {
+        if (band.start > band.end) { // Handles WOCL wrap-around (e.g., 17:00-04:59)
+          return reportHour >= band.start || reportHour <= band.end;
+        }
+        return reportHour >= band.start && reportHour <= band.end;
+      });
 
-    // 3. Sector Adjustment
-    let sectorAdjustment = 0;
-    if (values.sectors >= 5) {
-      sectorAdjustment = (values.sectors - 4) * -0.5;
-    }
-    if (sectorAdjustment !== 0) {
-      breakdown.push({ label: "Sector Adjustment", value: `${sectorAdjustment * 60}m`, adjustment: `${values.sectors} sectors require a reduction.`, icon: Hash });
-    }
-    
-    // 4. Acclimatisation Adjustment
-    let acclimatisationAdjustment = 0;
-    if (values.acclimatised === "no") {
-        acclimatisationAdjustment = -1;
-    }
-    if (acclimatisationAdjustment !== 0) {
-        breakdown.push({ label: "Acclimatisation", value: `${acclimatisationAdjustment * 60}m`, adjustment: "Non-acclimatised crew have a reduced FDP.", icon: AlertTriangle });
+      if (timeBand) {
+        const sectorBand = timeBand.sectors.find(sBand => sectors <= sBand.max);
+        baseFDP = sectorBand ? sectorBand.fdp : 9; // Default to 9h if sectors exceed table
+      }
+    } else { // Unacclimatised
+      tableLabel = "EASA ORO.FTL.205 (Unacclimatised)";
+      baseFDP = fdpTableUnacclimatised.fdp;
+      if (sectors > 4) {
+        baseFDP += fdpTableUnacclimatised.reduction;
+        breakdown.push({ label: "Sector Adjustment", value: formatHours(fdpTableUnacclimatised.reduction), adjustment: `Reduction for ${sectors} sectors while unacclimatised.`, icon: Hash });
+      }
     }
 
-    const calculatedFDP = Math.max(baseFDP + woclAdjustment + sectorAdjustment + acclimatisationAdjustment, 9);
+    breakdown.unshift({ label: tableLabel, value: formatHours(baseFDP), adjustment: `Report time ${values.reportTime} & ${sectors} sectors.`, icon: TableIcon });
+
+    const extensionInfo = fdpExtensions[values.inFlightRest];
+    let potentialFDPWithExtension = null;
+    if (values.inFlightRest !== 'none') {
+        potentialFDPWithExtension = extensionInfo.text;
+        breakdown.push({ label: "In-Flight Rest", value: `Potential: ${extensionInfo.text.split(" ")[2]}`, adjustment: "Extension subject to crew composition and rest duration.", icon: Bed });
+    }
 
     setResult({
-      maxFDP: `${Math.floor(calculatedFDP)}h ${Math.round((calculatedFDP % 1) * 60)}m`,
+      maxFDP: formatHours(baseFDP),
+      potentialFDPWithExtension,
       minRest: "12h or duty period length",
       breakdown,
     });
@@ -104,10 +137,10 @@ export default function FlightDutyCalculatorPage() {
           <CardHeader>
             <CardTitle className="text-2xl font-headline flex items-center">
               <Calculator className="mr-3 h-7 w-7 text-primary" />
-              Flight Duty Calculator
+              EASA Flight Duty Calculator
             </CardTitle>
             <CardDescription>
-              A simplified tool to estimate maximum Flight Duty Period (FDP) based on standard regulations.
+              Estimate maximum Flight Duty Period (FDP) based on EASA ORO.FTL.205 regulations.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -122,24 +155,39 @@ export default function FlightDutyCalculatorPage() {
                 )}/>
                 <FormField control={form.control} name="sectors" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-2"><Hash/> Number of Sectors (Legs)</FormLabel>
+                    <FormLabel className="flex items-center gap-2"><Hash/> Number of Sectors</FormLabel>
                     <Select onValueChange={(val) => field.onChange(parseInt(val, 10))} defaultValue={String(field.value)}>
                       <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <SelectItem key={s} value={String(s)}>{s}</SelectItem>)}
+                        {Array.from({ length: 10 }, (_, i) => i + 1).map(s => <SelectItem key={s} value={String(s)}>{s} Sector{s > 1 ? 's' : ''}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}/>
-                <FormField control={form.control} name="acclimatised" render={({ field }) => (
+                <FormField control={form.control} name="acclimatisation" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-2"><SunMoon/> Crew Acclimatised</FormLabel>
+                    <FormLabel className="flex items-center gap-2"><SunMoon/> Crew State</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>
-                        <SelectItem value="yes">Yes</SelectItem>
-                        <SelectItem value="no">No</SelectItem>
+                        <SelectItem value="acclimatised">Acclimatised</SelectItem>
+                        <SelectItem value="unacclimatised">Unacclimatised</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}/>
+                 <FormField control={form.control} name="inFlightRest" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2"><Bed/> In-Flight Rest Facilities</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">None / Class 3 Seat</SelectItem>
+                        <SelectItem value="class3">Class 3 Seat (Leg & foot support)</SelectItem>
+                        <SelectItem value="class2">Class 2 Bunk / Lie-flat Seat</SelectItem>
+                        <SelectItem value="class1">Class 1 Bunk</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -157,17 +205,17 @@ export default function FlightDutyCalculatorPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Calculation Result</CardTitle>
-                    <CardDescription>The following is an estimated calculation. Always refer to official documentation.</CardDescription>
+                    <CardDescription>Based on EASA FTL regulations. This is not a substitute for official flight planning.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Alert variant="success" className="h-full">
-                            <AlertTitle className="font-bold text-lg">Max Flight Duty Period (FDP)</AlertTitle>
+                            <AlertTitle className="font-bold text-lg">Maximum FDP</AlertTitle>
                             <AlertDescription className="text-2xl font-mono font-bold text-success-foreground/90">{result.maxFDP}</AlertDescription>
                         </Alert>
                          <Alert className="h-full">
-                            <AlertTitle className="font-bold text-lg">Minimum Rest Period</AlertTitle>
-                            <AlertDescription className="text-xl font-mono font-semibold">{result.minRest}</AlertDescription>
+                            <AlertTitle className="font-bold text-lg">Potential Extended FDP</AlertTitle>
+                            <AlertDescription className="text-xl font-mono font-semibold">{result.potentialFDPWithExtension || "N/A"}</AlertDescription>
                         </Alert>
                     </div>
 
@@ -176,7 +224,7 @@ export default function FlightDutyCalculatorPage() {
                       <div className="space-y-2">
                         {result.breakdown.map((item, index) => {
                           const Icon = item.icon;
-                          const isAdjustment = !!item.adjustment;
+                          const isAdjustment = item.label !== "EASA ORO.FTL.205 Table B" && item.label !== "EASA ORO.FTL.205 (Unacclimatised)";
                           return (
                             <div key={index} className="flex items-start gap-3 p-2 border rounded-md">
                               <Icon className={`mt-1 h-5 w-5 ${isAdjustment ? 'text-destructive' : 'text-primary'}`} />
@@ -200,7 +248,7 @@ export default function FlightDutyCalculatorPage() {
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Disclaimer</AlertTitle>
           <AlertDescription>
-            This calculator is for estimation and training purposes only. It is based on simplified rules and does not account for all regulatory extensions or disruptions. Always refer to official company tools and regulations for operational flight planning.
+            This calculator is for estimation and training purposes only and is based on standard EASA ORO.FTL.205 rules. It does not account for commander's discretion, extensions due to in-flight rest, split duty, or other disruptive schedules. Always refer to official company tools and regulations for operational flight planning.
           </AlertDescription>
         </Alert>
     </div>
