@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Calculator, AlertTriangle, Clock, Hash, SunMoon, Bed, Table as TableIcon, PlaneLand } from "lucide-react";
+import { Calculator, AlertTriangle, Clock, Hash, SunMoon, Bed, Table as TableIcon, PlaneLanding } from "lucide-react";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
 const calculatorSchema = z.object({
@@ -230,7 +230,7 @@ export default function FlightDutyCalculatorPage() {
                             <AlertDescription className="text-2xl font-mono font-bold text-success-foreground/90">{result.maxFDP}</AlertDescription>
                         </Alert>
                         <Alert>
-                            <PlaneLand className="h-5 w-5" />
+                            <PlaneLanding className="h-5 w-5" />
                             <AlertTitle className="font-bold text-lg">Latest On-Blocks Time</AlertTitle>
                             <AlertDescription className="text-xl font-mono font-semibold">{result.latestOnBlocks}</AlertDescription>
                         </Alert>
