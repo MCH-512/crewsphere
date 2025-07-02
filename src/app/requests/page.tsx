@@ -145,6 +145,8 @@ const requestFormSchema = z.object({
   }).max(1000, {
     message: "Details must not be longer than 1000 characters.",
   }),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (requestCategoriesAndTypes[data.requestCategory as keyof typeof requestCategoriesAndTypes] && (!data.specificRequestType || data.specificRequestType.trim() === "")) {
     ctx.addIssue({
@@ -152,6 +154,17 @@ const requestFormSchema = z.object({
       message: "Please select a specific request type for this category.",
       path: ["specificRequestType"],
     });
+  }
+  if (data.requestCategory === "Leave & Absences") {
+    if (!data.startDate) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Start date is required for leave requests.", path: ["startDate"] });
+    }
+    if (!data.endDate) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "End date is required for leave requests.", path: ["endDate"] });
+    }
+    if (data.startDate && data.endDate && new Date(data.endDate) < new Date(data.startDate)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "End date cannot be before start date.", path: ["endDate"] });
+    }
   }
 });
 
@@ -185,6 +198,8 @@ interface UserRequestForDisplay {
   status: "pending" | "approved" | "rejected" | "in-progress";
   adminResponse?: string;
   updatedAt?: Timestamp;
+  startDate?: string;
+  endDate?: string;
 }
 
 // --- Reusable Components ---
@@ -274,6 +289,8 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
         urgencyLevel: formDataToSubmit.urgencyLevel,
         subject: formDataToSubmit.subject,
         details: formDataToSubmit.details,
+        startDate: formDataToSubmit.requestCategory === "Leave & Absences" ? formDataToSubmit.startDate : null,
+        endDate: formDataToSubmit.requestCategory === "Leave & Absences" ? formDataToSubmit.endDate : null,
         createdAt: serverTimestamp(),
         status: "pending",
       };
@@ -334,6 +351,26 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
                     </FormItem>
                 )}/>
               </div>
+
+               {watchedRequestCategory === "Leave & Absences" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="startDate" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Start Date</FormLabel>
+                            <FormControl><Input type="date" {...field} value={field.value || ""} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                    <FormField control={form.control} name="endDate" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>End Date</FormLabel>
+                            <FormControl><Input type="date" {...field} value={field.value || ""} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}/>
+                </div>
+               )}
+
                <FormField control={form.control} name="urgencyLevel" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Urgency Level</FormLabel>
@@ -389,6 +426,9 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
                     <div className="mt-2 text-sm text-left space-y-1 border p-3 rounded-md bg-muted/50">
                       <div><strong>Category:</strong> {formDataToSubmit.requestCategory}</div>
                       {formDataToSubmit.specificRequestType && <div><strong>Type:</strong> {formDataToSubmit.specificRequestType}</div>}
+                      {formDataToSubmit.requestCategory === "Leave & Absences" && (
+                         <div><strong>Dates:</strong> {format(new Date(formDataToSubmit.startDate!), 'PPP')} to {format(new Date(formDataToSubmit.endDate!), 'PPP')}</div>
+                      )}
                       <div><strong>Urgency:</strong> {formDataToSubmit.urgencyLevel}</div>
                       <div><strong>Subject:</strong> {formDataToSubmit.subject}</div>
                     </div>

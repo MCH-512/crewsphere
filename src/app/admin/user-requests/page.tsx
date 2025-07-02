@@ -13,14 +13,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input"; 
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp, where } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp, where, writeBatch } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown, Info, MessageSquareText } from "lucide-react";
-import { format } from "date-fns";
+import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown, Info, MessageSquareText, CheckCircle } from "lucide-react";
+import { format, startOfDay } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority"; 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { logAuditEvent } from "@/lib/audit-logger";
+import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert";
+
 
 interface UserRequest {
   id: string;
@@ -35,6 +37,8 @@ interface UserRequest {
   status: "pending" | "approved" | "rejected" | "in-progress";
   adminResponse?: string;
   updatedAt?: Timestamp;
+  startDate?: string;
+  endDate?: string;
 }
 
 type SortableColumn = "createdAt" | "status" | "urgencyLevel";
@@ -156,6 +160,29 @@ export default function AdminUserRequestsPage() {
         updatedAt: serverTimestamp(),
        });
        
+       if (newStatus === 'approved' && selectedRequest.requestType === 'Leave & Absences' && selectedRequest.startDate && selectedRequest.endDate) {
+            const activitiesBatch = writeBatch(db);
+            const startDate = startOfDay(new Date(selectedRequest.startDate));
+            const endDate = startOfDay(new Date(selectedRequest.endDate));
+
+            let currentDate = startDate;
+            while (currentDate <= endDate) {
+                const activityDocRef = doc(collection(db, "userActivities"));
+                activitiesBatch.set(activityDocRef, {
+                    userId: selectedRequest.userId,
+                    activityType: 'leave',
+                    date: Timestamp.fromDate(currentDate),
+                    comments: `Approved request: ${selectedRequest.subject}`,
+                    createdAt: serverTimestamp(),
+                });
+                const nextDate = new Date(currentDate);
+                nextDate.setDate(nextDate.getDate() + 1);
+                currentDate = nextDate;
+            }
+            await activitiesBatch.commit();
+            toast({ title: "Schedule Updated", description: "Leave has been automatically added to the user's schedule.", action: <CheckCircle className="text-green-500" />});
+       }
+
        await logAuditEvent({
         userId: user.uid,
         userEmail: user.email || "N/A",
@@ -362,6 +389,9 @@ export default function AdminUserRequestsPage() {
                     <p><strong>User:</strong> <span className="text-muted-foreground">{selectedRequest.userEmail}</span></p>
                     <p><strong>Category:</strong> <span className="text-muted-foreground">{selectedRequest.requestType}</span></p>
                     {selectedRequest.specificRequestType && <p><strong>Specific Type:</strong> <span className="text-muted-foreground">{selectedRequest.specificRequestType}</span></p>}
+                    {selectedRequest.requestType === 'Leave & Absences' && selectedRequest.startDate && selectedRequest.endDate && (
+                      <p><strong>Dates Requested:</strong> <span className="text-muted-foreground font-medium">{format(new Date(selectedRequest.startDate), "PPP")} to {format(new Date(selectedRequest.endDate), "PPP")}</span></p>
+                    )}
                     <p><strong>Urgency:</strong> <Badge variant={getUrgencyBadgeVariant(selectedRequest.urgencyLevel)} className="capitalize ml-1 px-1.5 py-0.5 text-xs">{selectedRequest.urgencyLevel === "Critical" && <Zap className="h-3 w-3 mr-1" />}{selectedRequest.urgencyLevel || "N/A"}</Badge></p>
                     <p><strong>Submitted:</strong> <span className="text-muted-foreground">{format(selectedRequest.createdAt.toDate(), "PPpp")}</span></p>
                     {selectedRequest.updatedAt && selectedRequest.updatedAt.toMillis() !== selectedRequest.createdAt.toMillis() && <p><strong>Last Updated:</strong> <span className="text-muted-foreground">{format(selectedRequest.updatedAt.toDate(), "PPpp")}</span></p>}
