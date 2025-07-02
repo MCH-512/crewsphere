@@ -19,8 +19,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Calculator, AlertTriangle, Clock, Hash, SunMoon, Bed, Table as TableIcon, PlaneLanding, UserCheck, Timer, BedDouble } from "lucide-react";
+import { Calculator, AlertTriangle, Clock, Hash, SunMoon, Bed, Table as TableIcon, PlaneLanding, UserCheck, Timer, BedDouble, Hotel } from "lucide-react";
 import { AnimatedCard } from "@/components/motion/animated-card";
+import { Switch } from "@/components/ui/switch";
 
 const timeStringToHours = (timeStr: string) => {
   if (!timeStr || !timeStr.includes(':')) return 0;
@@ -34,6 +35,11 @@ const calculatorSchema = z.object({
   sectors: z.coerce.number().min(1).max(10),
   acclimatisation: z.enum(["acclimatised", "unacclimatised"]),
   inFlightRest: z.enum(["none", "class3", "class2", "class1"]),
+  isSplitDuty: z.boolean().default(false),
+  splitDutyBreak: z.string().optional().refine(
+      (val) => !val || /^\d{1,2}:\d{2}$/.test(val),
+      "Use HH:MM format (e.g., 04:00)"
+  ),
   commandersDiscretion: z.enum(["none", "1h", "2h"]).default("none"),
   previousDutyLength: z.string().optional().refine(
       (val) => !val || /^\d{1,2}:\d{2}$/.test(val),
@@ -43,6 +49,14 @@ const calculatorSchema = z.object({
       (val) => !val || /^\d{1,2}:\d{2}$/.test(val),
       "Use HH:MM format (e.g., 09:00)"
   ),
+}).superRefine((data, ctx) => {
+    if (data.isSplitDuty && (!data.splitDutyBreak || !/^\d{1,2}:\d{2}$/.test(data.splitDutyBreak))) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Break duration is required for Split Duty.",
+            path: ["splitDutyBreak"],
+        });
+    }
 });
 
 type CalculatorValues = z.infer<typeof calculatorSchema>;
@@ -101,11 +115,15 @@ export default function FlightDutyCalculatorPage() {
       sectors: 4,
       acclimatisation: "acclimatised",
       inFlightRest: "none",
+      isSplitDuty: false,
+      splitDutyBreak: "03:00",
       commandersDiscretion: "none",
       previousDutyLength: "10:30",
       precedingRestLength: "",
     },
   });
+  
+  const isSplitDuty = form.watch("isSplitDuty");
 
   function onSubmit(values: CalculatorValues) {
     const reportHour = parseFloat(values.reportTime.replace(':', '.'));
@@ -140,6 +158,18 @@ export default function FlightDutyCalculatorPage() {
     breakdown.unshift({ label: tableLabel, value: formatHours(baseFDP), adjustment: `Report time ${values.reportTime} & ${sectors} sectors.`, icon: TableIcon });
 
     let finalFDP = baseFDP;
+    let splitDutyBreakHours = 0;
+    let splitDutyExtensionHours = 0;
+
+    if(values.isSplitDuty && values.splitDutyBreak) {
+        splitDutyBreakHours = timeStringToHours(values.splitDutyBreak);
+        if (splitDutyBreakHours >= 3) { // Split duty requires a minimum break
+            splitDutyExtensionHours = splitDutyBreakHours * 0.5;
+            finalFDP += splitDutyExtensionHours;
+            breakdown.push({ label: "Split Duty Extension", value: `+${formatHours(splitDutyExtensionHours)}`, adjustment: `For a break of ${formatHours(splitDutyBreakHours)}.`, icon: Hotel });
+        }
+    }
+
     if (values.commandersDiscretion !== 'none') {
         const discretionHours = parseInt(values.commandersDiscretion, 10);
         finalFDP += discretionHours;
@@ -167,7 +197,8 @@ export default function FlightDutyCalculatorPage() {
     const [reportHours, reportMinutes] = values.reportTime.split(':').map(Number);
     const reportTotalMinutes = reportHours * 60 + reportMinutes;
     const fdpTotalMinutes = finalFDP * 60;
-    const endTotalMinutes = reportTotalMinutes + fdpTotalMinutes;
+    const breakTotalMinutes = splitDutyBreakHours * 60;
+    const endTotalMinutes = reportTotalMinutes + fdpTotalMinutes + breakTotalMinutes;
 
     const endDayOffset = Math.floor(endTotalMinutes / (24 * 60));
     const endHour = Math.floor((endTotalMinutes % (24 * 60)) / 60);
@@ -241,6 +272,26 @@ export default function FlightDutyCalculatorPage() {
                     </div>
                   </FormItem>
                 )}/>
+                 <FormField control={form.control} name="isSplitDuty" render={({ field }) => (
+                   <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-1">
+                     <FormLabel className="md:col-span-1 flex items-center gap-2 pt-1.5"><Hotel/> Split Duty</FormLabel>
+                      <div className="md:col-span-2 flex items-center pt-1">
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </div>
+                  </FormItem>
+                )}/>
+                {isSplitDuty && (
+                    <FormField control={form.control} name="splitDutyBreak" render={({ field }) => (
+                       <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-1">
+                         <FormLabel className="md:col-span-1 flex items-center gap-2 pt-1.5">Break Duration</FormLabel>
+                          <div className="md:col-span-2">
+                            <FormControl><Input placeholder="HH:MM (e.g., 04:00)" {...field} className="max-w-xs" /></FormControl>
+                            <FormDescription className="mt-1">Duration of break in suitable accommodation.</FormDescription>
+                            <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}/>
+                )}
                 <FormField control={form.control} name="inFlightRest" render={({ field }) => (
                   <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-1">
                     <FormLabel className="md:col-span-1 flex items-center gap-2 pt-1.5"><Bed/> In-Flight Rest Facilities</FormLabel>
