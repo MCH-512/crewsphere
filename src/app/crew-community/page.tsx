@@ -106,17 +106,19 @@ export default function CrewCommunityPage() {
         }
 
         try {
-            await addDoc(collection(db, "communityPosts"), {
+            const postPayload = {
                 userId: user.uid,
                 userDisplayName: user.displayName || user.email,
                 userAvatarUrl: user.photoURL || null,
                 content: data.content,
-                imageUrl: imageUrl,
                 likes: [],
                 likeCount: 0,
                 commentCount: 0,
                 createdAt: serverTimestamp(),
-            });
+                ...(imageUrl && { imageUrl: imageUrl }),
+            };
+
+            await addDoc(collection(db, "communityPosts"), postPayload);
             postForm.reset();
             fetchPosts();
         } catch (error) {
