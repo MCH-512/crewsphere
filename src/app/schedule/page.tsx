@@ -25,6 +25,7 @@ import { format, startOfDay, endOfDay, parseISO, setHours, setMinutes, setSecond
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getAirportByCode } from "@/services/airport-service";
 import type { StoredTrainingSession } from "@/schemas/training-session-schema";
+import { cn } from "@/lib/utils";
 
 interface Flight {
   id: string;
@@ -406,13 +407,28 @@ export default function SchedulePage() {
     }
     switch (activityType) {
       case "flight": return <PlaneTakeoff className="h-5 w-5 text-primary" />;
-      case "training": return <School className="h-5 w-5 text-indigo-500" />;
-      case "off": return <Bed className="h-5 w-5 text-green-500" />;
-      case "standby": return <Shield className="h-5 w-5 text-orange-500" />; 
-      case "leave": return <Briefcase className="h-5 w-5 text-blue-500" />; 
+      case "training": return <School className="h-5 w-5 text-accent" />;
+      case "off": return <Bed className="h-5 w-5 text-success" />;
+      case "standby": return <Shield className="h-5 w-5 text-warning" />; 
+      case "leave": return <Briefcase className="h-5 w-5 text-secondary-foreground" />; 
       case "sick": return <HeartPulse className="h-5 w-5 text-destructive" />;
       case "other": default: return <CircleHelp className="h-5 w-5 text-muted-foreground" />;
     }
+  };
+  
+  const getActivityCardClass = (activityType: UserActivity["activityType"], detailsExist?: boolean): string => {
+      if ((activityType === 'flight' || activityType === 'training') && !detailsExist) {
+          return "bg-destructive/10 border-destructive/20";
+      }
+      switch (activityType) {
+          case "flight": return "bg-primary/10 border-primary/20";
+          case "training": return "bg-accent/10 border-accent/20";
+          case "off": return "bg-success/10 border-success/20";
+          case "standby": return "bg-warning/10 border-warning/20";
+          case "leave": return "bg-secondary border-border";
+          case "sick": return "bg-destructive/10 border-destructive/20";
+          case "other": default: return "bg-muted/50";
+      }
   };
 
 
@@ -459,7 +475,7 @@ export default function SchedulePage() {
                   <ScrollArea className="h-[300px] pr-3">
                     <ul className="space-y-3">
                       {eventsForSelectedDate.map((event) => (
-                        <li key={event.id} className="p-3 rounded-md border bg-card hover:shadow-sm transition-shadow">
+                        <li key={event.id} className={cn("p-3 rounded-md border hover:shadow-sm transition-shadow", getActivityCardClass(event.activityType, !!event.flightDetails || !!event.sessionDetails))}>
                           <div className="flex justify-between items-start">
                             <div className="flex items-center gap-2">
                                 {getActivityIcon(event.activityType, !!event.flightDetails || !!event.sessionDetails)}
@@ -536,8 +552,8 @@ export default function SchedulePage() {
 
               {(watchedActivityType !== "flight" && watchedActivityType !== "training") && (
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField control={activityForm.control} name="startTime" render={({ field }) => (<FormItem><FormLabel>Start Time (Local)</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormDescription>For timed events.</FormDescription><FormMessage /></FormItem>)}/>
-                  <FormField control={activityForm.control} name="endTime" render={({ field }) => (<FormItem><FormLabel>End Time (Local)</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormDescription>For timed events.</FormDescription><FormMessage /></FormItem>)}/>
+                  <FormField control={activityForm.control} name="startTime" render={({ field }) => (<FormItem><FormLabel>Start Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormDescription>Optional, for timed events.</FormDescription><FormMessage /></FormItem>)}/>
+                  <FormField control={activityForm.control} name="endTime" render={({ field }) => (<FormItem><FormLabel>End Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormDescription>Optional, for timed events.</FormDescription><FormMessage /></FormItem>)}/>
                 </div>
               )}
               <FormField control={activityForm.control} name="comments" render={({ field }) => (<FormItem><FormLabel>Comments</FormLabel><FormControl><Textarea placeholder="Optional notes or details..." {...field} /></FormControl><FormMessage /></FormItem>)}/>
