@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -188,75 +187,87 @@ export default function FlightDutyCalculatorPage() {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-lg">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
                 <FormField control={form.control} name="reportTime" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2"><Clock/> Report Time (Local)</FormLabel>
-                    <FormControl><Input type="time" {...field} /></FormControl>
-                    <FormMessage />
+                  <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-1">
+                    <FormLabel className="md:col-span-1 flex items-center gap-2 pt-1.5"><Clock/> Report Time (Local)</FormLabel>
+                    <div className="md:col-span-2">
+                      <FormControl><Input type="time" {...field} className="max-w-xs" /></FormControl>
+                      <FormMessage />
+                    </div>
                   </FormItem>
                 )}/>
                 <FormField control={form.control} name="sectors" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2"><Hash/> Number of Sectors</FormLabel>
-                    <Select onValueChange={(val) => field.onChange(parseInt(val, 10))} defaultValue={String(field.value)}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {Array.from({ length: 10 }, (_, i) => i + 1).map(s => <SelectItem key={s} value={String(s)}>{s} Sector{s > 1 ? 's' : ''}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
+                   <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-1">
+                    <FormLabel className="md:col-span-1 flex items-center gap-2 pt-1.5"><Hash/> Number of Sectors</FormLabel>
+                     <div className="md:col-span-2">
+                        <Select onValueChange={(val) => field.onChange(parseInt(val, 10))} defaultValue={String(field.value)}>
+                          <FormControl><SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {Array.from({ length: 10 }, (_, i) => i + 1).map(s => <SelectItem key={s} value={String(s)}>{s} Sector{s > 1 ? 's' : ''}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </div>
                   </FormItem>
                 )}/>
                 <FormField control={form.control} name="acclimatisation" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2"><SunMoon/> Crew State</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="acclimatised">Acclimatised</SelectItem>
-                        <SelectItem value="unacclimatised">Unacclimatised</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
+                  <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-1">
+                    <FormLabel className="md:col-span-1 flex items-center gap-2 pt-1.5"><SunMoon/> Crew State</FormLabel>
+                     <div className="md:col-span-2">
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl><SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="acclimatised">Acclimatised</SelectItem>
+                            <SelectItem value="unacclimatised">Unacclimatised</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </div>
                   </FormItem>
                 )}/>
                 <FormField control={form.control} name="inFlightRest" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2"><Bed/> In-Flight Rest Facilities</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">None / Class 3 Seat</SelectItem>
-                        <SelectItem value="class3">Class 3 Seat (Leg & foot support)</SelectItem>
-                        <SelectItem value="class2">Class 2 Bunk / Lie-flat Seat</SelectItem>
-                        <SelectItem value="class1">Class 1 Bunk</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
+                  <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-1">
+                    <FormLabel className="md:col-span-1 flex items-center gap-2 pt-1.5"><Bed/> In-Flight Rest Facilities</FormLabel>
+                     <div className="md:col-span-2">
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl><SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None / Class 3 Seat</SelectItem>
+                            <SelectItem value="class3">Class 3 Seat (Leg & foot support)</SelectItem>
+                            <SelectItem value="class2">Class 2 Bunk / Lie-flat Seat</SelectItem>
+                            <SelectItem value="class1">Class 1 Bunk</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </div>
                   </FormItem>
                 )}/>
                  <FormField control={form.control} name="commandersDiscretion" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2"><UserCheck/> Commander's Discretion</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="1h">+1 Hour</SelectItem>
-                        <SelectItem value="2h">+2 Hours</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>Optional: Apply a discretionary extension to the FDP.</FormDescription>
-                    <FormMessage />
+                   <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-1">
+                     <FormLabel className="md:col-span-1 flex items-center gap-2 pt-1.5"><UserCheck/> Commander's Discretion</FormLabel>
+                      <div className="md:col-span-2">
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl><SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="1h">+1 Hour</SelectItem>
+                            <SelectItem value="2h">+2 Hours</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription className="mt-1">Optional extension to the FDP.</FormDescription>
+                        <FormMessage />
+                      </div>
                   </FormItem>
                 )}/>
                  <FormField control={form.control} name="previousDutyLength" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2"><Timer/> Length of Preceding Duty</FormLabel>
-                    <FormControl><Input placeholder="HH:MM (e.g., 10:30)" {...field} /></FormControl>
-                    <FormDescription>Optional: For calculating minimum rest period.</FormDescription>
-                    <FormMessage />
+                   <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-1">
+                     <FormLabel className="md:col-span-1 flex items-center gap-2 pt-1.5"><Timer/> Preceding Duty Length</FormLabel>
+                      <div className="md:col-span-2">
+                        <FormControl><Input placeholder="HH:MM (e.g., 10:30)" {...field} className="max-w-xs" /></FormControl>
+                        <FormDescription className="mt-1">Optional: For calculating minimum rest period.</FormDescription>
+                        <FormMessage />
+                    </div>
                   </FormItem>
                 )}/>
                 <Button type="submit">Calculate</Button>
