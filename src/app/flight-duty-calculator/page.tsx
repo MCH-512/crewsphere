@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -18,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Calculator, AlertTriangle, Clock, Hash, SunMoon, Bed, Table as TableIcon, PlaneLanding, UserCheck, Timer } from "lucide-react";
+import { Calculator, AlertTriangle, Clock, Hash, SunMoon, Bed, Table as TableIcon, PlaneLanding, UserCheck, Timer, BedDouble } from "lucide-react";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
 const timeStringToHours = (timeStr: string) => {
@@ -38,6 +39,10 @@ const calculatorSchema = z.object({
       (val) => !val || /^\d{1,2}:\d{2}$/.test(val),
       "Use HH:MM format (e.g., 10:30)"
     ),
+  precedingRestLength: z.string().optional().refine(
+      (val) => !val || /^\d{1,2}:\d{2}$/.test(val),
+      "Use HH:MM format (e.g., 09:00)"
+  ),
 });
 
 type CalculatorValues = z.infer<typeof calculatorSchema>;
@@ -47,6 +52,7 @@ interface CalculationResult {
   finalFDP: string;
   potentialFDPWithExtension: string | null;
   minRest: string;
+  minRestNote: string | null;
   latestOnBlocks: string;
   breakdown: {
     label: string;
@@ -97,6 +103,7 @@ export default function FlightDutyCalculatorPage() {
       inFlightRest: "none",
       commandersDiscretion: "none",
       previousDutyLength: "10:30",
+      precedingRestLength: "",
     },
   });
 
@@ -149,6 +156,13 @@ export default function FlightDutyCalculatorPage() {
     const previousDutyHours = values.previousDutyLength ? timeStringToHours(values.previousDutyLength) : 0;
     const minRestHours = Math.max(previousDutyHours, 12); // Assuming rest at home base (12h)
 
+    const precedingRestHours = values.precedingRestLength ? timeStringToHours(values.precedingRestLength) : null;
+    let minRestNote = null;
+    if (precedingRestHours !== null && precedingRestHours < 10) {
+        minRestNote = "Preceding rest was reduced. Check regulations for compensatory rest requirements.";
+    }
+
+
     // --- Calculate Latest On-Blocks Time ---
     const [reportHours, reportMinutes] = values.reportTime.split(':').map(Number);
     const reportTotalMinutes = reportHours * 60 + reportMinutes;
@@ -167,6 +181,7 @@ export default function FlightDutyCalculatorPage() {
       finalFDP: formatHours(finalFDP),
       potentialFDPWithExtension,
       minRest: formatHours(minRestHours),
+      minRestNote,
       latestOnBlocks: latestOnBlocksDisplay,
       breakdown,
     });
@@ -270,6 +285,16 @@ export default function FlightDutyCalculatorPage() {
                     </div>
                   </FormItem>
                 )}/>
+                 <FormField control={form.control} name="precedingRestLength" render={({ field }) => (
+                   <FormItem className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-1">
+                     <FormLabel className="md:col-span-1 flex items-center gap-2 pt-1.5"><BedDouble/> Preceding Rest Length</FormLabel>
+                      <div className="md:col-span-2">
+                        <FormControl><Input placeholder="HH:MM (e.g., 09:00)" {...field} className="max-w-xs" /></FormControl>
+                        <FormDescription className="mt-1">Optional: For identifying potential compensatory rest.</FormDescription>
+                        <FormMessage />
+                    </div>
+                  </FormItem>
+                )}/>
                 <Button type="submit">Calculate</Button>
               </form>
             </Form>
@@ -294,6 +319,7 @@ export default function FlightDutyCalculatorPage() {
                             <Bed className="h-5 w-5" />
                             <AlertTitle className="font-bold text-lg">Minimum Rest</AlertTitle>
                             <AlertDescription className="text-xl font-mono font-semibold">{result.minRest}</AlertDescription>
+                            {result.minRestNote && <p className="text-xs text-muted-foreground mt-1">{result.minRestNote}</p>}
                         </Alert>
                         <Alert>
                             <PlaneLanding className="h-5 w-5" />
