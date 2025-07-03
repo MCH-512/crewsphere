@@ -210,7 +210,7 @@ export default function AdminPurserReportsPage() {
                         <CardHeader className="pb-3"><CardTitle className="text-lg">Flight & Passenger Details</CardTitle></CardHeader>
                         <CardContent className="text-sm space-y-3">
                             <p><strong>Aircraft:</strong> {selectedReport.aircraftTypeRegistration}</p>
-                            <p><strong>Total Passengers:</strong> {selectedReport.passengerLoad.total} (Adults: {selectedReport.passengerLoad.adults}, Infants: {selectedReport.passengerLoad.infants})</p>
+                            <p><strong>Total Passengers:</strong> {selectedReport.passengerLoad?.total ?? 'N/A'} (Adults: {selectedReport.passengerLoad?.adults ?? 'N/A'}, Infants: {selectedReport.passengerLoad?.infants ?? 'N/A'})</p>
                             <div>
                                 <Label className="font-medium">Crew Members:</Label>
                                 <p className="text-muted-foreground whitespace-pre-wrap text-xs p-2 bg-muted rounded-md mt-1">{selectedReport.crewMembers}</p>
