@@ -1,17 +1,19 @@
 
 import { z } from "zod";
 import type { Timestamp } from 'firebase/firestore';
-import { Shield, HeartPulse, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, PlusCircle } from "lucide-react";
+import { Shield, HeartPulse, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, PlusCircle, ClipboardEdit, ClipboardList } from "lucide-react";
 
 export const optionalReportSections = [
-    { name: 'safetyIncidents', label: 'Safety Incidents', placeholder: 'Describe any safety-related incidents or concerns...', icon: Shield },
-    { name: 'securityIncidents', label: 'Security Incidents', placeholder: 'Describe any security-related incidents or concerns...', icon: AlertCircle },
-    { name: 'medicalIncidents', label: 'Medical Incidents', placeholder: 'Describe any medical incidents, treatments administered, or requests for medical assistance...', icon: HeartPulse },
-    { name: 'passengerFeedback', label: 'Significant Passenger Feedback', placeholder: 'Note any notable positive or negative feedback from passengers...', icon: MessageSquare },
-    { name: 'cateringNotes', label: 'Catering Notes', placeholder: 'Note any issues with catering, stock levels, or special meal requests...', icon: Utensils },
-    { name: 'maintenanceIssues', label: 'Maintenance or Equipment Issues', placeholder: 'Describe any technical issues or malfunctioning cabin equipment...', icon: Wrench },
-    { name: 'crewPerformanceNotes', label: 'Crew Performance Notes', placeholder: 'Note any exceptional performance or areas for improvement within the crew...', icon: UserCheck },
-    { name: 'otherObservations', label: 'Other Observations', placeholder: 'Any other notes or observations relevant to the flight...', icon: PlusCircle },
+    { name: 'briefingDetails', label: 'Briefing & Questions', placeholder: 'Décrivez le déroulement du briefing, les points abordés, les questions posées par l\'équipage et les réponses apportées...', icon: ClipboardEdit },
+    { name: 'crewTaskDistribution', label: 'Répartition des Tâches', placeholder: 'Détaillez la répartition des tâches et des zones de responsabilité entre les membres de l\'équipage...', icon: ClipboardList },
+    { name: 'cateringDetails', label: 'Service & Prestations', placeholder: 'Notez le nombre et le type de prestations, les problèmes de stock, les retours sur la qualité, la gestion des repas spéciaux...', icon: Utensils },
+    { name: 'safetyIncidents', label: 'Incidents de Sécurité (Safety)', placeholder: 'Décrivez tout incident ou préoccupation lié à la sécurité (safety)...', icon: Shield },
+    { name: 'securityIncidents', label: 'Incidents de Sûreté (Security)', placeholder: 'Décrivez tout incident ou préoccupation lié à la sûreté (security)...', icon: AlertCircle },
+    { name: 'medicalIncidents', label: 'Incidents Médicaux', placeholder: 'Décrivez tout incident médical, les soins administrés ou les demandes d\'assistance médicale...', icon: HeartPulse },
+    { name: 'passengerFeedback', label: 'Retours Passagers Importants', placeholder: 'Notez tout retour passager, positif ou négatif, qui mérite d\'être signalé...', icon: MessageSquare },
+    { name: 'maintenanceIssues', label: 'Problèmes de Maintenance ou d\'Équipement', placeholder: 'Décrivez tout problème technique ou dysfonctionnement d\'équipement en cabine...', icon: Wrench },
+    { name: 'crewPerformanceNotes', label: 'Notes sur la Performance de l\'Équipage', placeholder: 'Notez toute performance exceptionnelle ou point d\'amélioration au sein de l\'équipage...', icon: UserCheck },
+    { name: 'otherObservations', label: 'Autres Observations', placeholder: 'Toute autre note ou observation pertinente pour le vol...', icon: PlusCircle },
 ] as const;
 
 
@@ -40,11 +42,13 @@ export const purserReportFormSchema = z.object({
   generalFlightSummary: z.string().min(20, "Please provide a summary of at least 20 characters."),
 
   // Optional sections
+  briefingDetails: z.string().optional(),
+  crewTaskDistribution: z.string().optional(),
+  cateringDetails: z.string().optional(),
   safetyIncidents: z.string().optional(),
   securityIncidents: z.string().optional(),
   medicalIncidents: z.string().optional(),
   passengerFeedback: z.string().optional(),
-  cateringNotes: z.string().optional(),
   maintenanceIssues: z.string().optional(),
   crewPerformanceNotes: z.string().optional(),
   otherObservations: z.string().optional(),

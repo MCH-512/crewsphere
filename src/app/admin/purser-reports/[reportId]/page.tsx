@@ -121,11 +121,13 @@ export default function PurserReportDetailPage() {
         try {
             const reportContent = [
                 `Flight Summary: ${report.generalFlightSummary}`,
+                report.briefingDetails && `Briefing Details: ${report.briefingDetails}`,
+                report.crewTaskDistribution && `Crew Task Distribution: ${report.crewTaskDistribution}`,
+                report.cateringDetails && `Catering & Service Details: ${report.cateringDetails}`,
                 report.safetyIncidents && `Safety Incidents: ${report.safetyIncidents}`,
                 report.securityIncidents && `Security Incidents: ${report.securityIncidents}`,
                 report.medicalIncidents && `Medical Incidents: ${report.medicalIncidents}`,
                 report.passengerFeedback && `Passenger Feedback: ${report.passengerFeedback}`,
-                report.cateringNotes && `Catering Notes: ${report.cateringNotes}`,
                 report.maintenanceIssues && `Maintenance Issues: ${report.maintenanceIssues}`,
                 report.crewPerformanceNotes && `Crew Performance Notes: ${report.crewPerformanceNotes}`,
                 report.otherObservations && `Other Observations: ${report.otherObservations}`,
