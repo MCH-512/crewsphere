@@ -143,7 +143,7 @@ export default function AdminCoursesPage() {
                 batch.update(certRuleRef, { passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays });
 
                 await batch.commit();
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'UPDATE_COURSE', entityId: currentCourse.id, details: { title: data.title }});
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'UPDATE_COURSE', entityType: "COURSE", entityId: currentCourse.id, details: { title: data.title }});
                 toast({ title: "Course Updated", description: `"${data.title}" has been updated successfully.` });
             
             } else {
@@ -172,7 +172,7 @@ export default function AdminCoursesPage() {
                 });
                 
                 await batch.commit();
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'CREATE_COURSE', entityId: courseRef.id, details: { title: data.title }});
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'CREATE_COURSE', entityType: "COURSE", entityId: courseRef.id, details: { title: data.title }});
                 toast({ title: "Course Created", description: `"${data.title}" has been saved successfully.` });
             }
 
@@ -200,7 +200,7 @@ export default function AdminCoursesPage() {
             batch.delete(doc(db, "courses", courseToDelete.id));
 
             await batch.commit();
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'DELETE_COURSE', entityId: courseToDelete.id, details: { title: courseToDelete.title }});
+            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'DELETE_COURSE', entityType: "COURSE", entityId: courseToDelete.id, details: { title: courseToDelete.title }});
             toast({ title: "Course Deleted", description: `"${courseToDelete.title}" and all its data have been removed.` });
             fetchCourses();
         } catch (error) {

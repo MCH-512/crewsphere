@@ -122,9 +122,10 @@ export default function SubmitPurserReportPage() {
       const flightRef = doc(db, "flights", data.flightId);
       batch.update(flightRef, { purserReportSubmitted: true, purserReportId: reportRef.id });
       
+      await batch.commit();
+      
       await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'SUBMIT_PURSER_REPORT', entityType: 'PURSER_REPORT', entityId: reportRef.id, details: { flightNumber: data.flightNumber } });
 
-      await batch.commit();
       toast({ title: "Report Submitted", description: "Your purser report has been successfully submitted." });
       router.push("/purser-reports/history");
     } catch (error) {

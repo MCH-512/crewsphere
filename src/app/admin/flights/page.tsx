@@ -191,7 +191,8 @@ export default function AdminFlightsPage() {
             if (isEditMode && currentFlight) {
                 const flightRef = doc(db, "flights", currentFlight.id);
                 batch.update(flightRef, flightData);
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
+                await batch.commit();
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityType: "FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
             } else {
                 const flightRef = doc(collection(db, "flights"));
                 batch.set(flightRef, { 
@@ -199,10 +200,10 @@ export default function AdminFlightsPage() {
                     createdAt: serverTimestamp(), 
                     purserReportSubmitted: false,
                 });
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_FLIGHT", entityId: flightRef.id, details: { flightNumber: data.flightNumber } });
+                await batch.commit();
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_FLIGHT", entityType: "FLIGHT", entityId: flightRef.id, details: { flightNumber: data.flightNumber } });
             }
 
-            await batch.commit();
             toast({ title: isEditMode ? "Flight Updated" : "Flight Created", description: `Flight ${data.flightNumber} has been saved and crew schedules updated.` });
             fetchPageData();
             setIsManageDialogOpen(false);
@@ -229,7 +230,7 @@ export default function AdminFlightsPage() {
             }
             
             await batch.commit();
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "DELETE_FLIGHT", entityId: flightToDelete.id, details: { flightNumber: flightToDelete.flightNumber } });
+            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "DELETE_FLIGHT", entityType: "FLIGHT", entityId: flightToDelete.id, details: { flightNumber: flightToDelete.flightNumber } });
             toast({ title: "Flight Deleted", description: `Flight "${flightToDelete.flightNumber}" and associated schedule entries have been removed.` });
             fetchPageData();
         } catch (error) {

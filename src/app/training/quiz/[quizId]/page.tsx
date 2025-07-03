@@ -105,7 +105,7 @@ export default function QuizPage() {
                 userId: user.uid,
                 userEmail: user.email,
                 actionType: "COMPLETE_QUIZ",
-                entityType: "QUIZ",
+                entityType: "QUIZ_ATTEMPT",
                 entityId: quizData.id,
                 details: {
                     score: calculatedScore,

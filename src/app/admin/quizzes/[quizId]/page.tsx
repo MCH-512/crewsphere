@@ -113,12 +113,12 @@ export default function QuizDetailPage() {
             if (isEditMode && currentQuestion) {
                 const questionRef = doc(db, "questions", currentQuestion.id);
                 await updateDoc(questionRef, { ...data, updatedAt: serverTimestamp() });
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'UPDATE_QUESTION', entityId: currentQuestion.id, details: { quizId } });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'UPDATE_QUESTION', entityType: "QUESTION", entityId: currentQuestion.id, details: { quizId } });
                 toast({ title: "Question Updated", description: "The question has been updated successfully." });
             } else {
                 const questionData = { ...data, quizId: quiz.id, questionType: 'mcq', createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
                 const newQuestionRef = await addDoc(collection(db, "questions"), questionData);
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'CREATE_QUESTION', entityId: newQuestionRef.id, details: { quizId } });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'CREATE_QUESTION', entityType: "QUESTION", entityId: newQuestionRef.id, details: { quizId } });
                 toast({ title: "Question Created", description: "The new question has been added to the quiz." });
             }
             fetchQuizAndQuestions();
@@ -135,7 +135,7 @@ export default function QuizDetailPage() {
         if (!user || !window.confirm("Are you sure you want to delete this question? This action cannot be undone.")) return;
         try {
             await deleteDoc(doc(db, "questions", questionId));
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'DELETE_QUESTION', entityId: questionId, details: { quizId } });
+            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'DELETE_QUESTION', entityType: "QUESTION", entityId: questionId, details: { quizId } });
             toast({ title: "Question Deleted", description: "The question has been permanently removed." });
             fetchQuizAndQuestions();
         } catch (error) {

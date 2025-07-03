@@ -119,14 +119,17 @@ export default function AdminDocumentsPage() {
             };
 
             if (isEditMode && currentDocument) {
-                batch.update(doc(db, "documents", currentDocument.id), docData);
+                const docRef = doc(db, "documents", currentDocument.id);
+                batch.update(docRef, docData);
+                await batch.commit();
                  await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_DOCUMENT", entityType: "DOCUMENT", entityId: currentDocument.id, details: { title: data.title } });
             } else {
-                batch.set(doc(collection(db, "documents")), docData);
-                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_DOCUMENT", entityType: "DOCUMENT", details: { title: data.title } });
+                const docRef = doc(collection(db, "documents"));
+                batch.set(docRef, docData);
+                await batch.commit();
+                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_DOCUMENT", entityType: "DOCUMENT", entityId: docRef.id, details: { title: data.title } });
             }
 
-            await batch.commit();
             toast({ title: isEditMode ? "Document Updated" : "Document Added", description: `"${data.title}" has been saved.` });
             fetchDocuments();
             setIsManageDialogOpen(false);
@@ -139,7 +142,7 @@ export default function AdminDocumentsPage() {
     };
 
     const handleDelete = async (docToDelete: StoredDocument) => {
-        if (!user) return;
+        if (!user || !window.confirm(`Are you sure you want to delete the document "${docToDelete.title}"?`)) return;
         try {
             await deleteObject(ref(storage, docToDelete.filePath));
             await deleteDoc(doc(db, "documents", docToDelete.id));
