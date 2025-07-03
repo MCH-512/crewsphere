@@ -47,6 +47,7 @@ const predefinedLabels: { [key: string]: string } = {
   quiz: "Quiz",
   training: "E-Learning Center",
   "community-hub": "Community Hub",
+  "weather-decoder": "Weather Decoder",
 };
 
 export function Breadcrumbs() {

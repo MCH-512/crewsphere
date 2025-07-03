@@ -1,9 +1,10 @@
+
 "use client";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Book, Calculator, MessagesSquare, ScrollText, Wrench, Mic } from "lucide-react";
+import { ArrowRight, Book, Calculator, CloudSun, MessagesSquare, ScrollText, Wrench, Mic } from "lucide-react";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
@@ -50,6 +51,13 @@ const tools: Tool[] = [
     description: "Access guides on etiquette, savoir-vivre, and professional best practices for crew members.",
     href: "/toolbox/guides",
     delay: 0.3
+  },
+  {
+    icon: CloudSun,
+    title: "Weather Decoder",
+    description: "Get a human-readable METAR or TAF weather report using our AI-powered decoder.",
+    href: "/toolbox/weather-decoder",
+    delay: 0.35
   },
 ];
 
