@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -39,8 +40,6 @@ const predefinedLabels: { [key: string]: string } = {
   "phonetic-alphabet": "Phonetic Alphabet",
   "audit-logs": "Audit Logs",
   "my-schedule": "My Schedule",
-  "my-logbook": "My Logbook",
-  "my-documents": "My Documents",
   "document-library": "Document Library",
   documents: "Document Management",
   courses: "E-Learning Courses",
@@ -54,9 +53,6 @@ const predefinedLabels: { [key: string]: string } = {
   "airport-directory": "Airport Directory",
   "flight-timeline": "Flight Timeline Calculator",
   alerts: "Alert Management",
-  certificate: "Certificate",
-  "expiry-management": "Document Expiry",
-  "training-sessions": "Training Sessions",
 };
 
 export function Breadcrumbs() {
@@ -113,3 +109,5 @@ export function Breadcrumbs() {
     </nav>
   );
 }
+
+    

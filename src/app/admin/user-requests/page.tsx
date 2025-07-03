@@ -13,10 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input"; 
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown, Info, MessageSquareText, CheckCircle } from "lucide-react";
-import { format, startOfDay } from "date-fns";
+import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown, Info, MessageSquareText } from "lucide-react";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority"; 
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -153,39 +153,12 @@ export default function AdminUserRequestsPage() {
 
     setIsUpdatingStatus(true);
     try {
-        const batch = writeBatch(db);
         const requestDocRef = doc(db, "requests", selectedRequest.id);
-
-        batch.update(requestDocRef, {
+        await updateDoc(requestDocRef, {
             status: newStatus,
             adminResponse: adminResponseText || null,
             updatedAt: serverTimestamp(),
         });
-        
-        const isLeaveRequestApproval = newStatus === 'approved' && selectedRequest.requestType === 'Leave & Absences' && selectedRequest.startDate && selectedRequest.endDate;
-
-        if (isLeaveRequestApproval) {
-            const startDate = startOfDay(new Date(selectedRequest.startDate!));
-            const endDate = startOfDay(new Date(selectedRequest.endDate!));
-
-            let currentDate = startDate;
-            while (currentDate <= endDate) {
-                const activityDocRef = doc(collection(db, "userActivities"));
-                batch.set(activityDocRef, {
-                    userId: selectedRequest.userId,
-                    activityType: 'leave' as const,
-                    date: Timestamp.fromDate(currentDate),
-                    comments: `Approved request: ${selectedRequest.subject}`,
-                    createdAt: serverTimestamp(),
-                });
-                const nextDate = new Date(currentDate);
-                nextDate.setDate(nextDate.getDate() + 1);
-                currentDate = nextDate;
-            }
-        }
-
-        await batch.commit();
-
         await logAuditEvent({
             userId: user.uid,
             userEmail: user.email || "N/A",
@@ -195,12 +168,7 @@ export default function AdminUserRequestsPage() {
             details: { newStatus: newStatus, oldStatus: selectedRequest.status },
         });
 
-        if (isLeaveRequestApproval) {
-            toast({ title: "Request Approved & Schedule Updated", description: "Leave has been automatically added to the user's schedule.", action: <CheckCircle className="text-green-500" />});
-        } else {
-            toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. Response saved.` });
-        }
-
+        toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. Response saved.` });
         fetchRequests(); 
         setIsManageDialogOpen(false);
     } catch (err) {
@@ -209,7 +177,7 @@ export default function AdminUserRequestsPage() {
     } finally {
         setIsUpdatingStatus(false);
     }
-};
+  };
 
   const getStatusBadgeVariant = (status: UserRequest["status"]): VariantProps<typeof Badge>["variant"] => {
     switch (status) {
@@ -460,4 +428,6 @@ export default function AdminUserRequestsPage() {
     </div>
   );
 }
+    
+
     

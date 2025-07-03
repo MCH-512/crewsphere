@@ -52,10 +52,6 @@ import {
   CheckSquare,
   Compass,
   BellRing,
-  ShieldCheck,
-  BadgeAlert,
-  ClipboardCheck,
-  NotebookPen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -67,8 +63,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/my-schedule", label: "My Schedule", icon: Calendar },
-  { href: "/my-logbook", label: "My Logbook", icon: NotebookPen },
-  { href: "/my-documents", label: "My Documents", icon: ShieldCheck },
   { href: "/training", label: "E-Learning", icon: GraduationCap },
   { href: "/document-library", label: "Document Library", icon: Library },
   { href: "/requests", label: "My Requests", icon: Inbox },
@@ -162,12 +156,10 @@ function LayoutWithSidebar({
     { href: "/admin", label: "Admin Dashboard", icon: ServerCog },
     { href: "/admin/users", label: "User Management", icon: Users },
     { href: "/admin/flights", label: "Flight Management", icon: Plane },
-    { href: "/admin/training-sessions", label: "Training Sessions", icon: ClipboardCheck },
-    { href: "/admin/expiry-management", label: "Document Expiry", icon: BadgeAlert },
     { href: "/admin/alerts", label: "Alert Management", icon: BellRing },
     { href: "/admin/user-requests", label: "User Requests", icon: ClipboardList },
     { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
-    { href: "/admin/courses", label: "E-Learning Courses", icon: GraduationCap },
+    { href: "/admin/courses", label: "Course Management", icon: GraduationCap },
     { href: "/admin/quizzes", label: "Quiz Management", icon: CheckSquare },
     { href: "/admin/documents", label: "Documents", icon: Library },
     { href: "/admin/suggestions", label: "Suggestions", icon: MessageSquare },
@@ -249,7 +241,7 @@ function LayoutWithSidebar({
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="relative h-9 w-9 rounded-full" aria-label="Open user menu">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.photoURL || undefined} alt="User Avatar" data-ai-hint="user portrait" />
+                    <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User Avatar" data-ai-hint="user portrait" />
                     <AvatarFallback>{user?.email ? user.email.substring(0, 2).toUpperCase() : "U"}</AvatarFallback>
                   </Avatar>
                 </Button>
@@ -301,3 +293,5 @@ function LayoutWithSidebar({
     </>
   );
 }
+
+    
