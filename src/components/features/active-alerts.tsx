@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -10,11 +9,25 @@ import { Loader2, Info, AlertTriangle, BellRing, X } from "lucide-react";
 import type { StoredAlert } from "@/schemas/alert-schema";
 import { Button } from "../ui/button";
 
+const DISMISSED_ALERTS_KEY = "dismissedAlerts";
+
 export function ActiveAlerts() {
     const { user } = useAuth();
     const [alerts, setAlerts] = React.useState<StoredAlert[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [dismissedAlerts, setDismissedAlerts] = React.useState<string[]>([]);
+
+    // Load dismissed alerts from localStorage on mount
+    React.useEffect(() => {
+        try {
+            const storedDismissed = localStorage.getItem(DISMISSED_ALERTS_KEY);
+            if (storedDismissed) {
+                setDismissedAlerts(JSON.parse(storedDismissed));
+            }
+        } catch (error) {
+            console.error("Could not parse dismissed alerts from localStorage", error);
+        }
+    }, []);
 
     React.useEffect(() => {
         if (!user) {
@@ -45,7 +58,13 @@ export function ActiveAlerts() {
     }, [user]);
 
     const handleDismiss = (alertId: string) => {
-        setDismissedAlerts(prev => [...prev, alertId]);
+        const newDismissedAlerts = [...dismissedAlerts, alertId];
+        setDismissedAlerts(newDismissedAlerts);
+        try {
+            localStorage.setItem(DISMISSED_ALERTS_KEY, JSON.stringify(newDismissedAlerts));
+        } catch (error) {
+             console.error("Could not save dismissed alerts to localStorage", error);
+        }
     };
 
     if (isLoading) {
@@ -63,11 +82,12 @@ export function ActiveAlerts() {
         return null;
     }
 
-    const getAlertVariant = (type: StoredAlert['type']): 'default' | 'destructive' | 'warning' => {
+    const getAlertVariant = (type: StoredAlert['type']): 'default' | 'destructive' | 'warning' | 'info' => {
         switch (type) {
             case 'critical': return 'destructive';
             case 'warning': return 'warning';
-            default: return 'default';
+            case 'info': return 'info';
+            default: return 'info';
         }
     };
     
