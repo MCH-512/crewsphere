@@ -86,7 +86,7 @@ export function Breadcrumbs() {
           
           let label = predefinedLabels[segment] || formatSegment(segment);
           // Special case for dynamic user detail page
-          if (segments[index-1] === 'users' && index > 1) {
+          if (segments[index-1] === 'users' && formatSegment(segment) === 'Details') {
             label = "User Details";
           }
 
