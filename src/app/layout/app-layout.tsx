@@ -72,7 +72,6 @@ import { HeaderClocks } from "@/components/features/header-clocks";
 const navItems = [
   // Core
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
 
   // Learning & Reference
