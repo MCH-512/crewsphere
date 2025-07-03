@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardCheck } from "lucide-react";
+import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardCheck, Library } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -40,6 +40,7 @@ export default function AdminConsolePage() {
     suggestions: { value: null, isLoading: true, label: "New Suggestions" } as Stat,
     reports: { value: null, isLoading: true, label: "New Reports" } as Stat,
     requests: { value: null, isLoading: true, label: "Pending Requests" } as Stat,
+    documents: { value: null, isLoading: true, label: "Total Documents" } as Stat,
   });
 
   const fetchCounts = React.useCallback(async () => {
@@ -63,6 +64,7 @@ export default function AdminConsolePage() {
     fetcher('suggestions', query(collection(db, "suggestions"), where("status", "==", "new")));
     fetcher('reports', query(collection(db, "purserReports"), where("status", "==", "submitted")));
     fetcher('requests', query(collection(db, "requests"), where("status", "==", "pending")));
+    fetcher('documents', collection(db, "documents"));
 
   }, [user, toast]);
 
@@ -101,6 +103,15 @@ export default function AdminConsolePage() {
       delay: 0.2
     },
     { 
+      icon: Library, 
+      title: "Document Management", 
+      description: "Upload, manage, and distribute operational manuals and documents.", 
+      buttonText: "Manage Documents", 
+      href: "/admin/documents",
+      stat: stats.documents,
+      delay: 0.25
+    },
+    { 
       icon: MessageSquare, 
       title: "Suggestions", 
       description: "Review and manage all user-submitted suggestions for improvement.", 
@@ -108,7 +119,7 @@ export default function AdminConsolePage() {
       href: "/admin/suggestions",
       stat: stats.suggestions,
       highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.25
+      delay: 0.3
     },
     { 
       icon: Settings, 
@@ -116,7 +127,7 @@ export default function AdminConsolePage() {
       description: "Configure application-wide settings and maintenance mode.", 
       buttonText: "Configure Settings", 
       href: "/admin/system-settings", 
-      delay: 0.3
+      delay: 0.35
     },
     { 
       icon: Activity, 
@@ -124,7 +135,7 @@ export default function AdminConsolePage() {
       description: "Review a detailed, chronological record of system activities and changes.", 
       buttonText: "View Logs", 
       href: "/admin/audit-logs", 
-      delay: 0.35
+      delay: 0.4
     },
   ];
 

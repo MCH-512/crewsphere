@@ -39,6 +39,8 @@ const predefinedLabels: { [key: string]: string } = {
   "phonetic-alphabet": "Phonetic Alphabet",
   "audit-logs": "Audit Logs",
   "my-schedule": "My Schedule",
+  "document-library": "Document Library",
+  "documents": "Document Management",
 };
 
 export function Breadcrumbs() {

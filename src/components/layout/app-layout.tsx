@@ -47,6 +47,7 @@ import {
   Activity,
   FileSignature,
   Calendar,
+  Library,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -58,6 +59,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/my-schedule", label: "My Schedule", icon: Calendar },
+  { href: "/document-library", label: "Document Library", icon: Library },
   { href: "/requests", label: "My Requests", icon: Inbox },
   { href: "/purser-reports", label: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin'] },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
@@ -149,6 +151,7 @@ function LayoutWithSidebar({
     { href: "/admin/users", label: "User Management", icon: Users },
     { href: "/admin/user-requests", label: "User Requests", icon: ClipboardCheck },
     { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
+    { href: "/admin/documents", label: "Documents", icon: Library },
     { href: "/admin/suggestions", label: "Suggestions", icon: MessageSquare },
     { href: "/admin/system-settings", label: "System Settings", icon: Settings },
     { href: "/admin/audit-logs", label: "Audit Logs", icon: Activity },
