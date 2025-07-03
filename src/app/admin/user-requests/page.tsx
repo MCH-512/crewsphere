@@ -142,35 +142,38 @@ export default function AdminUserRequestsPage() {
 
   const handleStatusUpdate = async () => {
     if (!selectedRequest || !newStatus || !user) {
-      toast({ title: "Selection Missing", description: "No request selected or new status not chosen.", variant: "default" });
-      return;
+        toast({ title: "Selection Missing", description: "No request selected or new status not chosen.", variant: "default" });
+        return;
     }
     if (newStatus === selectedRequest.status && adminResponseText === (selectedRequest.adminResponse || "")) {
-      toast({ title: "No Change", description: "Status and response are the same.", variant: "default" });
-      setIsManageDialogOpen(false);
-      return;
+        toast({ title: "No Change", description: "Status and response are the same.", variant: "default" });
+        setIsManageDialogOpen(false);
+        return;
     }
 
     setIsUpdatingStatus(true);
     try {
-      const requestDocRef = doc(db, "requests", selectedRequest.id);
-      await updateDoc(requestDocRef, { 
-        status: newStatus,
-        adminResponse: adminResponseText || null,
-        updatedAt: serverTimestamp(),
-       });
-       
-       if (newStatus === 'approved' && selectedRequest.requestType === 'Leave & Absences' && selectedRequest.startDate && selectedRequest.endDate) {
-            const activitiesBatch = writeBatch(db);
-            const startDate = startOfDay(new Date(selectedRequest.startDate));
-            const endDate = startOfDay(new Date(selectedRequest.endDate));
+        const batch = writeBatch(db);
+        const requestDocRef = doc(db, "requests", selectedRequest.id);
+
+        batch.update(requestDocRef, {
+            status: newStatus,
+            adminResponse: adminResponseText || null,
+            updatedAt: serverTimestamp(),
+        });
+        
+        const isLeaveRequestApproval = newStatus === 'approved' && selectedRequest.requestType === 'Leave & Absences' && selectedRequest.startDate && selectedRequest.endDate;
+
+        if (isLeaveRequestApproval) {
+            const startDate = startOfDay(new Date(selectedRequest.startDate!));
+            const endDate = startOfDay(new Date(selectedRequest.endDate!));
 
             let currentDate = startDate;
             while (currentDate <= endDate) {
                 const activityDocRef = doc(collection(db, "userActivities"));
-                activitiesBatch.set(activityDocRef, {
+                batch.set(activityDocRef, {
                     userId: selectedRequest.userId,
-                    activityType: 'leave',
+                    activityType: 'leave' as const,
                     date: Timestamp.fromDate(currentDate),
                     comments: `Approved request: ${selectedRequest.subject}`,
                     createdAt: serverTimestamp(),
@@ -179,29 +182,34 @@ export default function AdminUserRequestsPage() {
                 nextDate.setDate(nextDate.getDate() + 1);
                 currentDate = nextDate;
             }
-            await activitiesBatch.commit();
-            toast({ title: "Schedule Updated", description: "Leave has been automatically added to the user's schedule.", action: <CheckCircle className="text-green-500" />});
-       }
+        }
 
-       await logAuditEvent({
-        userId: user.uid,
-        userEmail: user.email || "N/A",
-        actionType: "UPDATE_REQUEST_STATUS",
-        entityType: "REQUEST",
-        entityId: selectedRequest.id,
-        details: { newStatus: newStatus, oldStatus: selectedRequest.status },
-      });
+        await batch.commit();
 
-      toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. Response saved.` });
-      fetchRequests(); 
-      setIsManageDialogOpen(false);
+        await logAuditEvent({
+            userId: user.uid,
+            userEmail: user.email || "N/A",
+            actionType: "UPDATE_REQUEST_STATUS",
+            entityType: "REQUEST",
+            entityId: selectedRequest.id,
+            details: { newStatus: newStatus, oldStatus: selectedRequest.status },
+        });
+
+        if (isLeaveRequestApproval) {
+            toast({ title: "Request Approved & Schedule Updated", description: "Leave has been automatically added to the user's schedule.", action: <CheckCircle className="text-green-500" />});
+        } else {
+            toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. Response saved.` });
+        }
+
+        fetchRequests(); 
+        setIsManageDialogOpen(false);
     } catch (err) {
-      console.error("Error updating status:", err);
-      toast({ title: "Update Failed", description: "Could not update request status/response.", variant: "destructive" });
+        console.error("Error updating status:", err);
+        toast({ title: "Update Failed", description: "Could not update request status/response.", variant: "destructive" });
     } finally {
-      setIsUpdatingStatus(false);
+        setIsUpdatingStatus(false);
     }
-  };
+};
 
   const getStatusBadgeVariant = (status: UserRequest["status"]): VariantProps<typeof Badge>["variant"] => {
     switch (status) {
