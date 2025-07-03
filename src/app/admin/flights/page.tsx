@@ -13,11 +13,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import { flightFormSchema, type FlightFormValues, type StoredFlight } from "@/schemas/flight-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { getAirportByCode, searchAirports, type Airport } from "@/services/airport-service";
@@ -149,27 +149,57 @@ export default function AdminFlightsPage() {
         setIsSubmitting(true);
         try {
             const batch = writeBatch(db);
-            const flightData = {
+            
+            const flightData: { [key: string]: any } = {
                 ...data,
                 updatedAt: serverTimestamp(),
             };
 
+            const activityData = {
+                userId: data.purserId,
+                activityType: 'flight' as const,
+                date: Timestamp.fromDate(startOfDay(new Date(data.scheduledDepartureDateTimeUTC))),
+                flightNumber: data.flightNumber,
+                departureAirport: data.departureAirport,
+                arrivalAirport: data.arrivalAirport,
+                comments: `Flight ${data.flightNumber} from ${data.departureAirport} to ${data.arrivalAirport}`,
+            };
+
             if (isEditMode && currentFlight) {
-                batch.update(doc(db, "flights", currentFlight.id), flightData);
+                const flightRef = doc(db, "flights", currentFlight.id);
+
+                if (currentFlight.purserActivityId) {
+                    const activityRef = doc(db, "userActivities", currentFlight.purserActivityId);
+                    batch.update(activityRef, activityData);
+                } else {
+                    const newActivityRef = doc(collection(db, "userActivities"));
+                    batch.set(newActivityRef, activityData);
+                    flightData.purserActivityId = newActivityRef.id;
+                }
+                batch.update(flightRef, flightData);
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
             } else {
                 const flightRef = doc(collection(db, "flights"));
-                batch.set(flightRef, { ...flightData, createdAt: serverTimestamp(), purserReportSubmitted: false });
+                const activityRef = doc(collection(db, "userActivities"));
+                
+                batch.set(activityRef, activityData);
+                
+                batch.set(flightRef, { 
+                    ...flightData, 
+                    createdAt: serverTimestamp(), 
+                    purserReportSubmitted: false,
+                    purserActivityId: activityRef.id
+                });
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_FLIGHT", entityId: flightRef.id, details: { flightNumber: data.flightNumber } });
             }
 
             await batch.commit();
-            toast({ title: isEditMode ? "Flight Updated" : "Flight Created", description: `Flight ${data.flightNumber} has been saved.` });
+            toast({ title: isEditMode ? "Flight Updated" : "Flight Created", description: `Flight ${data.flightNumber} has been saved and schedule updated.` });
             fetchPageData();
             setIsManageDialogOpen(false);
         } catch (error) {
             console.error("Error submitting flight:", error);
-            toast({ title: "Submission Failed", variant: "destructive" });
+            toast({ title: "Submission Failed", description: "Could not save flight details.", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
         }
@@ -179,9 +209,19 @@ export default function AdminFlightsPage() {
         if (!user || !window.confirm(`Are you sure you want to delete flight ${flightToDelete.flightNumber}? This action cannot be undone.`)) return;
         
         try {
-            await deleteDoc(doc(db, "flights", flightToDelete.id));
+            const batch = writeBatch(db);
+            const flightRef = doc(db, "flights", flightToDelete.id);
+            batch.delete(flightRef);
+
+            if (flightToDelete.purserActivityId) {
+                const activityRef = doc(db, "userActivities", flightToDelete.purserActivityId);
+                batch.delete(activityRef);
+            }
+            
+            await batch.commit();
+            
             await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "DELETE_FLIGHT", entityId: flightToDelete.id, details: { flightNumber: flightToDelete.flightNumber } });
-            toast({ title: "Flight Deleted", description: `Flight "${flightToDelete.flightNumber}" has been removed.` });
+            toast({ title: "Flight Deleted", description: `Flight "${flightToDelete.flightNumber}" and associated schedule entry have been removed.` });
             fetchPageData();
         } catch (error) {
             console.error("Error deleting flight:", error);

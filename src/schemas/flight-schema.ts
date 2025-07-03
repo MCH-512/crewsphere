@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 import type { Timestamp } from 'firebase/firestore';
 
@@ -26,6 +27,7 @@ export interface StoredFlight {
   scheduledArrivalDateTimeUTC: string; // ISO 8601 string
   aircraftType: string;
   purserId: string; // UID of the assigned purser
+  purserActivityId?: string; // ID of the associated userActivity for the purser
   purserReportSubmitted: boolean;
   purserReportId?: string;
   createdAt: Timestamp;
