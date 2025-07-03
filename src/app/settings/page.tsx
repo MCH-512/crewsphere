@@ -12,12 +12,13 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription as UiFormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { User, Bell, Shield, Palette, Loader2, Info, CalendarDays, KeyRound } from "lucide-react"; 
+import { User, Bell, Shield, Palette, Loader2, Info, CalendarDays, KeyRound, Camera } from "lucide-react"; 
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { updateProfile as updateAuthProfile, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth"; 
 import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { format } from "date-fns";
 import Image from "next/image"; 
 
@@ -51,6 +52,11 @@ export default function SettingsPage() {
   const [isUpdatingProfile, setIsUpdatingProfile] = React.useState(false);
   const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = React.useState(false);
   const [isChangingPassword, setIsChangingPassword] = React.useState(false);
+
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const profileForm = useForm<ProfileSettingsFormValues>({
     resolver: zodResolver(profileSettingsFormSchema),
@@ -128,6 +134,41 @@ export default function SettingsPage() {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        if (file.size > 2 * 1024 * 1024) { // 2MB limit
+            toast({ title: "File Too Large", description: "Please select an image smaller than 2MB.", variant: "destructive" });
+            return;
+        }
+        setSelectedFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleAvatarUpload = async () => {
+    if (!selectedFile || !user || !auth.currentUser || !storage) return;
+    setIsUploading(true);
+    const storageRef = ref(storage, `avatars/${user.uid}/profile`);
+    try {
+        await uploadBytes(storageRef, selectedFile);
+        const photoURL = await getDownloadURL(storageRef);
+
+        await updateAuthProfile(auth.currentUser, { photoURL });
+        const userDocRef = doc(db, "users", user.uid);
+        await updateDoc(userDocRef, { photoURL });
+        
+        toast({ title: "Avatar Updated", description: "Your new profile picture has been saved. The page will now refresh." });
+        setTimeout(() => window.location.reload(), 1500);
+    } catch (error: any) {
+        toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
+    } finally {
+        setIsUploading(false);
+        setSelectedFile(null);
+        setPreviewUrl(null);
+    }
+  };
+
   const handleChangePasswordSubmit = async (data: ChangePasswordFormValues) => {
     if (!user || !user.email || !auth.currentUser) {
       toast({ title: "Error", description: "User not authenticated.", variant: "destructive" });
@@ -195,15 +236,53 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="flex items-center gap-4">
-                        <Image 
-                        src={user?.photoURL || "https://placehold.co/100x100.png"} 
-                        alt="User Avatar" 
-                        width={80} 
-                        height={80} 
-                        className="rounded-full" 
-                        data-ai-hint="user avatar"
-                        />
-                        <Button variant="outline" disabled>Change Avatar (coming soon)</Button>
+                        <div className="relative">
+                            <Image 
+                                src={previewUrl || user?.photoURL || "https://placehold.co/100x100.png"} 
+                                alt="User Avatar" 
+                                width={80} 
+                                height={80} 
+                                className="rounded-full" 
+                                data-ai-hint="user avatar"
+                            />
+                             <Button 
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
+                                onClick={() => fileInputRef.current?.click()}
+                                aria-label="Change avatar"
+                                disabled={isUploading}
+                            >
+                                <Camera className="h-4 w-4" />
+                            </Button>
+                             <input 
+                                type="file" 
+                                id="avatar-upload"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                accept="image/png, image/jpeg"
+                                className="hidden" 
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                             {selectedFile ? (
+                                <>
+                                    <p className="text-sm font-medium">New: <span className="text-muted-foreground truncate">{selectedFile.name}</span></p>
+                                    <div className="flex gap-2">
+                                        <Button type="button" onClick={handleAvatarUpload} disabled={isUploading}>
+                                            {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Save Avatar
+                                        </Button>
+                                        <Button type="button" variant="ghost" onClick={() => {setSelectedFile(null); setPreviewUrl(null);}} disabled={isUploading}>
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">Click the camera to change your avatar.</p>
+                            )}
+                        </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={profileForm.control} name="displayName" render={({ field }) => (
