@@ -390,12 +390,12 @@ export default function TrainingHubPage() {
     if (passed) {
       const expiryDays = ruleData.expiryDurationDays ?? 365;
       newProgressData.certificateDetails = {
-        provider: ruleData.provider || "AirCrew Hub Training Dept.",
+        provider: ruleData.provider || "Express Airline Crew World Training Dept.",
         certificateId: `ACH-CERT-${course.id.substring(0,5)}-${new Date().getFullYear()}`,
         issuedDate: new Date().toISOString(),
         expiryDate: expiryDays > 0 ? new Date(new Date().setDate(new Date().getDate() + expiryDays)).toISOString() : undefined,
         logoURL: ruleData.logoURL || "https://placehold.co/150x50.png",
-        signatureTextOrURL: ruleData.signatureTextOrURL || "Express Airline Training Department",
+        signatureTextOrURL: ruleData.signatureTextOrURL || "Express Airline Crew World Training Dept.",
       };
     }
 

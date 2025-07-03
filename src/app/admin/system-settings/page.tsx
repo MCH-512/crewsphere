@@ -34,7 +34,7 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 import { logAuditEvent } from "@/lib/audit-logger";
 
 const systemSettingsSchema = z.object({
-  appName: z.string().min(3, "App name must be at least 3 characters.").max(50, "App name cannot exceed 50 characters.").default("AirCrew Hub"),
+  appName: z.string().min(3, "App name must be at least 3 characters.").max(50, "App name cannot exceed 50 characters.").default("Express Airline Crew World"),
   maintenanceMode: z.boolean().default(false),
   defaultBriefingModel: z.string().min(1, "Please select a default briefing model.").default("gemini-2.0-flash"),
   supportEmail: z.string().email("Invalid email address.").min(5, "Support email is required."),
@@ -60,7 +60,7 @@ export default function SystemSettingsPage() {
   const form = useForm<SystemSettingsFormValues>({
     resolver: zodResolver(systemSettingsSchema),
     defaultValues: {
-      appName: "AirCrew Hub",
+      appName: "Express Airline Crew World",
       maintenanceMode: false,
       defaultBriefingModel: "gemini-2.0-flash",
       supportEmail: "",
@@ -82,7 +82,7 @@ export default function SystemSettingsPage() {
                 if (docSnap.exists()) {
                     const data = docSnap.data() as SystemSettingsFormValues;
                     form.reset({
-                        appName: data.appName || "AirCrew Hub",
+                        appName: data.appName || "Express Airline Crew World",
                         maintenanceMode: data.maintenanceMode || false,
                         defaultBriefingModel: data.defaultBriefingModel || "gemini-2.0-flash",
                         supportEmail: data.supportEmail || "",
@@ -162,7 +162,7 @@ export default function SystemSettingsPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <FormField control={form.control} name="appName" render={({ field }) => (
-                  <FormItem><FormLabel>Application Name</FormLabel><FormControl><Input placeholder="e.g., AirCrew Hub Pro" {...field} disabled={isSubmitting} /></FormControl><FormDescription>The name displayed throughout the application (e.g., in titles).</FormDescription><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Application Name</FormLabel><FormControl><Input placeholder="e.g., Express Crew World" {...field} disabled={isSubmitting} /></FormControl><FormDescription>The name displayed throughout the application (e.g., in titles).</FormDescription><FormMessage /></FormItem>
                 )}/>
                 <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
@@ -183,7 +183,7 @@ export default function SystemSettingsPage() {
                 <FormField control={form.control} name="supportEmail" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Support Email Address</FormLabel>
-                    <FormControl><Input type="email" placeholder="support@aircrew-hub.com" {...field} disabled={isSubmitting} /></FormControl><FormDescription>The primary email address for user support inquiries.</FormDescription><FormMessage />
+                    <FormControl><Input type="email" placeholder="support@express-airline.com" {...field} disabled={isSubmitting} /></FormControl><FormDescription>The primary email address for user support inquiries.</FormDescription><FormMessage />
                   </FormItem>
                 )}/>
               </CardContent>

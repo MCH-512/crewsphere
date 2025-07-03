@@ -7,8 +7,8 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { NotificationProvider } from '@/contexts/notification-context';
 
 export const metadata: Metadata = {
-  title: 'AirCrew Hub',
-  description: 'Comprehensive platform for airline cabin and ground crew.',
+  title: 'Express Airline Crew World',
+  description: 'Comprehensive platform for Express Airline crew.',
 };
 
 export default function RootLayout({
