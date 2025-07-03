@@ -154,24 +154,27 @@ export default function AdminFlightsPage() {
     const handleFormSubmit = async (data: FlightFormValues) => {
         if (!user) return;
         setIsSubmitting(true);
+        
         try {
+            const flightRef = isEditMode && currentFlight ? doc(db, "flights", currentFlight.id) : doc(collection(db, "flights"));
+            const flightId = flightRef.id;
+
             const batch = writeBatch(db);
             const allAssignedCrewIds = [data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || [])].filter(Boolean);
             const activityIds: Record<string, string> = {};
 
-            // In edit mode, first delete all old activities
             if (isEditMode && currentFlight && currentFlight.activityIds) {
                 for (const activityId of Object.values(currentFlight.activityIds)) {
                     batch.delete(doc(db, "userActivities", activityId));
                 }
             }
 
-            // Create new activities for all assigned crew
             for (const crewId of allAssignedCrewIds) {
                 const activityRef = doc(collection(db, "userActivities"));
                 batch.set(activityRef, {
                     userId: crewId,
                     activityType: 'flight' as const,
+                    flightId: flightId,
                     date: Timestamp.fromDate(startOfDay(new Date(data.scheduledDepartureDateTimeUTC))),
                     flightNumber: data.flightNumber,
                     departureAirport: data.departureAirport,
@@ -181,19 +184,13 @@ export default function AdminFlightsPage() {
                 activityIds[crewId] = activityRef.id;
             }
             
-            const flightData = {
-                ...data,
-                activityIds,
-                updatedAt: serverTimestamp(),
-            };
+            const flightData = { ...data, activityIds, updatedAt: serverTimestamp() };
 
             if (isEditMode && currentFlight) {
-                const flightRef = doc(db, "flights", currentFlight.id);
                 batch.update(flightRef, flightData);
                 await batch.commit();
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityType: "FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
             } else {
-                const flightRef = doc(collection(db, "flights"));
                 batch.set(flightRef, { 
                     ...flightData, 
                     createdAt: serverTimestamp(), 
