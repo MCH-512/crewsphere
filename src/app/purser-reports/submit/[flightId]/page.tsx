@@ -13,7 +13,7 @@ import { FileSignature, Loader2, Send, PlusCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, doc, getDoc, writeBatch } from "firebase/firestore";
+import { collection, doc, getDoc, writeBatch, serverTimestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
 import { purserReportFormSchema, type PurserReportFormValues, optionalReportSections } from "@/schemas/purser-report-schema";
 import { format, parseISO } from "date-fns";
@@ -116,7 +116,7 @@ export default function SubmitPurserReportPage() {
     const batch = writeBatch(db);
     try {
       const reportRef = doc(collection(db, "purserReports"));
-      const reportData = { ...data, userId: user.uid, userEmail: user.email, createdAt: new Date(), status: 'submitted', adminNotes: '' };
+      const reportData = { ...data, userId: user.uid, userEmail: user.email, createdAt: serverTimestamp(), status: 'submitted', adminNotes: '' };
       batch.set(reportRef, reportData);
 
       const flightRef = doc(db, "flights", data.flightId);
