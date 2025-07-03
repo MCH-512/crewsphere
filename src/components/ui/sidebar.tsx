@@ -11,7 +11,13 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
@@ -207,6 +213,13 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
+            {/* Visually hidden header for accessibility */}
+            <SheetHeader className="sr-only">
+              <SheetTitle>Main Menu</SheetTitle>
+              <SheetDescription>
+                Primary navigation for the application.
+              </SheetDescription>
+            </SheetHeader>
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
         </Sheet>
