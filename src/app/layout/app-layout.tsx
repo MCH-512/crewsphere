@@ -76,7 +76,6 @@ const navItems = [
 
   // Actions & Communication
   { href: "/requests", label: "My Requests", icon: Inbox },
-  { href: "/crew-community", label: "Crew Community", icon: MessagesSquare },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
   
   // Tools

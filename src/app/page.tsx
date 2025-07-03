@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
-import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, SendHorizonal, FileSignature, ChevronRight, Bell } from "lucide-react";
+import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, SendHorizonal, FileSignature, ChevronRight, Bell, MessagesSquare } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -329,9 +329,6 @@ export default function DashboardPage() {
               <CardContent className="grid grid-cols-1 gap-3">
                   <Button variant="outline" className="w-full justify-start" asChild>
                     <Link href="/requests"><SendHorizonal className="mr-2 h-4 w-4"/>Make a Request</Link>
-                  </Button>
-                   <Button variant="outline" className="w-full justify-start" asChild>
-                    <Link href="/crew-community"><MessagesSquare className="mr-2 h-4 w-4"/>Crew Community</Link>
                   </Button>
               </CardContent>
           </Card>

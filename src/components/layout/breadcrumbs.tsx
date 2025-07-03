@@ -39,7 +39,6 @@ const predefinedLabels: { [key: string]: string } = {
   suggestions: "Suggestion Box",
   submit: "Submit New Report",
   new: "Submit New Report",
-  "crew-community": "Crew Community",
   "toolbox": "Toolbox",
   "converters": "Converters",
   "guides": "Professional Guides",
