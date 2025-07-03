@@ -43,6 +43,7 @@ const predefinedLabels: { [key: string]: string } = {
   "documents": "Document Management",
   courses: "Course Management",
   quizzes: "Quiz Management",
+  quiz: "Quiz",
   training: "E-Learning Center",
 };
 

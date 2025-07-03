@@ -122,9 +122,11 @@ export default function CourseDetailPage() {
             </Card>
             
             <div className="flex justify-end">
-                <Button size="lg" disabled>
-                    <CheckCircle className="mr-2 h-5 w-5" />
-                    Start Quiz (coming soon)
+                 <Button size="lg" asChild>
+                    <Link href={`/training/quiz/${course.quizId}`}>
+                        <CheckCircle className="mr-2 h-5 w-5" />
+                        Start Quiz
+                    </Link>
                 </Button>
             </div>
 
