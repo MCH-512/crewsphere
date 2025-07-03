@@ -40,6 +40,8 @@ const predefinedLabels: { [key: string]: string } = {
   "phonetic-alphabet": "Phonetic Alphabet",
   "audit-logs": "Audit Logs",
   "my-schedule": "My Schedule",
+  "my-logbook": "My Logbook",
+  "my-documents": "My Documents",
   "document-library": "Document Library",
   documents: "Document Management",
   courses: "E-Learning Courses",

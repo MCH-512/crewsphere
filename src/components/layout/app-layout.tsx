@@ -53,6 +53,8 @@ import {
   Compass,
   BellRing,
   BadgeAlert,
+  NotebookPen,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -64,6 +66,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/my-schedule", label: "My Schedule", icon: Calendar },
+  { href: "/my-logbook", label: "My Logbook", icon: NotebookPen },
+  { href: "/my-documents", label: "My Documents", icon: ShieldCheck },
   { href: "/training", label: "E-Learning", icon: GraduationCap },
   { href: "/document-library", label: "Document Library", icon: Library },
   { href: "/requests", label: "My Requests", icon: Inbox },
