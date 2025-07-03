@@ -5,11 +5,11 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardList, Library, GraduationCap, CheckSquare, BarChart2, PieChart as PieChartIcon, Compass, Plane, BellRing } from "lucide-react";
+import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardList, Library, GraduationCap, CheckSquare, BarChart2, PieChart as PieChartIcon, Compass, Plane, BellRing, BadgeAlert, ClipboardCheck } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, where, query } from "firebase/firestore";
+import { collection, getDocs, where, query, Timestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
@@ -54,6 +54,7 @@ export default function AdminConsolePage() {
     courses: { value: null, isLoading: true, label: "Total Courses" } as Stat,
     quizzes: { value: null, isLoading: true, label: "Total Quizzes" } as Stat,
     activeAlerts: { value: null, isLoading: true, label: "Active Alerts" } as Stat,
+    upcomingSessions: { value: null, isLoading: true, label: "Upcoming Sessions" } as Stat,
   });
 
   const [requestsChartData, setRequestsChartData] = React.useState<any[]>([]);
@@ -78,6 +79,7 @@ export default function AdminConsolePage() {
             coursesSnap,
             quizzesSnap,
             alertsSnap,
+            sessionsSnap,
         ] = await Promise.all([
             getDocs(collection(db, "users")),
             getDocs(collection(db, "flights")),
@@ -88,6 +90,7 @@ export default function AdminConsolePage() {
             getDocs(collection(db, "courses")),
             getDocs(collection(db, "quizzes")),
             getDocs(query(collection(db, "alerts"), where("isActive", "==", true))),
+            getDocs(query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", Timestamp.now()))),
         ]);
 
         const suggestions = suggestionsSnap.docs.map(doc => doc.data());
@@ -105,6 +108,7 @@ export default function AdminConsolePage() {
             courses: { value: coursesSnap.size, isLoading: false, label: "Total Courses" },
             quizzes: { value: quizzesSnap.size, isLoading: false, label: "Total Quizzes" },
             activeAlerts: { value: alertsSnap.size, isLoading: false, label: "Active Alerts" },
+            upcomingSessions: { value: sessionsSnap.size, isLoading: false, label: "Upcoming Sessions"},
         });
 
         // --- Process data for charts ---
@@ -180,6 +184,14 @@ export default function AdminConsolePage() {
       delay: 0.2
     },
     { 
+      icon: BadgeAlert, 
+      title: "Document Expiry", 
+      description: "Track and manage expiry dates for all user documents and licenses.", 
+      buttonText: "Manage Expiry", 
+      href: "/admin/expiry-management",
+      delay: 0.2
+    },
+    { 
       icon: ClipboardList, 
       title: "User Requests", 
       description: "Review and manage all user-submitted requests for leave, roster changes, etc.", 
@@ -198,6 +210,15 @@ export default function AdminConsolePage() {
       stat: stats.reports,
       highlightWhen: (value) => value !== null && value > 0,
       delay: 0.3
+    },
+     { 
+      icon: ClipboardCheck, 
+      title: "Training Sessions", 
+      description: "Plan and manage in-person training sessions for crew members.", 
+      buttonText: "Manage Sessions", 
+      href: "/admin/training-sessions",
+      stat: stats.upcomingSessions,
+      delay: 0.35
     },
     { 
       icon: GraduationCap, 

@@ -43,7 +43,7 @@ const predefinedLabels: { [key: string]: string } = {
   "my-documents": "My Documents",
   "document-library": "Document Library",
   documents: "Document Management",
-  courses: "Course Management",
+  courses: "E-Learning Courses",
   quizzes: "Quiz Management",
   quiz: "Quiz",
   training: "E-Learning Center",
@@ -55,7 +55,8 @@ const predefinedLabels: { [key: string]: string } = {
   "flight-timeline": "Flight Timeline Calculator",
   alerts: "Alert Management",
   certificate: "Certificate",
-  "expiry-management": "Expiry Management",
+  "expiry-management": "Document Expiry",
+  "training-sessions": "Training Sessions",
 };
 
 export function Breadcrumbs() {

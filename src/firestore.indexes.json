@@ -182,6 +182,20 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "expiryDate", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "trainingSessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sessionDateTimeUTC", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "trainingSessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sessionDateTimeUTC", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

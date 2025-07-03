@@ -54,6 +54,7 @@ import {
   BellRing,
   ShieldCheck,
   BadgeAlert,
+  ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -159,11 +160,12 @@ function LayoutWithSidebar({
     { href: "/admin", label: "Admin Dashboard", icon: ServerCog },
     { href: "/admin/users", label: "User Management", icon: Users },
     { href: "/admin/flights", label: "Flight Management", icon: Plane },
-    { href: "/admin/expiry-management", label: "Expiry Management", icon: BadgeAlert },
+    { href: "/admin/training-sessions", label: "Training Sessions", icon: ClipboardCheck },
+    { href: "/admin/expiry-management", label: "Document Expiry", icon: BadgeAlert },
     { href: "/admin/alerts", label: "Alert Management", icon: BellRing },
     { href: "/admin/user-requests", label: "User Requests", icon: ClipboardList },
     { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
-    { href: "/admin/courses", label: "Course Management", icon: GraduationCap },
+    { href: "/admin/courses", label: "E-Learning Courses", icon: GraduationCap },
     { href: "/admin/quizzes", label: "Quiz Management", icon: CheckSquare },
     { href: "/admin/documents", label: "Documents", icon: Library },
     { href: "/admin/suggestions", label: "Suggestions", icon: MessageSquare },
