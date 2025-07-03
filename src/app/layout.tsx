@@ -7,8 +7,8 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { NotificationProvider } from '@/contexts/notification-context';
 
 export const metadata: Metadata = {
-  title: 'Express Airline Crew World',
-  description: 'Comprehensive platform for Express Airline crew.',
+  title: 'Crew World',
+  description: 'A comprehensive portal for airline crew members.',
 };
 
 export default function RootLayout({
@@ -24,13 +24,13 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased">
+      <body>
         <AuthProvider>
           <NotificationProvider>
             <AppLayout>{children}</AppLayout>
           </NotificationProvider>
-          <Toaster />
         </AuthProvider>
+        <Toaster />
       </body>
     </html>
   );

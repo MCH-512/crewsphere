@@ -96,7 +96,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <LogIn className="mx-auto h-10 w-10 text-primary mb-4" />
           <CardTitle className="text-3xl font-headline">Welcome Back!</CardTitle>
-          <CardDescription>Sign in to access your Express Airline Crew World dashboard.</CardDescription>
+          <CardDescription>Sign in to access your Crew World dashboard.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>

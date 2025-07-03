@@ -81,7 +81,7 @@ export default function SignupPage() {
       await createUserWithEmailAndPassword(auth, data.email, data.password);
       toast({
         title: "Account Created",
-        description: "Welcome to Express Airline Crew World! You are now signed in.",
+        description: "Welcome to Crew World! You are now signed in.",
       });
       router.push("/"); // Redirect to dashboard
     } catch (error: any) {
@@ -102,7 +102,7 @@ export default function SignupPage() {
         <CardHeader className="text-center">
           <UserPlus className="mx-auto h-10 w-10 text-primary mb-4" />
           <CardTitle className="text-3xl font-headline">Create Your Account</CardTitle>
-          <CardDescription>Join Express Airline Crew World to streamline your operations.</CardDescription>
+          <CardDescription>Join Crew World to streamline your operations.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>

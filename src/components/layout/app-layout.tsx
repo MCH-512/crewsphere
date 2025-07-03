@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -61,11 +62,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useNotification } from "@/contexts/notification-context"; 
 import { Breadcrumbs } from "./breadcrumbs"; 
 import { HeaderClocks } from "@/components/features/header-clocks";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 const navItems = [
   // Core
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
 
   // Actions & Communication
   { href: "/requests", label: "My Requests", icon: Inbox },
@@ -169,12 +170,6 @@ function LayoutWithSidebar({
     { href: "/admin", label: "Admin Console", icon: ServerCog },
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/user-requests", label: "Requests", icon: ClipboardCheck },
-    { href: "/admin/alerts", label: "Alerts", icon: Bell },
-    { href: "/admin/courses", label: "Courses", icon: GraduationCap },
-    { href: "/admin/training-sessions", label: "Sessions", icon: School },
-    { href: "/admin/quizzes", label: "Quizzes", icon: CheckSquare },
-    { href: "/admin/question-bank", label: "Question Bank", icon: HelpCircle },
-    { href: "/admin/flights", label: "Flights", icon: Plane },
     { href: "/admin/suggestions", label: "Suggestions", icon: MessageSquare },
     { href: "/admin/system-settings", label: "System Settings", icon: Settings },
     { href: "/admin/audit-logs", label: "Audit Logs", icon: Activity },
@@ -189,7 +184,7 @@ function LayoutWithSidebar({
         <SidebarHeader className="h-16 flex items-center justify-center">
           <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
             <Plane className="w-8 h-8 text-sidebar-primary" />
-            <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">Express Airline Crew World</span>
+            <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">Crew World</span>
           </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">

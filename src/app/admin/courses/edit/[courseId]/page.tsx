@@ -181,7 +181,7 @@ export default function EditComprehensiveCoursePage() {
             passingThreshold: certRuleData?.passingThreshold || 80,
             certificateExpiryDays: certRuleData?.expiryDurationDays !== undefined ? certRuleData.expiryDurationDays : 365,
             certificateLogoUrl: certRuleData?.logoURL || "https://placehold.co/150x50.png",
-            certificateSignature: certRuleData?.signatureTextOrURL || "Express Airline Training Department",
+            certificateSignature: certRuleData?.signatureTextOrURL || "Crew World Training Dept.",
           });
           replaceChapters(courseData.chapters && courseData.chapters.length > 0 ? courseData.chapters.map((ch: any) => ({...ch})) : [defaultChapterValue]);
           replaceQuestions(fetchedQuestions.length > 0 ? fetchedQuestions : [defaultQuestionFormValues]);
@@ -575,7 +575,7 @@ export default function EditComprehensiveCoursePage() {
                 <FormItem><FormLabel>Certificate Logo URL (Optional)</FormLabel><FormControl><Input placeholder="https://..." {...field} value={field.value || ""} /></FormControl><FormDescription>Link to your airline's logo. Default placeholder will be used if empty.</FormDescription><FormMessage /></FormItem>
               )} />
               <FormField control={courseEditForm.control} name="certificateSignature" render={({ field }) => (
-                <FormItem><FormLabel>Certificate Signature Text/Authority*</FormLabel><FormControl><Input placeholder="Express Airline Training Department" {...field} /></FormControl><FormDescription>Text to display as the issuing authority or signature.</FormDescription><FormMessage /></FormItem>
+                <FormItem><FormLabel>Certificate Signature Text/Authority*</FormLabel><FormControl><Input placeholder="Crew World Training Dept." {...field} /></FormControl><FormDescription>Text to display as the issuing authority or signature.</FormDescription><FormMessage /></FormItem>
               )} />
             </CardContent>
           </Card>

@@ -59,7 +59,7 @@ export const courseFormSchema = z.object({
   passingThreshold: z.coerce.number().min(0).max(100, "Threshold must be between 0 and 100.").default(80),
   certificateExpiryDays: z.coerce.number().int().min(0, "Expiry days must be 0 or more (0 for no expiry).").default(365),
   certificateLogoUrl: z.string().url("Must be a valid URL or leave empty.").optional().or(z.literal("")),
-  certificateSignature: z.string().min(2, "Signature text/URL is required.").default("Express Airline Crew World Training Dept."),
+  certificateSignature: z.string().min(2, "Signature text/URL is required.").default("Crew World Training Dept."),
 });
 
 export type CourseFormValues = z.infer<typeof courseFormSchema>;
@@ -101,5 +101,5 @@ export const defaultValues: CourseFormValues = {
   passingThreshold: 80,
   certificateExpiryDays: 365,
   certificateLogoUrl: "",
-  certificateSignature: "Express Airline Crew World Training Dept.",
+  certificateSignature: "Crew World Training Dept.",
 };
