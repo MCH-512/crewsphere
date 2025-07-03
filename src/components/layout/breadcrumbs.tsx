@@ -53,6 +53,8 @@ const predefinedLabels: { [key: string]: string } = {
   "airport-directory": "Airport Directory",
   "flight-timeline": "Flight Timeline Calculator",
   alerts: "Alert Management",
+  "expiry-management": "Expiry Management",
+  "training-sessions": "Training Sessions",
 };
 
 export function Breadcrumbs() {
@@ -109,5 +111,3 @@ export function Breadcrumbs() {
     </nav>
   );
 }
-
-    

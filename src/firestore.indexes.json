@@ -185,9 +185,24 @@
       ]
     },
     {
+      "collectionGroup": "userDocuments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "expiryDate", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "trainingSessions",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "sessionDateTimeUTC", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "trainingSessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "attendeeIds", "order": "ASCENDING" },
         { "fieldPath": "sessionDateTimeUTC", "order": "DESCENDING" }
       ]
     },
