@@ -82,7 +82,3 @@ export interface StoredCertificateRule {
     expiryDurationDays: number;
     createdAt: Timestamp;
 }
-
-    
-
-    
