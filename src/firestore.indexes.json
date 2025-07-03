@@ -96,6 +96,13 @@
       ]
     },
     {
+      "collectionGroup": "trainingSessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sessionDateTimeUTC", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "documents",
       "queryScope": "COLLECTION",
       "fields": [
@@ -107,6 +114,13 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "flights",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "ASCENDING" }
       ]
     },
     {
