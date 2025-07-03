@@ -167,6 +167,21 @@
       "fields": [
         { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "userDocuments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "expiryDate", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "userDocuments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "expiryDate", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

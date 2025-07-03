@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -39,6 +40,7 @@ const predefinedLabels: { [key: string]: string } = {
   "phonetic-alphabet": "Phonetic Alphabet",
   "audit-logs": "Audit Logs",
   "my-schedule": "My Schedule",
+  "my-documents": "My Documents",
   "document-library": "Document Library",
   documents: "Document Management",
   courses: "Course Management",
@@ -52,7 +54,8 @@ const predefinedLabels: { [key: string]: string } = {
   "airport-directory": "Airport Directory",
   "flight-timeline": "Flight Timeline Calculator",
   alerts: "Alert Management",
-  certificate: "Certificate"
+  certificate: "Certificate",
+  "expiry-management": "Expiry Management",
 };
 
 export function Breadcrumbs() {

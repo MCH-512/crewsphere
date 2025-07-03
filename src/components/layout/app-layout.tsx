@@ -42,7 +42,7 @@ import {
   Lightbulb,
   Wrench,
   Users,
-  ClipboardCheck,
+  ClipboardList,
   MessageSquare,
   Activity,
   FileSignature,
@@ -51,7 +51,9 @@ import {
   GraduationCap,
   CheckSquare,
   Compass,
-  BellRing
+  BellRing,
+  ShieldCheck,
+  BadgeAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -63,6 +65,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/my-schedule", label: "My Schedule", icon: Calendar },
+  { href: "/my-documents", label: "My Documents", icon: ShieldCheck },
   { href: "/training", label: "E-Learning", icon: GraduationCap },
   { href: "/document-library", label: "Document Library", icon: Library },
   { href: "/requests", label: "My Requests", icon: Inbox },
@@ -156,6 +159,7 @@ function LayoutWithSidebar({
     { href: "/admin", label: "Admin Dashboard", icon: ServerCog },
     { href: "/admin/users", label: "User Management", icon: Users },
     { href: "/admin/flights", label: "Flight Management", icon: Plane },
+    { href: "/admin/expiry-management", label: "Expiry Management", icon: BadgeAlert },
     { href: "/admin/alerts", label: "Alert Management", icon: BellRing },
     { href: "/admin/user-requests", label: "User Requests", icon: ClipboardList },
     { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
