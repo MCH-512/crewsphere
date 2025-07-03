@@ -14,13 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch"; 
 import { useAuth } from "@/contexts/auth-context";
-import { db } from "@/lib/firebase"; 
+import { db, auth } from "@/lib/firebase"; 
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { badgeVariants } from "@/components/ui/badge"; 
+import { Badge, badgeVariants } from "@/components/ui/badge"; 
 import { format } from "date-fns"; 
 import type { VariantProps as CvaVariantProps } from "class-variance-authority";
 import { logAuditEvent } from "@/lib/audit-logger";
@@ -193,10 +194,79 @@ export default function AdminUsersPage() {
     setIsManageUserDialogOpen(true);
   };
 
-  const handleFormSubmit = async (data: ManageUserFormValues) => {
-    // This function will be implemented in a future step.
-    toast({ title: "Coming Soon", description: "User creation/editing will be implemented soon." });
-  };
+    const handleFormSubmit = async (data: ManageUserFormValues) => {
+        if (!user || !auth) {
+            toast({ title: "Unauthorized", description: "You do not have permission to perform this action.", variant: "destructive" });
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            if (isCreateMode) {
+                if (!data.email || !data.password) {
+                    throw new Error("Email and password are required to create a user.");
+                }
+
+                const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+                const newUid = userCredential.user.uid;
+
+                const userDocRef = doc(db, "users", newUid);
+                await setDoc(userDocRef, {
+                    uid: newUid,
+                    email: data.email,
+                    displayName: data.displayName,
+                    fullName: data.fullName,
+                    employeeId: data.employeeId,
+                    joiningDate: data.joiningDate || null,
+                    role: data.role || 'other',
+                    accountStatus: data.accountStatus ? 'active' : 'inactive',
+                    createdAt: serverTimestamp(),
+                    lastLogin: null,
+                });
+
+                await logAuditEvent({
+                    userId: user.uid,
+                    userEmail: user.email,
+                    actionType: "CREATE_USER",
+                    entityType: "USER",
+                    entityId: newUid,
+                    details: { email: data.email, role: data.role },
+                });
+
+                toast({ title: "User Created", description: `User ${data.email} has been created.` });
+
+            } else if (currentUserToManage) {
+                const userDocRef = doc(db, "users", currentUserToManage.uid);
+                await updateDoc(userDocRef, {
+                    displayName: data.displayName,
+                    fullName: data.fullName,
+                    employeeId: data.employeeId,
+                    joiningDate: data.joiningDate || null,
+                    role: data.role || 'other',
+                    accountStatus: data.accountStatus ? 'active' : 'inactive',
+                });
+                
+                await logAuditEvent({
+                    userId: user.uid,
+                    userEmail: user.email,
+                    actionType: "UPDATE_USER",
+                    entityType: "USER",
+                    entityId: currentUserToManage.uid,
+                    details: { email: data.email, role: data.role },
+                });
+                toast({ title: "User Updated", description: `User ${data.email} has been updated.` });
+            }
+            fetchUsers();
+            setIsManageUserDialogOpen(false);
+        } catch (error: any) {
+            console.error("Error managing user:", error);
+            const errorMessage = error.code === 'auth/email-already-in-use' 
+                ? "This email address is already in use by another account."
+                : error.message || "An unexpected error occurred.";
+            toast({ title: "Operation Failed", description: errorMessage, variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
   const getRoleBadgeVariant = (role?: SpecificRole | null): BadgeCvaVariantProps["variant"] => {
     switch (role) {
@@ -305,14 +375,14 @@ export default function AdminUsersPage() {
                       <TableCell className="font-medium">{u.email || 'N/A'}</TableCell>
                       <TableCell>{u.fullName || 'N/A'}</TableCell>
                       <TableCell>
-                        <span className={cn(badgeVariants({ variant: getRoleBadgeVariant(u.role) }), "capitalize")}>
+                        <Badge variant={getRoleBadgeVariant(u.role)} className="capitalize">
                           {u.role || 'Not Assigned'}
-                        </span>
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        <span className={cn(badgeVariants({ variant: getStatusBadgeVariant(u.accountStatus) }), "capitalize")}>
+                        <Badge variant={getStatusBadgeVariant(u.accountStatus)} className="capitalize">
                           {u.accountStatus || 'Unknown'}
-                        </span>
+                        </Badge>
                       </TableCell>
                       <TableCell>{u.employeeId || 'N/A'}</TableCell>
                       <TableCell>{formatDateDisplay(u.joiningDate)}</TableCell>
@@ -481,8 +551,8 @@ export default function AdminUsersPage() {
                             aria-label="Account status toggle"
                           />
                         </FormControl>
-                        {field.value ? <Power className="h-5 w-5 text-success-foreground" /> : <PowerOff className="h-5 w-5 text-destructive" />}
-                        <span className={cn("font-medium", field.value ? "text-success-foreground" : "text-destructive")}>
+                        {field.value ? <Power className="h-5 w-5 text-success" /> : <PowerOff className="h-5 w-5 text-destructive" />}
+                        <span className={cn("font-medium", field.value ? "text-success" : "text-destructive")}>
                           {field.value ? "Active" : "Inactive"}
                         </span>
                       </div>
