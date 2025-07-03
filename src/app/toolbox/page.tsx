@@ -1,10 +1,9 @@
-
 "use client";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Book, Calculator, CloudSun, Globe, Map, MessagesSquare, Mic, ScrollText, Wrench, ShieldAlert } from "lucide-react";
+import { ArrowRight, Book, Calculator, CloudSun, Globe, Map, MessagesSquare, Mic, ScrollText, Wrench, ShieldAlert, Waypoints } from "lucide-react";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
@@ -30,6 +29,13 @@ const tools: Tool[] = [
     description: "Calculate Flight Time Limitations based on EASA regulations for crew duty and rest.",
     href: "/toolbox/ftl-calculator",
     delay: 0.15
+  },
+  {
+    icon: Waypoints,
+    title: "Flight Timeline Calculator",
+    description: "Visually plan a duty day by plotting key flight events on a dynamic timeline.",
+    href: "/toolbox/flight-timeline",
+    delay: 0.18
   },
   {
     icon: Map,

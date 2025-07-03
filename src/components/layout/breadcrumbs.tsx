@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -51,6 +50,7 @@ const predefinedLabels: { [key: string]: string } = {
   "live-flight-tracker": "Live Flight Tracker",
   "ftl-calculator": "EASA FTL Calculator",
   "airport-directory": "Airport Directory",
+  "flight-timeline": "Flight Timeline Calculator",
   alerts: "Alert Management",
   certificate: "Certificate"
 };
