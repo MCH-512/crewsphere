@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Loader2, AlertTriangle, CalendarX, CalendarClock, CalendarCheck2 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";

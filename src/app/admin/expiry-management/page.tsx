@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { BadgeAlert, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Search, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -140,7 +140,7 @@ export default function AdminExpiryManagementPage() {
                 await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email, actionType: "UPDATE_USER_DOCUMENT", entityType: "USER_DOCUMENT", entityId: currentDocument.id, details: { user: selectedUser.email, doc: data.documentName } });
                 toast({ title: "Document Updated", description: "The user's document has been updated." });
             } else {
-                const newDocRef = await addDoc(collection(db, "userDocuments"), documentData);
+                const newDocRef = await addDoc(collection(db, "userDocuments"), { ...documentData, createdAt: serverTimestamp() });
                 await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email, actionType: "CREATE_USER_DOCUMENT", entityType: "USER_DOCUMENT", entityId: newDocRef.id, details: { user: selectedUser.email, doc: data.documentName } });
                 toast({ title: "Document Added", description: "The user's document has been added." });
             }
