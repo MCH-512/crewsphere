@@ -17,7 +17,6 @@ import { useRouter, useParams } from "next/navigation";
 import { purserReportFormSchema, type PurserReportFormValues } from "@/schemas/purser-report-schema";
 import { format, parseISO } from "date-fns";
 import { getAirportByCode } from "@/services/airport-service";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
 interface FlightForReport {
@@ -190,27 +189,22 @@ export default function SubmitPurserReportPage() {
             <CardContent className="space-y-6">
                 <FormField control={form.control} name="generalFlightSummary" render={({ field }) => (<FormItem><FormLabel>General Flight Summary*</FormLabel><FormControl><Textarea placeholder="Describe the overall flight experience, punctuality, and any general observations..." className="min-h-[120px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 
-                <Accordion type="multiple" className="w-full">
-                  {optionalSections.map((section) => (
-                    <AccordionItem value={section.name} key={section.name}>
-                       <AccordionTrigger>{section.label} (Optional)</AccordionTrigger>
-                       <AccordionContent>
-                         <FormField
-                           control={form.control}
-                           name={section.name as any}
-                           render={({ field }) => (
-                             <FormItem>
-                               <FormControl>
-                                 <Textarea placeholder={section.placeholder} {...field} />
-                               </FormControl>
-                               <FormMessage />
-                             </FormItem>
-                           )}
-                         />
-                       </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
+                {optionalSections.map((section) => (
+                    <FormField
+                      key={section.name}
+                      control={form.control}
+                      name={section.name as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{section.label} (Optional)</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder={section.placeholder} {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                ))}
             </CardContent>
         </Card>
         
