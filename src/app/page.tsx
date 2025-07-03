@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, SendHorizonal, Lightbulb, Wrench } from "lucide-react";
@@ -33,11 +34,20 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <AnimatedCard>
-        <Card className="shadow-lg bg-card border-none">
-          <CardHeader>
-            <CardTitle className="text-3xl font-headline">Welcome Back, {userNameForGreeting}!</CardTitle>
-            <CardDescription>This is your central command for operational tools and communication.</CardDescription>
-          </CardHeader>
+        <Card className="shadow-lg border-none relative overflow-hidden min-h-[220px] flex items-center">
+            <Image
+                src="https://placehold.co/1200x400.png"
+                alt="Airplane wing in the sky"
+                data-ai-hint="airplane wing"
+                fill
+                priority
+                className="object-cover z-0"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent z-10" />
+            <CardHeader className="relative z-20 text-white">
+                <CardTitle className="text-4xl font-headline text-primary-foreground">Welcome Back, {userNameForGreeting}!</CardTitle>
+                <CardDescription className="text-primary-foreground/80 text-lg">This is your central command for operational tools and communication.</CardDescription>
+            </CardHeader>
         </Card>
       </AnimatedCard>
 
