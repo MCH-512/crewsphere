@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, orderBy, limit, addDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
 import { Loader2, AlertTriangle, ArrowLeft, CheckCircle, XCircle, FileQuestion, Star, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -82,6 +82,8 @@ export default function QuizPage() {
     };
 
     const handleSubmitQuiz = async () => {
+        if (!user || !quizData || !certRule) return;
+
         let correctAnswers = 0;
         questions.forEach(q => {
             if (userAnswers[q.id] === q.correctAnswer) {
@@ -92,8 +94,11 @@ export default function QuizPage() {
         setScore(calculatedScore);
         setQuizState('submitted');
         
-        if(user && quizData && certRule) {
-             await logAuditEvent({
+        const passed = calculatedScore >= certRule.passingThreshold;
+
+        try {
+            // Log the audit event for system tracking
+            await logAuditEvent({
                 userId: user.uid,
                 userEmail: user.email,
                 actionType: "COMPLETE_QUIZ",
@@ -101,8 +106,35 @@ export default function QuizPage() {
                 entityId: quizData.id,
                 details: {
                     score: calculatedScore,
-                    passed: calculatedScore >= certRule.passingThreshold
+                    passed: passed,
+                    courseId: quizData.courseId,
                 },
+            });
+
+            // Save the quiz attempt for user progress tracking
+            const attemptData = {
+                userId: user.uid,
+                courseId: quizData.courseId,
+                quizId: quizData.id,
+                score: calculatedScore,
+                status: passed ? 'passed' : 'failed',
+                completedAt: serverTimestamp(),
+                answers: userAnswers,
+            };
+            await addDoc(collection(db, "userQuizAttempts"), attemptData);
+
+            toast({
+                title: "Quiz Results Saved",
+                description: `Your score of ${calculatedScore.toFixed(2)}% has been recorded.`,
+                variant: passed ? "success" : "default",
+            });
+
+        } catch (error) {
+            console.error("Error saving quiz attempt:", error);
+            toast({
+                title: "Save Error",
+                description: "There was a problem saving your quiz results. Please contact support.",
+                variant: "destructive",
             });
         }
     };

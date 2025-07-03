@@ -129,6 +129,23 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "quizId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "userQuizAttempts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "completedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "userQuizAttempts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "courseId", "order": "ASCENDING" },
+        { "fieldPath": "completedAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
