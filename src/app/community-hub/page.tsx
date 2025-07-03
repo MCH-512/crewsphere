@@ -28,7 +28,7 @@ const PostCard = ({ post, onLike, currentUserId }: { post: StoredCommunityPost; 
         <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-start gap-4 pb-4">
                 <Avatar>
-                    <AvatarImage src={post.authorPhotoURL || `https://placehold.co/100x100.png`} data-ai-hint="user portrait" />
+                    <AvatarImage src={post.authorPhotoURL || undefined} data-ai-hint="user portrait" />
                     <AvatarFallback>{post.authorName.substring(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">

@@ -56,7 +56,7 @@ const FlightDetailsSheet = ({ isOpen, onOpenChange, flight, isLoading }: { isOpe
                     {members.map(member => (
                         <div key={member.uid} className="flex items-center gap-2 text-sm">
                             <Avatar className="h-6 w-6">
-                                <AvatarImage src={member.photoURL || `https://placehold.co/100x100.png`} data-ai-hint="user portrait" />
+                                <AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" />
                                 <AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <span>{member.displayName}</span>
