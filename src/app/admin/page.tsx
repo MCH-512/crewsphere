@@ -2,10 +2,10 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, Settings, Loader2, MessageSquare, ArrowRight } from "lucide-react";
+import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -30,7 +30,6 @@ interface AdminSection {
   stat?: Stat;
   highlightWhen?: (value: number | null) => boolean;
 }
-
 
 export default function AdminConsolePage() {
   const { user } = useAuth();
@@ -90,10 +89,10 @@ export default function AdminConsolePage() {
     { 
       icon: Settings, 
       title: "System Settings", 
-      description: "Configure application-wide settings like maintenance mode and AI models.", 
+      description: "Configure application-wide settings and maintenance mode.", 
       buttonText: "Configure Settings", 
       href: "/admin/system-settings", 
-      delay: 0.2
+      delay: 0.25
     },
     { 
       icon: Activity, 
@@ -101,7 +100,7 @@ export default function AdminConsolePage() {
       description: "Review a detailed, chronological record of system activities and changes.", 
       buttonText: "View Logs", 
       href: "/admin/audit-logs", 
-      delay: 0.25
+      delay: 0.3
     },
   ];
 
@@ -114,7 +113,7 @@ export default function AdminConsolePage() {
             <div>
               <CardTitle className="text-2xl font-headline">Admin Dashboard</CardTitle>
               <CardDescription>
-                Centralized hub for managing application settings, users, content, and operational data.
+                Centralized hub for managing application settings, users, and operational data.
               </CardDescription>
             </div>
           </CardHeader>
@@ -149,10 +148,12 @@ export default function AdminConsolePage() {
                     </div>
                   )}
                 </CardHeader>
-                <CardContent className="flex-grow flex flex-col justify-between">
-                  <p className="text-sm text-muted-foreground mb-4">
+                <CardContent className="flex-grow">
+                  <p className="text-sm text-muted-foreground">
                     {section.description}
                   </p>
+                </CardContent>
+                <CardFooter>
                   <Button asChild className="w-full mt-auto">
                     <Link href={section.href}>
                       {section.buttonText}
@@ -164,7 +165,7 @@ export default function AdminConsolePage() {
                       )}
                     </Link>
                   </Button>
-                </CardContent>
+                </CardFooter>
               </Card>
             </AnimatedCard>
           );

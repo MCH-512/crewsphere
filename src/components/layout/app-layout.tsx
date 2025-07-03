@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarHeader,
@@ -15,13 +15,10 @@ import {
   SidebarInset,
   SidebarTrigger,
   useSidebar,
-  SidebarProvider, 
-  SidebarMenuBadge,
-  SidebarSeparator,
+  SidebarProvider,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,47 +32,32 @@ import {
   Settings,
   LogOut,
   Plane,
-  Bell,
   Moon,
   Sun,
   ServerCog,
   LogIn,
   UserPlus,
   Loader2,
-  Inbox, 
-  ClipboardCheck, 
-  FilePlus,
-  Users,
-  Calculator,
+  Inbox,
   Lightbulb,
-  MessageSquare,
   Wrench,
-  CheckSquare,
+  Users,
+  ClipboardCheck,
+  MessageSquare,
   Activity,
-  HelpCircle,
-  School,
-  GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/auth-context"; 
+import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { useNotification } from "@/contexts/notification-context"; 
-import { Breadcrumbs } from "./breadcrumbs"; 
+import { Breadcrumbs } from "./breadcrumbs";
 import { HeaderClocks } from "@/components/features/header-clocks";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 const navItems = [
-  // Core
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-
-  // Actions & Communication
   { href: "/requests", label: "My Requests", icon: Inbox },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
-  
-  // Tools
   { href: "/toolbox", label: "Toolbox", icon: Wrench },
-  
-  // Admin
   { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
 ];
 
@@ -100,13 +82,11 @@ const useTheme = () => {
   return { theme, toggleTheme };
 };
 
-
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { user, loading, logout } = useAuth();
   const { toast } = useToast();
-  const { unreadAlertsCount, isLoading: isNotificationCountLoading } = useNotification();
 
   const handleLogout = async () => {
     try {
@@ -119,10 +99,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   if (pathname === "/login" || pathname === "/signup") {
-    return <>{children}</>; 
+    return <>{children}</>;
   }
-  
-  if (loading && !user) { 
+
+  if (loading && !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" aria-label="Loading application state" />
@@ -132,13 +112,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider defaultOpen>
-      <LayoutWithSidebar 
-        user={user} 
-        handleLogout={handleLogout} 
-        theme={theme} 
+      <LayoutWithSidebar
+        user={user}
+        handleLogout={handleLogout}
+        theme={theme}
         toggleTheme={toggleTheme}
-        unreadAlertsCount={unreadAlertsCount}
-        isNotificationCountLoading={isNotificationCountLoading}
       >
         {children}
       </LayoutWithSidebar>
@@ -146,24 +124,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function LayoutWithSidebar({ 
-  children, 
-  user, 
-  handleLogout, 
-  theme, 
+function LayoutWithSidebar({
+  children,
+  user,
+  handleLogout,
+  theme,
   toggleTheme,
-  unreadAlertsCount,
-  isNotificationCountLoading
-}: { 
-  children: React.ReactNode; 
-  user: any; 
-  handleLogout: () => void; 
-  theme: string; 
+}: {
+  children: React.ReactNode;
+  user: any;
+  handleLogout: () => void;
+  theme: string;
   toggleTheme: () => void;
-  unreadAlertsCount: number;
-  isNotificationCountLoading: boolean;
 }) {
-  const { isMobile } = useSidebar(); 
+  const { isMobile } = useSidebar();
   const pathname = usePathname();
 
   const adminNavItems = [
@@ -177,7 +151,6 @@ function LayoutWithSidebar({
 
   const currentNavItems = pathname.startsWith('/admin') && user?.role === 'admin' ? adminNavItems : navItems;
 
-
   return (
     <>
       <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r">
@@ -190,12 +163,10 @@ function LayoutWithSidebar({
         <SidebarContent className="p-2">
           <SidebarMenu>
             {currentNavItems.map((item) => {
-              if (item.adminOnly && user?.role !== 'admin' && !pathname.startsWith('/admin')) { 
-                return null; 
+              if (item.adminOnly && user?.role !== 'admin') {
+                return null;
               }
-              const isActive = item.href && (pathname === item.href || 
-                               (item.href !== "/" && pathname.startsWith(item.href + '/')) ||
-                               (item.href === "/admin" && pathname.startsWith("/admin/")));
+              const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
 
               return (
                 <SidebarMenuItem key={item.href}>
@@ -208,11 +179,6 @@ function LayoutWithSidebar({
                       <a>
                         <item.icon className="w-5 h-5" />
                         <span>{item.label}</span>
-                         {item.id === "my-alerts-nav" && user && unreadAlertsCount > 0 && (
-                          <SidebarMenuBadge className="ml-auto bg-destructive text-destructive-foreground">
-                            {isNotificationCountLoading ? <Loader2 className="h-3 w-3 animate-spin"/> : unreadAlertsCount}
-                          </SidebarMenuBadge>
-                        )}
                       </a>
                     </SidebarMenuButton>
                   </Link>
@@ -252,21 +218,7 @@ function LayoutWithSidebar({
             <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`} className="h-9 w-9">
               {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             </Button>
-            {user && (
-              <Button variant="outline" size="icon" aria-label="View notifications" asChild className="relative h-9 w-9">
-                <Link href="/my-alerts">
-                  <Bell className="h-4 w-4" />
-                  {unreadAlertsCount > 0 && (
-                    <Badge 
-                        variant="destructive" 
-                        className="absolute -top-1 -right-1 h-4 w-4 min-w-4 p-0 flex items-center justify-center text-xs leading-none rounded-full"
-                    >
-                      {isNotificationCountLoading ? <Loader2 className="h-2.5 w-2.5 animate-spin"/> : unreadAlertsCount}
-                    </Badge>
-                  )}
-                </Link>
-              </Button>
-            )}
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="relative h-9 w-9 rounded-full" aria-label="Open user menu">

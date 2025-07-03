@@ -8,7 +8,6 @@ import { ChevronRight, Home } from "lucide-react";
 
 const formatSegment = (segment: string): string => {
   if (!segment) return "";
-  // Handle UUIDs or long numeric IDs gracefully
   if (/^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/.test(segment) || /^\d{5,}$/.test(segment) || /^[a-zA-Z0-9]{20,}$/.test(segment)) {
     return "Details";
   }
@@ -23,27 +22,19 @@ const predefinedLabels: { [key: string]: string } = {
   users: "User Management",
   create: "Create",
   edit: "Edit",
-  alerts: "Alerts",
-  courses: "Courses",
-  quizzes: "Quizzes Overview",
-  flights: "Flights",
   "user-requests": "User Requests",
-  "training-sessions": "Training Sessions",
   settings: "Settings",
   requests: "My Requests",
   "system-settings": "System Configuration",
   "suggestion-box": "Suggestion Box",
   suggestions: "Suggestion Box",
-  submit: "Submit New Report",
-  new: "Submit New Report",
-  "toolbox": "Toolbox",
-  "converters": "Converters",
-  "guides": "Professional Guides",
+  toolbox: "Toolbox",
+  converters: "Converters",
+  guides: "Professional Guides",
   "aviation-history": "Aviation History",
   "aeronautical-jargon": "Aeronautical Jargon",
   "phonetic-alphabet": "Phonetic Alphabet",
   "audit-logs": "Audit Logs",
-  "question-bank": "Question Bank",
 };
 
 export function Breadcrumbs() {

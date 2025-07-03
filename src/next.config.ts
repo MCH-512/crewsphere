@@ -7,7 +7,7 @@ const cspHeader = `
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' https://placehold.co data: blob:;
     font-src 'self' https://fonts.gstatic.com;
-    connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://storage.googleapis.com https://www.googleapis.com https://opensky-network.org;
+    connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://storage.googleapis.com https://www.googleapis.com;
     frame-src 'self';
     object-src 'none';
     form-action 'self';
@@ -66,7 +66,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: "camera=(), microphone=(), geolocation=(), payment=(), clipboard-write=(self)", // Example: disable features by default
+            value: "camera=(), microphone=(), geolocation=(), payment=()", // Example: disable features by default
           }
         ],
       },
@@ -75,5 +75,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
-    

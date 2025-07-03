@@ -4,7 +4,6 @@ import './globals.css';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/contexts/auth-context';
-import { NotificationProvider } from '@/contexts/notification-context';
 
 export const metadata: Metadata = {
   title: 'Crew World',
@@ -26,9 +25,7 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>
-          <NotificationProvider>
-            <AppLayout>{children}</AppLayout>
-          </NotificationProvider>
+          <AppLayout>{children}</AppLayout>
         </AuthProvider>
         <Toaster />
       </body>

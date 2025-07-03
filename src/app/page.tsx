@@ -4,63 +4,14 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Alert as ShadAlert, AlertDescription as ShadAlertDescription, AlertTitle as ShadAlertTitle } from "@/components/ui/alert";
-import { ArrowRight, CalendarClock, BellRing, Info, Briefcase, GraduationCap, ShieldCheck, FileText, BookOpen, PlaneTakeoff, AlertTriangle, CheckCircle, Sparkles, Loader2, LucideIcon, BookCopy, ClockIcon, SendHorizonal, FileSignature, ChevronRight, Bell, MessagesSquare } from "lucide-react";
-import Image from "next/image";
+import { ArrowRight, SendHorizonal, Lightbulb, Wrench } from "lucide-react";
 import Link from "next/link";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
-import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, limit, getDocs, Timestamp, doc, getDoc, DocumentData } from "firebase/firestore";
-import { formatDistanceToNowStrict, format, parseISO, addHours, subHours, startOfDay } from "date-fns";
 import { AnimatedCard } from "@/components/motion/animated-card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
-import { getAirportByCode } from "@/services/airport-service";
-
-interface Flight {
-  id: string;
-  flightNumber: string;
-  departureAirport: string; // Original ICAO code
-  departureAirportIATA?: string; // For display
-  arrivalAirport: string;   // Original ICAO code
-  arrivalAirportIATA?: string;   // For display
-  scheduledDepartureDateTimeUTC: string; // ISO string
-  scheduledArrivalDateTimeUTC: string; // ISO string
-  aircraftType: string;
-  status: "Scheduled" | "On Time" | "Delayed" | "Cancelled";
-}
-
-interface UserActivity extends DocumentData {
-    id: string;
-    userId: string;
-    activityType: "flight" | "off" | "standby" | "leave" | "sick" | "training" | "other";
-    date: Timestamp; // The day of the activity
-    flightId?: string | null;
-}
-
-interface UpcomingDutyData {
-  flightNumber: string;
-  route: string;
-  aircraft: string;
-  reportingTime: string;
-  reportingDate: string;
-  reportingLocation: string;
-  etd: string;
-  eta: string;
-  gate: string;
-}
 
 export default function DashboardPage() {
-  const { toast } = useToast();
   const { user } = useAuth();
   const [userNameForGreeting, setUserNameForGreeting] = React.useState<string>("User");
-
-  const [upcomingDuty, setUpcomingDuty] = React.useState<UpcomingDutyData | null>(null);
-  const [isUpcomingDutyLoading, setIsUpcomingDutyLoading] = React.useState(true);
-  const [upcomingDutyError, setUpcomingDutyError] = React.useState<string | null>(null);
-
 
   React.useEffect(() => {
     if (user) {
@@ -68,93 +19,11 @@ export default function DashboardPage() {
       setUserNameForGreeting(name.charAt(0).toUpperCase() + name.slice(1));
     }
   }, [user]);
-
-  React.useEffect(() => {
-    async function fetchUpcomingDuty() {
-      if (!user) {
-        setIsUpcomingDutyLoading(false);
-        setUpcomingDuty(null);
-        setUpcomingDutyError("Please log in to view upcoming duty.");
-        return;
-      }
-      setIsUpcomingDutyLoading(true);
-      setUpcomingDutyError(null);
-      setUpcomingDuty(null);
-
-      try {
-        const today = startOfDay(new Date());
-        const activitiesQuery = query(
-          collection(db, "userActivities"),
-          where("userId", "==", user.uid),
-          where("activityType", "==", "flight"),
-          where("date", ">=", Timestamp.fromDate(today)), 
-          orderBy("date", "asc"),
-          limit(10) // Performance: Limit to check only the next 10 assigned flight days
-        );
-
-        const activitiesSnapshot = await getDocs(activitiesQuery);
-        if (activitiesSnapshot.empty) {
-          setIsUpcomingDutyLoading(false);
-          return;
-        }
-
-        let nextFlightActivity: UserActivity | null = null;
-        let nextFlightDetails: Flight | null = null;
-
-        for (const activityDoc of activitiesSnapshot.docs) {
-          const activityData = activityDoc.data() as UserActivity;
-          if (activityData.flightId) {
-            const flightDocRef = doc(db, "flights", activityData.flightId);
-            const flightDocSnap = await getDoc(flightDocRef);
-            if (flightDocSnap.exists()) {
-              const flightData = { id: flightDocSnap.id, ...flightDocSnap.data() } as Flight;
-              
-              if (new Date(flightData.scheduledDepartureDateTimeUTC) > new Date()) {
-                if (!nextFlightDetails || new Date(flightData.scheduledDepartureDateTimeUTC) < new Date(nextFlightDetails.scheduledDepartureDateTimeUTC)) {
-                  nextFlightActivity = activityData;
-                  nextFlightDetails = flightData;
-                }
-              }
-            }
-          }
-        }
-        
-        if (nextFlightDetails) {
-            const departureDateTime = parseISO(nextFlightDetails.scheduledDepartureDateTimeUTC);
-            const reportingDateTime = subHours(departureDateTime, 2); 
-
-            // Fetch airport IATA codes
-            const depAirportInfo = await getAirportByCode(nextFlightDetails.departureAirport);
-            const arrAirportInfo = await getAirportByCode(nextFlightDetails.arrivalAirport);
-            const depDisplay = depAirportInfo?.iata || nextFlightDetails.departureAirport;
-            const arrDisplay = arrAirportInfo?.iata || nextFlightDetails.arrivalAirport;
-
-            setUpcomingDuty({
-              flightNumber: nextFlightDetails.flightNumber,
-              route: `${depDisplay} - ${arrDisplay}`,
-              aircraft: nextFlightDetails.aircraftType,
-              reportingTime: format(reportingDateTime, "HH:mm 'UTC'"),
-              reportingDate: format(reportingDateTime, "MMM d, yyyy"),
-              reportingLocation: "Crew Report Centre", 
-              etd: format(departureDateTime, "HH:mm 'UTC'"),
-              eta: format(parseISO(nextFlightDetails.scheduledArrivalDateTimeUTC), "HH:mm 'UTC'"), 
-              gate: "TBA", 
-            });
-        }
-      } catch (err) {
-        console.error("Error fetching upcoming duty:", err);
-        setUpcomingDutyError("Failed to load your upcoming duty information.");
-      } finally {
-        setIsUpcomingDutyLoading(false);
-      }
-    }
-    fetchUpcomingDuty();
-  }, [user]);
-
-  const safetyTips = [
-    { id: 1, tip: "Always perform thorough pre-flight safety checks on all emergency equipment in your assigned zone. Verify seals and accessibility." },
-    { id: 2, tip: "In an emergency, remain calm, follow your training, and communicate clearly and assertively with passengers and fellow crew." },
-    { id: 3, tip: "Maintain situational awareness at all times, especially during critical phases like boarding, takeoff, sterile flight deck, and landing." },
+  
+  const quickActions = [
+    { href: "/requests", label: "Make a Request", icon: SendHorizonal },
+    { href: "/suggestion-box", label: "Submit an Idea", icon: Lightbulb },
+    { href: "/toolbox", label: "Open Toolbox", icon: Wrench },
   ];
 
   return (
@@ -163,97 +32,29 @@ export default function DashboardPage() {
         <Card className="shadow-lg bg-card border-none">
           <CardHeader>
             <CardTitle className="text-3xl font-headline">Welcome Back, {userNameForGreeting}!</CardTitle>
-            <CardDescription>This is your central command for flight operations, documents, and training.</CardDescription>
+            <CardDescription>This is your central command for operational tools and communication.</CardDescription>
           </CardHeader>
         </Card>
       </AnimatedCard>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <AnimatedCard delay={0.1} className="lg:col-span-2">
-          <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg font-medium font-headline">Upcoming Duty</CardTitle>
-              <PlaneTakeoff className="h-6 w-6 text-primary" />
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {isUpcomingDutyLoading ? (
-                <div className="space-y-3 py-2">
-                  <Skeleton className="h-8 w-3/4" /> 
-                  <Skeleton className="h-4 w-1/2" /> 
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2">
-                    <Skeleton className="h-4 w-full" /> 
-                    <Skeleton className="h-4 w-full" /> 
-                    <Skeleton className="h-4 w-full" /> 
-                    <Skeleton className="h-4 w-full" /> 
-                  </div>
-                  <Skeleton className="h-9 w-full mt-3" /> 
-                </div>
-              ) : upcomingDutyError ? (
-                <ShadAlert variant="destructive">
-                  <AlertTriangle className="h-5 w-5" />
-                  <ShadAlertTitle>Upcoming Duty Error</ShadAlertTitle>
-                  <ShadAlertDescription>{upcomingDutyError}</ShadAlertDescription>
-                </ShadAlert>
-              ) : upcomingDuty ? (
-                <>
-                  <div>
-                    <p className="text-2xl font-bold text-primary">{upcomingDuty.flightNumber} ({upcomingDuty.route})</p>
-                    <p className="text-sm text-muted-foreground">{upcomingDuty.aircraft}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                    <div><span className="font-semibold">Report:</span> {upcomingDuty.reportingTime}, {upcomingDuty.reportingDate}</div>
-                    <div><span className="font-semibold">Location:</span> {upcomingDuty.reportingLocation}</div>
-                    <div><span className="font-semibold">ETD:</span> {upcomingDuty.etd} (Gate: {upcomingDuty.gate})</div>
-                    <div><span className="font-semibold">ETA:</span> {upcomingDuty.eta}</div>
-                  </div>
-                   <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
-                    <Link href="/requests">
-                        Request Roster Change <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                    </Button>
-                </>
-              ) : (
-                <div className="text-center py-4">
-                  <ClockIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">No upcoming flights or duties found in your schedule.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </AnimatedCard>
-
-        <AnimatedCard delay={0.15} className="lg:col-span-1">
+        <AnimatedCard delay={0.15} className="lg:col-span-3">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
               <CardHeader>
                   <CardTitle className="font-headline text-lg">Quick Actions</CardTitle>
+                  <CardDescription>Get started with common tasks.</CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-3">
-                  <Button variant="outline" className="w-full justify-start" asChild>
-                    <Link href="/requests"><SendHorizonal className="mr-2 h-4 w-4"/>Make a Request</Link>
-                  </Button>
+              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {quickActions.map((action, index) => (
+                    <Button key={index} variant="outline" className="w-full justify-start py-6 text-base" asChild>
+                      <Link href={action.href}>
+                        <action.icon className="mr-3 h-5 w-5"/>
+                        {action.label}
+                        <ArrowRight className="ml-auto h-5 w-5" />
+                      </Link>
+                    </Button>
+                  ))}
               </CardContent>
-          </Card>
-        </AnimatedCard>
-        
-        <AnimatedCard delay={0.35} className="lg:col-span-3">
-          <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="font-headline flex items-center">
-                <ShieldCheck className="mr-2 h-6 w-6 text-success" />
-                Safety & Best Practice
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {safetyTips.map((tip) => (
-                <div
-                  key={tip.id}
-                  className="flex items-start gap-3 p-3 border-l-4 border-success bg-success/10 rounded-r-md"
-                >
-                  <ShieldCheck className="h-5 w-5 text-success mt-0.5 shrink-0" />
-                  <p className="text-sm text-success/90">{tip.tip}</p>
-                </div>
-              ))}
-            </CardContent>
           </Card>
         </AnimatedCard>
       </div>
