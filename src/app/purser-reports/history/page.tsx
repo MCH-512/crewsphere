@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -113,7 +112,12 @@ export default function PurserReportsHistoryPage() {
                                 </CardContent>
                                 <CardFooter className="flex-col items-start gap-2">
                                      <p className="text-xs text-muted-foreground">Submitted: {format(report.createdAt.toDate(), "PPp")}</p>
-                                    <Button variant="outline" className="w-full" disabled>View Details (coming soon)</Button>
+                                     <Button asChild variant="outline" className="w-full">
+                                        <Link href={`/purser-reports/history/${report.id}`}>
+                                            <ArrowRight className="mr-2 h-4 w-4" />
+                                            View Details & Response
+                                        </Link>
+                                    </Button>
                                 </CardFooter>
                             </Card>
                         </AnimatedCard>
