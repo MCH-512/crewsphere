@@ -38,7 +38,6 @@ export default function AdminConsolePage() {
   const { toast } = useToast();
   
   const [stats, setStats] = React.useState({
-    pendingRequests: { value: null, isLoading: true, label: "Pending" } as Stat,
     users: { value: null, isLoading: true, label: "Total Users" } as Stat,
     publishedCourses: { value: null, isLoading: true, label: "Published Courses" } as Stat,
     flightsToday: { value: null, isLoading: true, label: "Flights Today" } as Stat,
@@ -67,7 +66,6 @@ export default function AdminConsolePage() {
     const todayStart = startOfDay(new Date()).toISOString();
     const todayEnd = endOfDay(new Date()).toISOString();
 
-    fetcher('pendingRequests', query(collection(db, "requests"), where("status", "==", "pending")));
     fetcher('users', collection(db, "users"));
     fetcher('publishedCourses', query(collection(db, "courses"), where("published", "==", true)));
     fetcher('flightsToday', query(collection(db, "flights"), where("scheduledDepartureDateTimeUTC", ">=", todayStart), where("scheduledDepartureDateTimeUTC", "<=", todayEnd)));
@@ -90,16 +88,6 @@ export default function AdminConsolePage() {
       href: "/admin/users",
       stat: stats.users,
       delay: 0.1 
-    },
-    { 
-      icon: ClipboardCheck, 
-      title: "User Requests", 
-      description: "Review and respond to user-submitted requests (leave, roster changes, etc.).", 
-      buttonText: "Manage Requests", 
-      href: "/admin/user-requests",
-      stat: stats.pendingRequests,
-      highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.15
     },
     { 
       icon: Bell, 
