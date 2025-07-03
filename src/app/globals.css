@@ -15,7 +15,7 @@ body {
     --card-foreground: 0 0% 13%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 13%;
-    --primary: 0 0% 13%;
+    --primary: 0 64% 47%; /* Red */
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
@@ -23,15 +23,15 @@ body {
     --muted-foreground: 0 0% 45.1%;
     --accent: 0 0% 90%;
     --accent-foreground: 0 0% 9%;
-    --destructive: 0 64% 47%;
+    --destructive: 0 64% 47%; /* Red */
     --destructive-foreground: 0 0% 100%;
-    --success: 124 48% 38%;
+    --success: 122 44% 38%; /* Green */
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 13%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 0 0% 13%;
+    --ring: 0 64% 47%; /* Red */
     --radius: 0.5rem;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -40,40 +40,40 @@ body {
     --chart-5: 27 87% 67%;
 
     /* Sidebar specific colors */
-    --sidebar-background: 0 0% 13%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 0 0% 13%;
+    --sidebar-background: 0 0% 13%; /* Black */
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 64% 47%; /* Red */
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 20%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 0 0% 100%;
+    --sidebar-ring: 0 64% 47%; /* Red */
   }
 
   .dark {
-    --background: 0 0% 13%;
+    --background: 0 0% 13%; /* Black */
     --foreground: 0 0% 98%;
     --card: 0 0% 13%;
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 13%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
+    --primary: 0 70% 60%; /* Lighter Red */
+    --primary-foreground: 0 0% 13%;
     --secondary: 0 0% 20%;
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 20%;
     --muted-foreground: 0 0% 63.9%;
     --accent: 0 0% 25%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 64% 47%;
+    --destructive: 0 70% 55%; /* Lighter Red */
     --destructive-foreground: 0 0% 98%;
-    --success: 124 48% 38%;
+    --success: 122 50% 50%; /* Lighter Green */
     --success-foreground: 0 0% 98%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 13%;
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 0 0% 98%;
+    --ring: 0 70% 60%; /* Lighter Red */
     --chart-1: 207 60% 55%;
     --chart-2: 173 50% 45%;
     --chart-3: 197 30% 30%;
@@ -81,14 +81,14 @@ body {
     --chart-5: 27 75% 60%;
 
     /* Sidebar specific colors for dark mode */
-    --sidebar-background: 0 0% 13%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 0 0% 100%;
+    --sidebar-background: 0 0% 13%; /* Black */
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 70% 60%; /* Lighter Red */
     --sidebar-primary-foreground: 0 0% 13%;
     --sidebar-accent: 0 0% 20%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 0 0% 100%;
+    --sidebar-ring: 0 70% 60%; /* Lighter Red */
   }
 }
 
