@@ -6,14 +6,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ShieldAlert, Timer, ChevronsRight, Info, AlertTriangle, CheckCircle } from "lucide-react";
+import { ShieldAlert, Timer, Info, AlertTriangle, CheckCircle } from "lucide-react";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { Separator } from "@/components/ui/separator";
+import { useDebounce } from "@/packages/use-debounce";
 
 // --- FTL Data and Logic ---
 
@@ -71,19 +71,24 @@ export default function FtlCalculatorPage() {
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: { reportTime: "08:00", proposedArrivalTime: "", sectors: 2, acclimatisation: "acclimatised" },
+        mode: "onChange",
     });
 
-    const onSubmit = (data: FormValues) => {
+    const formValues = form.watch();
+    const debouncedFormValues = useDebounce(formValues, 300);
+
+    const calculateFDP = React.useCallback((data: FormValues) => {
+        if (!form.formState.isValid) {
+            setResult(null);
+            return;
+        }
+        
         const { reportTime, sectors, acclimatisation, proposedArrivalTime } = data;
         
         const table = acclimatisation === 'acclimatised' ? FDP_TABLE_ACCLIMATISED : FDP_TABLE_NOT_ACCLIMATISED;
         const baseFDPMinutes = findMaxFDP(reportTime, table);
-
-        // Reduction for sectors
         const sectorReductions = sectors > 2 ? (sectors - 2) * 30 : 0;
         const fdpAfterSectors = baseFDPMinutes - sectorReductions;
-
-        // Check for WOCL infringement
         const reportMinutes = timeToMinutes(reportTime);
         const fdpEndMinutes = reportMinutes + fdpAfterSectors;
         const woclStart = timeToMinutes("02:00");
@@ -95,33 +100,22 @@ export default function FtlCalculatorPage() {
 
         const woclLimitMinutes = timeToMinutes("11:00");
         const fdpWithWOCL = woclInfringement ? Math.min(fdpAfterSectors, woclLimitMinutes) : fdpAfterSectors;
-
         const latestOffBlockTime = minutesToTimeH24(reportMinutes + fdpWithWOCL);
-
-        // Extensions
         const extensionPossible = sectors <= 4;
         const extendedFDP = minutesToTime(fdpWithWOCL + 60);
 
-        // Rest period calculation (simplified)
         let minRest = Math.max(timeToMinutes("10:00"), fdpWithWOCL);
         if (acclimatisation === 'acclimatised') minRest = Math.max(timeToMinutes("12:00"), fdpWithWOCL);
         
-        // Feasibility check
         let feasibilityResult = null;
         if (proposedArrivalTime) {
             let arrivalMinutes = timeToMinutes(proposedArrivalTime);
-            if (arrivalMinutes < reportMinutes) {
-                arrivalMinutes += 24 * 60; // Assumes next day arrival
-            }
+            if (arrivalMinutes < reportMinutes) arrivalMinutes += 24 * 60;
             const plannedFDPMinutes = arrivalMinutes - reportMinutes;
             const isFeasible = plannedFDPMinutes <= fdpWithWOCL;
             const differenceMinutes = Math.abs(plannedFDPMinutes - fdpWithWOCL);
             
-            feasibilityResult = {
-                isFeasible,
-                plannedFDP: minutesToTime(plannedFDPMinutes),
-                difference: minutesToTime(differenceMinutes),
-            };
+            feasibilityResult = { isFeasible, plannedFDP: minutesToTime(plannedFDPMinutes), difference: minutesToTime(differenceMinutes) };
         }
 
         setResult({
@@ -131,19 +125,15 @@ export default function FtlCalculatorPage() {
             woclInfringement,
             finalFDP: minutesToTime(fdpWithWOCL),
             latestOffBlock: latestOffBlockTime,
-            extension: {
-                possible: extensionPossible,
-                newFDP: extendedFDP
-            },
+            extension: { possible: extensionPossible, newFDP: extendedFDP },
             minRest: minutesToTime(minRest),
             feasibility: feasibilityResult,
         });
-    };
+    }, [form.formState.isValid]);
     
     React.useEffect(() => {
-        onSubmit(form.getValues());
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        calculateFDP(debouncedFormValues);
+    }, [debouncedFormValues, calculateFDP]);
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
@@ -162,10 +152,13 @@ export default function FtlCalculatorPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 <AnimatedCard>
                     <Card>
-                        <CardHeader><CardTitle className="text-lg">Enter Duty Details</CardTitle></CardHeader>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Duty Details</CardTitle>
+                          <CardDescription>Results will update automatically.</CardDescription>
+                        </CardHeader>
                         <CardContent>
                             <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                                <form className="space-y-6">
                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <FormField control={form.control} name="reportTime" render={({ field }) => (
                                             <FormItem>
@@ -205,7 +198,6 @@ export default function FtlCalculatorPage() {
                                             <FormMessage />
                                         </FormItem>
                                     )} />
-                                    <Button type="submit" className="w-full">Calculate</Button>
                                 </form>
                             </Form>
                         </CardContent>
@@ -284,6 +276,7 @@ export default function FtlCalculatorPage() {
                             <CardContent>
                                 <Timer className="mx-auto h-12 w-12 text-muted-foreground" />
                                 <p className="mt-4 text-muted-foreground">Results will be displayed here.</p>
+                                 <p className="text-xs text-muted-foreground mt-1">Fill out the form to calculate.</p>
                             </CardContent>
                          </Card>
                     )}
