@@ -49,6 +49,7 @@ const predefinedLabels: { [key: string]: string } = {
   "community-hub": "Community Hub",
   "weather-decoder": "Weather Decoder",
   "live-flight-tracker": "Live Flight Tracker",
+  "ftl-calculator": "EASA FTL Calculator",
 };
 
 export function Breadcrumbs() {
