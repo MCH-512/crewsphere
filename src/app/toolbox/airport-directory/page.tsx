@@ -14,19 +14,29 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 
 // Group airports by continent and then by country
 const groupedAirports = (airportsData as Airport[]).reduce((acc, airport) => {
-    const { continent, country } = airport;
+    const { continent, country, countryCode } = airport;
     if (!continent) return acc;
     if (!acc[continent]) {
         acc[continent] = {};
     }
     if (!acc[continent][country]) {
-        acc[continent][country] = [];
+        acc[continent][country] = { airports: [], countryCode }; 
     }
-    acc[continent][country].push(airport);
+    acc[continent][country].airports.push(airport);
     return acc;
-}, {} as Record<string, Record<string, Airport[]>>);
+}, {} as Record<string, Record<string, { airports: Airport[], countryCode: string }>>);
 
 const continents = Object.keys(groupedAirports).sort();
+
+// Helper function to get flag emoji from country code
+const getFlagEmoji = (countryCode: string) => {
+    if (!countryCode || countryCode.length !== 2) return '';
+    const codePoints = countryCode
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+};
 
 export default function AirportDirectoryPage() {
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -39,27 +49,29 @@ export default function AirportDirectoryPage() {
         const lowercasedTerm = searchTerm.toLowerCase();
         
         return Object.entries(groupedAirports).reduce((acc, [continent, countries]) => {
-            const filteredCountries = Object.entries(countries).reduce((countryAcc, [country, airports]) => {
+            const filteredCountries = Object.entries(countries).reduce((countryAcc, [country, data]) => {
+                const { airports, countryCode } = data;
                 const filteredAirports = airports.filter(airport =>
                     airport.name.toLowerCase().includes(lowercasedTerm) ||
                     airport.city.toLowerCase().includes(lowercasedTerm) ||
                     (airport.iata && airport.iata.toLowerCase().includes(lowercasedTerm)) ||
                     (airport.icao && airport.icao.toLowerCase().includes(lowercasedTerm)) ||
-                    airport.country.toLowerCase().includes(lowercasedTerm)
+                    airport.country.toLowerCase().includes(lowercasedTerm) ||
+                    getFlagEmoji(countryCode).includes(searchTerm) // Search by flag emoji
                 );
 
                 if (filteredAirports.length > 0) {
-                    countryAcc[country] = filteredAirports;
+                    countryAcc[country] = { airports: filteredAirports, countryCode };
                 }
                 return countryAcc;
-            }, {} as Record<string, Airport[]>);
+            }, {} as Record<string, { airports: Airport[], countryCode: string }>);
 
             if (Object.keys(filteredCountries).length > 0) {
                 acc[continent] = filteredCountries;
             }
 
             return acc;
-        }, {} as Record<string, Record<string, Airport[]>>);
+        }, {} as Record<string, Record<string, { airports: Airport[], countryCode: string }>>);
 
     }, [searchTerm]);
 
@@ -107,9 +119,14 @@ export default function AirportDirectoryPage() {
                             <Card>
                                 <CardContent className="pt-6">
                                     <Accordion type="single" collapsible className="w-full">
-                                        {Object.entries(countries).sort(([a], [b]) => a.localeCompare(b)).map(([country, airports]) => (
+                                        {Object.entries(countries).sort(([a], [b]) => a.localeCompare(b)).map(([country, data]) => (
                                             <AccordionItem key={country} value={country}>
-                                                <AccordionTrigger className="text-lg">{country} ({airports.length})</AccordionTrigger>
+                                                <AccordionTrigger className="text-lg">
+                                                    <span className="flex items-center gap-3">
+                                                        <span className="text-2xl">{getFlagEmoji(data.countryCode)}</span>
+                                                        {country} ({data.airports.length})
+                                                    </span>
+                                                </AccordionTrigger>
                                                 <AccordionContent>
                                                     <Table>
                                                         <TableHeader>
@@ -121,7 +138,7 @@ export default function AirportDirectoryPage() {
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
-                                                            {airports.map(airport => (
+                                                            {data.airports.map(airport => (
                                                                 <TableRow key={airport.icao || airport.iata}>
                                                                     <TableCell className="font-medium">{airport.name}</TableCell>
                                                                     <TableCell>{airport.city}</TableCell>
