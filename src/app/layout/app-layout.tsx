@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarHeader,
@@ -15,13 +15,10 @@ import {
   SidebarInset,
   SidebarTrigger,
   useSidebar,
-  SidebarProvider, 
-  SidebarMenuBadge,
-  SidebarSeparator,
+  SidebarProvider,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,46 +32,42 @@ import {
   Settings,
   LogOut,
   Plane,
-  Bell,
   Moon,
   Sun,
   ServerCog,
   LogIn,
   UserPlus,
   Loader2,
-  Inbox, 
-  ClipboardCheck, 
-  FilePlus,
-  Users,
-  Calculator,
+  Inbox,
   Lightbulb,
-  MessageSquare,
   Wrench,
-  CheckSquare,
+  Users,
+  ClipboardCheck,
+  MessageSquare,
   Activity,
-  HelpCircle,
-  School,
+  FileSignature,
+  Calendar,
+  Library,
   GraduationCap,
+  CheckSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/auth-context"; 
+import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { Breadcrumbs } from "./breadcrumbs"; 
+import { Breadcrumbs } from "./breadcrumbs";
 import { HeaderClocks } from "@/components/features/header-clocks";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 const navItems = [
-  // Core
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-
-  // Actions & Communication
+  { href: "/my-schedule", label: "My Schedule", icon: Calendar },
+  { href: "/training", label: "E-Learning", icon: GraduationCap },
+  { href: "/document-library", label: "Document Library", icon: Library },
   { href: "/requests", label: "My Requests", icon: Inbox },
+  { href: "/purser-reports", label: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin'] },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
-  
-  // Tools
   { href: "/toolbox", label: "Toolbox", icon: Wrench },
-  
-  // Admin
-  { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
+  { href: "/admin", label: "Admin Console", icon: ServerCog, roles: ['admin'] },
 ];
 
 const useTheme = () => {
@@ -98,7 +91,6 @@ const useTheme = () => {
   return { theme, toggleTheme };
 };
 
-
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
@@ -116,10 +108,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   if (pathname === "/login" || pathname === "/signup") {
-    return <>{children}</>; 
+    return <>{children}</>;
   }
-  
-  if (loading && !user) { 
+
+  if (loading && !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" aria-label="Loading application state" />
@@ -129,10 +121,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider defaultOpen>
-      <LayoutWithSidebar 
-        user={user} 
-        handleLogout={handleLogout} 
-        theme={theme} 
+      <LayoutWithSidebar
+        user={user}
+        handleLogout={handleLogout}
+        theme={theme}
         toggleTheme={toggleTheme}
       >
         {children}
@@ -141,32 +133,30 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function LayoutWithSidebar({ 
-  children, 
-  user, 
-  handleLogout, 
-  theme, 
+function LayoutWithSidebar({
+  children,
+  user,
+  handleLogout,
+  theme,
   toggleTheme,
-}: { 
-  children: React.ReactNode; 
-  user: any; 
-  handleLogout: () => void; 
-  theme: string; 
+}: {
+  children: React.ReactNode;
+  user: any;
+  handleLogout: () => void;
+  theme: string;
   toggleTheme: () => void;
 }) {
-  const { isMobile } = useSidebar(); 
+  const { isMobile } = useSidebar();
   const pathname = usePathname();
 
   const adminNavItems = [
-    { href: "/admin", label: "Admin Console", icon: ServerCog },
-    { href: "/admin/users", label: "Users", icon: Users },
-    { href: "/admin/user-requests", label: "Requests", icon: ClipboardCheck },
-    { href: "/admin/alerts", label: "Alerts", icon: Bell },
-    { href: "/admin/courses", label: "Courses", icon: GraduationCap },
-    { href: "/admin/training-sessions", label: "Sessions", icon: School },
-    { href: "/admin/quizzes", label: "Quizzes", icon: CheckSquare },
-    { href: "/admin/question-bank", label: "Question Bank", icon: HelpCircle },
-    { href: "/admin/flights", label: "Flights", icon: Plane },
+    { href: "/admin", label: "Admin Dashboard", icon: ServerCog },
+    { href: "/admin/users", label: "User Management", icon: Users },
+    { href: "/admin/user-requests", label: "User Requests", icon: ClipboardCheck },
+    { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
+    { href: "/admin/courses", label: "Course Management", icon: GraduationCap },
+    { href: "/admin/quizzes", label: "Quiz Management", icon: CheckSquare },
+    { href: "/admin/documents", label: "Documents", icon: Library },
     { href: "/admin/suggestions", label: "Suggestions", icon: MessageSquare },
     { href: "/admin/system-settings", label: "System Settings", icon: Settings },
     { href: "/admin/audit-logs", label: "Audit Logs", icon: Activity },
@@ -174,25 +164,22 @@ function LayoutWithSidebar({
 
   const currentNavItems = pathname.startsWith('/admin') && user?.role === 'admin' ? adminNavItems : navItems;
 
-
   return (
     <>
       <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r">
         <SidebarHeader className="h-16 flex items-center justify-center">
           <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
             <Plane className="w-8 h-8 text-sidebar-primary" />
-            <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">Express Airline Crew World</span>
+            <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">Crew World</span>
           </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">
           <SidebarMenu>
             {currentNavItems.map((item) => {
-              if (item.adminOnly && user?.role !== 'admin' && !pathname.startsWith('/admin')) { 
-                return null; 
+              if (item.roles && !item.roles.some((role: string) => user?.role === role)) {
+                return null;
               }
-              const isActive = item.href && (pathname === item.href || 
-                               (item.href !== "/" && pathname.startsWith(item.href + '/')) ||
-                               (item.href === "/admin" && pathname.startsWith("/admin/")));
+              const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
 
               return (
                 <SidebarMenuItem key={item.href}>

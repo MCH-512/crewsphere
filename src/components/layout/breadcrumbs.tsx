@@ -43,6 +43,7 @@ const predefinedLabels: { [key: string]: string } = {
   "documents": "Document Management",
   courses: "Course Management",
   quizzes: "Quiz Management",
+  training: "E-Learning Center",
 };
 
 export function Breadcrumbs() {
@@ -94,5 +95,3 @@ export function Breadcrumbs() {
     </nav>
   );
 }
-
-    
