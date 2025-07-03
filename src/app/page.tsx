@@ -30,18 +30,6 @@ interface Alert {
   iconName?: string;
 }
 
-interface RecentDocument {
-  id: string;
-  title: string;
-  category: string;
-  content?: string;
-  description?: string;
-  lastUpdated: Timestamp;
-  documentContentType?: 'file' | 'markdown' | 'fileWithMarkdown';
-  downloadURL?: string;
-  fileName?: string;
-}
-
 interface Flight {
   id: string;
   flightNumber: string;
@@ -83,10 +71,6 @@ export default function DashboardPage() {
   const [alerts, setAlerts] = React.useState<Alert[]>([]);
   const [alertsLoading, setAlertsLoading] = React.useState(true);
   const [alertsError, setAlertsError] = React.useState<string | null>(null);
-
-  const [recentDocuments, setRecentDocuments] = React.useState<RecentDocument[]>([]);
-  const [recentDocumentsLoading, setRecentDocumentsLoading] = React.useState(true);
-  const [recentDocumentsError, setRecentDocumentsError] = React.useState<string | null>(null);
 
   const [upcomingDuty, setUpcomingDuty] = React.useState<UpcomingDutyData | null>(null);
   const [isUpcomingDutyLoading, setIsUpcomingDutyLoading] = React.useState(true);
@@ -154,33 +138,6 @@ export default function DashboardPage() {
     fetchAlerts();
   }, [user, toast]);
   
-  React.useEffect(() => {
-    async function fetchRecentDocuments() {
-      if (!user) {
-        setRecentDocumentsLoading(false);
-        setRecentDocumentsError("Please log in to view recent documents.");
-        return;
-      }
-      setRecentDocumentsLoading(true);
-      setRecentDocumentsError(null);
-      try {
-        const docsQuery = query(collection(db, "documents"), orderBy("lastUpdated", "desc"), limit(3));
-        const docsSnapshot = await getDocs(docsQuery);
-        const fetchedDocs = docsSnapshot.docs.map(d => ({
-          id: d.id,
-          ...d.data(),
-        } as RecentDocument));
-        setRecentDocuments(fetchedDocs);
-      } catch (err) {
-        console.error("Error fetching recent documents:", err);
-        setRecentDocumentsError("Failed to load recent documents.");
-        toast({ title: "Documents Error", description: "Could not load recent documents.", variant: "destructive" });
-      } finally {
-        setRecentDocumentsLoading(false);
-      }
-    }
-    fetchRecentDocuments();
-  }, [user, toast]);
 
   React.useEffect(() => {
     async function fetchUpcomingDuty() {
@@ -374,7 +331,7 @@ export default function DashboardPage() {
                     <Link href="/requests"><SendHorizonal className="mr-2 h-4 w-4"/>Make a Request</Link>
                   </Button>
                    <Button variant="outline" className="w-full justify-start" asChild>
-                    <Link href="/documents"><BookOpen className="mr-2 h-4 w-4"/>Access Documents</Link>
+                    <Link href="/crew-community"><MessagesSquare className="mr-2 h-4 w-4"/>Crew Community</Link>
                   </Button>
               </CardContent>
           </Card>
@@ -427,47 +384,6 @@ export default function DashboardPage() {
                 </Button>
                 </CardContent>
             </Card>
-        </AnimatedCard>
-
-         <AnimatedCard delay={0.30} className="lg:col-span-3">
-           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="font-headline flex items-center"><BookCopy className="mr-2 h-5 w-5 text-primary"/>Recent Documents</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {recentDocumentsLoading ? (
-                 <div className="space-y-3 py-2">
-                    {[1,2,3].map(i => (
-                      <div key={i} className="pb-3 border-b last:border-b-0 space-y-1">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/4" />
-                      </div>
-                    ))}
-                 </div>
-              ) : recentDocumentsError ? (
-                <ShadAlert variant="destructive">
-                  <AlertTriangle className="h-5 w-5" />
-                  <ShadAlertTitle>Updates Error</ShadAlertTitle>
-                  <ShadAlertDescription>{recentDocumentsError}</ShadAlertDescription>
-                </ShadAlert>
-              ) : recentDocuments.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">No recent documents or announcements.</p>
-              ) : recentDocuments.map((doc) => (
-                <div key={doc.id} className="pb-2 border-b last:border-b-0">
-                  <h3 className="font-semibold text-sm truncate" title={doc.title}>{doc.title}</h3>
-                  <div className="flex justify-between items-center">
-                    <Badge variant="secondary" className="text-xs">{doc.category}</Badge>
-                     <p className="text-xs text-muted-foreground/80">
-                        {format(doc.lastUpdated.toDate(), "PP")}
-                    </p>
-                  </div>
-                </div>
-              ))}
-               <Button variant="link" className="p-0 h-auto text-sm mt-2" asChild>
-                  <Link href="/documents">View All Documents</Link>
-               </Button>
-            </CardContent>
-          </Card>
         </AnimatedCard>
 
         <AnimatedCard delay={0.35} className="lg:col-span-3">

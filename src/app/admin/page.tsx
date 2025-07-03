@@ -40,12 +40,10 @@ export default function AdminConsolePage() {
   const [stats, setStats] = React.useState({
     pendingRequests: { value: null, isLoading: true, label: "Pending" } as Stat,
     users: { value: null, isLoading: true, label: "Total Users" } as Stat,
-    documents: { value: null, isLoading: true, label: "Documents" } as Stat,
     publishedCourses: { value: null, isLoading: true, label: "Published Courses" } as Stat,
     flightsToday: { value: null, isLoading: true, label: "Flights Today" } as Stat,
     trainingSessions: { value: null, isLoading: true, label: "Upcoming Sessions" } as Stat,
     quizzes: { value: null, isLoading: true, label: "Total Quizzes" } as Stat,
-    purserReports: { value: null, isLoading: true, label: "Total Reports" } as Stat,
     suggestions: { value: null, isLoading: true, label: "New Suggestions" } as Stat,
   });
 
@@ -71,12 +69,10 @@ export default function AdminConsolePage() {
 
     fetcher('pendingRequests', query(collection(db, "requests"), where("status", "==", "pending")));
     fetcher('users', collection(db, "users"));
-    fetcher('documents', collection(db, "documents"));
     fetcher('publishedCourses', query(collection(db, "courses"), where("published", "==", true)));
     fetcher('flightsToday', query(collection(db, "flights"), where("scheduledDepartureDateTimeUTC", ">=", todayStart), where("scheduledDepartureDateTimeUTC", "<=", todayEnd)));
     fetcher('trainingSessions', query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", todayStart)));
     fetcher('quizzes', collection(db, "quizzes"));
-    fetcher('purserReports', collection(db, "purserReports"));
     fetcher('suggestions', query(collection(db, "suggestions"), where("status", "==", "new")));
 
   }, [user, toast]);
@@ -104,15 +100,6 @@ export default function AdminConsolePage() {
       stat: stats.pendingRequests,
       highlightWhen: (value) => value !== null && value > 0,
       delay: 0.15
-    },
-    { 
-      icon: FilePlus, 
-      title: "Documents", 
-      description: "Create, upload, and manage all shared documents, notes, and procedures.", 
-      buttonText: "Manage Documents", 
-      href: "/admin/documents", 
-      stat: stats.documents,
-      delay: 0.2
     },
     { 
       icon: Bell, 

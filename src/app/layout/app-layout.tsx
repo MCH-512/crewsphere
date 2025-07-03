@@ -74,13 +74,8 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
 
-  // Learning & Reference
-  { href: "/training", label: "Training Hub", icon: GraduationCap },
-  { href: "/documents", label: "Documents", icon: FileText },
-
   // Actions & Communication
   { href: "/requests", label: "My Requests", icon: Inbox },
-  { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
   { href: "/crew-community", label: "Crew Community", icon: MessagesSquare },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
   
@@ -184,14 +179,12 @@ function LayoutWithSidebar({
     { href: "/admin", label: "Admin Console", icon: ServerCog },
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/user-requests", label: "Requests", icon: ClipboardCheck },
-    { href: "/admin/documents", label: "Documents", icon: FilePlus },
     { href: "/admin/alerts", label: "Alerts", icon: Bell },
     { href: "/admin/courses", label: "Courses", icon: GraduationCap },
     { href: "/admin/training-sessions", label: "Sessions", icon: School },
     { href: "/admin/quizzes", label: "Quizzes", icon: CheckSquare },
     { href: "/admin/question-bank", label: "Question Bank", icon: HelpCircle },
     { href: "/admin/flights", label: "Flights", icon: Plane },
-    { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
     { href: "/admin/suggestions", label: "Suggestions", icon: MessageSquare },
     { href: "/admin/system-settings", label: "System Settings", icon: Settings },
     { href: "/admin/audit-logs", label: "Audit Logs", icon: Activity },

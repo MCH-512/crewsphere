@@ -21,7 +21,6 @@ const formatSegment = (segment: string): string => {
 const predefinedLabels: { [key: string]: string } = {
   admin: "Admin Console",
   users: "User Management",
-  documents: "Documents",
   create: "Create",
   edit: "Edit",
   alerts: "Alerts",
