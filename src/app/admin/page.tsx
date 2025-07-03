@@ -198,5 +198,3 @@ export default function AdminConsolePage() {
     </div>
   );
 }
-
-    
