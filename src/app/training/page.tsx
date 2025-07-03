@@ -8,17 +8,90 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Loader2, AlertTriangle, BookOpen } from "lucide-react";
+import { GraduationCap, Loader2, AlertTriangle, BookOpen, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { StoredCourse } from "@/schemas/course-schema";
+import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
+import { format } from "date-fns";
+import { Separator } from "@/components/ui/separator";
+
+interface CourseWithProgress extends StoredCourse {
+    progress?: StoredUserQuizAttempt;
+}
+
+const CourseProgressCard = ({ course }: { course: CourseWithProgress }) => {
+    const status = course.progress?.status;
+    const score = course.progress?.score;
+    const completedAt = course.progress?.completedAt?.toDate();
+
+    return (
+        <AnimatedCard>
+             <Card className="shadow-sm h-full flex flex-col hover:shadow-lg transition-shadow overflow-hidden">
+                <div className="relative h-40 w-full">
+                    <Image 
+                      src={`https://placehold.co/600x400.png`} 
+                      alt={course.title}
+                      data-ai-hint={course.imageHint || "training manual"}
+                      fill
+                      style={{ objectFit: 'cover' }}
+                    />
+                     {status && (
+                        <Badge variant={status === 'passed' ? 'success' : 'destructive'} className="absolute top-2 right-2 capitalize font-semibold">
+                           {status}
+                        </Badge>
+                     )}
+                </div>
+                <CardHeader>
+                    <Badge variant={course.mandatory ? "destructive" : "secondary"} className="mb-2 w-fit">
+                        {course.mandatory ? "Mandatory" : "Optional"}
+                    </Badge>
+                    <CardTitle className="text-lg">{course.title}</CardTitle>
+                    <CardDescription className="text-xs pt-1">{course.category}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                    <p className="text-sm text-muted-foreground line-clamp-3">{course.description}</p>
+                </CardContent>
+                <CardFooter className="flex-col items-stretch gap-2 pt-4">
+                    {status === 'passed' && completedAt && (
+                        <div className="flex items-center text-xs text-success-foreground font-medium p-2 rounded-md bg-success/90">
+                            <CheckCircle className="mr-2 h-4 w-4"/>
+                            <span>Passed on {format(completedAt, 'PP')}</span>
+                        </div>
+                    )}
+                     {status === 'failed' && score !== undefined && (
+                        <div className="flex items-center text-xs text-destructive-foreground font-medium p-2 rounded-md bg-destructive">
+                            <XCircle className="mr-2 h-4 w-4"/>
+                            <span>Failed (Score: {score.toFixed(0)}%)</span>
+                        </div>
+                    )}
+
+                    {status === 'passed' ? (
+                         <Button asChild variant="outline">
+                            <Link href={`/training/${course.id}`}><BookOpen className="mr-2 h-4 w-4" />Review Course</Link>
+                        </Button>
+                    ) : status === 'failed' ? (
+                         <Button asChild>
+                             <Link href={`/training/quiz/${course.quizId}`}><RefreshCw className="mr-2 h-4 w-4" />Retake Quiz</Link>
+                         </Button>
+                    ) : (
+                         <Button asChild>
+                            <Link href={`/training/${course.id}`}><BookOpen className="mr-2 h-4 w-4" />Start Course</Link>
+                        </Button>
+                    )}
+                </CardFooter>
+            </Card>
+        </AnimatedCard>
+    );
+};
+
 
 export default function TrainingPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
-    const [courses, setCourses] = React.useState<StoredCourse[]>([]);
+    const [courses, setCourses] = React.useState<CourseWithProgress[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
 
     React.useEffect(() => {
@@ -28,25 +101,55 @@ export default function TrainingPage() {
             return;
         }
 
-        const fetchCourses = async () => {
+        const fetchCoursesAndProgress = async () => {
             setIsLoading(true);
             try {
-                const q = query(
+                // Fetch all published courses
+                const coursesQuery = query(
                     collection(db, "courses"),
                     where("published", "==", true),
                     orderBy("createdAt", "desc")
                 );
-                const querySnapshot = await getDocs(q);
-                const fetchedCourses = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCourse));
-                setCourses(fetchedCourses);
+                
+                // Fetch all quiz attempts for the user
+                const attemptsQuery = query(
+                    collection(db, "userQuizAttempts"),
+                    where("userId", "==", user.uid),
+                    orderBy("completedAt", "desc")
+                );
+
+                const [coursesSnapshot, attemptsSnapshot] = await Promise.all([
+                    getDocs(coursesQuery),
+                    getDocs(attemptsSnapshot)
+                ]);
+
+                const fetchedCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCourse));
+                const fetchedAttempts = attemptsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserQuizAttempt));
+                
+                // Create a map to store the latest attempt for each course
+                const latestAttempts = new Map<string, StoredUserQuizAttempt>();
+                for (const attempt of fetchedAttempts) {
+                    if (!latestAttempts.has(attempt.courseId)) {
+                        latestAttempts.set(attempt.courseId, attempt);
+                    }
+                }
+
+                // Merge progress into courses
+                const coursesWithProgress: CourseWithProgress[] = fetchedCourses.map(course => ({
+                    ...course,
+                    progress: latestAttempts.get(course.id),
+                }));
+
+                setCourses(coursesWithProgress);
+
             } catch (error) {
-                console.error("Error fetching courses:", error);
+                console.error("Error fetching courses and progress:", error);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchCourses();
+        fetchCoursesAndProgress();
     }, [user, authLoading, router]);
 
     if (authLoading || isLoading) {
@@ -57,8 +160,11 @@ export default function TrainingPage() {
         return null; // Redirecting
     }
 
+    const mandatoryCourses = courses.filter(c => c.mandatory);
+    const optionalCourses = courses.filter(c => !c.mandatory);
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <AnimatedCard>
                 <Card className="shadow-lg">
                     <CardHeader>
@@ -80,40 +186,34 @@ export default function TrainingPage() {
                     </Card>
                 </AnimatedCard>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {courses.map((course, index) => (
-                        <AnimatedCard key={course.id} delay={0.1 + index * 0.05}>
-                            <Card className="shadow-sm h-full flex flex-col hover:shadow-lg transition-shadow overflow-hidden">
-                                <div className="relative h-40 w-full">
-                                    <Image 
-                                      src={`https://placehold.co/600x400.png`} 
-                                      alt={course.title}
-                                      data-ai-hint={course.imageHint || "training manual"}
-                                      fill
-                                      style={{ objectFit: 'cover' }}
-                                    />
-                                </div>
-                                <CardHeader>
-                                    <Badge variant={course.mandatory ? "default" : "secondary"} className="mb-2 w-fit">
-                                        {course.mandatory ? "Mandatory" : "Optional"}
-                                    </Badge>
-                                    <CardTitle className="text-lg">{course.title}</CardTitle>
-                                    <CardDescription className="text-xs pt-1">{course.category}</CardDescription>
-                                </CardHeader>
-                                <CardContent className="flex-grow">
-                                    <p className="text-sm text-muted-foreground line-clamp-3">{course.description}</p>
-                                </CardContent>
-                                <CardFooter>
-                                    <Button asChild className="w-full">
-                                        <Link href={`/training/${course.id}`}>
-                                            <BookOpen className="mr-2 h-4 w-4" />
-                                            Start Course
-                                        </Link>
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        </AnimatedCard>
-                    ))}
+                <div className="space-y-8">
+                    {/* Mandatory Courses Section */}
+                    <section>
+                        <h2 className="text-2xl font-bold tracking-tight mb-4">Mandatory Courses</h2>
+                        <Separator className="mb-6"/>
+                        {mandatoryCourses.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {mandatoryCourses.map((course, index) => (
+                                    <CourseProgressCard key={course.id} course={course} />
+                                ))}
+                            </div>
+                        ) : (
+                             <p className="text-muted-foreground text-center py-8">No mandatory courses assigned.</p>
+                        )}
+                    </section>
+                    
+                     {/* Optional Courses Section */}
+                    {optionalCourses.length > 0 && (
+                        <section>
+                            <h2 className="text-2xl font-bold tracking-tight mb-4">Optional Courses</h2>
+                             <Separator className="mb-6"/>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {optionalCourses.map((course, index) => (
+                                     <CourseProgressCard key={course.id} course={course} />
+                                ))}
+                            </div>
+                        </section>
+                    )}
                 </div>
             )}
         </div>
