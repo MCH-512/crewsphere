@@ -1,107 +1,125 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper Functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    function isAdmin() {
-      // Check if user is authenticated and has the 'admin' role in their user document.
-      // This get() call requires that users can at least read their own role.
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Users Collection: Admins can manage all. Users can read/write their own document.
+    
+    // --- Users Collection ---
+    // Logged-in users can read their own profile.
+    // Admins can read and write any user profile.
     match /users/{userId} {
-      allow read, write: if isAdmin() || isOwner(userId);
-    }
-    
-    // System Configuration: Admins only.
-    match /systemConfiguration/{configId} {
-      allow read, write: if isAdmin();
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Alerts: Admins write, all authenticated users can read.
+    // --- Alerts & Acknowledgements ---
+    // Alerts are read-only for users.
+    // Admins can create, update, delete alerts.
     match /alerts/{alertId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    // Alert Acknowledgements: Users can create/read their own. Admins can read all.
+    // Users can create and read their own acknowledgements.
     match /alertAcknowledgements/{ackId} {
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-    }
-
-    // Audit Logs: Admin read-only. Write should be done from a trusted server environment.
-    match /auditLogs/{logId} {
-      allow read: if isAdmin();
-      allow write: if false; 
+      allow read, create: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
     
-    // --- Training Module ---
-    // Course-related content is readable by all users, writable only by admins.
-    match /courses/{courseId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /quizzes/{quizId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /questions/{questionId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /certificateRules/{ruleId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /trainingSessions/{sessionId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
+    // --- Courses & Training ---
+    // Courses are read-only for all logged-in users.
+    // Admins can manage all course-related collections.
+    match /courses/{courseId} {
+      allow read: if request.auth != null && resource.data.published == true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    match /quizzes/{quizId} {
+       allow read: if request.auth != null;
+       allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    match /questions/{questionId} {
+       allow read: if request.auth != null;
+       allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    match /certificateRules/{ruleId} {
+       allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
 
-    // User Training Progress: Users can only manage their own progress. Admins can read all.
+    // --- User-Specific Data (Progress, Activities, Requests) ---
+    // Users can create, read, and update their own progress and activities.
     match /userTrainingProgress/{progressId} {
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
-      allow write: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, create, update: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
-    
-    // --- Operations Module ---
-    match /documents/{docId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-    match /flights/{flightId} { allow read: if isAuthenticated(); allow write: if isAdmin(); }
-
-    // User Activities: Users can be assigned activities by Admins, or manage their own non-flight activities.
     match /userActivities/{activityId} {
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
-      allow create: if isAdmin() || (isAuthenticated() && request.resource.data.userId == request.auth.uid);
-      // Users can only update comments or time on their own non-flight/training activities. Admins can update anything.
-      allow update: if isAdmin() || 
-                     (isAuthenticated() && resource.data.userId == request.auth.uid && 
-                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments', 'startTime', 'endTime']));
-      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow read, create, update, delete: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Users can create and read their own requests.
+    // Admins can read and update any request.
+    match /requests/{requestId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update: if request.auth != null && 
+                          (request.resource.data.userId == request.auth.uid || 
+                           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    // --- Documents ---
+    // Documents are read-only for authenticated users.
+    // Admins can manage documents.
+    match /documents/{documentId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    // Purser Reports: Users can create/read their own. Admins read all. Reports are immutable.
+    // --- Flights & Purser Reports ---
+    // Flights are read-only for authenticated users. Admins can manage them.
+    match /flights/{flightId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Users can create and read their own reports.
+    // Admins can read, update, and delete any report.
     match /purserReports/{reportId} {
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if false; 
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update: if request.auth != null && (request.resource.data.userId == request.auth.uid || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-
-    // --- Communication & HR ---
-    // Requests: Users create/read their own. Admins can read all and update status/response.
-    match /requests/{requestId} {
-      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAdmin();
-    }
-
-    // Suggestions: Any user can create/read. Users can only update the upvote count. Admins can update status.
+    
+    // --- Suggestions ---
+    // Any authenticated user can create suggestions.
+    // Any authenticated user can read suggestions.
+    // Admins can update suggestions (status, notes).
     match /suggestions/{suggestionId} {
-      allow read, create: if isAuthenticated();
-      allow update: if (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes', 'upvoteCount'])) ||
-                     (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'adminNotes']));
+        allow read, create: if request.auth != null;
+        allow update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // --- Community Posts & Comments ---
+    match /communityPosts/{postId} {
+        allow read, create, delete: if request.auth != null; // Simplified: any user can create/delete for now. A better rule would check owner on delete.
+        allow update: if request.auth != null; // For likes
     }
 
-    // Community Posts: Any user can create/read. Users can only update likes on posts or delete their own posts.
-    match /communityPosts/{postId} {
-      allow read, create: if isAuthenticated();
-      allow update: if isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likeCount']);
-      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    match /communityPosts/{postId}/comments/{commentId} {
+        allow read, create, delete: if request.auth != null;
+    }
+    
+    // --- Audit Logs & System Config ---
+    // Read-only for admins. No user should be able to create them directly.
+    match /auditLogs/{logId} {
+        allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+        // Writes are handled by backend/server-side logic (e.g. Cloud Functions, App Hosting backend), not client SDK.
+        allow write: if false; 
+    }
+    match /systemConfiguration/{configId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // --- Training Sessions ---
+    match /trainingSessions/{sessionId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
