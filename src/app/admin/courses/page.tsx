@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/auth-context";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { collection, getDocs, query, orderBy, writeBatch, doc, serverTimestamp, where, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion } from "lucide-react";
@@ -27,6 +28,8 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { StoredQuiz, StoredCertificateRule } from "@/schemas/course-schema";
+import { generateCourseImage } from "@/ai/flows/generate-course-image-flow";
+
 
 export default function AdminCoursesPage() {
     const { user, loading: authLoading } = useAuth();
@@ -108,7 +111,7 @@ export default function AdminCoursesPage() {
             setCurrentCourse(null);
             form.reset({
                 title: "", description: "", category: undefined, courseType: undefined,
-                referenceBody: "", duration: "", mandatory: true, published: false,
+                referenceBody: "", duration: "", mandatory: true, published: false, imageHint: "",
                 chapters: [{ title: "" }], quizTitle: "",
                 passingThreshold: 80, certificateExpiryDays: 365,
                 questions: [{ questionText: "", options: ["", "", ""], correctAnswer: "" }]
@@ -123,21 +126,45 @@ export default function AdminCoursesPage() {
         setIsSubmitting(true);
         try {
             const batch = writeBatch(db);
+            let imageUrl: string | undefined = undefined;
+
+            const courseRef = isEditMode && currentCourse ? doc(db, "courses", currentCourse.id) : doc(collection(db, "courses"));
+            
+            if (data.imageHint && storage) {
+                try {
+                    toast({ title: "Generating AI Image...", description: "This may take a moment. Please wait." });
+                    const result = await generateCourseImage({ prompt: data.imageHint });
+                    if (result.imageDataUri) {
+                        const storageRef = ref(storage, `course-images/${courseRef.id}/${Date.now()}.png`);
+                        await uploadString(storageRef, result.imageDataUri, 'data_url');
+                        imageUrl = await getDownloadURL(storageRef);
+                         toast({ title: "AI Image Generated", description: "The course image has been successfully created." });
+                    }
+                } catch (imageError) {
+                    console.error("AI Image generation/upload failed:", imageError);
+                    toast({ title: "AI Image Failed", description: "Could not generate AI image, continuing without it.", variant: "default" });
+                }
+            }
+
 
             if (isEditMode && currentCourse) {
                 // Update existing course
-                const courseRef = doc(db, "courses", currentCourse.id);
                 const quizRef = doc(db, "quizzes", currentCourse.quizId);
                 const certRuleRef = doc(db, "certificateRules", currentCourse.certificateRuleId);
-
-                batch.update(courseRef, {
+                
+                const updateData: Partial<StoredCourse> = {
                     title: data.title, description: data.description, category: data.category,
                     courseType: data.courseType, referenceBody: data.referenceBody, duration: data.duration,
                     mandatory: data.mandatory, published: data.published, imageHint: data.imageHint,
                     chapters: data.chapters.filter(c => c.title.trim() !== ""),
                     updatedAt: serverTimestamp(),
-                });
+                };
 
+                if (imageUrl) {
+                    updateData.imageUrl = imageUrl;
+                }
+
+                batch.update(courseRef, updateData);
                 batch.update(quizRef, { title: data.quizTitle });
                 batch.update(certRuleRef, { passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays });
 
@@ -147,7 +174,6 @@ export default function AdminCoursesPage() {
             
             } else {
                 // Create new course
-                const courseRef = doc(collection(db, "courses"));
                 const quizRef = doc(collection(db, "quizzes"));
                 const certRuleRef = doc(collection(db, "certificateRules"));
 
@@ -157,6 +183,7 @@ export default function AdminCoursesPage() {
                     mandatory: data.mandatory, published: data.published, imageHint: data.imageHint,
                     chapters: data.chapters.filter(c => c.title.trim() !== ""),
                     quizId: quizRef.id, certificateRuleId: certRuleRef.id,
+                    imageUrl: imageUrl || null,
                     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
                 });
 
@@ -267,7 +294,7 @@ export default function AdminCoursesPage() {
                                         <FormField control={form.control} name="courseType" render={({ field }) => <FormItem><FormLabel>Course Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course type" /></SelectTrigger></FormControl><SelectContent>{courseTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                         <FormField control={form.control} name="referenceBody" render={({ field }) => <FormItem><FormLabel>Reference</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
                                         <FormField control={form.control} name="duration" render={({ field }) => <FormItem><FormLabel>Duration</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                                        <FormField control={form.control} name="imageHint" render={({ field }) => <FormItem><FormLabel>Image Hint</FormLabel><FormControl><Input {...field} placeholder="e.g. cockpit, safety manual" /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField control={form.control} name="imageHint" render={({ field }) => <FormItem><FormLabel>AI Image Hint</FormLabel><FormControl><Input {...field} placeholder="e.g. cockpit, safety manual" /></FormControl><FormMessage /></FormItem>} />
                                     </div>
                                     <div className="grid md:grid-cols-2 gap-4">
                                        <FormField control={form.control} name="mandatory" render={({ field }) => <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3"><div className="space-y-0.5"><FormLabel>Mandatory</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>} />

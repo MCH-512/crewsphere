@@ -80,7 +80,7 @@ export default function CourseDetailPage() {
              <Card className="shadow-lg overflow-hidden">
                  <div className="relative h-60 w-full">
                     <Image
-                        src={`https://placehold.co/800x400.png`}
+                        src={course.imageUrl || `https://placehold.co/800x400.png`}
                         alt={course.title}
                         data-ai-hint={course.imageHint || "training manual"}
                         fill

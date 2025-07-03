@@ -32,7 +32,7 @@ const CourseProgressCard = ({ course }: { course: CourseWithProgress }) => {
              <Card className="shadow-sm h-full flex flex-col hover:shadow-lg transition-shadow overflow-hidden">
                 <div className="relative h-40 w-full">
                     <Image 
-                      src={`https://placehold.co/600x400.png`} 
+                      src={course.imageUrl || `https://placehold.co/600x400.png`}
                       alt={course.title}
                       data-ai-hint={course.imageHint || "training manual"}
                       fill

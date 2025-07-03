@@ -60,6 +60,7 @@ export interface StoredCourse {
   mandatory: boolean;
   published: boolean;
   imageHint?: string;
+  imageUrl?: string;
   chapters: Omit<Chapter, 'id'>[];
   quizId: string;
   certificateRuleId: string;
