@@ -5,14 +5,16 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardCheck, Library, GraduationCap, CheckSquare } from "lucide-react";
+import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardCheck, Library, GraduationCap, CheckSquare, BarChart2, PieChart as PieChartIcon } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getCountFromServer } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, Cell, XAxis, YAxis } from "recharts"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart"
 
 interface Stat {
   value: number | null;
@@ -31,6 +33,13 @@ interface AdminSection {
   highlightWhen?: (value: number | null) => boolean;
 }
 
+const requestsChartConfig = {
+  count: {
+    label: "Count",
+    color: "hsl(var(--chart-1))",
+  },
+} satisfies ChartConfig
+
 export default function AdminConsolePage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -45,37 +54,93 @@ export default function AdminConsolePage() {
     quizzes: { value: null, isLoading: true, label: "Total Quizzes" } as Stat,
   });
 
-  const fetchCounts = React.useCallback(async () => {
+  const [requestsChartData, setRequestsChartData] = React.useState<any[]>([]);
+  const [suggestionsChartData, setSuggestionsChartData] = React.useState<any[]>([]);
+  const [suggestionsChartConfig, setSuggestionsChartConfig] = React.useState<ChartConfig>({});
+
+
+  const fetchDashboardData = React.useCallback(async () => {
     if (!user || user.role !== 'admin') {
       setStats(prev => Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: { ...prev[key as keyof typeof prev], isLoading: false } }), {} as typeof stats));
       return;
     }
 
-    const fetcher = async (key: keyof typeof stats, q: any) => {
-      try {
-        const snapshot = await getCountFromServer(q);
-        setStats(prev => ({ ...prev, [key]: { ...prev[key], value: snapshot.data().count, isLoading: false } }));
-      } catch (error) {
-        console.error(`Error fetching ${key} count:`, error);
-        toast({ title: "Error", description: `Could not fetch count for ${key}.`, variant: "destructive" });
-        setStats(prev => ({ ...prev, [key]: { ...prev[key], value: 0, isLoading: false } }));
-      }
-    };
-    
-    fetcher('users', collection(db, "users"));
-    fetcher('suggestions', query(collection(db, "suggestions"), where("status", "==", "new")));
-    fetcher('reports', query(collection(db, "purserReports"), where("status", "==", "submitted")));
-    fetcher('requests', query(collection(db, "requests"), where("status", "==", "pending")));
-    fetcher('documents', collection(db, "documents"));
-    fetcher('courses', collection(db, "courses"));
-    fetcher('quizzes', collection(db, "quizzes"));
+    try {
+        const [
+            usersSnap,
+            suggestionsSnap,
+            reportsSnap,
+            requestsSnap,
+            documentsSnap,
+            coursesSnap,
+            quizzesSnap,
+        ] = await Promise.all([
+            getDocs(collection(db, "users")),
+            getDocs(collection(db, "suggestions")),
+            getDocs(collection(db, "purserReports")),
+            getDocs(collection(db, "requests")),
+            getDocs(collection(db, "documents")),
+            getDocs(collection(db, "courses")),
+            getDocs(collection(db, "quizzes")),
+        ]);
 
+        const suggestions = suggestionsSnap.docs.map(doc => doc.data());
+        const reports = reportsSnap.docs.map(doc => doc.data());
+        const requests = requestsSnap.docs.map(doc => doc.data());
 
+        // Update stats cards
+        setStats({
+            users: { value: usersSnap.size, isLoading: false, label: "Total Users" },
+            suggestions: { value: suggestions.filter(s => s.status === 'new').length, isLoading: false, label: "New Suggestions" },
+            reports: { value: reports.filter(r => r.status === 'submitted').length, isLoading: false, label: "New Reports" },
+            requests: { value: requests.filter(r => r.status === 'pending').length, isLoading: false, label: "Pending Requests" },
+            documents: { value: documentsSnap.size, isLoading: false, label: "Total Documents" },
+            courses: { value: coursesSnap.size, isLoading: false, label: "Total Courses" },
+            quizzes: { value: quizzesSnap.size, isLoading: false, label: "Total Quizzes" },
+        });
+
+        // --- Process data for charts ---
+        // Requests by status
+        const requestsByStatus = requests.reduce((acc, req) => {
+            const status = req.status || 'unknown';
+            acc[status] = (acc[status] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+        setRequestsChartData(Object.entries(requestsByStatus).map(([status, count]) => ({
+            status: status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' '),
+            count,
+            fill: "var(--color-count)",
+        })));
+
+        // Suggestions by category
+        const suggestionsByCategory = suggestions.reduce((acc, sug) => {
+            const category = sug.category || 'Other';
+            acc[category] = (acc[category] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const suggestionCategories = Object.keys(suggestionsByCategory);
+        const sChartConfig = suggestionCategories.reduce((acc, category, index) => {
+            acc[category] = { label: category, color: `hsl(var(--chart-${(index % 5) + 1}))` };
+            return acc;
+        }, { count: { label: "Count" } } as ChartConfig);
+        setSuggestionsChartConfig(sChartConfig);
+
+        setSuggestionsChartData(suggestionCategories.map((name) => ({
+            name,
+            count: suggestionsByCategory[name],
+            fill: `var(--color-${name})`
+        })));
+
+    } catch (error) {
+        console.error(`Error fetching dashboard data:`, error);
+        toast({ title: "Error", description: `Could not fetch dashboard data.`, variant: "destructive" });
+    }
   }, [user, toast]);
 
   React.useEffect(() => {
-    fetchCounts();
-  }, [fetchCounts]);
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const adminSections: AdminSection[] = [
     { 
@@ -229,8 +294,47 @@ export default function AdminConsolePage() {
           );
         })}
       </div>
+
+      {/* Charts Section */}
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+          <AnimatedCard delay={0.55}>
+              <Card className="shadow-sm">
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><BarChart2 className="h-5 w-5 text-primary"/>Requests by Status</CardTitle>
+                      <CardDescription>An overview of all user requests.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <ChartContainer config={requestsChartConfig} className="min-h-[250px] w-full">
+                          <BarChart accessibilityLayer data={requestsChartData}>
+                              <CartesianGrid vertical={false} />
+                              <XAxis dataKey="status" tickLine={false} tickMargin={10} axisLine={false} fontSize={12} />
+                              <YAxis tickLine={false} axisLine={false} fontSize={12} />
+                              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                              <Bar dataKey="count" radius={8} />
+                          </BarChart>
+                      </ChartContainer>
+                  </CardContent>
+              </Card>
+          </AnimatedCard>
+          <AnimatedCard delay={0.6}>
+              <Card className="shadow-sm">
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><PieChartIcon className="h-5 w-5 text-primary"/>Suggestions by Category</CardTitle>
+                      <CardDescription>A breakdown of submitted ideas.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-center pb-0">
+                       <ChartContainer config={suggestionsChartConfig} className="mx-auto aspect-square max-h-[300px]">
+                          <PieChart>
+                              <ChartTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
+                              <Pie data={suggestionsChartData} dataKey="count" nameKey="name" labelLine={false} />
+                               <ChartLegend content={<ChartLegendContent nameKey="name" className="flex-wrap" />} />
+                          </PieChart>
+                      </ChartContainer>
+                  </CardContent>
+              </Card>
+          </AnimatedCard>
+      </div>
+
     </div>
   );
 }
-
-    
