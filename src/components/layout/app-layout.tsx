@@ -45,6 +45,7 @@ import {
   ClipboardCheck,
   MessageSquare,
   Activity,
+  FileSignature,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -56,9 +57,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/requests", label: "My Requests", icon: Inbox },
+  { href: "/purser-reports", label: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin'] },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
   { href: "/toolbox", label: "Toolbox", icon: Wrench },
-  { href: "/admin", label: "Admin Console", icon: ServerCog, adminOnly: true },
+  { href: "/admin", label: "Admin Console", icon: ServerCog, roles: ['admin'] },
 ];
 
 const useTheme = () => {
@@ -144,6 +146,7 @@ function LayoutWithSidebar({
     { href: "/admin", label: "Admin Console", icon: ServerCog },
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/user-requests", label: "Requests", icon: ClipboardCheck },
+    { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
     { href: "/admin/suggestions", label: "Suggestions", icon: MessageSquare },
     { href: "/admin/system-settings", label: "System Settings", icon: Settings },
     { href: "/admin/audit-logs", label: "Audit Logs", icon: Activity },
@@ -163,7 +166,7 @@ function LayoutWithSidebar({
         <SidebarContent className="p-2">
           <SidebarMenu>
             {currentNavItems.map((item) => {
-              if (item.adminOnly && user?.role !== 'admin') {
+              if (item.roles && !item.roles.some((role: string) => user?.role === role)) {
                 return null;
               }
               const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);

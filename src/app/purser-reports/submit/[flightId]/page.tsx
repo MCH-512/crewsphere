@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -8,16 +9,17 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileSignature, Loader2, Send, PlusCircle, Shield, HeartPulse, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, Trash2 } from "lucide-react";
+import { FileSignature, Loader2, Send, PlusCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, doc, getDoc, writeBatch } from "firebase/firestore";
+import { collection, doc, getDoc, writeBatch } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { purserReportFormSchema, type PurserReportFormValues } from "@/schemas/purser-report-schema";
+import { purserReportFormSchema, type PurserReportFormValues, optionalReportSections } from "@/schemas/purser-report-schema";
 import { format, parseISO } from "date-fns";
 import { getAirportByCode } from "@/services/airport-service";
 import { Separator } from "@/components/ui/separator";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 interface FlightForReport {
   id: string;
@@ -30,17 +32,7 @@ interface FlightForReport {
   aircraftType: string;
 }
 
-const optionalSectionsConfig: { name: keyof PurserReportFormValues; label: string; placeholder: string; icon: React.ElementType }[] = [
-    { name: 'safetyIncidents', label: 'Safety Incidents', placeholder: 'Describe any safety-related incidents or concerns...', icon: Shield },
-    { name: 'securityIncidents', label: 'Security Incidents', placeholder: 'Describe any security-related incidents or concerns...', icon: AlertCircle },
-    { name: 'medicalIncidents', label: 'Medical Incidents', placeholder: 'Describe any medical incidents, treatments administered, or requests for medical assistance...', icon: HeartPulse },
-    { name: 'passengerFeedback', label: 'Significant Passenger Feedback', placeholder: 'Note any notable positive or negative feedback from passengers...', icon: MessageSquare },
-    { name: 'cateringNotes', label: 'Catering Notes', placeholder: 'Note any issues with catering, stock levels, or special meal requests...', icon: Utensils },
-    { name: 'maintenanceIssues', label: 'Maintenance or Equipment Issues', placeholder: 'Describe any technical issues or malfunctioning cabin equipment...', icon: Wrench },
-    { name: 'crewPerformanceNotes', label: 'Crew Performance Notes', placeholder: 'Note any exceptional performance or areas for improvement within the crew...', icon: UserCheck },
-    { name: 'otherObservations', label: 'Other Observations', placeholder: 'Any other notes or observations relevant to the flight...', icon: PlusCircle },
-];
-type OptionalSectionName = typeof optionalSectionsConfig[number]['name'];
+type OptionalSectionName = typeof optionalReportSections[number]['name'];
 
 export default function SubmitPurserReportPage() {
   const { toast } = useToast();
@@ -69,7 +61,7 @@ export default function SubmitPurserReportPage() {
         const newSet = new Set(prev);
         if (newSet.has(sectionName)) {
             newSet.delete(sectionName);
-            form.setValue(sectionName, undefined); // Clear form value when hiding
+            form.setValue(sectionName, undefined);
         } else {
             newSet.add(sectionName);
         }
@@ -124,15 +116,17 @@ export default function SubmitPurserReportPage() {
     const batch = writeBatch(db);
     try {
       const reportRef = doc(collection(db, "purserReports"));
-      const reportData = { ...data, userId: user.uid, userEmail: user.email, createdAt: serverTimestamp(), status: 'submitted' };
+      const reportData = { ...data, userId: user.uid, userEmail: user.email, createdAt: new Date(), status: 'submitted', adminNotes: '' };
       batch.set(reportRef, reportData);
 
       const flightRef = doc(db, "flights", data.flightId);
       batch.update(flightRef, { purserReportSubmitted: true, purserReportId: reportRef.id });
+      
+      await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'SUBMIT_PURSER_REPORT', entityType: 'PURSER_REPORT', entityId: reportRef.id, details: { flightNumber: data.flightNumber } });
 
       await batch.commit();
       toast({ title: "Report Submitted", description: "Your purser report has been successfully submitted." });
-      router.push("/purser-reports");
+      router.push("/purser-reports/history");
     } catch (error) {
       console.error("Error submitting report:", error);
       toast({ title: "Submission Failed", description: "Could not submit your report.", variant: "destructive" });
@@ -157,9 +151,9 @@ export default function SubmitPurserReportPage() {
           <CardHeader><CardTitle className="text-lg">Passenger & Crew Information</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField control={form.control} name="passengerLoad.total" render={({ field }) => (<FormItem><FormLabel>Total Passengers</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="passengerLoad.adults" render={({ field }) => (<FormItem><FormLabel>Adults</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="passengerLoad.infants" render={({ field }) => (<FormItem><FormLabel>Infants</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="passengerLoad.total" render={({ field }) => (<FormItem><FormLabel>Total Passengers</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="passengerLoad.adults" render={({ field }) => (<FormItem><FormLabel>Adults</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="passengerLoad.infants" render={({ field }) => (<FormItem><FormLabel>Infants</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl><FormMessage /></FormItem>)} />
             </div>
             <FormField control={form.control} name="crewMembers" render={({ field }) => (<FormItem><FormLabel>Crew Members on Duty*</FormLabel><FormControl><Textarea placeholder="List all crew members, e.g., John Doe (Purser), Jane Smith (Cabin Crew)..." {...field} /></FormControl><FormDescription>Please list names and roles.</FormDescription><FormMessage /></FormItem>)} />
           </CardContent>
@@ -179,7 +173,7 @@ export default function SubmitPurserReportPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                {optionalSectionsConfig.map(({ name, label, icon: Icon }) => (
+                {optionalReportSections.map(({ name, label, icon: Icon }) => (
                     <Button key={name} type="button" variant={visibleSections.has(name) ? "secondary" : "outline"} onClick={() => toggleSection(name)}>
                         <Icon className="mr-2 h-4 w-4"/> {label}
                     </Button>
@@ -187,7 +181,7 @@ export default function SubmitPurserReportPage() {
             </div>
             <Separator />
             <div className="space-y-6">
-            {optionalSectionsConfig.map(({ name, label, placeholder, icon: Icon }) => (
+            {optionalReportSections.map(({ name, label, placeholder, icon: Icon }) => (
               visibleSections.has(name) && (
                 <div key={name} className="space-y-2 border-l-4 pl-4 py-2 border-primary/50 bg-muted/30 rounded-r-md">
                    <div className="flex justify-between items-center">

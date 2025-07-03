@@ -1,1 +1,14 @@
-[]
+
+[
+  {"name": "Tunis Carthage International Airport", "city": "Tunis", "country": "Tunisia", "iata": "TUN", "icao": "DTTA", "lat": 36.851, "lon": 10.2273, "alt": 22, "tz": "Africa/Tunis"},
+  {"name": "Paris Charles de Gaulle Airport", "city": "Paris", "country": "France", "iata": "CDG", "icao": "LFPG", "lat": 49.0128, "lon": 2.55, "alt": 392, "tz": "Europe/Paris"},
+  {"name": "Frankfurt Airport", "city": "Frankfurt", "country": "Germany", "iata": "FRA", "icao": "EDDF", "lat": 50.0333, "lon": 8.5706, "alt": 364, "tz": "Europe/Berlin"},
+  {"name": "Dubai International Airport", "city": "Dubai", "country": "United Arab Emirates", "iata": "DXB", "icao": "OMDB", "lat": 25.2528, "lon": 55.3644, "alt": 62, "tz": "Asia/Dubai"},
+  {"name": "Hartsfield-Jackson Atlanta International Airport", "city": "Atlanta", "country": "United States", "iata": "ATL", "icao": "KATL", "lat": 33.6367, "lon": -84.4281, "alt": 1026, "tz": "America/New_York"},
+  {"name": "London Heathrow Airport", "city": "London", "country": "United Kingdom", "iata": "LHR", "icao": "EGLL", "lat": 51.4706, "lon": -0.4619, "alt": 83, "tz": "Europe/London"},
+  {"name": "Istanbul Airport", "city": "Istanbul", "country": "Turkey", "iata": "IST", "icao": "LTFM", "lat": 41.2753, "lon": 28.7519, "alt": 325, "tz": "Europe/Istanbul"},
+  {"name": "Cairo International Airport", "city": "Cairo", "country": "Egypt", "iata": "CAI", "icao": "HECA", "lat": 30.1219, "lon": 31.4056, "alt": 382, "tz": "Africa/Cairo"},
+  {"name": "Mohammed V International Airport", "city": "Casablanca", "country": "Morocco", "iata": "CMN", "icao": "GMMN", "lat": 33.3675, "lon": -7.5899, "alt": 656, "tz": "Africa/Casablanca"},
+  {"name": "Djerba-Zarzis International Airport", "city": "Djerba", "country": "Tunisia", "iata": "DJE", "icao": "DTTJ", "lat": 33.875, "lon": 10.7756, "alt": 19, "tz": "Africa/Tunis"},
+  {"name": "Monastir Habib Bourguiba International Airport", "city": "Monastir", "country": "Tunisia", "iata": "MIR", "icao": "DTMB", "lat": 35.7581, "lon": 10.7547, "alt": 9, "tz": "Africa/Tunis"}
+]

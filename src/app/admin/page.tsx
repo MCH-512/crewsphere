@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare } from "lucide-react";
+import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -38,6 +38,7 @@ export default function AdminConsolePage() {
   const [stats, setStats] = React.useState({
     users: { value: null, isLoading: true, label: "Total Users" } as Stat,
     suggestions: { value: null, isLoading: true, label: "New Suggestions" } as Stat,
+    reports: { value: null, isLoading: true, label: "New Reports" } as Stat,
   });
 
   const fetchCounts = React.useCallback(async () => {
@@ -59,6 +60,7 @@ export default function AdminConsolePage() {
     
     fetcher('users', collection(db, "users"));
     fetcher('suggestions', query(collection(db, "suggestions"), where("status", "==", "new")));
+    fetcher('reports', query(collection(db, "purserReports"), where("status", "==", "submitted")));
 
   }, [user, toast]);
 
@@ -75,6 +77,16 @@ export default function AdminConsolePage() {
       href: "/admin/users",
       stat: stats.users,
       delay: 0.1 
+    },
+     { 
+      icon: FileSignature, 
+      title: "Purser Reports", 
+      description: "Review and manage all flight reports submitted by pursers.", 
+      buttonText: "Review Reports", 
+      href: "/admin/purser-reports",
+      stat: stats.reports,
+      highlightWhen: (value) => value !== null && value > 0,
+      delay: 0.2
     },
     { 
       icon: MessageSquare, 
