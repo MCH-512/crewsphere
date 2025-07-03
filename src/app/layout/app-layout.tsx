@@ -50,6 +50,8 @@ import {
   Library,
   GraduationCap,
   CheckSquare,
+  Compass,
+  BellRing,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -67,6 +69,7 @@ const navItems = [
   { href: "/purser-reports", label: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin'] },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
   { href: "/toolbox", label: "Toolbox", icon: Wrench },
+  { href: "/community-hub", label: "Community Hub", icon: Compass },
   { href: "/admin", label: "Admin Console", icon: ServerCog, roles: ['admin'] },
 ];
 
@@ -152,7 +155,9 @@ function LayoutWithSidebar({
   const adminNavItems = [
     { href: "/admin", label: "Admin Dashboard", icon: ServerCog },
     { href: "/admin/users", label: "User Management", icon: Users },
-    { href: "/admin/user-requests", label: "User Requests", icon: ClipboardCheck },
+    { href: "/admin/flights", label: "Flight Management", icon: Plane },
+    { href: "/admin/alerts", label: "Alert Management", icon: BellRing },
+    { href: "/admin/user-requests", label: "User Requests", icon: ClipboardList },
     { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
     { href: "/admin/courses", label: "Course Management", icon: GraduationCap },
     { href: "/admin/quizzes", label: "Quiz Management", icon: CheckSquare },
