@@ -37,7 +37,8 @@ const FDP_TABLE_NOT_ACCLIMATISED = [
 ];
 
 const timeToMinutes = (time: string) => { const [h, m] = time.split(':').map(Number); return h * 60 + m; };
-const minutesToTime = (minutes: number) => { const h = Math.floor(minutes / 60) % 24; const m = minutes % 60; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; };
+const minutesToTime = (minutes: number) => { const h = Math.floor(minutes / 60); const m = minutes % 60; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; };
+const minutesToTimeH24 = (totalMinutes: number) => { const hours = Math.floor(totalMinutes / 60) % 24; const minutes = totalMinutes % 60; return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`; };
 
 const findMaxFDP = (reportTime: string, table: typeof FDP_TABLE_ACCLIMATISED) => {
     const reportMinutes = timeToMinutes(reportTime);
@@ -75,35 +76,34 @@ export default function FtlCalculatorPage() {
         const { reportTime, sectors, acclimatisation } = data;
         
         const table = acclimatisation === 'acclimatised' ? FDP_TABLE_ACCLIMATISED : FDP_TABLE_NOT_ACCLIMATISED;
-        let maxFDPMinutes = findMaxFDP(reportTime, table);
+        const baseFDPMinutes = findMaxFDP(reportTime, table);
+
+        let finalFDPMinutes = baseFDPMinutes;
 
         // Reduction for sectors
         let sectorReductions = 0;
         if (sectors > 2) {
             sectorReductions = (sectors - 2) * 30; // 30 mins for each sector over 2
-            maxFDPMinutes -= sectorReductions;
+            finalFDPMinutes -= sectorReductions;
         }
 
         // Check for WOCL infringement
         const reportMinutes = timeToMinutes(reportTime);
         const woclStart = timeToMinutes("02:00");
         const woclEnd = timeToMinutes("05:59");
-        const fdpEndMinutes = (reportMinutes + maxFDPMinutes) % 1440;
+        const fdpEndMinutes = (reportMinutes + finalFDPMinutes) % 1440;
 
         let woclInfringement = false;
         if (reportMinutes >= woclStart && reportMinutes <= woclEnd) woclInfringement = true;
-        if (fdpEndMinutes >= woclStart && fdpEndMinutes <= woclEnd) woclInfringement = true;
-        if (reportMinutes < woclStart && fdpEndMinutes > woclEnd && fdpEndMinutes > reportMinutes) woclInfringement = true; // Duty period spans across the entire WOCL
-        if (reportMinutes > fdpEndMinutes) { // Duty spans across midnight
-            if (reportMinutes >= woclStart || fdpEndMinutes <= woclEnd) woclInfringement = true;
-        }
-
-        let fdpWithWOCL = maxFDPMinutes;
+        else if (fdpEndMinutes >= woclStart && fdpEndMinutes <= woclEnd) woclInfringement = true;
+        else if (reportMinutes < woclStart && (reportMinutes + finalFDPMinutes) > woclEnd && ( (reportMinutes + finalFDPMinutes) > (woclStart + 1440) || (reportMinutes < woclEnd && (reportMinutes + finalFDPMinutes) > woclStart))) woclInfringement = true;
+       
+        let fdpWithWOCL = finalFDPMinutes;
         if(woclInfringement) {
-            fdpWithWOCL = Math.min(maxFDPMinutes, timeToMinutes("11:00"));
+            fdpWithWOCL = Math.min(finalFDPMinutes, timeToMinutes("11:00"));
         }
 
-        const fdpEndTime = minutesToTime(reportMinutes + fdpWithWOCL);
+        const fdpEndTime = minutesToTimeH24(reportMinutes + fdpWithWOCL);
 
         // Extensions
         const extensionPossible = sectors <= 4;
@@ -114,7 +114,7 @@ export default function FtlCalculatorPage() {
         if (acclimatisation === 'acclimatised') minRest = Math.max(timeToMinutes("12:00"), fdpWithWOCL);
         
         setResult({
-            baseFDP: minutesToTime(findMaxFDP(reportTime, table)),
+            baseFDP: minutesToTime(baseFDPMinutes),
             sectorReductions: minutesToTime(sectorReductions),
             finalFDP: minutesToTime(fdpWithWOCL),
             woclInfringement,
@@ -126,6 +126,11 @@ export default function FtlCalculatorPage() {
             minRest: minutesToTime(minRest),
         });
     };
+    
+    React.useEffect(() => {
+        onSubmit(form.getValues());
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
