@@ -26,6 +26,13 @@
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
+     {
+      "collectionGroup": "requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
     {
       "collectionGroup": "suggestions",
       "queryScope": "COLLECTION",
@@ -63,7 +70,16 @@
       "fields": [
         { "fieldPath": "email", "order": "ASCENDING" }
       ]
+    },
+    {
+        "collectionGroup": "auditLogs",
+        "queryScope": "COLLECTION",
+        "fields": [
+            { "fieldPath": "timestamp", "order": "DESCENDING" }
+        ]
     }
   ],
   "fieldOverrides": []
 }
+
+    
