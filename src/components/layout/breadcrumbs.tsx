@@ -33,7 +33,6 @@ const predefinedLabels: { [key: string]: string } = {
   requests: "My Requests",
   "my-alerts": "My Alerts",
   "system-settings": "System Configuration",
-  "flight-duty-calculator": "Duty Calculator",
   "suggestion-box": "Suggestion Box",
   suggestions: "Suggestion Box",
   submit: "Submit New Report",
@@ -45,6 +44,7 @@ const predefinedLabels: { [key: string]: string } = {
   "aeronautical-jargon": "Aeronautical Jargon",
   "phonetic-alphabet": "Phonetic Alphabet",
   "audit-logs": "Audit Logs",
+  "question-bank": "Question Bank",
 };
 
 export function Breadcrumbs() {

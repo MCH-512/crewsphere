@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -73,7 +72,6 @@ const navItems = [
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
   
   // Tools
-  { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/toolbox", label: "Toolbox", icon: Wrench },
   
   // Admin
