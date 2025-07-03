@@ -79,32 +79,24 @@ export default function FtlCalculatorPage() {
         const table = acclimatisation === 'acclimatised' ? FDP_TABLE_ACCLIMATISED : FDP_TABLE_NOT_ACCLIMATISED;
         const baseFDPMinutes = findMaxFDP(reportTime, table);
 
-        let finalFDPMinutes = baseFDPMinutes;
-
         // Reduction for sectors
-        let sectorReductions = 0;
-        if (sectors > 2) {
-            sectorReductions = (sectors - 2) * 30; // 30 mins for each sector over 2
-            finalFDPMinutes -= sectorReductions;
-        }
+        const sectorReductions = sectors > 2 ? (sectors - 2) * 30 : 0;
+        const fdpAfterSectors = baseFDPMinutes - sectorReductions;
 
         // Check for WOCL infringement
         const reportMinutes = timeToMinutes(reportTime);
+        const fdpEndMinutes = reportMinutes + fdpAfterSectors;
         const woclStart = timeToMinutes("02:00");
         const woclEnd = timeToMinutes("05:59");
-        const fdpEndMinutes = (reportMinutes + finalFDPMinutes) % 1440;
+        
+        const infringesToday = Math.max(reportMinutes, woclStart) < Math.min(fdpEndMinutes, woclEnd);
+        const infringesTomorrow = Math.max(reportMinutes, woclStart + 1440) < Math.min(fdpEndMinutes, woclEnd + 1440);
+        const woclInfringement = infringesToday || infringesTomorrow;
 
-        let woclInfringement = false;
-        if (reportMinutes >= woclStart && reportMinutes <= woclEnd) woclInfringement = true;
-        else if (fdpEndMinutes >= woclStart && fdpEndMinutes <= woclEnd) woclInfringement = true;
-        else if (reportMinutes < woclStart && (reportMinutes + finalFDPMinutes) > woclEnd && ( (reportMinutes + finalFDPMinutes) > (woclStart + 1440) || (reportMinutes < woclEnd && (reportMinutes + finalFDPMinutes) > woclStart))) woclInfringement = true;
-       
-        let fdpWithWOCL = finalFDPMinutes;
-        if(woclInfringement) {
-            fdpWithWOCL = Math.min(finalFDPMinutes, timeToMinutes("11:00"));
-        }
+        const woclLimitMinutes = timeToMinutes("11:00");
+        const fdpWithWOCL = woclInfringement ? Math.min(fdpAfterSectors, woclLimitMinutes) : fdpAfterSectors;
 
-        const fdpEndTime = minutesToTimeH24(reportMinutes + fdpWithWOCL);
+        const latestOffBlockTime = minutesToTimeH24(reportMinutes + fdpWithWOCL);
 
         // Extensions
         const extensionPossible = sectors <= 4;
@@ -135,9 +127,10 @@ export default function FtlCalculatorPage() {
         setResult({
             baseFDP: minutesToTime(baseFDPMinutes),
             sectorReductions: minutesToTime(sectorReductions),
-            finalFDP: minutesToTime(fdpWithWOCL),
+            fdpAfterSectors: minutesToTime(fdpAfterSectors),
             woclInfringement,
-            latestOffBlock: fdpEndTime,
+            finalFDP: minutesToTime(fdpWithWOCL),
+            latestOffBlock: latestOffBlockTime,
             extension: {
                 possible: extensionPossible,
                 newFDP: extendedFDP
@@ -227,25 +220,30 @@ export default function FtlCalculatorPage() {
                                <CardDescription>Based on the provided details.</CardDescription>
                            </CardHeader>
                            <CardContent className="space-y-4">
-                               <div className="flex justify-between items-center p-3 rounded-md bg-muted">
-                                   <span className="font-medium text-lg">Max FDP</span>
-                                   <span className="font-mono text-2xl font-bold text-primary">{result.finalFDP}</span>
-                               </div>
-                               <div className="text-sm space-y-2">
-                                   <p className="flex justify-between">Base FDP: <span>{result.baseFDP}</span></p>
-                                   <p className="flex justify-between">Sector Reductions: <span className="text-destructive">- {result.sectorReductions}</span></p>
+
+                                <div className="space-y-2 text-sm p-3 rounded-md border bg-muted/50">
+                                   <p className="flex justify-between">Base FDP from Table: <span>{result.baseFDP}</span></p>
+                                   <p className="flex justify-between">Sector Reductions ({form.getValues('sectors')} sectors): <span className="text-destructive">- {result.sectorReductions}</span></p>
+                                   <Separator className="my-1"/>
+                                   <p className="flex justify-between font-medium">FDP after Reductions: <span>{result.fdpAfterSectors}</span></p>
                                    {result.woclInfringement && (
                                        <p className="flex justify-between items-center text-destructive font-semibold">
                                             <span className="flex items-center gap-1"><AlertTriangle className="h-4 w-4"/>WOCL Infringement</span>
                                             <span>(Limited to 11:00)</span>
                                        </p>
                                    )}
+                                </div>
+
+                                <div className="flex justify-between items-center p-3 rounded-md bg-muted">
+                                   <span className="font-medium text-lg">Max Permissible FDP</span>
+                                   <span className="font-mono text-2xl font-bold text-primary">{result.finalFDP}</span>
                                </div>
-                               <Separator/>
+                               
                                <div className="text-sm space-y-2">
-                                   <p className="flex justify-between"><strong>Latest Off-Block Time:</strong> <span>{result.latestOffBlock}</span></p>
+                                   <p className="flex justify-between"><strong>Latest On-Blocks Time:</strong> <span>{result.latestOffBlock}</span></p>
                                    <p className="flex justify-between"><strong>Min. Rest Period Required:</strong> <span>{result.minRest}</span></p>
                                </div>
+
                                {result.extension.possible && (
                                    <>
                                      <Separator/>
@@ -255,6 +253,7 @@ export default function FtlCalculatorPage() {
                                      </div>
                                    </>
                                )}
+
                                 {result.feasibility && (
                                     <>
                                         <Separator className="my-4"/>
