@@ -46,6 +46,7 @@ import {
   MessageSquare,
   Activity,
   FileSignature,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -56,6 +57,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/my-schedule", label: "My Schedule", icon: Calendar },
   { href: "/requests", label: "My Requests", icon: Inbox },
   { href: "/purser-reports", label: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin'] },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
@@ -143,7 +145,7 @@ function LayoutWithSidebar({
   const pathname = usePathname();
 
   const adminNavItems = [
-    { href: "/admin", label: "Admin Console", icon: ServerCog },
+    { href: "/admin", label: "Admin Dashboard", icon: ServerCog },
     { href: "/admin/users", label: "User Management", icon: Users },
     { href: "/admin/user-requests", label: "User Requests", icon: ClipboardCheck },
     { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -7,6 +8,7 @@ import { ArrowRight, SendHorizonal, Lightbulb, Wrench } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { AnimatedCard } from "@/components/motion/animated-card";
+import { TodaysScheduleCard } from "@/components/features/todays-schedule";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -37,13 +39,17 @@ export default function DashboardPage() {
       </AnimatedCard>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <AnimatedCard delay={0.15} className="lg:col-span-3">
+        <AnimatedCard delay={0.1} className="lg:col-span-1">
+          <TodaysScheduleCard />
+        </AnimatedCard>
+
+        <AnimatedCard delay={0.15} className="lg:col-span-2">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
               <CardHeader>
-                  <CardTitle className="font-headline text-lg">Quick Actions</CardTitle>
+                  <CardTitle className="font-headline text-xl">Quick Actions</CardTitle>
                   <CardDescription>Get started with common tasks.</CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {quickActions.map((action, index) => (
                     <Button key={index} variant="outline" className="w-full justify-start py-6 text-base" asChild>
                       <Link href={action.href}>

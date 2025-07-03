@@ -38,6 +38,7 @@ const predefinedLabels: { [key: string]: string } = {
   "aeronautical-jargon": "Aeronautical Jargon",
   "phonetic-alphabet": "Phonetic Alphabet",
   "audit-logs": "Audit Logs",
+  "my-schedule": "My Schedule",
 };
 
 export function Breadcrumbs() {
