@@ -45,6 +45,7 @@ const predefinedLabels: { [key: string]: string } = {
   quizzes: "Quiz Management",
   quiz: "Quiz",
   training: "E-Learning Center",
+  "community-hub": "Community Hub",
 };
 
 export function Breadcrumbs() {
