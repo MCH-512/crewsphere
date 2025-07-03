@@ -5,12 +5,11 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, GraduationCap, Plane, Settings, Loader2, FilePlus, Bell, FileSignature, ClipboardCheck, CheckSquare, MessageSquare, ArrowRight, School } from "lucide-react";
+import { ServerCog, Users, Activity, Settings, Loader2, MessageSquare, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getCountFromServer, Timestamp } from "firebase/firestore";
-import { startOfDay, endOfDay } from "date-fns";
+import { collection, query, where, getCountFromServer } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
@@ -39,10 +38,6 @@ export default function AdminConsolePage() {
   
   const [stats, setStats] = React.useState({
     users: { value: null, isLoading: true, label: "Total Users" } as Stat,
-    publishedCourses: { value: null, isLoading: true, label: "Published Courses" } as Stat,
-    flightsToday: { value: null, isLoading: true, label: "Flights Today" } as Stat,
-    trainingSessions: { value: null, isLoading: true, label: "Upcoming Sessions" } as Stat,
-    quizzes: { value: null, isLoading: true, label: "Total Quizzes" } as Stat,
     suggestions: { value: null, isLoading: true, label: "New Suggestions" } as Stat,
   });
 
@@ -63,14 +58,7 @@ export default function AdminConsolePage() {
       }
     };
     
-    const todayStart = startOfDay(new Date()).toISOString();
-    const todayEnd = endOfDay(new Date()).toISOString();
-
     fetcher('users', collection(db, "users"));
-    fetcher('publishedCourses', query(collection(db, "courses"), where("published", "==", true)));
-    fetcher('flightsToday', query(collection(db, "flights"), where("scheduledDepartureDateTimeUTC", ">=", todayStart), where("scheduledDepartureDateTimeUTC", "<=", todayEnd)));
-    fetcher('trainingSessions', query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", todayStart)));
-    fetcher('quizzes', collection(db, "quizzes"));
     fetcher('suggestions', query(collection(db, "suggestions"), where("status", "==", "new")));
 
   }, [user, toast]);
@@ -90,50 +78,6 @@ export default function AdminConsolePage() {
       delay: 0.1 
     },
     { 
-      icon: Bell, 
-      title: "Alerts", 
-      description: "Broadcast global or user-specific alerts that appear on user dashboards.", 
-      buttonText: "Manage Alerts", 
-      href: "/admin/alerts",
-      delay: 0.25
-    },
-    { 
-      icon: GraduationCap, 
-      title: "Courses (E-Learning)", 
-      description: "Create and manage e-learning courses, including content, quizzes, and certifications.", 
-      buttonText: "Manage Courses", 
-      href: "/admin/courses",
-      stat: stats.publishedCourses,
-      delay: 0.3
-    },
-     { 
-      icon: School, 
-      title: "Training Sessions", 
-      description: "Schedule and manage in-person training sessions for crew members.", 
-      buttonText: "Manage Sessions", 
-      href: "/admin/training-sessions",
-      stat: stats.trainingSessions,
-      delay: 0.35
-    },
-    { 
-      icon: CheckSquare,
-      title: "Quizzes",
-      description: "View all quizzes in the system. Quizzes are managed within their respective courses.",
-      buttonText: "View Quizzes",
-      href: "/admin/quizzes",
-      stat: stats.quizzes,
-      delay: 0.38,
-    },
-    { 
-      icon: Plane, 
-      title: "Flights", 
-      description: "Create, view, and manage flight schedules, including recurring flight generation.", 
-      buttonText: "Manage Flights", 
-      href: "/admin/flights",
-      stat: stats.flightsToday,
-      delay: 0.4
-    },
-    { 
       icon: MessageSquare, 
       title: "Suggestions", 
       description: "Review and manage all user-submitted suggestions for improvement.", 
@@ -141,7 +85,7 @@ export default function AdminConsolePage() {
       href: "/admin/suggestions",
       stat: stats.suggestions,
       highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.45
+      delay: 0.15
     },
     { 
       icon: Settings, 
@@ -149,7 +93,7 @@ export default function AdminConsolePage() {
       description: "Configure application-wide settings like maintenance mode and AI models.", 
       buttonText: "Configure Settings", 
       href: "/admin/system-settings", 
-      delay: 0.48
+      delay: 0.2
     },
     { 
       icon: Activity, 
@@ -157,7 +101,7 @@ export default function AdminConsolePage() {
       description: "Review a detailed, chronological record of system activities and changes.", 
       buttonText: "View Logs", 
       href: "/admin/audit-logs", 
-      delay: 0.51
+      delay: 0.25
     },
   ];
 
