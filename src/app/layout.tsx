@@ -4,7 +4,6 @@ import './globals.css';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/contexts/auth-context';
-import { NotificationProvider } from '@/contexts/notification-context';
 
 export const metadata: Metadata = {
   title: 'Express Airline Crew World',
@@ -26,10 +25,8 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-          <NotificationProvider>
             {/* SidebarProvider is now inside AppLayout */}
             <AppLayout>{children}</AppLayout>
-          </NotificationProvider>
           <Toaster />
         </AuthProvider>
       </body>

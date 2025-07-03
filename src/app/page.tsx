@@ -19,17 +19,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { getAirportByCode } from "@/services/airport-service";
 
-
-interface Alert {
-  id: string;
-  title: string;
-  content: string;
-  level: "critical" | "warning" | "info";
-  createdAt: Timestamp;
-  userId?: string;
-  iconName?: string;
-}
-
 interface Flight {
   id: string;
   flightNumber: string;
@@ -68,10 +57,6 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [userNameForGreeting, setUserNameForGreeting] = React.useState<string>("User");
 
-  const [alerts, setAlerts] = React.useState<Alert[]>([]);
-  const [alertsLoading, setAlertsLoading] = React.useState(true);
-  const [alertsError, setAlertsError] = React.useState<string | null>(null);
-
   const [upcomingDuty, setUpcomingDuty] = React.useState<UpcomingDutyData | null>(null);
   const [isUpcomingDutyLoading, setIsUpcomingDutyLoading] = React.useState(true);
   const [upcomingDutyError, setUpcomingDutyError] = React.useState<string | null>(null);
@@ -83,61 +68,6 @@ export default function DashboardPage() {
       setUserNameForGreeting(name.charAt(0).toUpperCase() + name.slice(1));
     }
   }, [user]);
-
-
-  React.useEffect(() => {
-    async function fetchAlerts() {
-      if (!user) {
-        setAlertsLoading(false);
-        setAlertsError("Please log in to view alerts.");
-        return;
-      }
-      setAlertsLoading(true);
-      setAlertsError(null);
-      try {
-        const userAlertsQuery = query(
-          collection(db, "alerts"),
-          where("userId", "==", user.uid),
-          orderBy("createdAt", "desc"),
-          limit(3)
-        );
-        const globalAlertsQuery = query(
-          collection(db, "alerts"),
-          where("userId", "==", null),
-          orderBy("createdAt", "desc"),
-          limit(3)
-        );
-        
-        const [userAlertsSnapshot, globalAlertsSnapshot] = await Promise.all([
-            getDocs(userAlertsQuery),
-            getDocs(globalAlertsQuery)
-        ]);
-
-        const fetchedUserAlerts = userAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alert));
-        const fetchedGlobalAlerts = globalAlertsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Alert));
-        
-        const combinedAlerts = [...fetchedUserAlerts, ...fetchedGlobalAlerts]
-          .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
-          .reduce((acc, current) => {
-            if (!acc.find(item => item.id === current.id)) {
-              acc.push(current);
-            }
-            return acc;
-          }, [] as Alert[])
-          .slice(0, 3);
-
-        setAlerts(combinedAlerts);
-      } catch (err) {
-        console.error("Error fetching alerts:", err);
-        setAlertsError("Failed to load real-time alerts.");
-        toast({ title: "Alerts Error", description: "Could not load alerts.", variant: "destructive" });
-      } finally {
-        setAlertsLoading(false);
-      }
-    }
-    fetchAlerts();
-  }, [user, toast]);
-  
 
   React.useEffect(() => {
     async function fetchUpcomingDuty() {
@@ -227,35 +157,6 @@ export default function DashboardPage() {
     { id: 3, tip: "Maintain situational awareness at all times, especially during critical phases like boarding, takeoff, sterile flight deck, and landing." },
   ];
 
-  const getAlertVariant = (level: Alert["level"]): "default" | "destructive" | "success" | "warning" | null | undefined => {
-    switch (level) {
-      case 'critical':
-        return 'destructive';
-      case 'warning':
-        return 'warning';
-      case 'info':
-      default:
-        return 'default';
-    }
-  };
-
-  const getIconForAlert = (alert: Alert): LucideIcon => {
-    if (alert.iconName) {
-        const lowerIconName = alert.iconName.toLowerCase();
-        if (lowerIconName.includes("briefcase")) return Briefcase;
-        if (lowerIconName.includes("graduation")) return GraduationCap;
-        if (lowerIconName.includes("bell")) return Bell;
-        if (lowerIconName.includes("plane")) return PlaneTakeoff;
-    }
-    switch (alert.level) {
-        case "critical": return AlertTriangle;
-        case "warning": return AlertTriangle; 
-        case "info":
-        default: return Info;
-    }
-  };
-
-
   return (
     <div className="space-y-6">
       <AnimatedCard>
@@ -334,55 +235,6 @@ export default function DashboardPage() {
           </Card>
         </AnimatedCard>
         
-        <AnimatedCard delay={0.2} className="lg:col-span-3">
-            <Card className="shadow-md hover:shadow-lg transition-shadow">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg font-medium font-headline">Real-Time Alerts</CardTitle>
-                <BellRing className="h-5 w-5 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                {alertsLoading ? (
-                    <div className="space-y-3 py-2">
-                        <div className="flex items-start space-x-3"><Skeleton className="h-5 w-5 rounded-full mt-1" /><div className="space-y-1 flex-1"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-8 w-full" /></div></div>
-                        <div className="flex items-start space-x-3"><Skeleton className="h-5 w-5 rounded-full mt-1" /><div className="space-y-1 flex-1"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-8 w-full" /></div></div>
-                    </div>
-                ) : alertsError ? (
-                    <ShadAlert variant="destructive" className="mb-4">
-                        <AlertTriangle className="h-5 w-5" />
-                        <ShadAlertTitle>Alerts Error</ShadAlertTitle>
-                        <ShadAlertDescription>{alertsError}</ShadAlertDescription>
-                    </ShadAlert>
-                ) : alerts.length === 0 ? (
-                    <div className="text-center py-6">
-                    <CheckCircle className="h-10 w-10 mx-auto text-success mb-2" />
-                    <p className="text-base text-muted-foreground">All clear! No new critical alerts.</p>
-                    <p className="text-sm text-muted-foreground mt-1">You're up-to-date.</p>
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                    {alerts.map((alert) => {
-                        const IconComponent = getIconForAlert(alert);
-                        const timeAgo = formatDistanceToNowStrict(alert.createdAt.toDate(), { addSuffix: true });
-                        
-                        return (
-                        <ShadAlert key={alert.id} variant={getAlertVariant(alert.level)} className="shadow-sm">
-                        <IconComponent className="h-5 w-5" />
-                        <div className="flex justify-between items-center mb-1">
-                            <ShadAlertTitle>{alert.title}</ShadAlertTitle>
-                            <p className="text-xs text-muted-foreground/70">{timeAgo}</p>
-                        </div>
-                        <ShadAlertDescription>{alert.content}</ShadAlertDescription>
-                        </ShadAlert>
-                    )})}
-                    </div>
-                )}
-                <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
-                    <Link href="/my-alerts">View All Alerts <ArrowRight className="ml-2 h-4 w-4" /></Link>
-                </Button>
-                </CardContent>
-            </Card>
-        </AnimatedCard>
-
         <AnimatedCard delay={0.35} className="lg:col-span-3">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>

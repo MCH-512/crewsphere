@@ -32,9 +32,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   LayoutDashboard,
-  FileText,
-  CalendarDays,
-  GraduationCap,
   Settings,
   LogOut,
   Plane,
@@ -42,7 +39,6 @@ import {
   Moon,
   Sun,
   ServerCog,
-  SendHorizonal,
   LogIn,
   UserPlus,
   Loader2,
@@ -50,37 +46,31 @@ import {
   ClipboardCheck, 
   FilePlus,
   Users,
-  FileSignature,
-  Brain,
   Calculator,
   Lightbulb,
-  MessagesSquare,
   MessageSquare,
   Wrench,
   CheckSquare,
   Activity,
   HelpCircle,
   School,
+  GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
 import { useToast } from "@/hooks/use-toast";
-import { useNotification } from "@/contexts/notification-context"; 
 import { Breadcrumbs } from "./breadcrumbs"; 
 import { HeaderClocks } from "@/components/features/header-clocks";
 
 const navItems = [
   // Core
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
 
   // Actions & Communication
   { href: "/requests", label: "My Requests", icon: Inbox },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
   
   // Tools
-  { href: "/airport-briefings", label: "Airport Briefing", icon: Brain },
-  { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/toolbox", label: "Toolbox", icon: Wrench },
   
   // Admin
@@ -114,7 +104,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const { user, loading, logout } = useAuth();
   const { toast } = useToast();
-  const { unreadAlertsCount, isLoading: isNotificationCountLoading } = useNotification();
 
   const handleLogout = async () => {
     try {
@@ -145,8 +134,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         handleLogout={handleLogout} 
         theme={theme} 
         toggleTheme={toggleTheme}
-        unreadAlertsCount={unreadAlertsCount}
-        isNotificationCountLoading={isNotificationCountLoading}
       >
         {children}
       </LayoutWithSidebar>
@@ -160,16 +147,12 @@ function LayoutWithSidebar({
   handleLogout, 
   theme, 
   toggleTheme,
-  unreadAlertsCount,
-  isNotificationCountLoading
 }: { 
   children: React.ReactNode; 
   user: any; 
   handleLogout: () => void; 
   theme: string; 
   toggleTheme: () => void;
-  unreadAlertsCount: number;
-  isNotificationCountLoading: boolean;
 }) {
   const { isMobile } = useSidebar(); 
   const pathname = usePathname();
@@ -222,11 +205,6 @@ function LayoutWithSidebar({
                       <a>
                         <item.icon className="w-5 h-5" />
                         <span>{item.label}</span>
-                         {item.id === "my-alerts-nav" && user && unreadAlertsCount > 0 && (
-                          <SidebarMenuBadge className="ml-auto bg-destructive text-destructive-foreground">
-                            {isNotificationCountLoading ? <Loader2 className="h-3 w-3 animate-spin"/> : unreadAlertsCount}
-                          </SidebarMenuBadge>
-                        )}
                       </a>
                     </SidebarMenuButton>
                   </Link>
@@ -266,21 +244,7 @@ function LayoutWithSidebar({
             <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`} className="h-9 w-9">
               {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             </Button>
-            {user && (
-              <Button variant="outline" size="icon" aria-label="View notifications" asChild className="relative h-9 w-9">
-                <Link href="/my-alerts">
-                  <Bell className="h-4 w-4" />
-                  {unreadAlertsCount > 0 && (
-                    <Badge 
-                        variant="destructive" 
-                        className="absolute -top-1 -right-1 h-4 w-4 min-w-4 p-0 flex items-center justify-center text-xs leading-none rounded-full"
-                    >
-                      {isNotificationCountLoading ? <Loader2 className="h-2.5 w-2.5 animate-spin"/> : unreadAlertsCount}
-                    </Badge>
-                  )}
-                </Link>
-              </Button>
-            )}
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="relative h-9 w-9 rounded-full" aria-label="Open user menu">

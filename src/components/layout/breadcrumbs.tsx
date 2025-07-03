@@ -31,7 +31,6 @@ const predefinedLabels: { [key: string]: string } = {
   "training-sessions": "Training Sessions",
   settings: "Settings",
   requests: "My Requests",
-  "my-alerts": "My Alerts",
   "system-settings": "System Configuration",
   "suggestion-box": "Suggestion Box",
   suggestions: "Suggestion Box",
