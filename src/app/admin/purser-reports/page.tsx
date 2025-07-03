@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -10,13 +9,25 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, deleteDoc } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ClipboardCheck, Loader2, AlertTriangle, RefreshCw, Eye } from "lucide-react";
+import { ClipboardCheck, Loader2, AlertTriangle, RefreshCw, Eye, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { type StoredPurserReport } from "@/schemas/purser-report-schema";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription as AlertDialogPrimitiveDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle as AlertDialogPrimitiveTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 // Helper component for displaying a report section only if it has content
 const ReportSection = ({ label, content }: { label: string; content?: string | null }) => {
@@ -45,6 +56,9 @@ export default function AdminPurserReportsPage() {
 
   const [selectedReport, setSelectedReport] = React.useState<StoredPurserReport | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
+  
+  const [reportToDelete, setReportToDelete] = React.useState<StoredPurserReport | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   const fetchReports = React.useCallback(async () => {
     setIsLoading(true);
@@ -97,6 +111,32 @@ export default function AdminPurserReportsPage() {
       router.replace(newUrl.toString(), { scroll: false });
     }
   }, [searchParams, reports, isLoading, router, toast]);
+
+  const handleDeleteReport = async () => {
+    if (!reportToDelete || !user) return;
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(db, "purserReports", reportToDelete.id));
+
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email || "N/A",
+        actionType: "DELETE_PURSER_REPORT",
+        entityType: "PURSER_REPORT",
+        entityId: reportToDelete.id,
+        details: { flightNumber: reportToDelete.flightNumber, userEmail: reportToDelete.userEmail },
+      });
+
+      toast({ title: "Report Deleted", description: `Report for flight ${reportToDelete.flightNumber} has been successfully deleted.` });
+      setReportToDelete(null); 
+      fetchReports(); 
+    } catch (error) {
+      console.error("Error deleting report:", error);
+      toast({ title: "Deletion Failed", description: "Could not delete the report. Please try again.", variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
 
   const handleOpenViewDialog = (report: StoredPurserReport) => {
@@ -179,10 +219,32 @@ export default function AdminPurserReportsPage() {
                       <TableCell>{report.flightDate && !isNaN(new Date(report.flightDate).getTime()) ? format(new Date(report.flightDate), "PPP") : 'N/A'}</TableCell>
                       <TableCell>{report.departureAirport} - {report.arrivalAirport}</TableCell>
                       <TableCell>{report.userEmail}</TableCell>
-                      <TableCell className="text-right space-x-2">
+                      <TableCell className="text-right space-x-1">
                         <Button variant="ghost" size="sm" onClick={() => handleOpenViewDialog(report)}>
-                          <Eye className="mr-1 h-4 w-4" /> View Details
+                          <Eye className="mr-1 h-4 w-4" /> View
                         </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                           <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80" onClick={() => setReportToDelete(report)}>
+                            <Trash2 className="mr-1 h-4 w-4" /> Delete
+                          </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogPrimitiveTitle>Confirm Deletion</AlertDialogPrimitiveTitle>
+                              <AlertDialogPrimitiveDescription>
+                                Are you sure you want to delete the report for flight "{report.flightNumber}" submitted by {report.userEmail}? This action cannot be undone.
+                              </AlertDialogPrimitiveDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={() => setReportToDelete(null)} disabled={isDeleting}>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDeleteReport} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     </TableRow>
                   ))}
