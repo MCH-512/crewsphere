@@ -284,7 +284,6 @@ export default function AdminFlightsPage() {
 
             if (isEditMode && currentFlight) {
                 batch.update(flightRef, flightData);
-                await batch.commit();
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityType: "FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
             } else {
                 batch.set(flightRef, { 
@@ -292,10 +291,10 @@ export default function AdminFlightsPage() {
                     createdAt: serverTimestamp(), 
                     purserReportSubmitted: false,
                 });
-                await batch.commit();
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_FLIGHT", entityType: "FLIGHT", entityId: flightRef.id, details: { flightNumber: data.flightNumber } });
             }
 
+            await batch.commit();
             toast({ title: isEditMode ? "Flight Updated" : "Flight Created", description: `Flight ${data.flightNumber} has been saved and crew schedules updated.` });
             fetchPageData();
             setIsManageDialogOpen(false);
