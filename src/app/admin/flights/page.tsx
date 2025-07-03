@@ -26,6 +26,9 @@ import { CustomMultiSelectAutocomplete } from "@/components/ui/custom-multi-sele
 import { useDebounce } from "@/packages/use-debounce";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { checkCrewAvailability, type Conflict } from "@/services/user-activity-service";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 interface FlightForDisplay extends StoredFlight {
     departureAirportName?: string;
@@ -39,6 +42,8 @@ export default function AdminFlightsPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [flights, setFlights] = React.useState<FlightForDisplay[]>([]);
+    const [allUsers, setAllUsers] = React.useState<User[]>([]);
+    const [userMap, setUserMap] = React.useState<Map<string, User>>(new Map());
     const [pursers, setPursers] = React.useState<User[]>([]);
     const [pilots, setPilots] = React.useState<User[]>([]);
     const [cabinCrew, setCabinCrew] = React.useState<User[]>([]);
@@ -55,6 +60,9 @@ export default function AdminFlightsPage() {
     const [depResults, setDepResults] = React.useState<Airport[]>([]);
     const [arrResults, setArrResults] = React.useState<Airport[]>([]);
     const [isSearchingAirports, setIsSearchingAirports] = React.useState(false);
+    
+    const [crewWarnings, setCrewWarnings] = React.useState<Record<string, Conflict>>({});
+    const [isCheckingAvailability, setIsCheckingAvailability] = React.useState(false);
 
     const form = useForm<FlightFormValues>({
         resolver: zodResolver(flightFormSchema),
@@ -70,12 +78,14 @@ export default function AdminFlightsPage() {
         try {
             const flightsQuery = query(collection(db, "flights"), orderBy("scheduledDepartureDateTimeUTC", "desc"));
             const usersSnapshot = await getDocs(collection(db, "users"));
-            const allUsers = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
-            const userMap = new Map(allUsers.map(u => [u.uid, u]));
+            const allUsersData = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
+            const userMapData = new Map(allUsersData.map(u => [u.uid, u]));
 
-            setPursers(allUsers.filter(u => u.role === 'purser'));
-            setPilots(allUsers.filter(u => u.role === 'pilote'));
-            setCabinCrew(allUsers.filter(u => u.role === 'cabin crew'));
+            setAllUsers(allUsersData);
+            setUserMap(userMapData);
+            setPursers(allUsersData.filter(u => u.role === 'purser'));
+            setPilots(allUsersData.filter(u => u.role === 'pilote'));
+            setCabinCrew(allUsersData.filter(u => u.role === 'cabin crew'));
 
             const flightsSnapshot = await getDocs(flightsQuery);
             const fetchedFlights = await Promise.all(
@@ -90,7 +100,7 @@ export default function AdminFlightsPage() {
                         ...data,
                         departureAirportName: `${depAirport?.name} (${depAirport?.iata})` || data.departureAirport,
                         arrivalAirportName: `${arrAirport?.name} (${arrAirport?.iata})` || data.arrivalAirport,
-                        purserName: userMap.get(data.purserId)?.displayName || 'N/A',
+                        purserName: userMapData.get(data.purserId)?.displayName || 'N/A',
                         crewCount,
                     } as FlightForDisplay;
                 })
@@ -122,6 +132,42 @@ export default function AdminFlightsPage() {
         searchAirports(debouncedArrSearch).then(res => setArrResults(res)).finally(() => setIsSearchingAirports(false));
     }, [debouncedArrSearch]);
 
+    const watchedPurser = form.watch("purserId");
+    const watchedPilots = form.watch("pilotIds");
+    const watchedCabinCrew = form.watch("cabinCrewIds");
+    const debouncedDep = useDebounce(form.watch("scheduledDepartureDateTimeUTC"), 500);
+    const debouncedArr = useDebounce(form.watch("scheduledArrivalDateTimeUTC"), 500);
+
+    React.useEffect(() => {
+        const allAssignedCrewIds = [...new Set([watchedPurser, ...(watchedPilots || []), ...(watchedCabinCrew || [])].filter(Boolean))];
+        
+        if (allAssignedCrewIds.length === 0 || !debouncedDep || !debouncedArr) {
+          setCrewWarnings({});
+          return;
+        }
+
+        const check = async () => {
+          setIsCheckingAvailability(true);
+          try {
+            const startDate = startOfDay(new Date(debouncedDep));
+            const endDate = startOfDay(new Date(debouncedArr));
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return;
+
+            const warnings = await checkCrewAvailability(allAssignedCrewIds, startDate, endDate);
+            setCrewWarnings(warnings);
+          } catch (e) {
+            console.error("Failed to check crew availability", e);
+            toast({ title: "Error", description: "Could not check crew availability.", variant: "destructive" });
+          } finally {
+            setIsCheckingAvailability(false);
+          }
+        };
+
+        check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [watchedPurser, JSON.stringify(watchedPilots), JSON.stringify(watchedCabinCrew), debouncedDep, debouncedArr, toast]);
+
+
     const handleOpenDialog = (flightToEdit?: StoredFlight) => {
         if (flightToEdit) {
             setIsEditMode(true);
@@ -148,11 +194,19 @@ export default function AdminFlightsPage() {
         }
         setDepSearch("");
         setArrSearch("");
+        setCrewWarnings({});
         setIsManageDialogOpen(true);
     };
 
     const handleFormSubmit = async (data: FlightFormValues) => {
         if (!user) return;
+        
+        if (Object.keys(crewWarnings).length > 0) {
+            if (!window.confirm("There are scheduling conflicts for some crew members. Are you sure you want to proceed?")) {
+                return;
+            }
+        }
+
         setIsSubmitting(true);
         
         try {
@@ -311,6 +365,24 @@ export default function AdminFlightsPage() {
                              <FormField control={form.control} name="purserId" render={({ field }) => (<FormItem><FormLabel>Assign Purser</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a purser" /></SelectTrigger></FormControl><SelectContent>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName} ({p.email})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                            
+                             <Separator/>
+                             <h3 className="text-lg font-medium">Crew Availability</h3>
+                                {isCheckingAvailability ? (
+                                    <div className="flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Checking schedules...</div>
+                                ) : Object.keys(crewWarnings).length > 0 ? (
+                                    <div className="space-y-2">
+                                        {Object.entries(crewWarnings).map(([userId, conflict]) => (
+                                            <Alert key={userId} variant="warning">
+                                                <AlertTriangle className="h-4 w-4" />
+                                                <AlertTitle>{userMap.get(userId)?.displayName || 'User'} has a conflict</AlertTitle>
+                                                <AlertDescription>{conflict.details}</AlertDescription>
+                                            </Alert>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No conflicts detected for the selected crew and dates.</p>
+                                )}
                             </div>
                         </ScrollArea>
                             <DialogFooter className="mt-4 pt-4 border-t">
