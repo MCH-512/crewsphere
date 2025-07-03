@@ -104,6 +104,7 @@ export async function seedInitialCourses() {
         batch.set(questionRef, {
             questionText: question.questionText,
             questionType: "mcq",
+            quizId: quizRef.id,
             category: courseData.category,
             options: question.options,
             correctAnswer: question.correctAnswer,

@@ -25,13 +25,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings, Loader2, AlertTriangle, CheckCircle, Save } from "lucide-react";
+import { Settings, Loader2, AlertTriangle, CheckCircle, Save, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { logAuditEvent } from "@/lib/audit-logger";
+import { seedInitialCourses } from "@/lib/seed";
 
 const systemSettingsSchema = z.object({
   appName: z.string().min(3, "App name must be at least 3 characters.").max(50, "App name cannot exceed 50 characters.").default("Crew World"),
@@ -49,6 +50,7 @@ export default function SystemSettingsPage() {
   const { user, loading: authLoading } = useAuth();
   const [isLoadingData, setIsLoadingData] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSeeding, setIsSeeding] = React.useState(false);
 
   const form = useForm<SystemSettingsFormValues>({
     resolver: zodResolver(systemSettingsSchema),
@@ -108,6 +110,37 @@ export default function SystemSettingsPage() {
       setIsSubmitting(false);
     }
   }
+  
+  const handleSeedData = async () => {
+    if (!window.confirm("Are you sure you want to seed the initial course data? This will only run if the course doesn't already exist.")) {
+        return;
+    }
+    setIsSeeding(true);
+    try {
+        const result = await seedInitialCourses();
+        if (result.success) {
+            toast({
+                title: "Seeding Successful",
+                description: result.message,
+            });
+        } else {
+            toast({
+                title: "Seeding Skipped or Failed",
+                description: result.message,
+                variant: "default",
+            });
+        }
+    } catch (error) {
+        console.error("Error seeding data:", error);
+        toast({
+            title: "Seeding Error",
+            description: "An unexpected error occurred while seeding data.",
+            variant: "destructive",
+        });
+    } finally {
+        setIsSeeding(false);
+    }
+  };
 
   if (authLoading || isLoadingData) {
     return (
@@ -178,6 +211,31 @@ export default function SystemSettingsPage() {
             {!form.formState.isDirty && !isSubmitting && (<p className="text-sm text-muted-foreground text-right">No changes to save.</p>)}
           </form>
         </Form>
+      </AnimatedCard>
+
+      <AnimatedCard delay={0.2}>
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Database className="w-5 h-5 text-primary" /> Data Management</CardTitle>
+                <CardDescription>
+                    Use these actions to set up initial data for the application. These actions are generally safe to run multiple times.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center justify-between rounded-lg border p-4 shadow-sm">
+                    <div className="space-y-0.5">
+                        <p className="text-sm font-medium leading-none">Seed Initial Course</p>
+                        <p className="text-sm text-muted-foreground">
+                            Creates the "Operational Manual" course if it does not already exist.
+                        </p>
+                    </div>
+                    <Button onClick={handleSeedData} disabled={isSeeding}>
+                        {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                        Seed Data
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
       </AnimatedCard>
     </div>
   );
