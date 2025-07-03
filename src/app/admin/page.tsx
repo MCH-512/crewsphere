@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardList, Library, GraduationCap, CheckSquare, BarChart2, PieChart as PieChartIcon, Compass } from "lucide-react";
+import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardList, Library, GraduationCap, CheckSquare, BarChart2, PieChart as PieChartIcon, Compass, Plane } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -46,6 +46,7 @@ export default function AdminConsolePage() {
   
   const [stats, setStats] = React.useState({
     users: { value: null, isLoading: true, label: "Total Users" } as Stat,
+    flights: { value: null, isLoading: true, label: "Total Flights" } as Stat,
     suggestions: { value: null, isLoading: true, label: "New Suggestions" } as Stat,
     reports: { value: null, isLoading: true, label: "New Reports" } as Stat,
     requests: { value: null, isLoading: true, label: "Pending Requests" } as Stat,
@@ -68,6 +69,7 @@ export default function AdminConsolePage() {
     try {
         const [
             usersSnap,
+            flightsSnap,
             suggestionsSnap,
             reportsSnap,
             requestsSnap,
@@ -76,6 +78,7 @@ export default function AdminConsolePage() {
             quizzesSnap,
         ] = await Promise.all([
             getDocs(collection(db, "users")),
+            getDocs(collection(db, "flights")),
             getDocs(collection(db, "suggestions")),
             getDocs(collection(db, "purserReports")),
             getDocs(collection(db, "requests")),
@@ -91,6 +94,7 @@ export default function AdminConsolePage() {
         // Update stats cards
         setStats({
             users: { value: usersSnap.size, isLoading: false, label: "Total Users" },
+            flights: { value: flightsSnap.size, isLoading: false, label: "Total Flights" },
             suggestions: { value: suggestions.filter(s => s.status === 'new').length, isLoading: false, label: "New Suggestions" },
             reports: { value: reports.filter(r => r.status === 'submitted').length, isLoading: false, label: "New Reports" },
             requests: { value: requests.filter(r => r.status === 'pending').length, isLoading: false, label: "Pending Requests" },
@@ -153,6 +157,15 @@ export default function AdminConsolePage() {
       delay: 0.1 
     },
     { 
+      icon: Plane, 
+      title: "Flight Management", 
+      description: "Schedule new flights, assign pursers, and manage flight details.", 
+      buttonText: "Manage Flights", 
+      href: "/admin/flights",
+      stat: stats.flights,
+      delay: 0.15
+    },
+    { 
       icon: ClipboardList, 
       title: "User Requests", 
       description: "Review and manage all user-submitted requests for leave, roster changes, etc.", 
@@ -160,7 +173,7 @@ export default function AdminConsolePage() {
       href: "/admin/user-requests",
       stat: stats.requests,
       highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.15
+      delay: 0.2
     },
      { 
       icon: FileSignature, 
@@ -170,7 +183,7 @@ export default function AdminConsolePage() {
       href: "/admin/purser-reports",
       stat: stats.reports,
       highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.2
+      delay: 0.25
     },
     { 
       icon: GraduationCap, 
@@ -179,7 +192,7 @@ export default function AdminConsolePage() {
       buttonText: "Manage Courses", 
       href: "/admin/courses",
       stat: stats.courses,
-      delay: 0.25
+      delay: 0.3
     },
     { 
       icon: CheckSquare, 
@@ -188,7 +201,7 @@ export default function AdminConsolePage() {
       buttonText: "Manage Quizzes", 
       href: "/admin/quizzes",
       stat: stats.quizzes,
-      delay: 0.3
+      delay: 0.35
     },
     { 
       icon: Library, 
@@ -197,7 +210,7 @@ export default function AdminConsolePage() {
       buttonText: "Manage Documents", 
       href: "/admin/documents",
       stat: stats.documents,
-      delay: 0.35
+      delay: 0.4
     },
     { 
       icon: MessageSquare, 
@@ -207,7 +220,7 @@ export default function AdminConsolePage() {
       href: "/admin/suggestions",
       stat: stats.suggestions,
       highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.4
+      delay: 0.45
     },
     { 
       icon: Settings, 
@@ -215,7 +228,7 @@ export default function AdminConsolePage() {
       description: "Configure application-wide settings and maintenance mode.", 
       buttonText: "Configure Settings", 
       href: "/admin/system-settings", 
-      delay: 0.45
+      delay: 0.5
     },
     { 
       icon: Activity, 
@@ -223,7 +236,7 @@ export default function AdminConsolePage() {
       description: "Review a detailed, chronological record of system activities and changes.", 
       buttonText: "View Logs", 
       href: "/admin/audit-logs", 
-      delay: 0.5
+      delay: 0.55
     },
   ];
 
@@ -297,7 +310,7 @@ export default function AdminConsolePage() {
 
       {/* Charts Section */}
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-          <AnimatedCard delay={0.55}>
+          <AnimatedCard delay={0.6}>
               <Card className="shadow-sm">
                   <CardHeader>
                       <CardTitle className="flex items-center gap-2"><BarChart2 className="h-5 w-5 text-primary"/>Requests by Status</CardTitle>
@@ -316,7 +329,7 @@ export default function AdminConsolePage() {
                   </CardContent>
               </Card>
           </AnimatedCard>
-          <AnimatedCard delay={0.6}>
+          <AnimatedCard delay={0.65}>
               <Card className="shadow-sm">
                   <CardHeader>
                       <CardTitle className="flex items-center gap-2"><PieChartIcon className="h-5 w-5 text-primary"/>Suggestions by Category</CardTitle>

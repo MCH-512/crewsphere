@@ -14,9 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch"; 
 import { useAuth } from "@/contexts/auth-context";
-import { db, auth as firebaseAuth } from "@/lib/firebase"; 
+import { db } from "@/lib/firebase"; 
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
@@ -195,94 +194,8 @@ export default function AdminUsersPage() {
   };
 
   const handleFormSubmit = async (data: ManageUserFormValues) => {
-    if (!user) {
-        toast({ title: "Error", description: "Admin user not identified.", variant: "destructive"});
-        return;
-    }
-    setIsSubmitting(true);
-    const joiningDateToSave = data.joiningDate ? data.joiningDate : null; 
-    const statusToSave: AccountStatus = data.accountStatus ? 'active' : 'inactive';
-
-    if (isCreateMode) {
-      if (!data.email || !data.password || !data.employeeId || !data.fullName || !data.displayName) {
-        toast({ title: "Missing Fields", description: "Email, password, Display Name, Employee ID, and Full Name are required for new users.", variant: "destructive"});
-        setIsSubmitting(false);
-        return;
-      }
-      try {
-        const userCredential = await createUserWithEmailAndPassword(firebaseAuth, data.email, data.password);
-        const newUser = userCredential.user;
-        
-        await updateProfile(newUser, { displayName: data.displayName });
-
-        const userDocRef = doc(db, "users", newUser.uid);
-        const newUserDocData = {
-          uid: newUser.uid,
-          email: data.email,
-          displayName: data.displayName,
-          fullName: data.fullName,
-          employeeId: data.employeeId,
-          joiningDate: joiningDateToSave, 
-          role: (data.role === NO_ROLE_SENTINEL || data.role === "") ? null : data.role as SpecificRole,
-          accountStatus: statusToSave,
-          createdAt: serverTimestamp(),
-          lastLogin: serverTimestamp(), 
-        };
-        await setDoc(userDocRef, newUserDocData);
-
-        await logAuditEvent({
-            userId: user.uid, 
-            userEmail: user.email || "N/A",
-            actionType: "CREATE_USER",
-            entityType: "USER",
-            entityId: newUser.uid,
-            details: { email: data.email, role: newUserDocData.role, status: statusToSave },
-        });
-
-        toast({ title: "User Created", description: `User ${data.email} created successfully with status: ${statusToSave}.` });
-        fetchUsers();
-        setIsManageUserDialogOpen(false);
-      } catch (err: any) {
-        console.error("Error creating user:", err);
-        toast({ title: "Creation Failed", description: err.message || "Could not create user.", variant: "destructive" });
-      }
-    } else { 
-      if (!currentUserToManage) {
-        toast({ title: "Error", description: "No user selected for editing.", variant: "destructive" });
-        setIsSubmitting(false);
-        return;
-      }
-      try {
-        const userDocRef = doc(db, "users", currentUserToManage.uid);
-        const updates: Partial<UserDocument> = {
-            displayName: data.displayName,
-            fullName: data.fullName,
-            employeeId: data.employeeId || "", 
-            joiningDate: joiningDateToSave, 
-            role: (data.role === NO_ROLE_SENTINEL || data.role === "") ? null : data.role as SpecificRole,
-            accountStatus: statusToSave,
-        };
-        
-        await updateDoc(userDocRef, updates);
-
-        await logAuditEvent({
-            userId: user.uid,
-            userEmail: user.email || "N/A",
-            actionType: "UPDATE_USER",
-            entityType: "USER",
-            entityId: currentUserToManage.uid,
-            details: { email: currentUserToManage.email, newRole: updates.role, newStatus: statusToSave },
-        });
-
-        toast({ title: "User Updated", description: `${currentUserToManage.email}'s information updated. Status: ${statusToSave}.` });
-        fetchUsers();
-        setIsManageUserDialogOpen(false);
-      } catch (err: any) {
-        console.error("Error updating user:", err);
-        toast({ title: "Update Failed", description: err.message || "Could not update user.", variant: "destructive" });
-      }
-    }
-    setIsSubmitting(false);
+    // This function will be implemented in a future step.
+    toast({ title: "Coming Soon", description: "User creation/editing will be implemented soon." });
   };
 
   const getRoleBadgeVariant = (role?: SpecificRole | null): BadgeCvaVariantProps["variant"] => {
