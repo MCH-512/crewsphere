@@ -482,10 +482,10 @@ export default function AdminUsersPage() {
                       <TableCell>{u.employeeId || 'N/A'}</TableCell>
                       <TableCell>{formatDateDisplay(u.joiningDate)}</TableCell>
                       <TableCell className="text-right space-x-1">
-                        <Button variant="ghost" size="icon" asChild>
+                        <Button variant="ghost" size="icon" title="View User Details" asChild>
                           <Link href={`/admin/users/${u.uid}`}><Eye /></Link>
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserDialog(u)}>
+                        <Button variant="ghost" size="icon" title="Edit User" onClick={() => handleOpenEditUserDialog(u)}>
                           <Edit />
                         </Button>
                       </TableCell>
