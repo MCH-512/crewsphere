@@ -19,8 +19,8 @@ const passengerLoadSchema = z.object({
   total: z.number().min(0, "Total must be 0 or more.").default(0),
   adults: z.number().min(0, "Adults must be 0 or more.").default(0),
   infants: z.number().min(0, "Infants must be 0 or more.").default(0),
-}).refine(data => data.adults + data.infants === data.total, {
-  message: "Sum of adults and infants must equal the total number of passengers.",
+}).refine(data => data.adults + data.infants <= data.total, {
+  message: "Sum of adults and infants cannot exceed the total number of passengers.",
   path: ["total"],
 });
 

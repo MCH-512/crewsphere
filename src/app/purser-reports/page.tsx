@@ -100,7 +100,7 @@ export default function PurserReportsPage() {
                         </div>
                         <Button asChild variant="outline" className="w-full sm:w-auto">
                             <Link href="/purser-reports/history">
-                                <History />
+                                <History className="mr-2 h-4 w-4" />
                                 View Submitted Reports
                             </Link>
                         </Button>

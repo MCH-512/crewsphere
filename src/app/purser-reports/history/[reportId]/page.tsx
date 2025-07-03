@@ -38,7 +38,7 @@ export default function PurserReportHistoryDetailPage() {
 
             if (docSnap.exists()) {
                 const data = { id: docSnap.id, ...docSnap.data() } as StoredPurserReport;
-                if (data.userId !== user.uid) {
+                if (data.userId !== user.uid && user.role !== 'admin') {
                     throw new Error("You do not have permission to view this report.");
                 }
                 setReport(data);
