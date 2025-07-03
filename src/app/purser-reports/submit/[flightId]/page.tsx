@@ -62,6 +62,7 @@ export default function SubmitPurserReportPage() {
       crewMembers: "",
       generalFlightSummary: "",
     },
+    mode: "onChange",
   });
 
   const toggleSection = (sectionName: OptionalSectionName) => {
@@ -222,6 +223,3 @@ export default function SubmitPurserReportPage() {
     </Form>
   );
 }
-
-
-    
