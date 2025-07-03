@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -7,16 +8,18 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, orderBy, limit, getDocs, Timestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, AlertTriangle, ArrowLeft, User as UserIcon, Calendar, GraduationCap, Inbox, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowLeft, User as UserIcon, Calendar, GraduationCap, Inbox, CheckCircle, XCircle, ShieldCheck, CalendarX, CalendarClock, CalendarCheck2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { format, formatDistanceToNowStrict } from "date-fns";
+import { format, formatDistanceToNowStrict, differenceInDays } from "date-fns";
 import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
 import { StoredCourse } from "@/schemas/course-schema";
+import { StoredUserDocument } from "@/schemas/user-document-schema";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
-// Interfaces for fetched data
+// --- Interfaces for fetched data ---
 interface UserActivity {
   id: string;
   activityType: 'flight' | 'leave' | 'training' | 'standby' | 'day-off';
@@ -41,8 +44,29 @@ interface UserProfileData {
     activities: UserActivity[];
     trainings: TrainingWithCourse[];
     requests: RequestSummary[];
+    documents: StoredUserDocument[];
 }
 
+// --- Status Logic (mirrored from expiry management for consistency) ---
+const EXPIRY_WARNING_DAYS = 30;
+type DocumentStatus = 'valid' | 'expiring-soon' | 'expired';
+
+const getDocumentStatus = (expiryDate: Date): DocumentStatus => {
+    const today = new Date();
+    const daysUntilExpiry = differenceInDays(expiryDate, today);
+
+    if (daysUntilExpiry < 0) return 'expired';
+    if (daysUntilExpiry <= EXPIRY_WARNING_DAYS) return 'expiring-soon';
+    return 'valid';
+};
+
+const statusConfig: Record<DocumentStatus, { icon: React.ElementType, color: string, label: string }> = {
+    expired: { icon: CalendarX, color: "text-destructive", label: "Expired" },
+    'expiring-soon': { icon: CalendarClock, color: "text-yellow-600", label: "Expiring Soon" },
+    valid: { icon: CalendarCheck2, color: "text-green-600", label: "Valid" },
+};
+
+// --- Page Component ---
 export default function UserDetailPage() {
     const { user: adminUser, loading: authLoading } = useAuth();
     const router = useRouter();
@@ -70,14 +94,16 @@ export default function UserDetailPage() {
                 const activitiesPromise = getDocs(query(collection(db, "userActivities"), where("userId", "==", userId), orderBy("date", "desc"), limit(5)));
                 const trainingsPromise = getDocs(query(collection(db, "userQuizAttempts"), where("userId", "==", userId), orderBy("completedAt", "desc"), limit(5)));
                 const requestsPromise = getDocs(query(collection(db, "requests"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(5)));
+                const documentsPromise = getDocs(query(collection(db, "userDocuments"), where("userId", "==", userId), orderBy("expiryDate", "asc")));
 
-                const [userSnap, activitiesSnap, trainingsSnap, requestsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsSnap]);
+                const [userSnap, activitiesSnap, trainingsSnap, requestsSnap, documentsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsSnap, documentsPromise]);
                 
                 if (!userSnap.exists()) throw new Error("User not found.");
                 const fetchedUser = { uid: userSnap.id, ...userSnap.data() } as User;
                 
                 const activities = activitiesSnap.docs.map(d => ({ id: d.id, ...d.data() }) as UserActivity);
                 const requests = requestsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as RequestSummary);
+                const documents = documentsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserDocument);
 
                 const trainingAttempts = trainingsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserQuizAttempt);
                 const courseIds = [...new Set(trainingAttempts.map(t => t.courseId))];
@@ -86,7 +112,7 @@ export default function UserDetailPage() {
                 const coursesMap = new Map(courseDocs.map(d => [d.id, d.data() as StoredCourse]));
                 const trainings = trainingAttempts.map(t => ({ ...t, courseTitle: coursesMap.get(t.courseId)?.title || "Unknown Course" }));
 
-                setProfileData({ user: fetchedUser, activities, trainings, requests });
+                setProfileData({ user: fetchedUser, activities, trainings, requests, documents });
 
             } catch (err: any) {
                 setError(err.message || "Failed to load user profile.");
@@ -109,7 +135,7 @@ export default function UserDetailPage() {
     
     if (!profileData) return null;
 
-    const { user, activities, trainings, requests } = profileData;
+    const { user, activities, trainings, requests, documents } = profileData;
 
     return (
         <div className="space-y-6 max-w-5xl mx-auto">
@@ -171,6 +197,37 @@ export default function UserDetailPage() {
                             ))}
                         </div>
                     ) : (<p className="text-sm text-muted-foreground text-center py-4">No training history found.</p>)}
+                </CardContent>
+             </Card>
+
+             <Card>
+                <CardHeader><CardTitle className="text-lg flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary"/>Tracked Documents & Licenses</CardTitle></CardHeader>
+                <CardContent>
+                     {documents.length > 0 ? (
+                        <ul className="space-y-3">
+                            {documents.map(doc => {
+                                const expiryDate = doc.expiryDate.toDate();
+                                const status = getDocumentStatus(expiryDate);
+                                const config = statusConfig[status];
+                                const Icon = config.icon;
+                                return (
+                                    <li key={doc.id} className="text-sm flex justify-between items-center p-2 rounded-md bg-muted/50">
+                                        <div className="flex items-center gap-2">
+                                            <Icon className={cn("h-5 w-5", config.color)} />
+                                            <div>
+                                                <p className="font-medium">{doc.documentName}</p>
+                                                <p className="text-xs text-muted-foreground">{doc.documentType}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className={cn("font-semibold", config.color)}>{config.label}</p>
+                                            <p className="text-xs text-muted-foreground">Expires: {format(expiryDate, 'PP')}</p>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    ) : (<p className="text-sm text-muted-foreground text-center py-4">No documents are tracked for this user.</p>)}
                 </CardContent>
              </Card>
         </div>
