@@ -11,12 +11,12 @@ import { useRouter } from "next/navigation";
 import { FileSignature, Loader2, AlertTriangle, ArrowRight, History, Plane } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { Flight } from "@/schemas/flight-schema";
+import type { StoredFlight } from "@/schemas/flight-schema";
 import { getAirportByCode } from "@/services/airport-service";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
-interface FlightForReporting extends Flight {
+interface FlightForReporting extends StoredFlight {
     id: string;
     departureAirportIATA?: string;
     arrivalAirportIATA?: string;
@@ -53,7 +53,7 @@ export default function PurserReportsPage() {
                 const querySnapshot = await getDocs(q);
                 const fetchedFlights = await Promise.all(
                     querySnapshot.docs.map(async (doc) => {
-                        const data = doc.data() as Flight;
+                        const data = doc.data() as StoredFlight;
                         const [depAirport, arrAirport] = await Promise.all([
                             getAirportByCode(data.departureAirport),
                             getAirportByCode(data.arrivalAirport)
@@ -90,7 +90,7 @@ export default function PurserReportsPage() {
         <div className="space-y-6">
             <AnimatedCard>
                 <Card className="shadow-lg">
-                    <CardHeader className="flex flex-row justify-between items-center">
+                    <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <div>
                             <CardTitle className="text-2xl font-headline flex items-center">
                                 <FileSignature className="mr-3 h-7 w-7 text-primary" />
@@ -98,9 +98,9 @@ export default function PurserReportsPage() {
                             </CardTitle>
                             <CardDescription>Submit flight reports for your completed duties.</CardDescription>
                         </div>
-                        <Button asChild variant="outline">
+                        <Button asChild variant="outline" className="w-full sm:w-auto">
                             <Link href="/purser-reports/history">
-                                <History className="mr-2 h-4 w-4"/>
+                                <History />
                                 View Submitted Reports
                             </Link>
                         </Button>

@@ -21,6 +21,7 @@ import { auth, db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { format } from "date-fns";
 import Image from "next/image"; 
+import { cn } from "@/lib/utils";
 
 // Schema for the main profile & preferences form
 const profileSettingsFormSchema = z.object({
@@ -232,10 +233,10 @@ export default function SettingsPage() {
         <form onSubmit={profileForm.handleSubmit(handleProfileUpdate)} className="space-y-8">
             <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><User className="w-5 h-5 text-primary" /> Profile Information</CardTitle>
+                  <CardTitle className="flex items-center gap-2"><User /> Profile Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <div className="relative">
                             <Image 
                                 src={previewUrl || user?.photoURL || "https://placehold.co/100x100.png"} 
@@ -254,7 +255,7 @@ export default function SettingsPage() {
                                 aria-label="Change avatar"
                                 disabled={isUploading}
                             >
-                                <Camera className="h-4 w-4" />
+                                <Camera />
                             </Button>
                              <input 
                                 type="file" 
@@ -316,7 +317,7 @@ export default function SettingsPage() {
 
             <Card>
                 <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Bell className="w-5 h-5 text-primary" /> Notification Preferences</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Bell /> Notification Preferences</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <FormField control={profileForm.control} name="emailNotifications" render={({ field }) => (
@@ -345,12 +346,12 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Shield className="w-5 h-5 text-primary" /> Security</CardTitle>
+          <CardTitle className="flex items-center gap-2"><Shield /> Security</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Dialog open={isChangePasswordDialogOpen} onOpenChange={(open) => { setIsChangePasswordDialogOpen(open); if(!open) changePasswordForm.reset();}}>
             <DialogTrigger asChild>
-              <Button variant="outline"><KeyRound className="mr-2 h-4 w-4"/>Change Password</Button>
+              <Button variant="outline"><KeyRound />Change Password</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>

@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown, Info, MessageSquareText } from "lucide-react";
+import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown, Info, MessageSquareText, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority"; 
@@ -216,7 +216,7 @@ export default function AdminUserRequestsPage() {
       <div className="flex items-center gap-1">
         {label}
         {sortColumn === column && (
-          <ArrowUpDown className={`h-3 w-3 ${sortDirection === "desc" ? "" : "rotate-180"}`} />
+          <ArrowUpDown className="h-3 w-3 ${sortDirection === 'desc' ? '' : 'rotate-180'}" />
         )}
       </div>
     </TableHead>
@@ -256,7 +256,7 @@ export default function AdminUserRequestsPage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={fetchRequests} disabled={isLoading} className="w-full sm:w-auto">
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className="mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}" />
               Refresh
             </Button>
           </div>
@@ -325,7 +325,7 @@ export default function AdminUserRequestsPage() {
                       <TableCell className="text-xs max-w-[200px] truncate" title={request.subject}>{request.subject}</TableCell>
                       <TableCell>
                         <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize flex items-center gap-1 text-xs px-1.5 py-0.5">
-                            {request.urgencyLevel === "Critical" && <Zap className="h-3 w-3" />}
+                            {request.urgencyLevel === "Critical" && <Zap />}
                             {request.urgencyLevel || "N/A"}
                         </Badge>
                       </TableCell>
@@ -336,7 +336,7 @@ export default function AdminUserRequestsPage() {
                       </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" onClick={() => handleOpenManageDialog(request)}>
-                          <Eye className="mr-1 h-4 w-4" /> View &amp; Manage
+                          <Eye className="mr-1 h-4 w-4" /> View & Manage
                         </Button>
                       </TableCell>
                     </TableRow>

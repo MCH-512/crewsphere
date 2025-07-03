@@ -349,7 +349,7 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center">
+        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <CardTitle className="text-2xl font-headline flex items-center">
               <Users className="mr-3 h-7 w-7 text-primary" />
@@ -357,12 +357,12 @@ export default function AdminUsersPage() {
             </CardTitle>
             <CardDescription>View, create, and manage user accounts, their roles, and status.</CardDescription>
           </div>
-          <div className="flex gap-2 w-full md:w-auto mt-4 md:mt-0">
-            <Button variant="outline" onClick={fetchUsers} disabled={isLoading} className="flex-1 md:flex-initial">
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={fetchUsers} disabled={isLoading} className="flex-1 sm:flex-auto">
+              <RefreshCw className="mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}" />
               Refresh
             </Button>
-            <Button onClick={handleOpenCreateUserDialog} className="flex-1 md:flex-initial">
+            <Button onClick={handleOpenCreateUserDialog} className="flex-1 sm:flex-auto">
               <PlusCircle className="mr-2 h-4 w-4" /> Create User
             </Button>
           </div>
@@ -449,10 +449,10 @@ export default function AdminUsersPage() {
                       <TableCell>{formatDateDisplay(u.joiningDate)}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button variant="ghost" size="icon" asChild>
-                          <Link href={`/admin/users/${u.uid}`}><Eye className="h-4 w-4" /></Link>
+                          <Link href={`/admin/users/${u.uid}`}><Eye /></Link>
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserDialog(u)}>
-                          <Edit className="h-4 w-4" />
+                          <Edit />
                         </Button>
                       </TableCell>
                     </TableRow>
