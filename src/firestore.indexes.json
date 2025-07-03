@@ -22,7 +22,6 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "activityType", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "ASCENDING" }
       ]
     },
@@ -120,6 +119,14 @@
       "collectionGroup": "courses",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "published", "order": "ASCENDING" },
+        { "fieldPath": "mandatory", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "courses",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "quizId", "order": "ASCENDING" }
       ]
     },
@@ -144,6 +151,14 @@
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "completedAt", "order": "DESCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "userQuizAttempts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
       ]
     },
     {
@@ -195,6 +210,14 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "sessionDateTimeUTC", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "userActivities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
       ]
     }
   ],
