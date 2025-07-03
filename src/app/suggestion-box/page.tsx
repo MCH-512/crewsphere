@@ -202,7 +202,7 @@ export default function SuggestionBoxPage() {
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle className="text-2xl font-headline flex items-center gap-3">
-                        <MessageSquare className="h-7 w-7 text-primary" />
+                        <Lightbulb className="h-7 w-7 text-primary" />
                         Suggestion Box
                     </CardTitle>
                     <CardDescription>
