@@ -91,8 +91,7 @@ export default function AdminTrainingSessionsPage() {
         try {
             const batch = writeBatch(db);
             const sessionRef = isEditMode && currentSession ? doc(db, "trainingSessions", currentSession.id) : doc(collection(db, "trainingSessions"));
-            const sessionId = sessionRef.id;
-
+            
             const activityIds: Record<string, string> = {};
             if (isEditMode && currentSession?.activityIds) {
                 Object.values(currentSession.activityIds).forEach(activityId => {
@@ -121,14 +120,14 @@ export default function AdminTrainingSessionsPage() {
 
             if (isEditMode && currentSession) {
                 batch.update(sessionRef, sessionData);
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: currentSession.id });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: currentSession.id, details: { title: data.title } });
             } else {
                 batch.set(sessionRef, { ...sessionData, createdAt: serverTimestamp() });
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: sessionRef.id });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: sessionRef.id, details: { title: data.title } });
             }
             
             await batch.commit();
-            toast({ title: isEditMode ? "Session Updated" : "Session Created", description: `Session "${data.title}" has been saved.` });
+            toast({ title: isEditMode ? "Session Updated" : "Session Created", description: `Session "${data.title}" and user schedules have been updated.` });
             fetchPageData();
             setIsManageDialogOpen(false);
         } catch (error) {
@@ -150,7 +149,7 @@ export default function AdminTrainingSessionsPage() {
                 });
             }
             await batch.commit();
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "DELETE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: sessionToDelete.id });
+            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "DELETE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: sessionToDelete.id, details: { title: sessionToDelete.title } });
             toast({ title: "Session Deleted", description: `"${sessionToDelete.title}" has been removed.` });
             fetchPageData();
         } catch (error) {
