@@ -18,7 +18,7 @@ import { db, auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff } from "lucide-react"; 
+import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Badge, badgeVariants } from "@/components/ui/badge"; 
@@ -100,6 +100,10 @@ export default function AdminUsersPage() {
   const [currentUserToManage, setCurrentUserToManage] = React.useState<UserDocument | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [roleFilter, setRoleFilter] = React.useState<SpecificRole | "all">("all");
+  const [statusFilter, setStatusFilter] = React.useState<AccountStatus | "all">("all");
+
   const form = useForm<ManageUserFormValues>({
     resolver: zodResolver(manageUserFormSchema),
     defaultValues: {
@@ -144,6 +148,28 @@ export default function AdminUsersPage() {
       }
     }
   }, [user, authLoading, router, fetchUsers]);
+
+  const filteredUsers = React.useMemo(() => {
+    return usersList
+      .filter(u => {
+        if (roleFilter !== "all" && u.role !== roleFilter) {
+          return false;
+        }
+        if (statusFilter !== "all" && u.accountStatus !== statusFilter) {
+          return false;
+        }
+        if (searchTerm) {
+          const lowercasedTerm = searchTerm.toLowerCase();
+          return (
+            (u.email || "").toLowerCase().includes(lowercasedTerm) ||
+            (u.fullName || "").toLowerCase().includes(lowercasedTerm) ||
+            (u.displayName || "").toLowerCase().includes(lowercasedTerm) ||
+            (u.employeeId || "").toLowerCase().includes(lowercasedTerm)
+          );
+        }
+        return true;
+      });
+  }, [usersList, searchTerm, roleFilter, statusFilter]);
 
   const handleOpenCreateUserDialog = () => {
     setIsCreateMode(true);
@@ -322,7 +348,7 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-row justify-between items-center">
+        <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center">
           <div>
             <CardTitle className="text-2xl font-headline flex items-center">
               <Users className="mr-3 h-7 w-7 text-primary" />
@@ -330,13 +356,13 @@ export default function AdminUsersPage() {
             </CardTitle>
             <CardDescription>View, create, and manage user accounts, their roles, and status.</CardDescription>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={fetchUsers} disabled={isLoading}>
+          <div className="flex gap-2 w-full md:w-auto mt-4 md:mt-0">
+            <Button variant="outline" onClick={fetchUsers} disabled={isLoading} className="flex-1 md:flex-initial">
               <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh Users
+              Refresh
             </Button>
-            <Button onClick={handleOpenCreateUserDialog}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Create New User
+            <Button onClick={handleOpenCreateUserDialog} className="flex-1 md:flex-initial">
+              <PlusCircle className="mr-2 h-4 w-4" /> Create User
             </Button>
           </div>
         </CardHeader>
@@ -346,16 +372,50 @@ export default function AdminUsersPage() {
               <AlertTriangle className="h-5 w-5" /> {error}
             </div>
           )}
+
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-grow">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Search by email, name, ID..."
+                    className="pl-8 w-full"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+            <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as any)}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                    <SelectValue placeholder="Filter by role" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    {availableRoles.map(role => <SelectItem key={role} value={role} className="capitalize">{role}</SelectItem>)}
+                </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+            </Select>
+          </div>
+
           {isLoading && usersList.length === 0 && (
              <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="ml-3 text-muted-foreground">Loading user list...</p>
             </div>
           )}
-          {!isLoading && usersList.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">No users found in the system.</p>
+          {!isLoading && filteredUsers.length === 0 && !error && (
+            <p className="text-muted-foreground text-center py-8">No users found matching your criteria.</p>
           )}
-          {usersList.length > 0 && (
+
+          {filteredUsers.length > 0 && (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -370,7 +430,7 @@ export default function AdminUsersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {usersList.map((u) => (
+                  {filteredUsers.map((u) => (
                     <TableRow key={u.uid}>
                       <TableCell className="font-medium">{u.email || 'N/A'}</TableCell>
                       <TableCell>{u.fullName || 'N/A'}</TableCell>
