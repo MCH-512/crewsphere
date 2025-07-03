@@ -8,15 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, writeBatch, doc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, writeBatch, doc, serverTimestamp, where, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion, Send } from "lucide-react";
+import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { courseFormSchema, CourseFormValues, courseCategories, courseTypes } from "@/schemas/course-schema";
 import { StoredCourse } from "@/schemas/course-schema";
@@ -25,6 +26,8 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
+import { StoredQuiz, StoredCertificateRule } from "@/schemas/course-schema";
+import { StoredQuestion } from "@/schemas/quiz-question-schema";
 
 export default function AdminCoursesPage() {
     const { user, loading: authLoading } = useAuth();
@@ -34,12 +37,17 @@ export default function AdminCoursesPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [isEditMode, setIsEditMode] = React.useState(false);
+    const [currentCourse, setCurrentCourse] = React.useState<StoredCourse | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+    const [courseToDelete, setCourseToDelete] = React.useState<StoredCourse | null>(null);
+
 
     const form = useForm<CourseFormValues>({
         resolver: zodResolver(courseFormSchema),
         defaultValues: {
             title: "", description: "", category: undefined, courseType: undefined,
-            referenceBody: "", duration: "", mandatory: true, published: false,
+            referenceBody: "", duration: "", mandatory: true, published: false, imageHint: "",
             chapters: [{ title: "" }], quizTitle: "",
             passingThreshold: 80, certificateExpiryDays: 365,
             questions: [{ questionText: "", options: ["", "", ""], correctAnswer: "" }]
@@ -69,55 +77,138 @@ export default function AdminCoursesPage() {
         }
     }, [user, authLoading, router, fetchCourses]);
 
+    const handleOpenDialog = async (courseToEdit?: StoredCourse) => {
+        if (courseToEdit) {
+            setIsEditMode(true);
+            setCurrentCourse(courseToEdit);
+            try {
+                const quizSnap = await getDoc(doc(db, "quizzes", courseToEdit.quizId));
+                const certRuleSnap = await getDoc(doc(db, "certificateRules", courseToEdit.certificateRuleId));
+                const quizData = quizSnap.data() as StoredQuiz;
+                const certRuleData = certRuleSnap.data() as StoredCertificateRule;
+
+                form.reset({
+                    title: courseToEdit.title, description: courseToEdit.description,
+                    category: courseToEdit.category, courseType: courseToEdit.courseType,
+                    referenceBody: courseToEdit.referenceBody, duration: courseToEdit.duration,
+                    mandatory: courseToEdit.mandatory, published: courseToEdit.published,
+                    imageHint: courseToEdit.imageHint,
+                    quizTitle: quizData.title,
+                    passingThreshold: certRuleData.passingThreshold,
+                    certificateExpiryDays: certRuleData.expiryDurationDays,
+                    // Keep chapters and questions empty in edit mode for simplicity
+                    chapters: courseToEdit.chapters,
+                    questions: [],
+                });
+            } catch (error) {
+                toast({ title: "Error", description: "Could not load course data for editing.", variant: "destructive"});
+                return;
+            }
+        } else {
+            setIsEditMode(false);
+            setCurrentCourse(null);
+            form.reset({
+                title: "", description: "", category: undefined, courseType: undefined,
+                referenceBody: "", duration: "", mandatory: true, published: false,
+                chapters: [{ title: "" }], quizTitle: "",
+                passingThreshold: 80, certificateExpiryDays: 365,
+                questions: [{ questionText: "", options: ["", "", ""], correctAnswer: "" }]
+            });
+        }
+        setIsManageDialogOpen(true);
+    };
+
+
     const handleFormSubmit = async (data: CourseFormValues) => {
         if (!user) return;
         setIsSubmitting(true);
         try {
             const batch = writeBatch(db);
-            const courseRef = doc(collection(db, "courses"));
-            const quizRef = doc(collection(db, "quizzes"));
-            const certRuleRef = doc(collection(db, "certificateRules"));
 
-            batch.set(courseRef, {
-                title: data.title, description: data.description, category: data.category,
-                courseType: data.courseType, referenceBody: data.referenceBody, duration: data.duration,
-                mandatory: data.mandatory, published: data.published, imageHint: data.imageHint,
-                chapters: data.chapters.filter(c => c.title.trim() !== ""),
-                quizId: quizRef.id, certificateRuleId: certRuleRef.id,
-                createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
-            });
+            if (isEditMode && currentCourse) {
+                // Update existing course
+                const courseRef = doc(db, "courses", currentCourse.id);
+                const quizRef = doc(db, "quizzes", currentCourse.quizId);
+                const certRuleRef = doc(db, "certificateRules", currentCourse.certificateRuleId);
 
-            batch.set(quizRef, {
-                courseId: courseRef.id, title: data.quizTitle,
-                createdAt: serverTimestamp(),
-            });
+                batch.update(courseRef, {
+                    title: data.title, description: data.description, category: data.category,
+                    courseType: data.courseType, referenceBody: data.referenceBody, duration: data.duration,
+                    mandatory: data.mandatory, published: data.published, imageHint: data.imageHint,
+                    chapters: data.chapters.filter(c => c.title.trim() !== ""),
+                    updatedAt: serverTimestamp(),
+                });
 
-            batch.set(certRuleRef, {
-                courseId: courseRef.id, passingThreshold: data.passingThreshold,
-                expiryDurationDays: data.certificateExpiryDays,
-                createdAt: serverTimestamp(),
-            });
+                batch.update(quizRef, { title: data.quizTitle });
+                batch.update(certRuleRef, { passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays });
 
-            data.questions.forEach(q => {
-                if (q.questionText.trim() !== "") {
-                    const questionRef = doc(collection(db, "questions"));
-                    batch.set(questionRef, {
-                        ...q, quizId: quizRef.id, questionType: 'mcq', createdAt: serverTimestamp(),
-                    });
-                }
-            });
+                await batch.commit();
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'UPDATE_COURSE', entityId: currentCourse.id, details: { title: data.title }});
+                toast({ title: "Course Updated", description: `"${data.title}" has been updated successfully.` });
             
-            await batch.commit();
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'CREATE_COURSE', entityId: courseRef.id, details: { title: data.title }});
+            } else {
+                // Create new course
+                const courseRef = doc(collection(db, "courses"));
+                const quizRef = doc(collection(db, "quizzes"));
+                const certRuleRef = doc(collection(db, "certificateRules"));
 
-            toast({ title: "Course Created", description: `"${data.title}" has been saved successfully.` });
+                batch.set(courseRef, {
+                    title: data.title, description: data.description, category: data.category,
+                    courseType: data.courseType, referenceBody: data.referenceBody, duration: data.duration,
+                    mandatory: data.mandatory, published: data.published, imageHint: data.imageHint,
+                    chapters: data.chapters.filter(c => c.title.trim() !== ""),
+                    quizId: quizRef.id, certificateRuleId: certRuleRef.id,
+                    createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+                });
+
+                batch.set(quizRef, { courseId: courseRef.id, title: data.quizTitle, createdAt: serverTimestamp() });
+                batch.set(certRuleRef, { courseId: courseRef.id, passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays, createdAt: serverTimestamp() });
+
+                data.questions.forEach(q => {
+                    if (q.questionText.trim() !== "") {
+                        const questionRef = doc(collection(db, "questions"));
+                        batch.set(questionRef, { ...q, quizId: quizRef.id, questionType: 'mcq', createdAt: serverTimestamp() });
+                    }
+                });
+                
+                await batch.commit();
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'CREATE_COURSE', entityId: courseRef.id, details: { title: data.title }});
+                toast({ title: "Course Created", description: `"${data.title}" has been saved successfully.` });
+            }
+
             fetchCourses();
             setIsManageDialogOpen(false);
         } catch (error) {
             console.error(error);
-            toast({ title: "Creation Failed", variant: "destructive" });
+            toast({ title: isEditMode ? "Update Failed" : "Creation Failed", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!courseToDelete || !user) return;
+        try {
+            const batch = writeBatch(db);
+            // Delete questions associated with the quiz
+            const questionsQuery = query(collection(db, "questions"), where("quizId", "==", courseToDelete.quizId));
+            const questionsSnapshot = await getDocs(questionsQuery);
+            questionsSnapshot.docs.forEach(d => batch.delete(d.ref));
+            // Delete quiz, cert rule, and course
+            batch.delete(doc(db, "quizzes", courseToDelete.quizId));
+            batch.delete(doc(db, "certificateRules", courseToDelete.certificateRuleId));
+            batch.delete(doc(db, "courses", courseToDelete.id));
+
+            await batch.commit();
+            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'DELETE_COURSE', entityId: courseToDelete.id, details: { title: courseToDelete.title }});
+            toast({ title: "Course Deleted", description: `"${courseToDelete.title}" and all its data have been removed.` });
+            fetchCourses();
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Deletion Failed", variant: "destructive" });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setCourseToDelete(null);
         }
     };
 
@@ -134,7 +225,7 @@ export default function AdminCoursesPage() {
                     </div>
                     <div className="flex gap-2">
                         <Button variant="outline" onClick={fetchCourses} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
-                        <Button onClick={() => { form.reset(); setIsManageDialogOpen(true); }}><PlusCircle className="mr-2 h-4 w-4" />Create Course</Button>
+                        <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4" />Create Course</Button>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -148,8 +239,9 @@ export default function AdminCoursesPage() {
                                     <TableCell>{course.courseType}</TableCell>
                                     <TableCell>{course.published ? "Published" : "Draft"}</TableCell>
                                     <TableCell className="space-x-1">
-                                        <Button variant="ghost" size="icon" disabled><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(course)}><Edit className="h-4 w-4" /></Button>
                                         <Button variant="ghost" size="icon" asChild><Link href={`/admin/quizzes/${course.quizId}`}><CheckSquare className="h-4 w-4"/></Link></Button>
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => { setCourseToDelete(course); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -162,8 +254,8 @@ export default function AdminCoursesPage() {
             <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
                 <DialogContent className="max-w-4xl">
                     <DialogHeader>
-                        <DialogTitle>Create New Course</DialogTitle>
-                        <DialogDescription>Fill out the details for the new course, chapters, and quiz questions.</DialogDescription>
+                        <DialogTitle>{isEditMode ? "Edit Course" : "Create New Course"}</DialogTitle>
+                        <DialogDescription>{isEditMode ? "Update course details below. Chapters and questions are managed separately." : "Fill out the details for the new course, chapters, and quiz questions."}</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleFormSubmit)}>
@@ -172,8 +264,8 @@ export default function AdminCoursesPage() {
                                     <FormField control={form.control} name="title" render={({ field }) => <FormItem><FormLabel>Course Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
                                     <FormField control={form.control} name="description" render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} className="min-h-[100px]" /></FormControl><FormMessage /></FormItem>} />
                                     <div className="grid md:grid-cols-2 gap-4">
-                                        <FormField control={form.control} name="category" render={({ field }) => <FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course category" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
-                                        <FormField control={form.control} name="courseType" render={({ field }) => <FormItem><FormLabel>Course Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course type" /></SelectTrigger></FormControl><SelectContent>{courseTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                        <FormField control={form.control} name="category" render={({ field }) => <FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course category" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                        <FormField control={form.control} name="courseType" render={({ field }) => <FormItem><FormLabel>Course Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course type" /></SelectTrigger></FormControl><SelectContent>{courseTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                         <FormField control={form.control} name="referenceBody" render={({ field }) => <FormItem><FormLabel>Reference</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
                                         <FormField control={form.control} name="duration" render={({ field }) => <FormItem><FormLabel>Duration</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
                                         <FormField control={form.control} name="imageHint" render={({ field }) => <FormItem><FormLabel>Image Hint</FormLabel><FormControl><Input {...field} placeholder="e.g. cockpit, safety manual" /></FormControl><FormMessage /></FormItem>} />
@@ -186,6 +278,11 @@ export default function AdminCoursesPage() {
                                     <Separator />
                                     <div className="space-y-4">
                                         <FormLabel className="font-semibold text-base flex items-center gap-2"><ListOrdered/>Chapters</FormLabel>
+                                        <FormField control={form.control} name="chapters" render={() => (
+                                            isEditMode ? (
+                                                <p className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-md">Chapter content can be edited here. For simplicity in this version, question editing is handled in the Quiz Management section.</p>
+                                            ) : null
+                                        )} />
                                         {chapterFields.map((field, index) => (
                                             <FormField key={field.id} control={form.control} name={`chapters.${index}.title`} render={({ field }) => (
                                                 <FormItem className="flex items-center gap-2"><FormControl><Input {...field} placeholder={`Chapter ${index + 1} title`} /></FormControl><Button type="button" variant="ghost" size="icon" onClick={() => removeChapter(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button><FormMessage /></FormItem>
@@ -193,7 +290,7 @@ export default function AdminCoursesPage() {
                                         ))}
                                         <Button type="button" variant="outline" size="sm" onClick={() => appendChapter({ title: "" })}>Add Chapter</Button>
                                     </div>
-
+                                    
                                     <Separator />
                                     <div className="space-y-4">
                                         <FormLabel className="font-semibold text-base flex items-center gap-2"><CheckSquare/>Quiz & Certificate</FormLabel>
@@ -203,7 +300,8 @@ export default function AdminCoursesPage() {
                                             <FormField control={form.control} name="certificateExpiryDays" render={({ field }) => <FormItem><FormLabel>Certificate Expiry (Days)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl><FormMessage /></FormItem>} />
                                          </div>
                                     </div>
-
+                                    
+                                    {!isEditMode && <>
                                     <Separator />
                                     <div className="space-y-4">
                                         <FormLabel className="font-semibold text-base flex items-center gap-2"><FileQuestion/>Quiz Questions</FormLabel>
@@ -216,23 +314,37 @@ export default function AdminCoursesPage() {
                                                         <FormField key={oIndex} control={form.control} name={`questions.${qIndex}.options.${oIndex}`} render={({ field }) => <FormItem><FormLabel>Option {oIndex + 1}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
                                                     ))}
                                                 </div>
-                                                <FormField control={form.control} name={`questions.${qIndex}.correctAnswer`} render={({ field }) => <FormItem><FormLabel>Correct Answer</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select the correct option" /></SelectTrigger></FormControl><SelectContent>{form.watch(`questions.${qIndex}.options`).filter(o => o.trim() !== "").map((opt, optIndex) => <SelectItem key={optIndex} value={opt}>{opt}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                                <FormField control={form.control} name={`questions.${qIndex}.correctAnswer`} render={({ field }) => <FormItem><FormLabel>Correct Answer</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select the correct option" /></SelectTrigger></FormControl><SelectContent>{form.watch(`questions.${qIndex}.options`).filter(o => o?.trim() !== "").map((opt, optIndex) => <SelectItem key={optIndex} value={opt}>{opt}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                             </div>
                                         ))}
                                         <Button type="button" variant="outline" size="sm" onClick={() => appendQuestion({ questionText: "", options: ["", "", ""], correctAnswer: "" })}>Add Question</Button>
                                     </div>
+                                    </>}
                                 </div>
                             </ScrollArea>
                             <DialogFooter className="mt-4 pt-4 border-t">
                                 <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                                <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Create Course</Button>
+                                <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}{isEditMode ? "Save Changes" : "Create Course"}</Button>
                             </DialogFooter>
                         </form>
                     </Form>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the course "{courseToDelete?.title}" and all associated data, including its quiz, questions, and any user progress.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setCourseToDelete(null)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete Course</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
-
-    

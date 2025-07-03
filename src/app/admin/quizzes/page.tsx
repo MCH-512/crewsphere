@@ -84,7 +84,7 @@ export default function AdminQuizzesPage() {
                                     <TableCell>{quiz.courseTitle}</TableCell>
                                     <TableCell className="text-right">
                                         <Button asChild variant="ghost" size="sm">
-                                            <Link href={`/admin/quizzes/${quiz.id}`}><Eye className="mr-2 h-4 w-4"/>View Questions</Link>
+                                            <Link href={`/admin/quizzes/${quiz.id}`}><Eye className="mr-2 h-4 w-4"/>View Details</Link>
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -97,5 +97,3 @@ export default function AdminQuizzesPage() {
         </div>
     );
 }
-
-    
