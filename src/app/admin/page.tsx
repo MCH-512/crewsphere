@@ -5,11 +5,11 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardCheck, Library, GraduationCap, CheckSquare, BarChart2, PieChart as PieChartIcon } from "lucide-react";
+import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardList, Library, GraduationCap, CheckSquare, BarChart2, PieChart as PieChartIcon, Compass } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, where, query } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
@@ -153,7 +153,7 @@ export default function AdminConsolePage() {
       delay: 0.1 
     },
     { 
-      icon: ClipboardCheck, 
+      icon: ClipboardList, 
       title: "User Requests", 
       description: "Review and manage all user-submitted requests for leave, roster changes, etc.", 
       buttonText: "Manage Requests", 

@@ -42,7 +42,7 @@ import {
   Lightbulb,
   Wrench,
   Users,
-  ClipboardCheck,
+  ClipboardList,
   MessageSquare,
   Activity,
   FileSignature,
@@ -154,7 +154,7 @@ function LayoutWithSidebar({
   const adminNavItems = [
     { href: "/admin", label: "Admin Dashboard", icon: ServerCog },
     { href: "/admin/users", label: "User Management", icon: Users },
-    { href: "/admin/user-requests", label: "User Requests", icon: ClipboardCheck },
+    { href: "/admin/user-requests", label: "User Requests", icon: ClipboardList },
     { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
     { href: "/admin/courses", label: "Course Management", icon: GraduationCap },
     { href: "/admin/quizzes", label: "Quiz Management", icon: CheckSquare },

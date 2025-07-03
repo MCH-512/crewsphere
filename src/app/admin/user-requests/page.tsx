@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input"; 
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp, where, writeBatch } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown, Info, MessageSquareText, CheckCircle } from "lucide-react";
 import { format, startOfDay } from "date-fns";
@@ -44,7 +44,7 @@ interface UserRequest {
 type SortableColumn = "createdAt" | "status" | "urgencyLevel";
 type SortDirection = "asc" | "desc";
 
-const requestStatuses: UserRequest["status"][] = ["pending", "approved", "rejected", "in-progress"];
+const requestStatuses: UserRequest["status"][] = ["pending", "in-progress", "approved", "rejected"];
 const urgencyOrder: Record<UserRequest["urgencyLevel"], number> = { "Low": 0, "Medium": 1, "High": 2, "Critical": 3 };
 const statusOrder: Record<UserRequest["status"], number> = { "pending": 0, "in-progress": 1, "approved": 2, "rejected": 3 };
 
@@ -305,7 +305,7 @@ export default function AdminUserRequestsPage() {
                 <SelectContent>
                     <SelectItem value="all">All Statuses</SelectItem>
                     {requestStatuses.map(status => (
-                        <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
+                        <SelectItem key={status} value={status} className="capitalize">{status.replace('-', ' ')}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>
@@ -355,7 +355,7 @@ export default function AdminUserRequestsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(request.status)} className="capitalize text-xs px-1.5 py-0.5">
-                          {request.status}
+                          {request.status.replace('-', ' ')}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-2">
@@ -419,7 +419,7 @@ export default function AdminUserRequestsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {requestStatuses.map(status => (
-                         <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
+                         <SelectItem key={status} value={status} className="capitalize">{status.replace('-', ' ')}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -452,5 +452,3 @@ export default function AdminUserRequestsPage() {
     </div>
   );
 }
-
-    

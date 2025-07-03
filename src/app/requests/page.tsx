@@ -426,8 +426,8 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
                     <div className="mt-2 text-sm text-left space-y-1 border p-3 rounded-md bg-muted/50">
                       <div><strong>Category:</strong> {formDataToSubmit.requestCategory}</div>
                       {formDataToSubmit.specificRequestType && <div><strong>Type:</strong> {formDataToSubmit.specificRequestType}</div>}
-                      {formDataToSubmit.requestCategory === "Leave & Absences" && (
-                         <div><strong>Dates:</strong> {format(new Date(formDataToSubmit.startDate!), 'PPP')} to {format(new Date(formDataToSubmit.endDate!), 'PPP')}</div>
+                      {formDataToSubmit.requestCategory === "Leave & Absences" && formDataToSubmit.startDate && (
+                         <div><strong>Dates:</strong> {format(new Date(formDataToSubmit.startDate), 'PPP')} to {format(new Date(formDataToSubmit.endDate!), 'PPP')}</div>
                       )}
                       <div><strong>Urgency:</strong> {formDataToSubmit.urgencyLevel}</div>
                       <div><strong>Subject:</strong> {formDataToSubmit.subject}</div>
@@ -483,7 +483,7 @@ const RequestHistoryTab = ({ myRequests, isLoading, error, fetchMyRequests }: { 
               <CardHeader className="pb-3">
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
                     <CardTitle className="text-lg font-semibold">{request.subject}</CardTitle>
-                    <Badge variant={getStatusBadgeVariant(request.status)} className="capitalize text-xs h-fit mt-1 sm:mt-0">{request.status}</Badge>
+                    <Badge variant={getStatusBadgeVariant(request.status)} className="capitalize text-xs h-fit mt-1 sm:mt-0">{request.status.replace('-', ' ')}</Badge>
                 </div>
                  <div className="text-xs text-muted-foreground space-x-2 flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
                     <span>Category: <Badge variant="outline" className="px-1.5 py-0.5 text-xs">{request.requestType}</Badge></span>
@@ -608,5 +608,3 @@ export default function RequestsPage() {
     </div>
   );
 }
-
-    
