@@ -41,7 +41,7 @@ const predefinedLabels: { [key: string]: string } = {
   "audit-logs": "Audit Logs",
   "my-schedule": "My Schedule",
   "document-library": "Document Library",
-  "documents": "Document Management",
+  documents: "Document Management",
   courses: "Course Management",
   quizzes: "Quiz Management",
   quiz: "Quiz",
@@ -100,5 +100,3 @@ export function Breadcrumbs() {
     </nav>
   );
 }
-
-    
