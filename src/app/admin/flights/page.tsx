@@ -160,7 +160,7 @@ export default function AdminFlightsPage() {
             const flightId = flightRef.id;
 
             const batch = writeBatch(db);
-            const allAssignedCrewIds = [data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || [])].filter(Boolean);
+            const allAssignedCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || [])].filter(Boolean))];
             const activityIds: Record<string, string> = {};
 
             if (isEditMode && currentFlight && currentFlight.activityIds) {
@@ -184,7 +184,7 @@ export default function AdminFlightsPage() {
                 activityIds[crewId] = activityRef.id;
             }
             
-            const flightData = { ...data, activityIds, updatedAt: serverTimestamp() };
+            const flightData = { ...data, activityIds, allCrewIds: allAssignedCrewIds, updatedAt: serverTimestamp() };
 
             if (isEditMode && currentFlight) {
                 batch.update(flightRef, flightData);

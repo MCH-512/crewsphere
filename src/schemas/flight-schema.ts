@@ -31,6 +31,7 @@ export interface StoredFlight {
   purserId: string; // UID of the assigned purser
   pilotIds: string[];
   cabinCrewIds: string[];
+  allCrewIds?: string[];
   activityIds?: Record<string, string>; // Maps userId -> activityId
   purserReportSubmitted: boolean;
   purserReportId?: string;
