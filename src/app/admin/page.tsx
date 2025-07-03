@@ -250,6 +250,8 @@ export default function AdminConsolePage() {
               <CardTitle className="text-2xl font-headline">Admin Dashboard</CardTitle>
               <CardDescription>
                 Centralized hub for managing application settings, users, and operational data.
+                <br />
+                Conçu et géré par : <strong>Chabouha Mahmoud</strong> (Cabin Crew Manager).
               </CardDescription>
             </div>
           </CardHeader>
