@@ -42,7 +42,7 @@ import {
   Lightbulb,
   Wrench,
   Users,
-  ClipboardList,
+  ClipboardCheck,
   MessageSquare,
   Activity,
   FileSignature,
@@ -293,5 +293,3 @@ function LayoutWithSidebar({
     </>
   );
 }
-
-    
