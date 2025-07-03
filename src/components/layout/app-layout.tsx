@@ -48,6 +48,8 @@ import {
   FileSignature,
   Calendar,
   Library,
+  GraduationCap,
+  CheckSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -151,6 +153,8 @@ function LayoutWithSidebar({
     { href: "/admin/users", label: "User Management", icon: Users },
     { href: "/admin/user-requests", label: "User Requests", icon: ClipboardCheck },
     { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
+    { href: "/admin/courses", label: "Course Management", icon: GraduationCap },
+    { href: "/admin/quizzes", label: "Quiz Management", icon: CheckSquare },
     { href: "/admin/documents", label: "Documents", icon: Library },
     { href: "/admin/suggestions", label: "Suggestions", icon: MessageSquare },
     { href: "/admin/system-settings", label: "System Settings", icon: Settings },
@@ -283,3 +287,5 @@ function LayoutWithSidebar({
     </>
   );
 }
+
+    

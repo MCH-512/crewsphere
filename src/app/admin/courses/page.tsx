@@ -1,0 +1,238 @@
+
+"use client";
+
+import * as React from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useFieldArray } from "react-hook-form";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/contexts/auth-context";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, query, orderBy, writeBatch, doc, serverTimestamp } from "firebase/firestore";
+import { useRouter } from "next/navigation";
+import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion, Send } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { courseFormSchema, CourseFormValues, courseCategories, courseTypes } from "@/schemas/course-schema";
+import { StoredCourse } from "@/schemas/course-schema";
+import { logAuditEvent } from "@/lib/audit-logger";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import Link from "next/link";
+
+export default function AdminCoursesPage() {
+    const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
+    const { toast } = useToast();
+    const [courses, setCourses] = React.useState<StoredCourse[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
+    const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+    const form = useForm<CourseFormValues>({
+        resolver: zodResolver(courseFormSchema),
+        defaultValues: {
+            title: "", description: "", category: undefined, courseType: undefined,
+            referenceBody: "", duration: "", mandatory: true, published: false,
+            chapters: [{ title: "" }], quizTitle: "",
+            passingThreshold: 80, certificateExpiryDays: 365,
+            questions: [{ questionText: "", options: ["", "", ""], correctAnswer: "" }]
+        },
+    });
+
+    const { fields: chapterFields, append: appendChapter, remove: removeChapter } = useFieldArray({ control: form.control, name: "chapters" });
+    const { fields: questionFields, append: appendQuestion, remove: removeQuestion } = useFieldArray({ control: form.control, name: "questions" });
+
+    const fetchCourses = React.useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const q = query(collection(db, "courses"), orderBy("createdAt", "desc"));
+            const snapshot = await getDocs(q);
+            setCourses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCourse)));
+        } catch (err) {
+            toast({ title: "Error", description: "Could not fetch courses.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [toast]);
+
+    React.useEffect(() => {
+        if (!authLoading) {
+            if (!user || user.role !== 'admin') router.push('/');
+            else fetchCourses();
+        }
+    }, [user, authLoading, router, fetchCourses]);
+
+    const handleFormSubmit = async (data: CourseFormValues) => {
+        if (!user) return;
+        setIsSubmitting(true);
+        try {
+            const batch = writeBatch(db);
+            const courseRef = doc(collection(db, "courses"));
+            const quizRef = doc(collection(db, "quizzes"));
+            const certRuleRef = doc(collection(db, "certificateRules"));
+
+            batch.set(courseRef, {
+                title: data.title, description: data.description, category: data.category,
+                courseType: data.courseType, referenceBody: data.referenceBody, duration: data.duration,
+                mandatory: data.mandatory, published: data.published, imageHint: data.imageHint,
+                chapters: data.chapters.filter(c => c.title.trim() !== ""),
+                quizId: quizRef.id, certificateRuleId: certRuleRef.id,
+                createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+            });
+
+            batch.set(quizRef, {
+                courseId: courseRef.id, title: data.quizTitle,
+                createdAt: serverTimestamp(),
+            });
+
+            batch.set(certRuleRef, {
+                courseId: courseRef.id, passingThreshold: data.passingThreshold,
+                expiryDurationDays: data.certificateExpiryDays,
+                createdAt: serverTimestamp(),
+            });
+
+            data.questions.forEach(q => {
+                if (q.questionText.trim() !== "") {
+                    const questionRef = doc(collection(db, "questions"));
+                    batch.set(questionRef, {
+                        ...q, quizId: quizRef.id, questionType: 'mcq', createdAt: serverTimestamp(),
+                    });
+                }
+            });
+            
+            await batch.commit();
+            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'CREATE_COURSE', entityId: courseRef.id, details: { title: data.title }});
+
+            toast({ title: "Course Created", description: `"${data.title}" has been saved successfully.` });
+            fetchCourses();
+            setIsManageDialogOpen(false);
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Creation Failed", variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (authLoading || isLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+    if (!user || user.role !== 'admin') return <div className="text-center p-4"><AlertTriangle className="mx-auto h-12 w-12 text-destructive" /><CardTitle>Access Denied</CardTitle></div>;
+
+    return (
+        <div className="space-y-6">
+            <Card className="shadow-lg">
+                <CardHeader className="flex flex-row justify-between items-start">
+                    <div>
+                        <CardTitle className="text-2xl font-headline flex items-center"><GraduationCap className="mr-3 h-7 w-7 text-primary" />Course Management</CardTitle>
+                        <CardDescription>Create, manage, and publish e-learning courses.</CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={fetchCourses} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
+                        <Button onClick={() => { form.reset(); setIsManageDialogOpen(true); }}><PlusCircle className="mr-2 h-4 w-4" />Create Course</Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Category</TableHead><TableHead>Type</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
+                        <TableBody>
+                            {courses.map(course => (
+                                <TableRow key={course.id}>
+                                    <TableCell className="font-medium">{course.title}</TableCell>
+                                    <TableCell>{course.category}</TableCell>
+                                    <TableCell>{course.courseType}</TableCell>
+                                    <TableCell>{course.published ? "Published" : "Draft"}</TableCell>
+                                    <TableCell className="space-x-1">
+                                        <Button variant="ghost" size="icon" disabled><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" asChild><Link href={`/admin/quizzes/${course.quizId}`}><CheckSquare className="h-4 w-4"/></Link></Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    {courses.length === 0 && <p className="text-center text-muted-foreground p-8">No courses found.</p>}
+                </CardContent>
+            </Card>
+
+            <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>Create New Course</DialogTitle>
+                        <DialogDescription>Fill out the details for the new course, chapters, and quiz questions.</DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleFormSubmit)}>
+                            <ScrollArea className="h-[70vh] p-4">
+                                <div className="space-y-6">
+                                    <FormField control={form.control} name="title" render={({ field }) => <FormItem><FormLabel>Course Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField control={form.control} name="description" render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} className="min-h-[100px]" /></FormControl><FormMessage /></FormItem>} />
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <FormField control={form.control} name="category" render={({ field }) => <FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course category" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                        <FormField control={form.control} name="courseType" render={({ field }) => <FormItem><FormLabel>Course Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course type" /></SelectTrigger></FormControl><SelectContent>{courseTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                        <FormField control={form.control} name="referenceBody" render={({ field }) => <FormItem><FormLabel>Reference</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField control={form.control} name="duration" render={({ field }) => <FormItem><FormLabel>Duration</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField control={form.control} name="imageHint" render={({ field }) => <FormItem><FormLabel>Image Hint</FormLabel><FormControl><Input {...field} placeholder="e.g. cockpit, safety manual" /></FormControl><FormMessage /></FormItem>} />
+                                    </div>
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                       <FormField control={form.control} name="mandatory" render={({ field }) => <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3"><div className="space-y-0.5"><FormLabel>Mandatory</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>} />
+                                       <FormField control={form.control} name="published" render={({ field }) => <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3"><div className="space-y-0.5"><FormLabel>Published</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>} />
+                                    </div>
+
+                                    <Separator />
+                                    <div className="space-y-4">
+                                        <FormLabel className="font-semibold text-base flex items-center gap-2"><ListOrdered/>Chapters</FormLabel>
+                                        {chapterFields.map((field, index) => (
+                                            <FormField key={field.id} control={form.control} name={`chapters.${index}.title`} render={({ field }) => (
+                                                <FormItem className="flex items-center gap-2"><FormControl><Input {...field} placeholder={`Chapter ${index + 1} title`} /></FormControl><Button type="button" variant="ghost" size="icon" onClick={() => removeChapter(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button><FormMessage /></FormItem>
+                                            )}/>
+                                        ))}
+                                        <Button type="button" variant="outline" size="sm" onClick={() => appendChapter({ title: "" })}>Add Chapter</Button>
+                                    </div>
+
+                                    <Separator />
+                                    <div className="space-y-4">
+                                        <FormLabel className="font-semibold text-base flex items-center gap-2"><CheckSquare/>Quiz & Certificate</FormLabel>
+                                         <FormField control={form.control} name="quizTitle" render={({ field }) => <FormItem><FormLabel>Quiz Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                                         <div className="grid md:grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="passingThreshold" render={({ field }) => <FormItem><FormLabel>Passing Score (%)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl><FormMessage /></FormItem>} />
+                                            <FormField control={form.control} name="certificateExpiryDays" render={({ field }) => <FormItem><FormLabel>Certificate Expiry (Days)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl><FormMessage /></FormItem>} />
+                                         </div>
+                                    </div>
+
+                                    <Separator />
+                                    <div className="space-y-4">
+                                        <FormLabel className="font-semibold text-base flex items-center gap-2"><FileQuestion/>Quiz Questions</FormLabel>
+                                        {questionFields.map((questionField, qIndex) => (
+                                            <div key={questionField.id} className="space-y-3 p-4 border rounded-md relative">
+                                                <Button type="button" variant="destructive" size="icon" className="absolute -top-3 -right-3 h-7 w-7" onClick={() => removeQuestion(qIndex)}><Trash2 className="h-4 w-4" /></Button>
+                                                <FormField control={form.control} name={`questions.${qIndex}.questionText`} render={({ field }) => <FormItem><FormLabel>Question {qIndex + 1}</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>} />
+                                                <div className="grid md:grid-cols-2 gap-2">
+                                                    {[0, 1, 2, 3].map(oIndex => (
+                                                        <FormField key={oIndex} control={form.control} name={`questions.${qIndex}.options.${oIndex}`} render={({ field }) => <FormItem><FormLabel>Option {oIndex + 1}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                                                    ))}
+                                                </div>
+                                                <FormField control={form.control} name={`questions.${qIndex}.correctAnswer`} render={({ field }) => <FormItem><FormLabel>Correct Answer</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select the correct option" /></SelectTrigger></FormControl><SelectContent>{form.watch(`questions.${qIndex}.options`).filter(o => o.trim() !== "").map((opt, optIndex) => <SelectItem key={optIndex} value={opt}>{opt}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                            </div>
+                                        ))}
+                                        <Button type="button" variant="outline" size="sm" onClick={() => appendQuestion({ questionText: "", options: ["", "", ""], correctAnswer: "" })}>Add Question</Button>
+                                    </div>
+                                </div>
+                            </ScrollArea>
+                            <DialogFooter className="mt-4 pt-4 border-t">
+                                <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                                <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Create Course</Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+}
+
+    
