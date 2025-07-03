@@ -60,6 +60,7 @@ import {
   CheckSquare,
   Activity,
   HelpCircle,
+  School,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -71,11 +72,9 @@ import { HeaderClocks } from "@/components/features/header-clocks";
 const navItems = [
   // Core
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
 
   // Learning & Reference
-  { href: "/training", label: "Training Hub", icon: GraduationCap },
   { href: "/documents", label: "Documents", icon: FileText },
 
   // Actions & Communication
@@ -187,6 +186,7 @@ function LayoutWithSidebar({
     { href: "/admin/documents", label: "Documents", icon: FilePlus },
     { href: "/admin/alerts", label: "Alerts", icon: Bell },
     { href: "/admin/courses", label: "Courses", icon: GraduationCap },
+    { href: "/admin/training-sessions", label: "Sessions", icon: School },
     { href: "/admin/quizzes", label: "Quizzes", icon: CheckSquare },
     { href: "/admin/question-bank", label: "Question Bank", icon: HelpCircle },
     { href: "/admin/flights", label: "Flights", icon: Plane },
@@ -205,7 +205,7 @@ function LayoutWithSidebar({
         <SidebarHeader className="h-16 flex items-center justify-center">
           <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
             <Plane className="w-8 h-8 text-sidebar-primary" />
-            <span className="font-bold text-xl group-data-[collapsible=icon]:hidden">AirCrew Hub</span>
+            <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">Express Airline Crew World</span>
           </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">

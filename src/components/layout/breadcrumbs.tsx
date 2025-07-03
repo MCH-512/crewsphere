@@ -30,7 +30,6 @@ const predefinedLabels: { [key: string]: string } = {
   flights: "Flights",
   "purser-reports": "Purser Reports",
   "user-requests": "User Requests",
-  training: "Training Hub",
   "training-sessions": "Training Sessions",
   settings: "Settings",
   requests: "My Requests",

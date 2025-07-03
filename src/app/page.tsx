@@ -75,15 +75,6 @@ interface UpcomingDutyData {
   gate: string;
 }
 
-interface MyLearningCourse {
-  id: string;
-  title: string;
-  category: string;
-  mandatory: boolean;
-  imageHint: string;
-}
-
-
 export default function DashboardPage() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -92,10 +83,6 @@ export default function DashboardPage() {
   const [alerts, setAlerts] = React.useState<Alert[]>([]);
   const [alertsLoading, setAlertsLoading] = React.useState(true);
   const [alertsError, setAlertsError] = React.useState<string | null>(null);
-
-  const [myLearningCourses, setMyLearningCourses] = React.useState<MyLearningCourse[]>([]);
-  const [myLearningLoading, setMyLearningLoading] = React.useState(true);
-  const [myLearningError, setMyLearningError] = React.useState<string | null>(null);
 
   const [recentDocuments, setRecentDocuments] = React.useState<RecentDocument[]>([]);
   const [recentDocumentsLoading, setRecentDocumentsLoading] = React.useState(true);
@@ -167,84 +154,6 @@ export default function DashboardPage() {
     fetchAlerts();
   }, [user, toast]);
   
-  React.useEffect(() => {
-    async function fetchMyLearning() {
-        if (!user) {
-            setMyLearningLoading(false);
-            return;
-        }
-        setMyLearningLoading(true);
-        setMyLearningError(null);
-
-        try {
-            // Fetch user's non-passed progress records first
-            const progressQuery = query(
-                collection(db, "userTrainingProgress"),
-                where("userId", "==", user.uid)
-            );
-            const progressSnapshot = await getDocs(progressQuery);
-            const userProgressMap = new Map();
-            progressSnapshot.forEach(doc => {
-                const data = doc.data();
-                userProgressMap.set(data.courseId, data.quizStatus);
-            });
-
-            // Fetch all published, mandatory courses
-            const mandatoryQuery = query(
-                collection(db, "courses"),
-                where("published", "==", true),
-                where("mandatory", "==", true)
-            );
-            const mandatorySnapshot = await getDocs(mandatoryQuery);
-            const mandatoryCourses = mandatorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MyLearningCourse));
-
-            // Filter for mandatory courses not yet passed
-            let requiredCourses = mandatoryCourses.filter(course => userProgressMap.get(course.id) !== 'Passed');
-
-            // If not enough mandatory, look for in-progress courses
-            if (requiredCourses.length < 2) {
-                const inProgressIds = [];
-                for (const [courseId, status] of userProgressMap.entries()) {
-                    if (status === 'InProgress' || status === 'Attempted' || status === 'Failed') {
-                        inProgressIds.push(courseId);
-                    }
-                }
-                
-                if (inProgressIds.length > 0) {
-                    const coursesToFetch = inProgressIds.filter(id => !requiredCourses.some(rc => rc.id === id));
-                    if (coursesToFetch.length > 0) {
-                        const inProgressQuery = query(
-                            collection(db, "courses"),
-                            where("__name__", "in", coursesToFetch.slice(0, 10)), // Limit to 10 to be safe
-                            where("published", "==", true)
-                        );
-                        const inProgressSnapshot = await getDocs(inProgressQuery);
-                        const inProgressCourses = inProgressSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MyLearningCourse));
-                        requiredCourses = [...requiredCourses, ...inProgressCourses];
-                    }
-                }
-            }
-            
-            // Deduplicate and set final list
-            const finalCourses = requiredCourses.reduce((acc, current) => {
-                if (!acc.find(item => item.id === current.id)) {
-                    acc.push(current);
-                }
-                return acc;
-            }, [] as MyLearningCourse[]);
-            
-            setMyLearningCourses(finalCourses.slice(0, 2));
-
-        } catch (err) {
-            console.error("Error fetching my learning courses:", err);
-            setMyLearningError("Failed to load your learning tasks.");
-        } finally {
-            setMyLearningLoading(false);
-        }
-    }
-    fetchMyLearning();
-  }, [user]);
-
   React.useEffect(() => {
     async function fetchRecentDocuments() {
       if (!user) {
@@ -440,8 +349,8 @@ export default function DashboardPage() {
                     <div><span className="font-semibold">ETA:</span> {upcomingDuty.eta}</div>
                   </div>
                    <Button variant="outline" size="sm" className="mt-4 w-full" asChild>
-                    <Link href="/schedule">
-                        View Full Roster & Details <ArrowRight className="ml-2 h-4 w-4" />
+                    <Link href="/requests">
+                        Request Roster Change <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                     </Button>
                 </>
@@ -449,11 +358,6 @@ export default function DashboardPage() {
                 <div className="text-center py-4">
                   <ClockIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
                   <p className="text-sm text-muted-foreground">No upcoming flights or duties found in your schedule.</p>
-                  <Button variant="link" size="sm" className="mt-2" asChild>
-                    <Link href="/schedule">
-                      Check Full Schedule <ArrowRight className="ml-1 h-3 w-3" />
-                    </Link>
-                  </Button>
                 </div>
               )}
             </CardContent>
@@ -470,16 +374,10 @@ export default function DashboardPage() {
                     <Link href="/purser-reports"><FileSignature className="mr-2 h-4 w-4"/>Submit Flight Report</Link>
                   </Button>
                   <Button variant="outline" className="w-full justify-start" asChild>
-                    <Link href="/schedule"><CalendarClock className="mr-2 h-4 w-4"/>View Full Roster</Link>
-                  </Button>
-                   <Button variant="outline" className="w-full justify-start" asChild>
                     <Link href="/requests"><SendHorizonal className="mr-2 h-4 w-4"/>Make a Request</Link>
                   </Button>
                    <Button variant="outline" className="w-full justify-start" asChild>
                     <Link href="/documents"><BookOpen className="mr-2 h-4 w-4"/>Access Documents</Link>
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start" asChild>
-                    <Link href="/training"><GraduationCap className="mr-2 h-4 w-4"/>My Trainings</Link>
                   </Button>
               </CardContent>
           </Card>
@@ -534,51 +432,7 @@ export default function DashboardPage() {
             </Card>
         </AnimatedCard>
 
-        <AnimatedCard delay={0.25} className="lg:col-span-2">
-            <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
-                <CardHeader>
-                    <CardTitle className="font-headline flex items-center"><GraduationCap className="mr-2 h-5 w-5 text-primary"/>My Learning</CardTitle>
-                    <CardDescription>Your prioritized training requirements and courses.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {myLearningLoading ? (
-                        <div className="space-y-4">
-                            {[1, 2].map(i => <div key={i} className="flex items-center gap-4"><Skeleton className="h-12 w-12 rounded-lg"/><div className="space-y-2 flex-1"><Skeleton className="h-4 w-3/4"/><Skeleton className="h-3 w-1/2"/></div><Skeleton className="h-8 w-24"/></div>)}
-                        </div>
-                    ) : myLearningError ? (
-                        <ShadAlert variant="destructive"><AlertTriangle className="h-5 w-5" /><ShadAlertTitle>Learning Error</ShadAlertTitle><ShadAlertDescription>{myLearningError}</ShadAlertDescription></ShadAlert>
-                    ) : myLearningCourses.length === 0 ? (
-                        <div className="text-center py-4">
-                          <CheckCircle className="h-10 w-10 mx-auto text-success mb-2" />
-                          <p className="text-sm text-muted-foreground">You are up-to-date with all required and in-progress training!</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {myLearningCourses.map(course => (
-                                <div key={course.id} className="flex items-center gap-4 p-2 rounded-lg border">
-                                    <Image src={`https://placehold.co/80x80.png`} alt={course.title} width={48} height={48} className="rounded-md" data-ai-hint={course.imageHint || "training manual"} />
-                                    <div className="flex-grow">
-                                        <h3 className="font-semibold text-sm">{course.title}</h3>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <Badge variant="outline" className="text-xs">{course.category}</Badge>
-                                            {course.mandatory && <Badge variant="destructive" className="text-xs">Mandatory</Badge>}
-                                        </div>
-                                    </div>
-                                    <Button size="sm" asChild>
-                                        <Link href="/training">Continue <ChevronRight className="ml-1 h-4 w-4"/></Link>
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                     <Button variant="link" className="p-0 h-auto text-sm mt-3" asChild>
-                        <Link href="/training">Go to Training Hub <ArrowRight className="ml-1 h-3 w-3" /></Link>
-                    </Button>
-                </CardContent>
-            </Card>
-        </AnimatedCard>
-
-         <AnimatedCard delay={0.30} className="lg:col-span-1">
+         <AnimatedCard delay={0.30} className="lg:col-span-3">
            <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="font-headline flex items-center"><BookCopy className="mr-2 h-5 w-5 text-primary"/>Recent Documents</CardTitle>
