@@ -159,15 +159,6 @@ export default function AdminConsolePage() {
       delay: 0.4
     },
     { 
-      icon: FileSignature, 
-      title: "Purser Reports", 
-      description: "Access and review submitted Purser Reports for operational insights.", 
-      buttonText: "Review Reports", 
-      href: "/admin/purser-reports",
-      stat: stats.purserReports,
-      delay: 0.45
-    },
-    { 
       icon: MessageSquare, 
       title: "Suggestions", 
       description: "Review and manage all user-submitted suggestions for improvement.", 
@@ -175,7 +166,7 @@ export default function AdminConsolePage() {
       href: "/admin/suggestions",
       stat: stats.suggestions,
       highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.48
+      delay: 0.45
     },
     { 
       icon: Settings, 
@@ -183,7 +174,7 @@ export default function AdminConsolePage() {
       description: "Configure application-wide settings like maintenance mode and AI models.", 
       buttonText: "Configure Settings", 
       href: "/admin/system-settings", 
-      delay: 0.5
+      delay: 0.48
     },
     { 
       icon: Activity, 
@@ -191,7 +182,7 @@ export default function AdminConsolePage() {
       description: "Review a detailed, chronological record of system activities and changes.", 
       buttonText: "View Logs", 
       href: "/admin/audit-logs", 
-      delay: 0.55
+      delay: 0.51
     },
   ];
 

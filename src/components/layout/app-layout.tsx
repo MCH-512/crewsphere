@@ -79,7 +79,6 @@ const navItems = [
 
   // Actions & Communication
   { href: "/requests", label: "My Requests", icon: Inbox },
-  { href: "/purser-reports", label: "Purser Reports", icon: FileSignature },
   { href: "/crew-community", label: "Crew Community", icon: MessagesSquare },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
   
@@ -190,7 +189,6 @@ function LayoutWithSidebar({
     { href: "/admin/quizzes", label: "Quizzes", icon: CheckSquare },
     { href: "/admin/question-bank", label: "Question Bank", icon: HelpCircle },
     { href: "/admin/flights", label: "Flights", icon: Plane },
-    { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
     { href: "/admin/suggestions", label: "Suggestions", icon: MessageSquare },
     { href: "/admin/system-settings", label: "System Settings", icon: Settings },
     { href: "/admin/audit-logs", label: "Audit Logs", icon: Activity },
