@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -17,13 +18,14 @@ import { db, auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search } from "lucide-react"; 
+import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Badge, badgeVariants } from "@/components/ui/badge"; 
 import { format } from "date-fns"; 
 import type { VariantProps as CvaVariantProps } from "class-variance-authority";
 import { logAuditEvent } from "@/lib/audit-logger";
+import Link from 'next/link';
 
 type BadgeCvaVariantProps = CvaVariantProps<typeof badgeVariants>;
 
@@ -445,9 +447,12 @@ export default function AdminUsersPage() {
                       </TableCell>
                       <TableCell>{u.employeeId || 'N/A'}</TableCell>
                       <TableCell>{formatDateDisplay(u.joiningDate)}</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleOpenEditUserDialog(u)}>
-                          <Edit className="mr-1 h-4 w-4" /> Edit User
+                      <TableCell className="text-right space-x-1">
+                        <Button variant="ghost" size="icon" asChild>
+                          <Link href={`/admin/users/${u.uid}`}><Eye className="h-4 w-4" /></Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserDialog(u)}>
+                          <Edit className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>

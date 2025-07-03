@@ -78,7 +78,12 @@ export function Breadcrumbs() {
         {segments.map((segment, index) => {
           const currentPath = `/${segments.slice(0, index + 1).join("/")}`;
           const isLast = index === segments.length - 1;
-          const label = predefinedLabels[segment] || formatSegment(segment);
+          
+          let label = predefinedLabels[segment] || formatSegment(segment);
+          // Special case for dynamic user detail page
+          if (segments[index-1] === 'users' && index > 1) {
+            label = "User Details";
+          }
 
           return (
             <React.Fragment key={currentPath}>
@@ -104,5 +109,3 @@ export function Breadcrumbs() {
     </nav>
   );
 }
-
-    
