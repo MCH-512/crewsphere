@@ -74,7 +74,7 @@ export default function EditPurserReportPage() {
 
       if (!reportSnap.exists() || reportSnap.data().userId !== user.uid) {
         toast({ title: "Report Not Found", description: "This report could not be found or you don't have permission to edit it.", variant: "destructive" });
-        router.push("/my-purser-reports");
+        router.push("/purser-reports");
         return;
       }
       
@@ -110,7 +110,7 @@ export default function EditPurserReportPage() {
       };
       await updateDoc(reportRef, updatePayload);
       toast({ title: "Report Updated", description: "Your purser report has been successfully updated." });
-      router.push("/my-purser-reports");
+      router.push("/purser-reports");
     } catch (error) {
       console.error("Error updating report:", error);
       toast({ title: "Update Failed", description: "Could not update your report.", variant: "destructive" });

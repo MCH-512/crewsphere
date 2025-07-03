@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -133,7 +132,7 @@ export default function SubmitPurserReportPage() {
 
       await batch.commit();
       toast({ title: "Report Submitted", description: "Your purser report has been successfully submitted." });
-      router.push("/my-purser-reports");
+      router.push("/purser-reports");
     } catch (error) {
       console.error("Error submitting report:", error);
       toast({ title: "Submission Failed", description: "Could not submit your report.", variant: "destructive" });

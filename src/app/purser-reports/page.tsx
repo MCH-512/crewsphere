@@ -1,89 +1,57 @@
-
 "use client";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { FileText, Loader2, AlertTriangle, Plane, CheckCircle, Clock } from "lucide-react";
-import { format, subDays, startOfDay } from "date-fns";
+import { FileText, Loader2, AlertTriangle, RefreshCw, Eye, Inbox, Edit3, PlusCircle } from "lucide-react";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { AnimatedCard } from "@/components/motion/animated-card";
+import { type StoredPurserReport } from "@/schemas/purser-report-schema";
+import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
-import { getAirportByCode } from "@/services/airport-service";
 
-interface FlightForReporting {
-  id: string;
-  flightNumber: string;
-  departureAirport: string;
-  departureAirportIATA?: string;
-  arrivalAirport: string;
-  arrivalAirportIATA?: string;
-  scheduledDepartureDateTimeUTC: string;
-  purserReportSubmitted?: boolean;
-}
-
-export default function PurserReportsSelectionPage() {
+export default function PurserReportsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [eligibleFlights, setEligibleFlights] = React.useState<FlightForReporting[]>([]);
+  const [reports, setReports] = React.useState<StoredPurserReport[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  const fetchEligibleFlights = React.useCallback(async () => {
-    if (!user) return;
+  const [selectedReport, setSelectedReport] = React.useState<StoredPurserReport | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = React.useState(false);
+
+  const fetchReports = React.useCallback(async () => {
+    if (!user) {
+        setIsLoading(false);
+        return;
+    }
     setIsLoading(true);
     setError(null);
     try {
-      // 1. Fetch recent flights assigned to the user
-      const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
-      const activitiesQuery = query(
-        collection(db, "userActivities"),
+      const q = query(
+        collection(db, "purserReports"), 
         where("userId", "==", user.uid),
-        where("activityType", "==", "flight"),
-        where("date", ">=", Timestamp.fromDate(sevenDaysAgo)),
-        orderBy("date", "desc")
+        orderBy("createdAt", "desc")
       );
-      const activitiesSnapshot = await getDocs(activitiesQuery);
-      const flightIds = activitiesSnapshot.docs.map(doc => doc.data().flightId).filter(Boolean);
-
-      if (flightIds.length === 0) {
-        setEligibleFlights([]);
-        setIsLoading(false);
-        return;
-      }
-      
-      // 2. Fetch details for these flights
-      const flightsQuery = query(collection(db, "flights"), where("__name__", "in", flightIds));
-      const flightsSnapshot = await getDocs(flightsQuery);
-      
-      const flightsDataPromises = flightsSnapshot.docs.map(async (doc) => {
-        const flightData = { id: doc.id, ...doc.data() } as FlightForReporting;
-         const depAirportInfo = await getAirportByCode(flightData.departureAirport);
-         if (depAirportInfo && depAirportInfo.iata) {
-             flightData.departureAirportIATA = depAirportInfo.iata;
-         }
-         const arrAirportInfo = await getAirportByCode(flightData.arrivalAirport);
-         if (arrAirportInfo && arrAirportInfo.iata) {
-             flightData.arrivalAirportIATA = arrAirportInfo.iata;
-         }
-        return flightData;
-      });
-      const flightsData = await Promise.all(flightsDataPromises);
-
-      // Sort by departure date descending
-      flightsData.sort((a, b) => new Date(b.scheduledDepartureDateTimeUTC).getTime() - new Date(a.scheduledDepartureDateTimeUTC).getTime());
-      
-      setEligibleFlights(flightsData);
-
+      const querySnapshot = await getDocs(q);
+      const fetchedReports = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as StoredPurserReport));
+      setReports(fetchedReports);
     } catch (err) {
-      console.error("Error fetching eligible flights:", err);
-      setError("Failed to load your recent flights. Please try again.");
-      toast({ title: "Loading Error", description: "Could not fetch eligible flights.", variant: "destructive" });
+      console.error("Error fetching user's purser reports:", err);
+      setError("Failed to load your purser reports. Please try again.");
+      toast({ title: "Loading Error", description: "Could not fetch your purser reports.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -91,19 +59,35 @@ export default function PurserReportsSelectionPage() {
 
   React.useEffect(() => {
     if (!authLoading) {
-      if (user) {
-        fetchEligibleFlights();
+      if (!user) {
+        router.push('/login'); 
       } else {
-        router.push('/login');
+        fetchReports();
       }
     }
-  }, [user, authLoading, router, fetchEligibleFlights]);
+  }, [user, authLoading, router, fetchReports]);
+
+  const handleOpenViewDialog = (report: StoredPurserReport) => {
+    setSelectedReport(report);
+    setIsViewDialogOpen(true);
+  };
 
   if (authLoading || (isLoading && !user)) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-lg text-muted-foreground">Loading flights...</p>
+        <p className="ml-4 text-lg text-muted-foreground">Loading your reports...</p>
+      </div>
+    );
+  }
+  
+  if (!user && !authLoading) {
+     return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <CardTitle className="text-xl mb-2">Access Denied</CardTitle>
+        <p className="text-muted-foreground">Please log in to view your submitted reports.</p>
+        <Button onClick={() => router.push('/login')} className="mt-4">Go to Login</Button>
       </div>
     );
   }
@@ -111,11 +95,25 @@ export default function PurserReportsSelectionPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-row items-center gap-3">
-          <FileText className="h-7 w-7 text-primary" />
+        <CardHeader className="flex flex-row justify-between items-start">
           <div>
-            <CardTitle className="text-2xl font-headline">Submit Purser Report</CardTitle>
-            <CardDescription>Select a recent flight to submit your report. Reports can be submitted for flights from the last 7 days.</CardDescription>
+            <CardTitle className="text-2xl font-headline flex items-center">
+              <Inbox className="mr-3 h-7 w-7 text-primary" />
+              Purser Reports
+            </CardTitle>
+            <CardDescription>View your submitted reports or submit a new one for a recent flight.</CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={fetchReports} disabled={isLoading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button asChild>
+                <Link href="/purser-reports/new">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Submit New Report
+                </Link>
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -124,57 +122,158 @@ export default function PurserReportsSelectionPage() {
               <AlertTriangle className="h-5 w-5" /> {error}
             </div>
           )}
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="ml-3 text-muted-foreground">Loading recent flights...</p>
+           {isLoading && reports.length === 0 && (
+             <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="ml-3 text-muted-foreground">Loading your reports...</p>
             </div>
-          ) : eligibleFlights.length === 0 ? (
-            <div className="text-center py-8">
-              <Plane className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="font-semibold">No recent flights eligible for reporting.</p>
-              <p className="text-sm text-muted-foreground">You have no flights in the last 7 days, or all reports have been submitted.</p>
+          )}
+          {!isLoading && reports.length === 0 && !error && (
+            <div className="text-center py-10 border-2 border-dashed rounded-lg">
+              <Inbox className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-4 text-lg font-medium">No Reports Submitted</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                After you submit a report for a flight, it will appear here.
+              </p>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {eligibleFlights.map((flight) => (
-                <AnimatedCard key={flight.id} delay={0.1}>
-                  <Card className="shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div className="flex-grow">
-                        <div className="flex items-center gap-2">
-                           <p className="font-bold text-lg text-primary">{flight.flightNumber}</p>
-                           <p className="text-sm font-medium">{flight.departureAirportIATA || flight.departureAirport} &rarr; {flight.arrivalAirportIATA || flight.arrivalAirport}</p>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(flight.scheduledDepartureDateTimeUTC), "PPPp 'UTC'")}
-                        </p>
-                      </div>
-                      <div className="w-full sm:w-auto flex-shrink-0">
-                      {flight.purserReportSubmitted ? (
-                        <div className="flex items-center justify-end text-sm font-medium text-success-foreground">
-                          <CheckCircle className="mr-2 h-4 w-4" /> Report Submitted
-                        </div>
-                      ) : new Date(flight.scheduledDepartureDateTimeUTC) > new Date() ? (
-                        <div className="flex items-center justify-end text-sm font-medium text-muted-foreground">
-                          <Clock className="mr-2 h-4 w-4" /> Flight in Future
-                        </div>
-                      ) : (
-                        <Button asChild>
-                          <Link href={`/purser-reports/submit/${flight.id}`}>
-                            Submit Report
-                          </Link>
+          )}
+          {reports.length > 0 && (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Submitted At</TableHead>
+                    <TableHead>Flight No.</TableHead>
+                    <TableHead>Flight Date</TableHead>
+                    <TableHead>Route</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reports.map((report) => (
+                    <TableRow key={report.id}>
+                      <TableCell>
+                        {report.createdAt ? format(report.createdAt.toDate(), "PPp") : 'N/A'}
+                      </TableCell>
+                      <TableCell className="font-medium">{report.flightNumber}</TableCell>
+                      <TableCell>{report.flightDate && !isNaN(new Date(report.flightDate).getTime()) ? format(new Date(report.flightDate), "PPP") : 'N/A'}</TableCell>
+                      <TableCell>{report.departureAirport} - {report.arrivalAirport}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenViewDialog(report)}>
+                          <Eye className="mr-1 h-4 w-4" /> View
                         </Button>
-                      )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
-              ))}
+                         <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/purser-reports/edit/${report.id}`}>
+                                <Edit3 className="mr-1 h-4 w-4" /> Edit
+                            </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {selectedReport && (
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>
+                Purser Report: {selectedReport.flightNumber} ({selectedReport.departureAirport} - {selectedReport.arrivalAirport})
+              </DialogTitle>
+              <DialogDescription>
+                Submitted by you on {format(selectedReport.createdAt.toDate(), "PPpp")}
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-grow pr-6">
+                <div className="py-4 space-y-4">
+                    <Card>
+                        <CardHeader className="pb-3"><CardTitle className="text-base">Flight & Passenger Details</CardTitle></CardHeader>
+                        <CardContent className="text-sm space-y-2">
+                            <p><strong>Aircraft:</strong> {selectedReport.aircraftTypeRegistration}</p>
+                            <p><strong>Total Passengers:</strong> {selectedReport.passengerLoad.total} (Adults: {selectedReport.passengerLoad.adults}, Infants: {selectedReport.passengerLoad.infants})</p>
+                            <div>
+                                <Label className="font-medium">Crew Members:</Label>
+                                <p className="text-muted-foreground whitespace-pre-wrap text-xs p-2 bg-muted rounded-md mt-1">{selectedReport.crewMembers}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                         <CardHeader className="pb-3"><CardTitle className="text-base">General Summary</CardTitle></CardHeader>
+                         <CardContent>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedReport.generalFlightSummary}</p>
+                         </CardContent>
+                    </Card>
+                    
+                    <Separator />
+                    
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Detailed Observations</h3>
+                        
+                        {selectedReport.safetyIncidents && (
+                            <div>
+                                <Label className="font-semibold">Safety Incidents</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.safetyIncidents}</p>
+                            </div>
+                        )}
+                        {selectedReport.securityIncidents && (
+                            <div>
+                                <Label className="font-semibold">Security Incidents</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.securityIncidents}</p>
+                            </div>
+                        )}
+                        {selectedReport.medicalIncidents && (
+                            <div>
+                                <Label className="font-semibold">Medical Incidents</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.medicalIncidents}</p>
+                            </div>
+                        )}
+                        {selectedReport.passengerFeedback && (
+                            <div>
+                                <Label className="font-semibold">Passenger Feedback</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.passengerFeedback}</p>
+                            </div>
+                        )}
+                        {selectedReport.cateringNotes && (
+                            <div>
+                                <Label className="font-semibold">Catering Notes</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.cateringNotes}</p>
+                            </div>
+                        )}
+                        {selectedReport.maintenanceIssues && (
+                            <div>
+                                <Label className="font-semibold">Maintenance Issues</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.maintenanceIssues}</p>
+                            </div>
+                        )}
+                        {selectedReport.crewPerformanceNotes && (
+                            <div>
+                                <Label className="font-semibold">Crew Performance Notes</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.crewPerformanceNotes}</p>
+                            </div>
+                        )}
+                        {selectedReport.otherObservations && (
+                            <div>
+                                <Label className="font-semibold">Other Observations</Label>
+                                <p className="text-sm whitespace-pre-wrap p-3 mt-1 bg-muted/50 rounded-md border">{selectedReport.otherObservations}</p>
+                            </div>
+                        )}
+
+                    </div>
+                </div>
+            </ScrollArea>
+            <DialogFooter className="mt-auto pt-4 border-t">
+              <DialogClose asChild>
+                <Button variant="outline">Close</Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
