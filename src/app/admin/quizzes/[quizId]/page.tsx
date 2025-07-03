@@ -150,7 +150,7 @@ export default function QuizDetailPage() {
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
-            <Button variant="outline" onClick={() => router.push('/admin/quizzes')}><ArrowLeft className="mr-2 h-4 w-4"/>Back to All Quizzes</Button>
+            <Button variant="outline" onClick={() => router.push('/admin/courses')}><ArrowLeft className="mr-2 h-4 w-4"/>Back to Courses</Button>
 
             <Card className="shadow-lg">
                 <CardHeader>
@@ -217,7 +217,7 @@ export default function QuizDetailPage() {
                              <FormField control={form.control} name="correctAnswer" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Correct Answer</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value || ""}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Select the correct option" /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {form.watch('options').filter(opt => opt?.trim()).map((opt, index) => (
@@ -244,5 +244,3 @@ export default function QuizDetailPage() {
         </div>
     )
 }
-
-    

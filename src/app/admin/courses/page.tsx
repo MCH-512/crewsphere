@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,7 +27,6 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { StoredQuiz, StoredCertificateRule } from "@/schemas/course-schema";
-import { StoredQuestion } from "@/schemas/quiz-question-schema";
 
 export default function AdminCoursesPage() {
     const { user, loading: authLoading } = useAuth();
@@ -96,9 +95,9 @@ export default function AdminCoursesPage() {
                     quizTitle: quizData.title,
                     passingThreshold: certRuleData.passingThreshold,
                     certificateExpiryDays: certRuleData.expiryDurationDays,
-                    // Keep chapters and questions empty in edit mode for simplicity
                     chapters: courseToEdit.chapters,
-                    questions: [],
+                    // Keep questions empty in edit mode for simplicity, they are managed elsewhere
+                    questions: [], 
                 });
             } catch (error) {
                 toast({ title: "Error", description: "Could not load course data for editing.", variant: "destructive"});
@@ -239,9 +238,9 @@ export default function AdminCoursesPage() {
                                     <TableCell>{course.courseType}</TableCell>
                                     <TableCell>{course.published ? "Published" : "Draft"}</TableCell>
                                     <TableCell className="space-x-1">
-                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(course)}><Edit className="h-4 w-4" /></Button>
-                                        <Button variant="ghost" size="icon" asChild><Link href={`/admin/quizzes/${course.quizId}`}><CheckSquare className="h-4 w-4"/></Link></Button>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => { setCourseToDelete(course); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(course)} title="Edit Course Details"><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" asChild title="Manage Quiz Questions"><Link href={`/admin/quizzes/${course.quizId}`}><CheckSquare className="h-4 w-4"/></Link></Button>
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title="Delete Course" onClick={() => { setCourseToDelete(course); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -278,11 +277,6 @@ export default function AdminCoursesPage() {
                                     <Separator />
                                     <div className="space-y-4">
                                         <FormLabel className="font-semibold text-base flex items-center gap-2"><ListOrdered/>Chapters</FormLabel>
-                                        <FormField control={form.control} name="chapters" render={() => (
-                                            isEditMode ? (
-                                                <p className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-md">Chapter content can be edited here. For simplicity in this version, question editing is handled in the Quiz Management section.</p>
-                                            ) : null
-                                        )} />
                                         {chapterFields.map((field, index) => (
                                             <FormField key={field.id} control={form.control} name={`chapters.${index}.title`} render={({ field }) => (
                                                 <FormItem className="flex items-center gap-2"><FormControl><Input {...field} placeholder={`Chapter ${index + 1} title`} /></FormControl><Button type="button" variant="ghost" size="icon" onClick={() => removeChapter(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button><FormMessage /></FormItem>
@@ -320,6 +314,11 @@ export default function AdminCoursesPage() {
                                         <Button type="button" variant="outline" size="sm" onClick={() => appendQuestion({ questionText: "", options: ["", "", ""], correctAnswer: "" })}>Add Question</Button>
                                     </div>
                                     </>}
+                                     {isEditMode && (
+                                        <div className="p-3 bg-muted/50 rounded-md text-sm text-muted-foreground">
+                                           Questions for this quiz can be managed from the <Link href={`/admin/quizzes/${currentCourse?.quizId}`} className="text-primary underline">quiz management page</Link>.
+                                        </div>
+                                    )}
                                 </div>
                             </ScrollArea>
                             <DialogFooter className="mt-4 pt-4 border-t">
@@ -348,7 +347,3 @@ export default function AdminCoursesPage() {
         </div>
     );
 }
-
-    
-
-    

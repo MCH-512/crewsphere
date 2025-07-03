@@ -35,9 +35,15 @@ export default function AdminQuizzesPage() {
                 const quizData = { id: quizDoc.id, ...quizDoc.data() } as StoredQuiz;
                 let courseTitle = "N/A";
                 if (quizData.courseId) {
-                    const courseSnap = await getDoc(doc(db, "courses", quizData.courseId));
-                    if (courseSnap.exists()) {
-                        courseTitle = (courseSnap.data() as StoredCourse).title;
+                    try {
+                        const courseSnap = await getDoc(doc(db, "courses", quizData.courseId));
+                        if (courseSnap.exists()) {
+                            courseTitle = (courseSnap.data() as StoredCourse).title;
+                        }
+                    } catch (e) {
+                         // A quiz might exist for a deleted course, handle gracefully
+                        console.warn(`Could not find course with ID ${quizData.courseId} for quiz ${quizData.id}`);
+                        courseTitle = "Course not found";
                     }
                 }
                 return { ...quizData, courseTitle };
@@ -97,7 +103,3 @@ export default function AdminQuizzesPage() {
         </div>
     );
 }
-
-    
-
-    
