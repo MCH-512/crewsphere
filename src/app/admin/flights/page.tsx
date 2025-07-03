@@ -15,9 +15,9 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, getDoc, deleteDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfDay } from "date-fns";
+import { format, startOfDay, parseISO } from "date-fns";
 import { flightFormSchema, type FlightFormValues, type StoredFlight } from "@/schemas/flight-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { getAirportByCode, searchAirports, type Airport } from "@/services/airport-service";
@@ -36,6 +36,9 @@ interface FlightForDisplay extends StoredFlight {
     purserName?: string;
     crewCount: number;
 }
+
+type SortableColumn = 'scheduledDepartureDateTimeUTC' | 'flightNumber' | 'departureAirportName' | 'purserName' | 'aircraftType' | 'crewCount';
+type SortDirection = 'asc' | 'desc';
 
 export default function AdminFlightsPage() {
     const { user, loading: authLoading } = useAuth();
@@ -63,6 +66,9 @@ export default function AdminFlightsPage() {
     
     const [crewWarnings, setCrewWarnings] = React.useState<Record<string, Conflict>>({});
     const [isCheckingAvailability, setIsCheckingAvailability] = React.useState(false);
+
+    const [sortColumn, setSortColumn] = React.useState<SortableColumn>('scheduledDepartureDateTimeUTC');
+    const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
 
     const form = useForm<FlightFormValues>({
         resolver: zodResolver(flightFormSchema),
@@ -112,6 +118,42 @@ export default function AdminFlightsPage() {
             setIsLoading(false);
         }
     }, [toast]);
+    
+    const sortedFlights = React.useMemo(() => {
+        return [...flights].sort((a, b) => {
+            const valA = a[sortColumn];
+            const valB = b[sortColumn];
+            let comparison = 0;
+
+            if (sortColumn === 'scheduledDepartureDateTimeUTC') {
+                comparison = new Date(valA as string).getTime() - new Date(valB as string).getTime();
+            } else if (sortColumn === 'crewCount') {
+                comparison = (valA as number) - (valB as number);
+            } else {
+                comparison = String(valA).localeCompare(String(valB));
+            }
+
+            return sortDirection === 'asc' ? comparison : -comparison;
+        });
+    }, [flights, sortColumn, sortDirection]);
+
+    const handleSort = (column: SortableColumn) => {
+        if (sortColumn === column) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection(column === 'scheduledDepartureDateTimeUTC' ? 'desc' : 'asc');
+        }
+    };
+    
+    const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
+        <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
+            <div className="flex items-center gap-2">
+                {label}
+                {sortColumn === column && <ArrowUpDown className="h-4 w-4" />}
+            </div>
+        </TableHead>
+    );
 
     React.useEffect(() => {
         if (!authLoading) {
@@ -310,14 +352,17 @@ export default function AdminFlightsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Date</TableHead><TableHead>Flight No.</TableHead>
-                                    <TableHead>Route</TableHead><TableHead>Purser</TableHead>
-                                    <TableHead>Aircraft</TableHead><TableHead>Crew</TableHead>
+                                    <SortableHeader column="scheduledDepartureDateTimeUTC" label="Date" />
+                                    <SortableHeader column="flightNumber" label="Flight No." />
+                                    <SortableHeader column="departureAirportName" label="Route" />
+                                    <SortableHeader column="purserName" label="Purser" />
+                                    <SortableHeader column="aircraftType" label="Aircraft" />
+                                    <SortableHeader column="crewCount" label="Crew" />
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {flights.map((f) => (
+                                {sortedFlights.map((f) => (
                                     <TableRow key={f.id}>
                                         <TableCell className="font-medium text-xs">{format(new Date(f.scheduledDepartureDateTimeUTC), "PP")}</TableCell>
                                         <TableCell>{f.flightNumber}</TableCell>
@@ -334,7 +379,7 @@ export default function AdminFlightsPage() {
                             </TableBody>
                         </Table>
                     </div>
-                     {flights.length === 0 && <p className="text-center text-muted-foreground py-8">No flights found.</p>}
+                     {sortedFlights.length === 0 && <p className="text-center text-muted-foreground py-8">No flights found.</p>}
                 </CardContent>
             </Card>
 

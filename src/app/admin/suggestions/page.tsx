@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { MessageSquare, Loader2, AlertTriangle, RefreshCw, Edit, ThumbsUp } from "lucide-react";
+import { MessageSquare, Loader2, AlertTriangle, RefreshCw, Edit, ThumbsUp, ArrowUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { StoredSuggestion } from "@/schemas/suggestion-schema";
@@ -21,6 +21,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { logAuditEvent } from "@/lib/audit-logger";
 
 const suggestionStatuses: StoredSuggestion["status"][] = ['new', 'under-review', 'planned', 'implemented', 'rejected'];
+
+type SortableColumn = 'createdAt' | 'userEmail' | 'subject' | 'category' | 'upvoteCount' | 'status';
+type SortDirection = 'asc' | 'desc';
 
 export default function AdminSuggestionsPage() {
     const { user, loading: authLoading } = useAuth();
@@ -34,6 +37,9 @@ export default function AdminSuggestionsPage() {
     const [newStatus, setNewStatus] = React.useState<StoredSuggestion["status"] | "">("");
     const [adminNotes, setAdminNotes] = React.useState("");
     const [isUpdating, setIsUpdating] = React.useState(false);
+
+    const [sortColumn, setSortColumn] = React.useState<SortableColumn>('createdAt');
+    const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
 
     const fetchSuggestions = React.useCallback(async () => {
         setIsLoading(true);
@@ -49,6 +55,41 @@ export default function AdminSuggestionsPage() {
             setIsLoading(false);
         }
     }, [toast]);
+    
+    const sortedSuggestions = React.useMemo(() => {
+        return [...suggestions].sort((a, b) => {
+            const valA = a[sortColumn];
+            const valB = b[sortColumn];
+            let comparison = 0;
+
+            if (valA instanceof Timestamp && valB instanceof Timestamp) {
+                comparison = valA.toMillis() - valB.toMillis();
+            } else if (typeof valA === 'number' && typeof valB === 'number') {
+                comparison = valA - valB;
+            } else {
+                comparison = String(valA || '').localeCompare(String(valB || ''));
+            }
+            return sortDirection === 'asc' ? comparison : -comparison;
+        });
+    }, [suggestions, sortColumn, sortDirection]);
+
+    const handleSort = (column: SortableColumn) => {
+        if (sortColumn === column) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection(column === 'createdAt' || column === 'upvoteCount' ? 'desc' : 'asc');
+        }
+    };
+
+    const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
+        <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
+            <div className="flex items-center gap-2">
+                {label}
+                {sortColumn === column && <ArrowUpDown className="h-4 w-4" />}
+            </div>
+        </TableHead>
+    );
 
     React.useEffect(() => {
         if (!authLoading) {
@@ -134,17 +175,17 @@ export default function AdminSuggestionsPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Submitted</TableHead>
-                                        <TableHead>User</TableHead>
-                                        <TableHead>Subject</TableHead>
-                                        <TableHead>Category</TableHead>
-                                        <TableHead>Upvotes</TableHead>
-                                        <TableHead>Status</TableHead>
+                                        <SortableHeader column="createdAt" label="Submitted"/>
+                                        <SortableHeader column="userEmail" label="User"/>
+                                        <SortableHeader column="subject" label="Subject"/>
+                                        <SortableHeader column="category" label="Category"/>
+                                        <SortableHeader column="upvoteCount" label="Upvotes"/>
+                                        <SortableHeader column="status" label="Status"/>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {suggestions.map((s) => (
+                                    {sortedSuggestions.map((s) => (
                                         <TableRow key={s.id}>
                                             <TableCell className="text-xs">{format(s.createdAt.toDate(), "PPp")}</TableCell>
                                             <TableCell className="text-xs">{s.isAnonymous ? "Anonymous" : s.userEmail}</TableCell>

@@ -17,7 +17,7 @@ import { db, storage } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { useRouter } from "next/navigation";
-import { Library, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Download } from "lucide-react";
+import { Library, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Download, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { StoredDocument, documentFormSchema, documentEditFormSchema, documentCategories } from "@/schemas/document-schema";
@@ -25,6 +25,9 @@ import { logAuditEvent } from "@/lib/audit-logger";
 
 type ManageDocumentFormValues = z.infer<typeof documentFormSchema>;
 type ManageDocumentEditFormValues = z.infer<typeof documentEditFormSchema>;
+
+type SortableColumn = 'title' | 'category' | 'version' | 'lastUpdated' | 'uploaderEmail';
+type SortDirection = 'asc' | 'desc';
 
 export default function AdminDocumentsPage() {
     const { user, loading: authLoading } = useAuth();
@@ -36,6 +39,9 @@ export default function AdminDocumentsPage() {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [isEditMode, setIsEditMode] = React.useState(false);
     const [currentDocument, setCurrentDocument] = React.useState<StoredDocument | null>(null);
+
+    const [sortColumn, setSortColumn] = React.useState<SortableColumn>('lastUpdated');
+    const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
 
     const form = useForm<ManageDocumentFormValues>({
         resolver: zodResolver(isEditMode ? documentEditFormSchema : documentFormSchema),
@@ -61,6 +67,39 @@ export default function AdminDocumentsPage() {
             else fetchDocuments();
         }
     }, [user, authLoading, router, fetchDocuments]);
+
+    const sortedDocuments = React.useMemo(() => {
+        return [...documents].sort((a, b) => {
+            const valA = a[sortColumn];
+            const valB = b[sortColumn];
+            let comparison = 0;
+
+            if (valA instanceof Timestamp && valB instanceof Timestamp) {
+                comparison = valA.toMillis() - valB.toMillis();
+            } else {
+                comparison = String(valA).localeCompare(String(valB));
+            }
+            return sortDirection === 'asc' ? comparison : -comparison;
+        });
+    }, [documents, sortColumn, sortDirection]);
+    
+    const handleSort = (column: SortableColumn) => {
+        if (sortColumn === column) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
+    
+    const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
+        <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
+            <div className="flex items-center gap-2">
+                {label}
+                {sortColumn === column && <ArrowUpDown className="h-4 w-4" />}
+            </div>
+        </TableHead>
+    );
 
     const handleOpenDialog = (docToEdit?: StoredDocument) => {
         if (docToEdit) {
@@ -180,16 +219,16 @@ export default function AdminDocumentsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Title</TableHead>
-                                    <TableHead>Category</TableHead>
-                                    <TableHead>Version</TableHead>
-                                    <TableHead>Last Updated</TableHead>
-                                    <TableHead>Uploaded By</TableHead>
+                                    <SortableHeader column="title" label="Title" />
+                                    <SortableHeader column="category" label="Category" />
+                                    <SortableHeader column="version" label="Version" />
+                                    <SortableHeader column="lastUpdated" label="Last Updated" />
+                                    <SortableHeader column="uploaderEmail" label="Uploaded By" />
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {documents.map((docItem) => (
+                                {sortedDocuments.map((docItem) => (
                                     <TableRow key={docItem.id}>
                                         <TableCell className="font-medium">{docItem.title}</TableCell>
                                         <TableCell>{docItem.category}</TableCell>
@@ -206,7 +245,7 @@ export default function AdminDocumentsPage() {
                             </TableBody>
                         </Table>
                     </div>
-                     {documents.length === 0 && <p className="text-center text-muted-foreground py-8">No documents found.</p>}
+                     {sortedDocuments.length === 0 && <p className="text-center text-muted-foreground py-8">No documents found.</p>}
                 </CardContent>
             </Card>
 

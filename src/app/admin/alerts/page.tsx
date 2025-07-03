@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { BellRing, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2 } from "lucide-react";
+import { BellRing, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { VariantProps } from "class-variance-authority";
@@ -24,6 +24,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { Switch } from "@/components/ui/switch";
 import { StoredAlert, alertFormSchema, AlertFormValues, alertTypes, alertAudiences } from "@/schemas/alert-schema";
+
+type SortableColumn = 'title' | 'type' | 'targetAudience' | 'isActive' | 'createdAt';
+type SortDirection = 'asc' | 'desc';
 
 export default function AdminAlertsPage() {
     const { user, loading: authLoading } = useAuth();
@@ -37,6 +40,9 @@ export default function AdminAlertsPage() {
     const [isEditMode, setIsEditMode] = React.useState(false);
     const [currentAlert, setCurrentAlert] = React.useState<StoredAlert | null>(null);
 
+    const [sortColumn, setSortColumn] = React.useState<SortableColumn>("createdAt");
+    const [sortDirection, setSortDirection] = React.useState<SortDirection>("desc");
+
     const form = useForm<AlertFormValues>({
         resolver: zodResolver(alertFormSchema),
         defaultValues: { title: "", message: "", type: "info", targetAudience: "all", isActive: true },
@@ -45,6 +51,7 @@ export default function AdminAlertsPage() {
     const fetchAlerts = React.useCallback(async () => {
         setIsLoading(true);
         try {
+            // Initial fetch is always ordered by creation date
             const q = query(collection(db, "alerts"), orderBy("createdAt", "desc"));
             const querySnapshot = await getDocs(q);
             setAlerts(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAlert)));
@@ -61,6 +68,37 @@ export default function AdminAlertsPage() {
             else fetchAlerts();
         }
     }, [user, authLoading, router, fetchAlerts]);
+
+    const sortedAlerts = React.useMemo(() => {
+        const sorted = [...alerts];
+        sorted.sort((a, b) => {
+            let valA = a[sortColumn];
+            let valB = b[sortColumn];
+
+            let comparison = 0;
+            if (valA instanceof Timestamp && valB instanceof Timestamp) {
+                comparison = valA.toMillis() - valB.toMillis();
+            } else if (typeof valA === 'string' && typeof valB === 'string') {
+                comparison = valA.localeCompare(valB);
+            } else if (typeof valA === 'boolean' && typeof valB === 'boolean') {
+                comparison = valA === valB ? 0 : valA ? -1 : 1;
+            } else {
+                 comparison = String(valA).localeCompare(String(valB));
+            }
+
+            return sortDirection === 'asc' ? comparison : -comparison;
+        });
+        return sorted;
+    }, [alerts, sortColumn, sortDirection]);
+
+    const handleSort = (column: SortableColumn) => {
+        if (sortColumn === column) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
 
     const handleOpenDialog = (alertToEdit?: StoredAlert) => {
         if (alertToEdit) {
@@ -124,6 +162,15 @@ export default function AdminAlertsPage() {
         }
     };
 
+    const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
+        <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
+            <div className="flex items-center gap-2">
+                {label}
+                {sortColumn === column && <ArrowUpDown className="h-4 w-4" />}
+            </div>
+        </TableHead>
+    );
+
     if (authLoading || isLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
 
     return (
@@ -141,9 +188,16 @@ export default function AdminAlertsPage() {
                 </CardHeader>
                 <CardContent>
                     <Table>
-                        <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Type</TableHead><TableHead>Audience</TableHead><TableHead>Status</TableHead><TableHead>Created</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow>
+                            <SortableHeader column="title" label="Title"/>
+                            <SortableHeader column="type" label="Type"/>
+                            <SortableHeader column="targetAudience" label="Audience"/>
+                            <SortableHeader column="isActive" label="Status"/>
+                            <SortableHeader column="createdAt" label="Created"/>
+                            <TableHead>Actions</TableHead>
+                        </TableRow></TableHeader>
                         <TableBody>
-                            {alerts.map(alert => (
+                            {sortedAlerts.map(alert => (
                                 <TableRow key={alert.id}>
                                     <TableCell className="font-medium max-w-sm truncate" title={alert.title}>{alert.title}</TableCell>
                                     <TableCell><Badge variant={getTypeBadgeVariant(alert.type)} className="capitalize">{alert.type}</Badge></TableCell>
@@ -158,7 +212,7 @@ export default function AdminAlertsPage() {
                             ))}
                         </TableBody>
                     </Table>
-                    {alerts.length === 0 && <p className="text-center text-muted-foreground p-8">No alerts found.</p>}
+                    {sortedAlerts.length === 0 && <p className="text-center text-muted-foreground p-8">No alerts found.</p>}
                 </CardContent>
             </Card>
 

@@ -8,13 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Library, Loader2, AlertTriangle, Download, Search, Filter, FileText } from "lucide-react";
+import { Library, Loader2, AlertTriangle, Download, Search, Filter, FileText, LayoutGrid, List } from "lucide-react";
 import { format } from "date-fns";
 import { StoredDocument, documentCategories } from "@/schemas/document-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import Link from "next/link";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+
+type SortOption = 'lastUpdated_desc' | 'title_asc' | 'title_desc' | 'category_asc';
 
 export default function DocumentLibraryPage() {
     const { user, loading: authLoading } = useAuth();
@@ -24,6 +28,8 @@ export default function DocumentLibraryPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [searchTerm, setSearchTerm] = React.useState("");
     const [categoryFilter, setCategoryFilter] = React.useState("all");
+    const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
+    const [sortOption, setSortOption] = React.useState<SortOption>('lastUpdated_desc');
 
     React.useEffect(() => {
         if (!authLoading && !user) {
@@ -38,7 +44,6 @@ export default function DocumentLibraryPage() {
                 const querySnapshot = await getDocs(q);
                 const fetchedDocs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredDocument));
                 setAllDocuments(fetchedDocs);
-                setFilteredDocuments(fetchedDocs);
             } catch (error) {
                 console.error("Error fetching documents:", error);
             } finally {
@@ -51,6 +56,8 @@ export default function DocumentLibraryPage() {
 
     React.useEffect(() => {
         let docs = [...allDocuments];
+        
+        // Filtering
         if (categoryFilter !== "all") {
             docs = docs.filter(d => d.category === categoryFilter);
         }
@@ -60,8 +67,25 @@ export default function DocumentLibraryPage() {
                 d.description.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
+
+        // Sorting
+        docs.sort((a, b) => {
+            const [key, direction] = sortOption.split('_') as [keyof StoredDocument, 'asc' | 'desc'];
+            const valA = a[key];
+            const valB = b[key];
+            let comparison = 0;
+
+            if (valA instanceof Timestamp && valB instanceof Timestamp) {
+                comparison = valA.toMillis() - valB.toMillis();
+            } else {
+                comparison = String(valA).localeCompare(String(valB));
+            }
+            
+            return direction === 'asc' ? comparison : -comparison;
+        });
+
         setFilteredDocuments(docs);
-    }, [searchTerm, categoryFilter, allDocuments]);
+    }, [searchTerm, categoryFilter, allDocuments, sortOption]);
     
     if (authLoading || isLoading) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -96,24 +120,42 @@ export default function DocumentLibraryPage() {
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
-                            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                                <SelectTrigger className="w-full md:w-[240px]">
-                                    <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-                                    <SelectValue placeholder="Filter by category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Categories</SelectItem>
-                                    {documentCategories.map(cat => (
-                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <div className="flex gap-4">
+                               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                                    <SelectTrigger className="flex-1">
+                                        <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                                        <SelectValue placeholder="Filter by category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Categories</SelectItem>
+                                        {documentCategories.map(cat => (
+                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOption)}>
+                                    <SelectTrigger className="flex-1">
+                                        <SelectValue placeholder="Sort by" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="lastUpdated_desc">Last Updated</SelectItem>
+                                        <SelectItem value="title_asc">Title (A-Z)</SelectItem>
+                                        <SelectItem value="title_desc">Title (Z-A)</SelectItem>
+                                        <SelectItem value="category_asc">Category</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex items-center justify-end gap-2">
+                                <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('grid')}><LayoutGrid className="h-4 w-4" /></Button>
+                                <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('list')}><List className="h-4 w-4" /></Button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
             </AnimatedCard>
             
             {filteredDocuments.length > 0 ? (
+                viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredDocuments.map((docItem, index) => (
                         <AnimatedCard key={docItem.id} delay={0.1 + index * 0.05}>
@@ -146,6 +188,42 @@ export default function DocumentLibraryPage() {
                         </AnimatedCard>
                     ))}
                 </div>
+                ) : (
+                <AnimatedCard delay={0.1}>
+                    <Card>
+                        <CardContent className="p-0">
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Title</TableHead>
+                                        <TableHead>Category</TableHead>
+                                        <TableHead>Version</TableHead>
+                                        <TableHead>Last Updated</TableHead>
+                                        <TableHead className="text-right">Download</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredDocuments.map(docItem => (
+                                    <TableRow key={docItem.id}>
+                                        <TableCell className="font-medium">{docItem.title}</TableCell>
+                                        <TableCell>{docItem.category}</TableCell>
+                                        <TableCell>{docItem.version}</TableCell>
+                                        <TableCell>{format(docItem.lastUpdated.toDate(), "PPp")}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" asChild>
+                                                <a href={docItem.fileURL} target="_blank" rel="noopener noreferrer">
+                                                    <Download className="h-4 w-4"/>
+                                                </a>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </AnimatedCard>
+                )
             ) : (
                 <AnimatedCard delay={0.1}>
                     <Card className="text-center py-12">
@@ -160,4 +238,3 @@ export default function DocumentLibraryPage() {
         </div>
     );
 }
-

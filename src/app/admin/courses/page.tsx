@@ -18,7 +18,7 @@ import { db, storage } from "@/lib/firebase";
 import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { collection, getDocs, query, orderBy, writeBatch, doc, serverTimestamp, where, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion } from "lucide-react";
+import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { courseFormSchema, CourseFormValues, courseCategories, courseTypes } from "@/schemas/course-schema";
 import { StoredCourse } from "@/schemas/course-schema";
@@ -29,7 +29,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { StoredQuiz, StoredCertificateRule } from "@/schemas/course-schema";
 import { generateCourseImage } from "@/ai/flows/generate-course-image-flow";
+import { Badge } from "@/components/ui/badge";
 
+type SortableColumn = 'title' | 'category' | 'courseType' | 'published';
+type SortDirection = 'asc' | 'desc';
 
 export default function AdminCoursesPage() {
     const { user, loading: authLoading } = useAuth();
@@ -44,6 +47,8 @@ export default function AdminCoursesPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
     const [courseToDelete, setCourseToDelete] = React.useState<StoredCourse | null>(null);
 
+    const [sortColumn, setSortColumn] = React.useState<SortableColumn>("title");
+    const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc");
 
     const form = useForm<CourseFormValues>({
         resolver: zodResolver(courseFormSchema),
@@ -78,6 +83,41 @@ export default function AdminCoursesPage() {
             else fetchCourses();
         }
     }, [user, authLoading, router, fetchCourses]);
+    
+     const sortedCourses = React.useMemo(() => {
+        const sorted = [...courses];
+        sorted.sort((a, b) => {
+            const valA = a[sortColumn];
+            const valB = b[sortColumn];
+            let comparison = 0;
+
+            if (typeof valA === 'boolean' && typeof valB === 'boolean') {
+                comparison = valA === valB ? 0 : valA ? -1 : 1;
+            } else {
+                comparison = String(valA).localeCompare(String(valB));
+            }
+            return sortDirection === 'asc' ? comparison : -comparison;
+        });
+        return sorted;
+    }, [courses, sortColumn, sortDirection]);
+
+    const handleSort = (column: SortableColumn) => {
+        if (sortColumn === column) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
+    
+    const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
+        <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
+            <div className="flex items-center gap-2">
+                {label}
+                {sortColumn === column && <ArrowUpDown className="h-4 w-4" />}
+            </div>
+        </TableHead>
+    );
 
     const handleOpenDialog = async (courseToEdit?: StoredCourse) => {
         if (courseToEdit) {
@@ -99,7 +139,6 @@ export default function AdminCoursesPage() {
                     passingThreshold: certRuleData.passingThreshold,
                     certificateExpiryDays: certRuleData.expiryDurationDays,
                     chapters: courseToEdit.chapters,
-                    // Keep questions empty in edit mode for simplicity, they are managed elsewhere
                     questions: [], 
                 });
             } catch (error) {
@@ -148,7 +187,6 @@ export default function AdminCoursesPage() {
 
 
             if (isEditMode && currentCourse) {
-                // Update existing course
                 const quizRef = doc(db, "quizzes", currentCourse.quizId);
                 const certRuleRef = doc(db, "certificateRules", currentCourse.certificateRuleId);
                 
@@ -173,7 +211,6 @@ export default function AdminCoursesPage() {
                 toast({ title: "Course Updated", description: `"${data.title}" has been updated successfully.` });
             
             } else {
-                // Create new course
                 const quizRef = doc(collection(db, "quizzes"));
                 const certRuleRef = doc(collection(db, "certificateRules"));
 
@@ -216,11 +253,9 @@ export default function AdminCoursesPage() {
         if (!courseToDelete || !user) return;
         try {
             const batch = writeBatch(db);
-            // Delete questions associated with the quiz
             const questionsQuery = query(collection(db, "questions"), where("quizId", "==", courseToDelete.quizId));
             const questionsSnapshot = await getDocs(questionsQuery);
             questionsSnapshot.docs.forEach(d => batch.delete(d.ref));
-            // Delete quiz, cert rule, and course
             batch.delete(doc(db, "quizzes", courseToDelete.quizId));
             batch.delete(doc(db, "certificateRules", courseToDelete.certificateRuleId));
             batch.delete(doc(db, "courses", courseToDelete.id));
@@ -256,14 +291,24 @@ export default function AdminCoursesPage() {
                 </CardHeader>
                 <CardContent>
                     <Table>
-                        <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Category</TableHead><TableHead>Type</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow>
+                            <SortableHeader column="title" label="Title" />
+                            <SortableHeader column="category" label="Category" />
+                            <SortableHeader column="courseType" label="Type" />
+                            <SortableHeader column="published" label="Status" />
+                            <TableHead>Actions</TableHead>
+                        </TableRow></TableHeader>
                         <TableBody>
-                            {courses.map(course => (
+                            {sortedCourses.map(course => (
                                 <TableRow key={course.id}>
                                     <TableCell className="font-medium">{course.title}</TableCell>
                                     <TableCell>{course.category}</TableCell>
                                     <TableCell>{course.courseType}</TableCell>
-                                    <TableCell>{course.published ? "Published" : "Draft"}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={course.published ? "success" : "secondary"}>
+                                            {course.published ? "Published" : "Draft"}
+                                        </Badge>
+                                    </TableCell>
                                     <TableCell className="space-x-1">
                                         <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(course)} title="Edit Course Details"><Edit className="h-4 w-4" /></Button>
                                         <Button variant="ghost" size="icon" asChild title="Manage Quiz Questions"><Link href={`/admin/quizzes/${course.quizId}`}><CheckSquare className="h-4 w-4"/></Link></Button>

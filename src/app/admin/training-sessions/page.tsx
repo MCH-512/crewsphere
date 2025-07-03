@@ -15,20 +15,27 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardCheck, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users } from "lucide-react";
+import { ClipboardCheck, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfDay } from "date-fns";
+import { format, startOfDay, parseISO } from "date-fns";
 import { trainingSessionFormSchema, type TrainingSessionFormValues, type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { CustomMultiSelectAutocomplete } from "@/components/ui/custom-multi-select-autocomplete";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 
+type SortableColumn = 'title' | 'location' | 'sessionDateTimeUTC' | 'attendeeCount';
+type SortDirection = 'asc' | 'desc';
+
+interface SessionForDisplay extends StoredTrainingSession {
+    attendeeCount: number;
+}
+
 export default function AdminTrainingSessionsPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
-    const [sessions, setSessions] = React.useState<StoredTrainingSession[]>([]);
+    const [sessions, setSessions] = React.useState<SessionForDisplay[]>([]);
     const [allUsers, setAllUsers] = React.useState<User[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     
@@ -36,6 +43,9 @@ export default function AdminTrainingSessionsPage() {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [isEditMode, setIsEditMode] = React.useState(false);
     const [currentSession, setCurrentSession] = React.useState<StoredTrainingSession | null>(null);
+
+    const [sortColumn, setSortColumn] = React.useState<SortableColumn>('sessionDateTimeUTC');
+    const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
 
     const form = useForm<TrainingSessionFormValues>({
         resolver: zodResolver(trainingSessionFormSchema),
@@ -50,7 +60,14 @@ export default function AdminTrainingSessionsPage() {
 
             const [sessionsSnapshot, usersSnapshot] = await Promise.all([getDocs(sessionsQuery), getDocs(usersQuery)]);
             
-            setSessions(sessionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredTrainingSession)));
+            setSessions(sessionsSnapshot.docs.map(doc => {
+                const data = doc.data() as StoredTrainingSession;
+                return { 
+                    id: doc.id,
+                    ...data,
+                    attendeeCount: data.attendeeIds.length,
+                }
+            }));
             setAllUsers(usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User)));
         } catch (err) {
             toast({ title: "Loading Error", description: "Could not fetch sessions and users.", variant: "destructive" });
@@ -58,6 +75,42 @@ export default function AdminTrainingSessionsPage() {
             setIsLoading(false);
         }
     }, [toast]);
+    
+    const sortedSessions = React.useMemo(() => {
+        return [...sessions].sort((a, b) => {
+            const valA = a[sortColumn];
+            const valB = b[sortColumn];
+            let comparison = 0;
+
+            if (sortColumn === 'sessionDateTimeUTC') {
+                comparison = new Date(valA as string).getTime() - new Date(valB as string).getTime();
+            } else if (sortColumn === 'attendeeCount') {
+                comparison = (valA as number) - (valB as number);
+            } else {
+                comparison = String(valA).localeCompare(String(valB));
+            }
+
+            return sortDirection === 'asc' ? comparison : -comparison;
+        });
+    }, [sessions, sortColumn, sortDirection]);
+
+    const handleSort = (column: SortableColumn) => {
+        if (sortColumn === column) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection(column === 'sessionDateTimeUTC' ? 'desc' : 'asc');
+        }
+    };
+    
+    const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
+        <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
+            <div className="flex items-center gap-2">
+                {label}
+                {sortColumn === column && <ArrowUpDown className="h-4 w-4" />}
+            </div>
+        </TableHead>
+    );
 
     React.useEffect(() => {
         if (!authLoading) {
@@ -175,9 +228,15 @@ export default function AdminTrainingSessionsPage() {
                 <CardContent>
                     <div className="rounded-md border">
                         <Table>
-                            <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Location</TableHead><TableHead>Date & Time (UTC)</TableHead><TableHead>Attendees</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow>
+                                <SortableHeader column="title" label="Title" />
+                                <SortableHeader column="location" label="Location" />
+                                <SortableHeader column="sessionDateTimeUTC" label="Date & Time (UTC)" />
+                                <SortableHeader column="attendeeCount" label="Attendees" />
+                                <TableHead>Actions</TableHead>
+                            </TableRow></TableHeader>
                             <TableBody>
-                                {sessions.map(s => (
+                                {sortedSessions.map(s => (
                                     <TableRow key={s.id}>
                                         <TableCell className="font-medium">{s.title}</TableCell>
                                         <TableCell>{s.location}</TableCell>

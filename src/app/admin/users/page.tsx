@@ -18,11 +18,11 @@ import { db, auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye } from "lucide-react"; 
+import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye, ArrowUpDown } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Badge, badgeVariants } from "@/components/ui/badge"; 
-import { format } from "date-fns"; 
+import { format, parseISO } from "date-fns"; 
 import type { VariantProps as CvaVariantProps } from "class-variance-authority";
 import { logAuditEvent } from "@/lib/audit-logger";
 import Link from 'next/link';
@@ -88,6 +88,9 @@ const manageUserFormSchema = z.object({
 
 type ManageUserFormValues = z.infer<typeof manageUserFormSchema>;
 
+type SortableColumn = "email" | "fullName" | "role" | "accountStatus" | "employeeId" | "joiningDate";
+type SortDirection = "asc" | "desc";
+
 export default function AdminUsersPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -104,6 +107,9 @@ export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [roleFilter, setRoleFilter] = React.useState<SpecificRole | "all">("all");
   const [statusFilter, setStatusFilter] = React.useState<AccountStatus | "all">("all");
+
+  const [sortColumn, setSortColumn] = React.useState<SortableColumn>("email");
+  const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc");
 
   const form = useForm<ManageUserFormValues>({
     resolver: zodResolver(manageUserFormSchema),
@@ -150,15 +156,11 @@ export default function AdminUsersPage() {
     }
   }, [user, authLoading, router, fetchUsers]);
 
-  const filteredUsers = React.useMemo(() => {
-    return usersList
+  const filteredAndSortedUsers = React.useMemo(() => {
+    let filtered = usersList
       .filter(u => {
-        if (roleFilter !== "all" && u.role !== roleFilter) {
-          return false;
-        }
-        if (statusFilter !== "all" && u.accountStatus !== statusFilter) {
-          return false;
-        }
+        if (roleFilter !== "all" && u.role !== roleFilter) return false;
+        if (statusFilter !== "all" && u.accountStatus !== statusFilter) return false;
         if (searchTerm) {
           const lowercasedTerm = searchTerm.toLowerCase();
           return (
@@ -170,7 +172,39 @@ export default function AdminUsersPage() {
         }
         return true;
       });
-  }, [usersList, searchTerm, roleFilter, statusFilter]);
+
+    return filtered.sort((a, b) => {
+        const valA = a[sortColumn];
+        const valB = b[sortColumn];
+        let comparison = 0;
+        if (sortColumn === 'joiningDate') {
+            const dateA = valA ? parseISO(valA).getTime() : 0;
+            const dateB = valB ? parseISO(valB).getTime() : 0;
+            comparison = dateA - dateB;
+        } else {
+            comparison = String(valA || '').localeCompare(String(valB || ''));
+        }
+        return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [usersList, searchTerm, roleFilter, statusFilter, sortColumn, sortDirection]);
+
+  const handleSort = (column: SortableColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
+    <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
+        <div className="flex items-center gap-2">
+            {label}
+            {sortColumn === column && <ArrowUpDown className="h-4 w-4" />}
+        </div>
+    </TableHead>
+  );
 
   const handleOpenCreateUserDialog = () => {
     setIsCreateMode(true);
@@ -412,26 +446,26 @@ export default function AdminUsersPage() {
                 <p className="ml-3 text-muted-foreground">Loading user list...</p>
             </div>
           )}
-          {!isLoading && filteredUsers.length === 0 && !error && (
+          {!isLoading && filteredAndSortedUsers.length === 0 && !error && (
             <p className="text-muted-foreground text-center py-8">No users found matching your criteria.</p>
           )}
 
-          {filteredUsers.length > 0 && (
+          {filteredAndSortedUsers.length > 0 && (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Full Name</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Employee ID</TableHead>
-                    <TableHead>Joining Date</TableHead>
+                    <SortableHeader column="email" label="Email"/>
+                    <SortableHeader column="fullName" label="Full Name"/>
+                    <SortableHeader column="role" label="Role"/>
+                    <SortableHeader column="accountStatus" label="Status"/>
+                    <SortableHeader column="employeeId" label="Employee ID"/>
+                    <SortableHeader column="joiningDate" label="Joining Date"/>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers.map((u) => (
+                  {filteredAndSortedUsers.map((u) => (
                     <TableRow key={u.uid}>
                       <TableCell className="font-medium">{u.email || 'N/A'}</TableCell>
                       <TableCell>{u.fullName || 'N/A'}</TableCell>
