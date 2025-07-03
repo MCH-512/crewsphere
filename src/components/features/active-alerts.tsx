@@ -4,7 +4,7 @@
 import * as React from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy, Timestamp, limit } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, Info, AlertTriangle, BellRing, X } from "lucide-react";
 import type { StoredAlert } from "@/schemas/alert-schema";
@@ -22,28 +22,26 @@ export function ActiveAlerts() {
             return;
         }
 
-        const fetchAlerts = async () => {
-            setIsLoading(true);
-            try {
-                const userRoles = ["all", user.role].filter(Boolean);
-                const q = query(
-                    collection(db, "alerts"),
-                    where("isActive", "==", true),
-                    where("targetAudience", "in", userRoles),
-                    orderBy("createdAt", "desc"),
-                    limit(5)
-                );
-                const querySnapshot = await getDocs(q);
-                const fetchedAlerts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAlert));
-                setAlerts(fetchedAlerts);
-            } catch (error) {
-                console.error("Error fetching alerts:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+        const userRoles = ["all", user.role].filter(Boolean);
+        const q = query(
+            collection(db, "alerts"),
+            where("isActive", "==", true),
+            where("targetAudience", "in", userRoles),
+            orderBy("createdAt", "desc"),
+            limit(5)
+        );
+        
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const fetchedAlerts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAlert));
+            setAlerts(fetchedAlerts);
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching real-time alerts:", error);
+            setIsLoading(false);
+        });
 
-        fetchAlerts();
+        // Cleanup subscription on unmount
+        return () => unsubscribe();
     }, [user]);
 
     const handleDismiss = (alertId: string) => {
