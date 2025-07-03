@@ -52,6 +52,7 @@ const predefinedLabels: { [key: string]: string } = {
   "ftl-calculator": "EASA FTL Calculator",
   "airport-directory": "Airport Directory",
   alerts: "Alert Management",
+  certificate: "Certificate"
 };
 
 export function Breadcrumbs() {
@@ -103,3 +104,5 @@ export function Breadcrumbs() {
     </nav>
   );
 }
+
+    

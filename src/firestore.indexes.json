@@ -155,15 +155,6 @@
       ]
     },
     {
-      "collectionGroup": "userQuizAttempts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "courseId", "order": "ASCENDING" },
-        { "fieldPath": "completedAt", "order": "DESCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "communityPosts",
       "queryScope": "COLLECTION",
       "fields": [
@@ -180,3 +171,5 @@
   ],
   "fieldOverrides": []
 }
+
+    
