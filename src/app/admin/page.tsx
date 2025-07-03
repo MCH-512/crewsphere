@@ -5,7 +5,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardList, Library, GraduationCap, CheckSquare, BarChart2, PieChart as PieChartIcon, Compass, Plane } from "lucide-react";
+import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardList, Library, GraduationCap, CheckSquare, BarChart2, PieChart as PieChartIcon, Compass, Plane, BellRing } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -53,6 +53,7 @@ export default function AdminConsolePage() {
     documents: { value: null, isLoading: true, label: "Total Documents" } as Stat,
     courses: { value: null, isLoading: true, label: "Total Courses" } as Stat,
     quizzes: { value: null, isLoading: true, label: "Total Quizzes" } as Stat,
+    activeAlerts: { value: null, isLoading: true, label: "Active Alerts" } as Stat,
   });
 
   const [requestsChartData, setRequestsChartData] = React.useState<any[]>([]);
@@ -76,6 +77,7 @@ export default function AdminConsolePage() {
             documentsSnap,
             coursesSnap,
             quizzesSnap,
+            alertsSnap,
         ] = await Promise.all([
             getDocs(collection(db, "users")),
             getDocs(collection(db, "flights")),
@@ -85,6 +87,7 @@ export default function AdminConsolePage() {
             getDocs(collection(db, "documents")),
             getDocs(collection(db, "courses")),
             getDocs(collection(db, "quizzes")),
+            getDocs(query(collection(db, "alerts"), where("isActive", "==", true))),
         ]);
 
         const suggestions = suggestionsSnap.docs.map(doc => doc.data());
@@ -101,6 +104,7 @@ export default function AdminConsolePage() {
             documents: { value: documentsSnap.size, isLoading: false, label: "Total Documents" },
             courses: { value: coursesSnap.size, isLoading: false, label: "Total Courses" },
             quizzes: { value: quizzesSnap.size, isLoading: false, label: "Total Quizzes" },
+            activeAlerts: { value: alertsSnap.size, isLoading: false, label: "Active Alerts" },
         });
 
         // --- Process data for charts ---
@@ -166,6 +170,16 @@ export default function AdminConsolePage() {
       delay: 0.15
     },
     { 
+      icon: BellRing, 
+      title: "Alert Management", 
+      description: "Create and broadcast alerts to all or specific groups of users.", 
+      buttonText: "Manage Alerts", 
+      href: "/admin/alerts",
+      stat: stats.activeAlerts,
+      highlightWhen: (value) => value !== null && value > 0,
+      delay: 0.2
+    },
+    { 
       icon: ClipboardList, 
       title: "User Requests", 
       description: "Review and manage all user-submitted requests for leave, roster changes, etc.", 
@@ -173,7 +187,7 @@ export default function AdminConsolePage() {
       href: "/admin/user-requests",
       stat: stats.requests,
       highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.2
+      delay: 0.25
     },
      { 
       icon: FileSignature, 
@@ -183,7 +197,7 @@ export default function AdminConsolePage() {
       href: "/admin/purser-reports",
       stat: stats.reports,
       highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.25
+      delay: 0.3
     },
     { 
       icon: GraduationCap, 
@@ -192,7 +206,7 @@ export default function AdminConsolePage() {
       buttonText: "Manage Courses", 
       href: "/admin/courses",
       stat: stats.courses,
-      delay: 0.3
+      delay: 0.35
     },
     { 
       icon: CheckSquare, 
@@ -201,7 +215,7 @@ export default function AdminConsolePage() {
       buttonText: "Manage Quizzes", 
       href: "/admin/quizzes",
       stat: stats.quizzes,
-      delay: 0.35
+      delay: 0.4
     },
     { 
       icon: Library, 
@@ -210,7 +224,7 @@ export default function AdminConsolePage() {
       buttonText: "Manage Documents", 
       href: "/admin/documents",
       stat: stats.documents,
-      delay: 0.4
+      delay: 0.45
     },
     { 
       icon: MessageSquare, 
@@ -220,7 +234,7 @@ export default function AdminConsolePage() {
       href: "/admin/suggestions",
       stat: stats.suggestions,
       highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.45
+      delay: 0.5
     },
     { 
       icon: Settings, 
@@ -228,7 +242,7 @@ export default function AdminConsolePage() {
       description: "Configure application-wide settings and maintenance mode.", 
       buttonText: "Configure Settings", 
       href: "/admin/system-settings", 
-      delay: 0.5
+      delay: 0.55
     },
     { 
       icon: Activity, 
@@ -236,7 +250,7 @@ export default function AdminConsolePage() {
       description: "Review a detailed, chronological record of system activities and changes.", 
       buttonText: "View Logs", 
       href: "/admin/audit-logs", 
-      delay: 0.55
+      delay: 0.6
     },
   ];
 
@@ -258,7 +272,7 @@ export default function AdminConsolePage() {
         </Card>
       </AnimatedCard>
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {adminSections.map((section) => {
           const IconComponent = section.icon;
           const shouldHighlight = section.highlightWhen?.(section.stat?.value ?? null);

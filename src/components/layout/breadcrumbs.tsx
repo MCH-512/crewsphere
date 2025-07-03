@@ -51,6 +51,7 @@ const predefinedLabels: { [key: string]: string } = {
   "live-flight-tracker": "Live Flight Tracker",
   "ftl-calculator": "EASA FTL Calculator",
   "airport-directory": "Airport Directory",
+  alerts: "Alert Management",
 };
 
 export function Breadcrumbs() {

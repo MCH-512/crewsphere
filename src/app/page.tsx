@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { TodaysScheduleCard } from "@/components/features/todays-schedule";
+import { ActiveAlerts } from "@/components/features/active-alerts";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -37,6 +38,8 @@ export default function DashboardPage() {
           </CardHeader>
         </Card>
       </AnimatedCard>
+
+      <ActiveAlerts />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <AnimatedCard delay={0.1} className="lg:col-span-1">
