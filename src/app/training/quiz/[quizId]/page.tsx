@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, getDocs, orderBy, limit, addDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, AlertTriangle, ArrowLeft, CheckCircle, XCircle, FileQuestion, Star, Send } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowLeft, CheckCircle, XCircle, FileQuestion, Star, Send, Award } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { StoredQuestion } from "@/schemas/quiz-question-schema";
 import { StoredQuiz, StoredCertificateRule, StoredCourse } from "@/schemas/course-schema";
@@ -17,6 +17,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { logAuditEvent } from "@/lib/audit-logger";
+import Link from "next/link";
 
 type QuizState = 'instructions' | 'taking' | 'submitted';
 
@@ -37,6 +38,8 @@ export default function QuizPage() {
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [userAnswers, setUserAnswers] = React.useState<Record<string, string>>({}); // { questionId: selectedOption }
     const [score, setScore] = React.useState<number | null>(null);
+    const [newAttemptId, setNewAttemptId] = React.useState<string | null>(null);
+
 
     const fetchQuizDetails = React.useCallback(async () => {
         if (!quizId) return;
@@ -54,6 +57,7 @@ export default function QuizPage() {
             if (courseSnap.empty) throw new Error("Associated course not found.");
             const course = courseSnap.docs[0].data() as StoredCourse;
 
+            if (!course.certificateRuleId) throw new Error("Certification rules not defined for this course.");
             const certRuleRef = doc(db, "certificateRules", course.certificateRuleId);
             const certRuleSnap = await getDoc(certRuleRef);
             if (!certRuleSnap.exists()) throw new Error("Certification rules not found.");
@@ -92,7 +96,6 @@ export default function QuizPage() {
         });
         const calculatedScore = (correctAnswers / questions.length) * 100;
         setScore(calculatedScore);
-        setQuizState('submitted');
         
         const passed = calculatedScore >= certRule.passingThreshold;
 
@@ -121,13 +124,15 @@ export default function QuizPage() {
                 completedAt: serverTimestamp(),
                 answers: userAnswers,
             };
-            await addDoc(collection(db, "userQuizAttempts"), attemptData);
+            const newDocRef = await addDoc(collection(db, "userQuizAttempts"), attemptData);
+            setNewAttemptId(newDocRef.id);
 
             toast({
                 title: "Quiz Results Saved",
                 description: `Your score of ${calculatedScore.toFixed(2)}% has been recorded.`,
                 variant: passed ? "success" : "default",
             });
+            setQuizState('submitted');
 
         } catch (error) {
             console.error("Error saving quiz attempt:", error);
@@ -209,8 +214,15 @@ export default function QuizPage() {
                         <CardTitle className="text-3xl mt-4">{passed ? "Congratulations, You Passed!" : "Quiz Failed"}</CardTitle>
                         <CardDescription className={cn("text-lg", passed ? "text-green-700" : "text-destructive-foreground")}>Your score: <strong>{score.toFixed(2)}%</strong> (Required: {certRule.passingThreshold}%)</CardDescription>
                     </CardHeader>
-                    <CardFooter className="justify-center">
+                    <CardFooter className="justify-center gap-4">
                         <Button onClick={() => router.push('/training')}>Return to E-Learning Center</Button>
+                        {passed && newAttemptId && (
+                           <Button asChild>
+                               <Link href={`/training/certificate/${newAttemptId}`}>
+                                   <Award className="mr-2 h-4 w-4" /> View Certificate
+                               </Link>
+                           </Button>
+                        )}
                     </CardFooter>
                 </Card>
                 <Card>

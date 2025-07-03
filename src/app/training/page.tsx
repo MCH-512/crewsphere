@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Loader2, AlertTriangle, BookOpen, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { GraduationCap, Loader2, AlertTriangle, BookOpen, CheckCircle, XCircle, RefreshCw, Award } from "lucide-react";
 import { StoredCourse } from "@/schemas/course-schema";
 import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
 import Link from "next/link";
@@ -68,19 +68,28 @@ const CourseProgressCard = ({ course }: { course: CourseWithProgress }) => {
                         </div>
                     )}
 
-                    {status === 'passed' ? (
-                         <Button asChild variant="outline">
-                            <Link href={`/training/${course.id}`}><BookOpen className="mr-2 h-4 w-4" />Review Course</Link>
-                        </Button>
-                    ) : status === 'failed' ? (
-                         <Button asChild>
-                             <Link href={`/training/quiz/${course.quizId}`}><RefreshCw className="mr-2 h-4 w-4" />Retake Quiz</Link>
-                         </Button>
-                    ) : (
-                         <Button asChild>
-                            <Link href={`/training/${course.id}`}><BookOpen className="mr-2 h-4 w-4" />Start Course</Link>
-                        </Button>
-                    )}
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        {status === 'passed' && course.progress?.id ? (
+                            <>
+                                <Button asChild variant="outline" className="flex-1">
+                                    <Link href={`/training/${course.id}`}><BookOpen className="mr-2 h-4 w-4" />Review</Link>
+                                </Button>
+                                <Button asChild className="flex-1">
+                                    <Link href={`/training/certificate/${course.progress.id}`}>
+                                        <Award className="mr-2 h-4 w-4" />Certificate
+                                    </Link>
+                                </Button>
+                            </>
+                        ) : status === 'failed' ? (
+                             <Button asChild className="w-full">
+                                 <Link href={`/training/quiz/${course.quizId}`}><RefreshCw className="mr-2 h-4 w-4" />Retake Quiz</Link>
+                             </Button>
+                        ) : (
+                             <Button asChild className="w-full">
+                                <Link href={`/training/${course.id}`}><BookOpen className="mr-2 h-4 w-4" />Start Course</Link>
+                            </Button>
+                        )}
+                    </div>
                 </CardFooter>
             </Card>
         </AnimatedCard>
