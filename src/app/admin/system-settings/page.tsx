@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -36,17 +35,10 @@ import { logAuditEvent } from "@/lib/audit-logger";
 const systemSettingsSchema = z.object({
   appName: z.string().min(3, "App name must be at least 3 characters.").max(50, "App name cannot exceed 50 characters.").default("Express Airline Crew World"),
   maintenanceMode: z.boolean().default(false),
-  defaultBriefingModel: z.string().min(1, "Please select a default briefing model.").default("gemini-2.0-flash"),
   supportEmail: z.string().email("Invalid email address.").min(5, "Support email is required."),
 });
 
 type SystemSettingsFormValues = z.infer<typeof systemSettingsSchema>;
-
-const defaultBriefingModels = [
-    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash (Default)" },
-    { id: "gemini-pro", name: "Gemini Pro (Advanced)" },
-    { id: "text-bison", name: "Text Bison (Legacy)" },
-];
 
 const SETTINGS_DOC_ID = "appSettings";
 const SETTINGS_COLLECTION = "systemConfiguration";
@@ -62,7 +54,6 @@ export default function SystemSettingsPage() {
     defaultValues: {
       appName: "Express Airline Crew World",
       maintenanceMode: false,
-      defaultBriefingModel: "gemini-2.0-flash",
       supportEmail: "",
     },
   });
@@ -84,7 +75,6 @@ export default function SystemSettingsPage() {
                     form.reset({
                         appName: data.appName || "Express Airline Crew World",
                         maintenanceMode: data.maintenanceMode || false,
-                        defaultBriefingModel: data.defaultBriefingModel || "gemini-2.0-flash",
                         supportEmail: data.supportEmail || "",
                     });
                 }
@@ -168,16 +158,6 @@ export default function SystemSettingsPage() {
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
                     <div className="space-y-0.5"><FormLabel className="text-base">Maintenance Mode</FormLabel><FormDescription>Enable to temporarily restrict user access for maintenance.</FormDescription></div>
                     <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isSubmitting} /></FormControl>
-                  </FormItem>
-                )}/>
-                <FormField control={form.control} name="defaultBriefingModel" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Default Airport Briefing AI Model</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Select default AI model" /></SelectTrigger></FormControl>
-                      <SelectContent>{defaultBriefingModels.map(model => (<SelectItem key={model.id} value={model.id}>{model.name}</SelectItem>))}</SelectContent>
-                    </Select>
-                    <FormDescription>Choose the AI model used for generating airport briefings.</FormDescription><FormMessage />
                   </FormItem>
                 )}/>
                 <FormField control={form.control} name="supportEmail" render={({ field }) => (

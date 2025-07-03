@@ -32,9 +32,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   LayoutDashboard,
-  FileText,
-  CalendarDays,
-  GraduationCap,
   Settings,
   LogOut,
   Plane,
@@ -42,7 +39,6 @@ import {
   Moon,
   Sun,
   ServerCog,
-  SendHorizonal,
   LogIn,
   UserPlus,
   Loader2,
@@ -50,17 +46,15 @@ import {
   ClipboardCheck, 
   FilePlus,
   Users,
-  FileSignature,
-  Brain,
   Calculator,
   Lightbulb,
-  MessagesSquare,
   MessageSquare,
   Wrench,
   CheckSquare,
   Activity,
   HelpCircle,
   School,
+  GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context"; 
@@ -74,16 +68,11 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/my-alerts", label: "My Alerts", icon: Bell, id: "my-alerts-nav" },
 
-  // Learning & Reference
-  { href: "/documents", label: "Documents", icon: FileText },
-
   // Actions & Communication
   { href: "/requests", label: "My Requests", icon: Inbox },
-  { href: "/crew-community", label: "Crew Community", icon: MessagesSquare },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
   
   // Tools
-  { href: "/airport-briefings", label: "Airport Briefing", icon: Brain },
   { href: "/flight-duty-calculator", label: "Duty Calculator", icon: Calculator },
   { href: "/toolbox", label: "Toolbox", icon: Wrench },
   
@@ -182,7 +171,6 @@ function LayoutWithSidebar({
     { href: "/admin", label: "Admin Console", icon: ServerCog },
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/user-requests", label: "Requests", icon: ClipboardCheck },
-    { href: "/admin/documents", label: "Documents", icon: FilePlus },
     { href: "/admin/alerts", label: "Alerts", icon: Bell },
     { href: "/admin/courses", label: "Courses", icon: GraduationCap },
     { href: "/admin/training-sessions", label: "Sessions", icon: School },

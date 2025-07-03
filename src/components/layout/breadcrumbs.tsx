@@ -33,7 +33,6 @@ const predefinedLabels: { [key: string]: string } = {
   requests: "My Requests",
   "my-alerts": "My Alerts",
   "system-settings": "System Configuration",
-  "airport-briefings": "Airport Briefing",
   "flight-duty-calculator": "Duty Calculator",
   "suggestion-box": "Suggestion Box",
   suggestions: "Suggestion Box",
