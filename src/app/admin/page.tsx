@@ -60,6 +60,8 @@ export default function AdminConsolePage() {
   const [requestsChartData, setRequestsChartData] = React.useState<any[]>([]);
   const [suggestionsChartData, setSuggestionsChartData] = React.useState<any[]>([]);
   const [suggestionsChartConfig, setSuggestionsChartConfig] = React.useState<ChartConfig>({});
+  const [userRolesChartData, setUserRolesChartData] = React.useState<any[]>([]);
+  const [userRolesChartConfig, setUserRolesChartConfig] = React.useState<ChartConfig>({});
 
 
   const fetchDashboardData = React.useCallback(async () => {
@@ -143,6 +145,28 @@ export default function AdminConsolePage() {
             count: suggestionsByCategory[name],
             fill: `var(--color-${name})`
         })));
+        
+        // User roles distribution
+        const usersData = usersSnap.docs.map(doc => doc.data());
+        const rolesDistribution = usersData.reduce((acc, u) => {
+            const role = u.role || 'Other';
+            acc[role] = (acc[role] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const userRoles = Object.keys(rolesDistribution);
+        const uChartConfig = userRoles.reduce((acc, role, index) => {
+            acc[role] = { label: role.charAt(0).toUpperCase() + role.slice(1), color: `hsl(var(--chart-${(index % 5) + 1}))` };
+            return acc;
+        }, { count: { label: "Count" } } as ChartConfig);
+        setUserRolesChartConfig(uChartConfig);
+
+        setUserRolesChartData(userRoles.map((name) => ({
+            name: name.charAt(0).toUpperCase() + name.slice(1),
+            count: rolesDistribution[name],
+            fill: `var(--color-${name})`
+        })));
+
 
     } catch (error) {
         console.error(`Error fetching dashboard data:`, error);
@@ -346,7 +370,7 @@ export default function AdminConsolePage() {
       </div>
 
       {/* Charts Section */}
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
           <AnimatedCard delay={0.6}>
               <Card className="shadow-sm">
                   <CardHeader>
@@ -377,6 +401,23 @@ export default function AdminConsolePage() {
                           <PieChart>
                               <ChartTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
                               <Pie data={suggestionsChartData} dataKey="count" nameKey="name" labelLine={false} />
+                               <ChartLegend content={<ChartLegendContent nameKey="name" className="flex-wrap" />} />
+                          </PieChart>
+                      </ChartContainer>
+                  </CardContent>
+              </Card>
+          </AnimatedCard>
+          <AnimatedCard delay={0.7}>
+              <Card className="shadow-sm">
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary"/>User Role Distribution</CardTitle>
+                      <CardDescription>A breakdown of all user roles.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-center pb-0">
+                       <ChartContainer config={userRolesChartConfig} className="mx-auto aspect-square max-h-[300px]">
+                          <PieChart>
+                              <ChartTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
+                              <Pie data={userRolesChartData} dataKey="count" nameKey="name" labelLine={false} />
                                <ChartLegend content={<ChartLegendContent nameKey="name" className="flex-wrap" />} />
                           </PieChart>
                       </ChartContainer>
