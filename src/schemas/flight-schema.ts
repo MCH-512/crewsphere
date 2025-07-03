@@ -10,6 +10,8 @@ export const flightFormSchema = z.object({
   scheduledArrivalDateTimeUTC: z.string().refine((val) => val && !isNaN(Date.parse(val)), { message: "Invalid arrival date/time." }),
   aircraftType: z.string().min(3, "Aircraft type is required.").max(50),
   purserId: z.string().min(1, "A purser must be assigned."),
+  pilotIds: z.array(z.string()).optional(),
+  cabinCrewIds: z.array(z.string()).optional(),
 }).refine(data => new Date(data.scheduledArrivalDateTimeUTC) > new Date(data.scheduledDepartureDateTimeUTC), {
     message: "Arrival time must be after departure time.",
     path: ["scheduledArrivalDateTimeUTC"],
@@ -27,7 +29,9 @@ export interface StoredFlight {
   scheduledArrivalDateTimeUTC: string; // ISO 8601 string
   aircraftType: string;
   purserId: string; // UID of the assigned purser
-  purserActivityId?: string; // ID of the associated userActivity for the purser
+  pilotIds: string[];
+  cabinCrewIds: string[];
+  activityIds?: Record<string, string>; // Maps userId -> activityId
   purserReportSubmitted: boolean;
   purserReportId?: string;
   createdAt: Timestamp;

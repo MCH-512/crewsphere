@@ -5,7 +5,7 @@ import * as React from "react";
 import type { User as FirebaseUser } from "firebase/auth";
 import { auth, db, isConfigValid } from "@/lib/firebase"; 
 import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore"; // Import setDoc for user creation
 import { usePathname, useRouter } from "next/navigation";
 
 // Define a new User type that can include a role and other Firestore fields
@@ -52,46 +52,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const userDocRef = doc(db, "users", currentUser.uid);
             const userDocSnap = await getDoc(userDocRef);
 
-            let userRole: User['role'] = undefined;
-            let userFullName: string | undefined = undefined;
-            let userEmployeeId: string | undefined = undefined;
-            let userJoiningDate: string | null | undefined = undefined;
-            let firestoreDisplayName: string | undefined = undefined;
-
-
             if (userDocSnap.exists()) {
-              const userData = userDocSnap.data();
-              if (userData.role && ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'other'].includes(userData.role)) {
-                userRole = userData.role as User['role'];
-              } else if (userData.role === null) {
-                userRole = null;
-              }
-              userFullName = userData.fullName;
-              userEmployeeId = userData.employeeId;
-              userJoiningDate = userData.joiningDate; // Can be string, null, or undefined
-              firestoreDisplayName = userData.displayName;
+                const userData = userDocSnap.data();
+                const userRole = (userData.role && ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'other'].includes(userData.role)) ? userData.role : null;
+                const firestoreDisplayName = userData.displayName || currentUser.displayName || '';
+
+                const enhancedUser: User = {
+                  ...currentUser,
+                  email: currentUser.email || '', 
+                  displayName: firestoreDisplayName,
+                  role: userRole,
+                  fullName: userData.fullName,
+                  employeeId: userData.employeeId,
+                  joiningDate: userData.joiningDate,
+                };
+                setUser(enhancedUser);
+            } else {
+                // User exists in Auth but not in Firestore, create a basic profile
+                const basicProfile = {
+                    uid: currentUser.uid,
+                    email: currentUser.email || '',
+                    displayName: currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'New User'),
+                    role: 'other', // Default role
+                    createdAt: new Date(), // Use JS date, Firestore will convert
+                    accountStatus: 'active',
+                };
+                await setDoc(userDocRef, basicProfile);
+                const enhancedUser: User = { ...currentUser, ...basicProfile, email: currentUser.email || '' };
+                setUser(enhancedUser);
             }
-            
-            const enhancedUser: User = {
-              ...currentUser,
-              email: currentUser.email || '', 
-              displayName: firestoreDisplayName || currentUser.displayName || '', // Prioritize Firestore displayName
-              role: userRole,
-              fullName: userFullName,
-              employeeId: userEmployeeId,
-              joiningDate: userJoiningDate,
-            };
-            setUser(enhancedUser);
 
           } catch (firestoreError) {
-            console.error("Error fetching user details from Firestore:", firestoreError);
-            setError(firestoreError instanceof Error ? firestoreError : new Error("Error fetching user details"));
-            // Set user with Firebase Auth data if Firestore fetch fails
-            const basicUser: User = {
-              ...currentUser,
-              email: currentUser.email || '',
-              displayName: currentUser.displayName || '',
-            };
+            console.error("Error fetching or creating user details in Firestore:", firestoreError);
+            setError(firestoreError instanceof Error ? firestoreError : new Error("Error managing user profile"));
+            // Set user with Firebase Auth data as a fallback
+            const basicUser: User = { ...currentUser, email: currentUser.email || '', displayName: currentUser.displayName || '' };
             setUser(basicUser);
           }
         } else {
@@ -141,23 +136,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = { user, loading, error, logout };
 
-  // This part is tricky because of Next.js SSR and client-side navigation.
-  // We want to avoid rendering children if a redirect is imminent.
   if (loading) {
-    // During initial load, don't render children to avoid flash of incorrect content
-    // or rendering a protected page before auth state is confirmed.
     return null; 
   }
   
   const pathIsPublic = PUBLIC_PATHS.includes(pathname);
   if (!pathIsPublic && !user) {
-     // If not loading, not public, and no user, likely means redirecting to login.
-     // Returning null here avoids rendering children that might depend on 'user'.
      return null; 
   }
   if (pathIsPublic && user) {
-    // If not loading, on a public page, but user is logged in, likely redirecting to dashboard.
-    // Returning null avoids rendering login/signup page briefly.
     return null;
   }
 
