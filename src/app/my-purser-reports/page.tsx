@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -12,7 +11,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { FileText, Loader2, AlertTriangle, RefreshCw, Eye, Inbox } from "lucide-react";
+import { FileText, Loader2, AlertTriangle, RefreshCw, Eye, Inbox, Edit3 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { type StoredPurserReport } from "@/schemas/purser-report-schema";
@@ -162,7 +161,12 @@ export default function MyPurserReportsPage() {
                       <TableCell>{report.departureAirport} - {report.arrivalAirport}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button variant="ghost" size="sm" onClick={() => handleOpenViewDialog(report)}>
-                          <Eye className="mr-1 h-4 w-4" /> View Details
+                          <Eye className="mr-1 h-4 w-4" /> View
+                        </Button>
+                         <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/purser-reports/edit/${report.id}`}>
+                                <Edit3 className="mr-1 h-4 w-4" /> Edit
+                            </Link>
                         </Button>
                       </TableCell>
                     </TableRow>

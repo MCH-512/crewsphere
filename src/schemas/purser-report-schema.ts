@@ -42,6 +42,7 @@ export interface StoredPurserReportData extends PurserReportFormValues {
   userId: string;
   userEmail: string;
   createdAt: Timestamp;
+  updatedAt?: Timestamp;
   status: 'submitted' | 'reviewed';
 }
 
