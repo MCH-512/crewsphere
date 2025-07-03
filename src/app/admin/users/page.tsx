@@ -173,10 +173,10 @@ export default function AdminUsersPage() {
             if (!isNaN(dateObj.getTime())) { 
                 formJoiningDate = dateObj.toISOString().split('T')[0];
             } else {
-                console.warn(`Invalid joiningDate '\${userToEdit.joiningDate}' for user \${userToEdit.uid}. Resetting to empty.`);
+                console.warn(`Invalid joiningDate '${userToEdit.joiningDate}' for user ${userToEdit.uid}. Resetting to empty.`);
             }
         } catch (e) {
-            console.error(`Error parsing joiningDate '\${userToEdit.joiningDate}' for user \${userToEdit.uid}:`, e);
+            console.error(`Error parsing joiningDate '${userToEdit.joiningDate}' for user ${userToEdit.uid}:`, e);
         }
     }
 
@@ -239,7 +239,7 @@ export default function AdminUsersPage() {
             details: { email: data.email, role: newUserDocData.role, status: statusToSave },
         });
 
-        toast({ title: "User Created", description: `User \${data.email} created successfully with status: \${statusToSave}.` });
+        toast({ title: "User Created", description: `User ${data.email} created successfully with status: ${statusToSave}.` });
         fetchUsers();
         setIsManageUserDialogOpen(false);
       } catch (err: any) {
@@ -274,7 +274,7 @@ export default function AdminUsersPage() {
             details: { email: currentUserToManage.email, newRole: updates.role, newStatus: statusToSave },
         });
 
-        toast({ title: "User Updated", description: `\${currentUserToManage.email}'s information updated. Status: \${statusToSave}.` });
+        toast({ title: "User Updated", description: `${currentUserToManage.email}'s information updated. Status: ${statusToSave}.` });
         fetchUsers();
         setIsManageUserDialogOpen(false);
       } catch (err: any) {
@@ -349,7 +349,7 @@ export default function AdminUsersPage() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={fetchUsers} disabled={isLoading}>
-              <RefreshCw className={`mr-2 h-4 w-4 \${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh Users
             </Button>
             <Button onClick={handleOpenCreateUserDialog}>
@@ -422,7 +422,7 @@ export default function AdminUsersPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)}>
               <DialogHeader>
-                <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: \${currentUserToManage?.displayName || currentUserToManage?.email}`}</DialogTitle>
+                <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${currentUserToManage?.displayName || currentUserToManage?.email}`}</DialogTitle>
                 <DialogPrimitiveDescription>
                   {isCreateMode ? "Fill in the details for the new user." : "Modify the user's information below."}
                 </DialogPrimitiveDescription>
