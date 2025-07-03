@@ -44,7 +44,7 @@ const courseData = {
     ] as { questionText: string; options: string[], correctAnswer: string }[]
 };
 
-export async function seedInitialCourses() {
+export async function seedInitialCourses(): Promise<{ success: boolean; message: string; courseTitle?: string }> {
     if (!isConfigValid || !db) {
         const message = "Seeding failed. Firebase is not configured. Please check your .env file.";
         console.error(message);
@@ -56,7 +56,6 @@ export async function seedInitialCourses() {
     const existingCourse = await getDocs(q);
 
     if (!existingCourse.empty) {
-        console.log("Course already exists. Seeding skipped.");
         return { success: false, message: `Course "${courseData.title}" already exists. Seeding was skipped.` };
     }
 
@@ -114,7 +113,6 @@ export async function seedInitialCourses() {
     });
 
     await batch.commit();
-
-    console.log("Initial course seeded successfully.");
+    
     return { success: true, message: `Successfully seeded the course "${courseData.title}" and its ${courseData.questions.length} questions.`, courseTitle: courseData.title };
 }
