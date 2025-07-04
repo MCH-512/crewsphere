@@ -393,7 +393,7 @@ export default function AdminUsersPage() {
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={fetchUsers} disabled={isLoading} className="flex-1 sm:flex-auto">
-              <RefreshCw className="mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}" />
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             <Button onClick={handleOpenCreateUserDialog} className="flex-1 sm:flex-auto">

@@ -216,7 +216,7 @@ export default function AdminUserRequestsPage() {
       <div className="flex items-center gap-1">
         {label}
         {sortColumn === column && (
-          <ArrowUpDown className="h-3 w-3 ${sortDirection === 'desc' ? '' : 'rotate-180'}" />
+          <ArrowUpDown className={`h-3 w-3 ${sortDirection === 'desc' ? '' : 'rotate-180'}`} />
         )}
       </div>
     </TableHead>
@@ -256,7 +256,7 @@ export default function AdminUserRequestsPage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={fetchRequests} disabled={isLoading} className="w-full sm:w-auto">
-              <RefreshCw className="mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}" />
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </div>
