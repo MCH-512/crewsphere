@@ -42,6 +42,7 @@ import {
   Lightbulb,
   Wrench,
   Users,
+  ClipboardList,
   ClipboardCheck,
   MessageSquare,
   Activity,
