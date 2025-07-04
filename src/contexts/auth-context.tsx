@@ -13,7 +13,8 @@ export interface User extends FirebaseUser {
   role?: 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'other' | null;
   fullName?: string;
   employeeId?: string;
-  joiningDate?: string | null; // Firestore stores as string or null
+  joiningDate?: string | null;
+  accountStatus?: 'active' | 'inactive';
 }
 
 interface AuthContextType {
@@ -65,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   fullName: userData.fullName,
                   employeeId: userData.employeeId,
                   joiningDate: userData.joiningDate,
+                  accountStatus: userData.accountStatus,
                 };
                 setUser(enhancedUser);
             } else {

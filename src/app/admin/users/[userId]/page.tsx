@@ -148,7 +148,7 @@ export default function UserDetailPage() {
                         <AvatarFallback className="text-2xl">{user.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                        <CardTitle className="text-3xl font-headline">{user.displayName}</CardTitle>
+                        <CardTitle className="text-3xl font-headline">{user.fullName || user.displayName}</CardTitle>
                         <CardDescription>{user.email}</CardDescription>
                         <div className="flex flex-wrap items-center gap-2 mt-2">
                              <Badge variant="outline" className="capitalize">{user.role || "N/A"}</Badge>
