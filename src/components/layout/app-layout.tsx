@@ -56,6 +56,16 @@ import {
   BadgeAlert,
   NotebookPen,
   ShieldCheck,
+  Book,
+  Calculator,
+  CloudSun,
+  Globe,
+  Map,
+  Mic,
+  ScrollText,
+  ShieldAlert,
+  Waypoints,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -74,7 +84,23 @@ const navItems = [
   { href: "/requests", label: "My Requests", icon: Inbox },
   { href: "/purser-reports", label: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin'] },
   { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
-  { href: "/toolbox", label: "Toolbox", icon: Wrench },
+  {
+    href: "/toolbox",
+    label: "Toolbox",
+    icon: Wrench,
+    subItems: [
+      { href: "/toolbox/weather-decoder", label: "Weather Decoder", icon: CloudSun },
+      { href: "/toolbox/ftl-calculator", label: "FTL Calculator", icon: ShieldAlert },
+      { href: "/toolbox/flight-timeline", label: "Flight Timeline", icon: Waypoints },
+      { href: "/toolbox/live-flight-tracker", label: "Live Tracker", icon: Map },
+      { href: "/toolbox/airport-directory", label: "Airport Directory", icon: Globe },
+      { href: "/toolbox/converters", label: "Converters", icon: Calculator },
+      { href: "/toolbox/aeronautical-jargon", label: "Jargon Glossary", icon: MessagesSquare },
+      { href: "/toolbox/phonetic-alphabet", label: "Phonetic Alphabet", icon: Mic },
+      { href: "/toolbox/aviation-history", label: "Aviation History", icon: ScrollText },
+      { href: "/toolbox/guides", label: "Professional Guides", icon: Book },
+    ]
+  },
   { href: "/community-hub", label: "Community Hub", icon: Compass },
   { href: "/admin", label: "Admin Console", icon: ServerCog, roles: ['admin'] },
 ];
@@ -142,6 +168,56 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+const CollapsibleSidebarItem = ({ item, pathname }: { item: typeof navItems[number], pathname: string }) => {
+    const isSubActive = item.subItems?.some(sub => pathname.startsWith(sub.href)) ?? false;
+    const [isOpen, setIsOpen] = React.useState(isSubActive);
+  
+    React.useEffect(() => {
+      if (isSubActive) {
+        setIsOpen(true);
+      }
+    }, [isSubActive]);
+  
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          variant={isSubActive ? "active" : "border"}
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <item.icon className="w-5 h-5" />
+            <span>{item.label}</span>
+          </div>
+          <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+        </SidebarMenuButton>
+        {isOpen && (
+          <div className="ml-4 mt-1 border-l-2 border-sidebar-accent/50 pl-5 py-1">
+            <SidebarMenu>
+              {item.subItems?.map(subItem => (
+                <SidebarMenuItem key={subItem.href}>
+                  <Link href={subItem.href} passHref legacyBehavior>
+                    <SidebarMenuButton
+                      asChild
+                      variant={pathname.startsWith(subItem.href) ? "active" : "ghost"}
+                      tooltip={{ children: subItem.label, side: "right", align: "center" }}
+                      className="h-8 w-full justify-start"
+                    >
+                      <a>
+                        <subItem.icon className="w-4 h-4" />
+                        <span>{subItem.label}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </div>
+        )}
+      </SidebarMenuItem>
+    );
+}
+
 function LayoutWithSidebar({
   children,
   user,
@@ -192,6 +268,11 @@ function LayoutWithSidebar({
               if (item.roles && !item.roles.some((role: string) => user?.role === role)) {
                 return null;
               }
+
+              if (item.subItems) {
+                return <CollapsibleSidebarItem key={item.label} item={item} pathname={pathname} />;
+              }
+              
               const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
 
               return (
