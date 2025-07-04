@@ -45,6 +45,7 @@ import {
   ClipboardList,
   ClipboardCheck,
   MessageSquare,
+  MessagesSquare,
   Activity,
   FileSignature,
   Calendar,
