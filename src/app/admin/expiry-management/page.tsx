@@ -55,7 +55,15 @@ export default function AdminExpiryManagementPage() {
 
     const form = useForm<UserDocumentFormValues>({
         resolver: zodResolver(userDocumentFormSchema),
-        defaultValues: { notes: "" },
+        defaultValues: {
+            userId: "",
+            documentName: "",
+            documentType: undefined,
+            issueDate: "",
+            expiryDate: "",
+            notes: ""
+        },
+        mode: "onBlur",
     });
 
     const fetchPageData = React.useCallback(async () => {
