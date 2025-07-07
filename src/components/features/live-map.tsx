@@ -27,10 +27,8 @@ const ORIGIN_COUNTRY = 2;
 const LONGITUDE = 5;
 const LATITUDE = 6;
 const BARO_ALTITUDE = 7;
-const ON_GROUND = 8;
 const VELOCITY = 9;
 const TRUE_TRACK = 10;
-const GEO_ALTITUDE = 13;
 
 const LiveMap = () => {
     const [flights, setFlights] = React.useState<any[]>([]);
@@ -48,7 +46,7 @@ const LiveMap = () => {
             }
             const data = await response.json();
             const positionedFlights = data.states
-              .filter((s: any) => s[5] !== null && s[6] !== null)
+              .filter((s: any) => s[LONGITUDE] !== null && s[LATITUDE] !== null)
               .slice(0, 300); // Limit to 300 for performance
             setFlights(positionedFlights);
             setLastUpdated(new Date());
@@ -67,29 +65,34 @@ const LiveMap = () => {
 
     const planeIconSVG = renderToStaticMarkup(<Plane className="h-5 w-5 text-primary stroke-[2.5]" />);
 
-    if (error) {
-        return (
-            <div className="h-full bg-muted rounded-lg flex flex-col items-center justify-center text-destructive">
+    return (
+      <div className="h-full w-full relative">
+        {/* Controls Overlay */}
+        <div className="absolute top-2 right-2 z-[1000] bg-background/80 p-1.5 rounded-md flex items-center gap-2">
+           {lastUpdated && !isLoading && !error && <p className="text-xs text-muted-foreground">Updated: {lastUpdated.toLocaleTimeString()}</p>}
+           <Button variant="outline" size="sm" onClick={fetchFlights} disabled={isLoading}>
+                <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                {isLoading ? 'Refreshing...' : 'Refresh'}
+            </Button>
+        </div>
+
+        {/* Error Overlay */}
+        {error && (
+             <div className="absolute inset-0 z-[1000] bg-muted/80 rounded-lg flex flex-col items-center justify-center text-destructive backdrop-blur-sm">
                 <AlertTriangle className="h-10 w-10 mb-4"/>
                 <p className="font-semibold">Could not load flight data</p>
                 <p className="text-sm">{error}</p>
-                <Button variant="outline" onClick={fetchFlights} disabled={isLoading} className="mt-4">
-                    <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                    Retry
-                </Button>
             </div>
-        );
-    }
+        )}
 
-    return (
-      <div className="h-full w-full relative">
-        <div className="absolute top-2 right-2 z-10 bg-background/80 p-1.5 rounded-md flex items-center gap-2">
-           {lastUpdated && <p className="text-xs text-muted-foreground">Updated: {lastUpdated.toLocaleTimeString()}</p>}
-           <Button variant="outline" size="sm" onClick={fetchFlights} disabled={isLoading}>
-                <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                Refresh
-            </Button>
-        </div>
+        {/* Loading Overlay (only shown on initial load) */}
+        {isLoading && flights.length === 0 && (
+             <div className="absolute inset-0 z-[1000] bg-muted/80 rounded-lg flex flex-col items-center justify-center backdrop-blur-sm">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <p className="mt-2">Loading live flight data...</p>
+            </div>
+        )}
+
         <MapContainer 
           center={[40, 0]} 
           zoom={3} 
