@@ -44,3 +44,5 @@ export interface StoredFlight {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+    

@@ -17,7 +17,7 @@ const findUserRoleOnFlight = (flight: StoredFlight, userId: string): { role: str
     return null;
 };
 
-const updateCrewArray = (crewArray: string[], userToAdd: string, userToRemove: string): string[] => {
+const updateCrewArray = (crewArray: string[], userToRemove: string, userToAdd: string): string[] => {
     return crewArray.filter(id => id !== userToRemove).concat(userToAdd);
 };
 
@@ -48,29 +48,37 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
 
             // --- Update Flights ---
             const flight1Update: Partial<StoredFlight> = {
-                allCrewIds: updateCrewArray(flight1Data.allCrewIds, swapData.requestingUserId, swapData.initiatingUserId)
+                allCrewIds: updateCrewArray(flight1Data.allCrewIds, swapData.initiatingUserId, swapData.requestingUserId)
             };
             const flight2Update: Partial<StoredFlight> = {
-                allCrewIds: updateCrewArray(flight2Data.allCrewIds, swapData.initiatingUserId, swapData.requestingUserId)
+                allCrewIds: updateCrewArray(flight2Data.allCrewIds, swapData.requestingUserId, swapData.initiatingUserId)
             };
             
             if (user1Role.field === 'purserId') {
                 (flight1Update as any).purserId = swapData.requestingUserId;
                 (flight2Update as any).purserId = swapData.initiatingUserId;
             } else {
-                 (flight1Update as any)[user1Role.field] = updateCrewArray((flight1Data as any)[user1Role.field], swapData.requestingUserId, swapData.initiatingUserId);
-                 (flight2Update as any)[user2Role.field] = updateCrewArray((flight2Data as any)[user2Role.field], swapData.initiatingUserId, swapData.requestingUserId);
+                 (flight1Update as any)[user1Role.field] = updateCrewArray((flight1Data as any)[user1Role.field], swapData.initiatingUserId, swapData.requestingUserId);
+                 (flight2Update as any)[user2Role.field] = updateCrewArray((flight2Data as any)[user2Role.field], swapData.requestingUserId, swapData.initiatingUserId);
             }
-            transaction.update(flight1Ref, flight1Update);
-            transaction.update(flight2Ref, flight2Update);
-
+            
             // --- Update Activities ---
             const activity1Id = flight1Data.activityIds?.[swapData.initiatingUserId];
             const activity2Id = flight2Data.activityIds?.[swapData.requestingUserId];
 
+            const newActivityIdsF1 = { ...flight1Data.activityIds };
+            delete newActivityIdsF1[swapData.initiatingUserId];
+            newActivityIdsF1[swapData.requestingUserId] = activity2Id!;
+            flight1Update.activityIds = newActivityIdsF1;
+            
+            const newActivityIdsF2 = { ...flight2Data.activityIds };
+            delete newActivityIdsF2[swapData.requestingUserId];
+            newActivityIdsF2[swapData.initiatingUserId] = activity1Id!;
+            flight2Update.activityIds = newActivityIdsF2;
+
             if (activity1Id) {
                 const activity1Ref = doc(db, "userActivities", activity1Id);
-                transaction.update(activity1Ref, {
+                transaction.update(activity1Ref, { // This now belongs to user 1 but for flight 2
                     flightId: flight2Data.id,
                     flightNumber: flight2Data.flightNumber,
                     departureAirport: flight2Data.departureAirport,
@@ -81,7 +89,7 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             }
              if (activity2Id) {
                 const activity2Ref = doc(db, "userActivities", activity2Id);
-                transaction.update(activity2Ref, {
+                transaction.update(activity2Ref, { // This now belongs to user 2 but for flight 1
                     flightId: flight1Data.id,
                     flightNumber: flight1Data.flightNumber,
                     departureAirport: flight1Data.departureAirport,
@@ -90,6 +98,9 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
                     comments: `Flight ${flight1Data.flightNumber} from ${flight1Data.departureAirport} to ${flight1Data.arrivalAirport}`,
                 });
             }
+            
+            transaction.update(flight1Ref, flight1Update);
+            transaction.update(flight2Ref, flight2Update);
 
             // --- Update Swap Request ---
             transaction.update(swapRef, {
@@ -131,3 +142,5 @@ export async function rejectFlightSwap(swapId: string, adminId: string, adminEma
         entityId: swapId, details: { notes }
     });
 }
+
+    

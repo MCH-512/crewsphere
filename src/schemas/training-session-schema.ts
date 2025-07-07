@@ -19,3 +19,5 @@ export interface StoredTrainingSession extends TrainingSessionFormValues {
   updatedAt: Timestamp;
   activityIds?: Record<string, string>; // Maps userId -> activityId
 }
+
+    
