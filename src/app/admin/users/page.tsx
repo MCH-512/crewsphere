@@ -6,10 +6,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription as UiFormDescription } from "@/components/ui/form"; 
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"; 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogPrimitiveDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch"; 
@@ -20,14 +20,10 @@ import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc,
 import { useRouter } from "next/navigation";
 import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye, ArrowUpDown } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-import { Badge, badgeVariants } from "@/components/ui/badge"; 
+import { Badge } from "@/components/ui/badge"; 
 import { format, parseISO } from "date-fns"; 
-import type { VariantProps as CvaVariantProps } from "class-variance-authority";
 import { logAuditEvent } from "@/lib/audit-logger";
 import Link from 'next/link';
-
-type BadgeCvaVariantProps = CvaVariantProps<typeof badgeVariants>;
 
 type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'stagiaire' | 'other';
 type AccountStatus = 'active' | 'inactive';
@@ -290,7 +286,7 @@ export default function AdminUsersPage() {
                     actionType: "CREATE_USER",
                     entityType: "USER",
                     entityId: newUid,
-                    details: { email: data.email, role: data.role },
+                    details: { email: data.email, role: data.role, displayName: data.displayName },
                 });
 
                 toast({ title: "User Created", description: `User ${data.email} has been created.` });
@@ -329,7 +325,7 @@ export default function AdminUsersPage() {
         }
     };
 
-  const getRoleBadgeVariant = (role?: SpecificRole | null): BadgeCvaVariantProps["variant"] => {
+  const getRoleBadgeVariant = (role?: SpecificRole | null) => {
     switch (role) {
       case "admin": return "destructive";
       case "purser": return "default"; 
@@ -342,7 +338,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  const getStatusBadgeVariant = (status?: AccountStatus | null): BadgeCvaVariantProps["variant"] => {
+  const getStatusBadgeVariant = (status?: AccountStatus | null) => {
     switch (status) {
         case "active": return "success";
         case "inactive": return "destructive";
@@ -505,9 +501,9 @@ export default function AdminUsersPage() {
             <form onSubmit={form.handleSubmit(handleFormSubmit)}>
               <DialogHeader>
                 <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${currentUserToManage?.displayName || currentUserToManage?.email}`}</DialogTitle>
-                <DialogPrimitiveDescription>
+                <DialogDescription>
                   {isCreateMode ? "Fill in the details for the new user." : "Modify the user's information below."}
-                </DialogPrimitiveDescription>
+                </DialogDescription>
               </DialogHeader>
               <div className="py-4 space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 <FormField
@@ -562,7 +558,7 @@ export default function AdminUsersPage() {
                       <FormControl>
                         <Input placeholder="e.g., Johnathan Doe" {...field} />
                       </FormControl>
-                       <UiFormDescription>The user's full legal name.</UiFormDescription>
+                       <FormDescription>The user's full legal name.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -576,7 +572,7 @@ export default function AdminUsersPage() {
                       <FormControl>
                         <Input placeholder="e.g., John D." {...field} />
                       </FormControl>
-                      <UiFormDescription>This name will be shown publicly and in greetings.</UiFormDescription>
+                      <FormDescription>This name will be shown publicly and in greetings.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -590,7 +586,7 @@ export default function AdminUsersPage() {
                       <FormControl>
                         <Input placeholder="e.g., EMP12345" {...field} />
                       </FormControl>
-                      <UiFormDescription>Unique company identifier for the employee.</UiFormDescription>
+                      <FormDescription>Unique company identifier for the employee.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -604,7 +600,7 @@ export default function AdminUsersPage() {
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
-                      <UiFormDescription>Optional. When the user joined the company.</UiFormDescription>
+                      <FormDescription>Optional. When the user joined the company.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -631,7 +627,7 @@ export default function AdminUsersPage() {
                             <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
                             </SelectContent>
                         </Select>
-                        <UiFormDescription>Assign a system role or leave as default for standard user permissions.</UiFormDescription>
+                        <FormDescription>Assign a system role or leave as default for standard user permissions.</FormDescription>
                         <FormMessage />
                         </FormItem>
                     )}
@@ -651,11 +647,11 @@ export default function AdminUsersPage() {
                           />
                         </FormControl>
                         {field.value ? <Power className="h-5 w-5 text-success" /> : <PowerOff className="h-5 w-5 text-destructive" />}
-                        <span className={cn("font-medium", field.value ? "text-success" : "text-destructive")}>
+                        <span className={field.value ? "font-medium text-success" : "font-medium text-destructive"}>
                           {field.value ? "Active" : "Inactive"}
                         </span>
                       </div>
-                      <UiFormDescription>Controls if the user account is active or inactive in the application.</UiFormDescription>
+                      <FormDescription>Controls if the user account is active or inactive in the application.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
