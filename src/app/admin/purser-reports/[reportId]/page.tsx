@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, HeartPulse, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Edit, Save, Sparkles } from "lucide-react";
+import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, HeartPulse, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Edit, Save, Sparkles, Users } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { StoredPurserReport, optionalReportSections } from "@/schemas/purser-report-schema";
 import { Separator } from "@/components/ui/separator";
@@ -120,6 +120,7 @@ export default function PurserReportDetailPage() {
         try {
             const reportContent = [
                 `Flight Summary: ${report.generalFlightSummary}`,
+                report.crewNotes && `Crew Notes: ${report.crewNotes}`,
                 report.briefingDetails && `Briefing Details: ${report.briefingDetails}`,
                 report.crewTaskDistribution && `Crew Task Distribution: ${report.crewTaskDistribution}`,
                 report.cateringDetails && `Catering & Service Details: ${report.cateringDetails}`,
@@ -170,7 +171,7 @@ export default function PurserReportDetailPage() {
 
     const SectionDisplay = ({ name }: { name: keyof StoredPurserReport}) => {
         const config = optionalReportSections.find(s => s.name === name);
-        const value = report[name];
+        const value = report[name as keyof typeof report];
         if (!config || !value) return null;
         const Icon = config.icon;
         return (
@@ -289,9 +290,15 @@ export default function PurserReportDetailPage() {
                 </CardContent>
             </Card>
              <Card>
-                <CardHeader><CardTitle className="text-lg">Crew on Duty</CardTitle></CardHeader>
-                <CardContent>
-                    <p className="text-sm whitespace-pre-wrap text-muted-foreground">{report.crewMembers}</p>
+                <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Users />Crew on Duty</CardTitle></CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                   {report.crewRoster?.map(member => (
+                    <div key={member.uid} className="flex justify-between">
+                        <span>{member.name}</span>
+                        <Badge variant="secondary" className="capitalize">{member.role}</Badge>
+                    </div>
+                   ))}
+                   {report.crewNotes && <p className="text-xs text-muted-foreground pt-2 border-t mt-2"><strong>Notes:</strong> {report.crewNotes}</p>}
                 </CardContent>
             </Card>
         </div>
@@ -307,7 +314,7 @@ export default function PurserReportDetailPage() {
             <CardHeader><CardTitle className="text-lg">Detailed Observations</CardTitle></CardHeader>
             <CardContent className="space-y-4">
                 {optionalReportSections.map(section => <SectionDisplay key={section.name} name={section.name}/>)}
-                {optionalReportSections.every(s => !report[s.name]) && <p className="text-muted-foreground text-sm">No optional sections were filled out for this report.</p>}
+                {optionalReportSections.every(s => !report[s.name as keyof typeof report]) && <p className="text-muted-foreground text-sm">No optional sections were filled out for this report.</p>}
             </CardContent>
         </Card>
         

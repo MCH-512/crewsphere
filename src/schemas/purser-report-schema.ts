@@ -37,7 +37,8 @@ export const purserReportFormSchema = z.object({
   
   // User-filled fields
   passengerLoad: passengerLoadSchema,
-  crewMembers: z.string().min(10, "Please list the crew members on duty (min 10 characters)."),
+  confirmedCrewIds: z.array(z.string()).min(1, "Please confirm at least one crew member."),
+  crewNotes: z.string().max(500, "Crew notes cannot exceed 500 characters.").optional(),
   generalFlightSummary: z.string().min(20, "Please provide a summary of at least 20 characters."),
 
   // Optional sections
@@ -56,10 +57,11 @@ export const purserReportFormSchema = z.object({
 
 export type PurserReportFormValues = z.infer<typeof purserReportFormSchema>;
 
-export interface StoredPurserReport extends PurserReportFormValues {
+export interface StoredPurserReport extends Omit<PurserReportFormValues, 'confirmedCrewIds'> {
   id: string;
   userId: string;
   userEmail: string;
+  crewRoster: { uid: string, name: string, role: string }[];
   createdAt: Timestamp;
   status: 'submitted' | 'under-review' | 'closed';
   adminNotes?: string;

@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileSignature, Loader2, Send, PlusCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, doc, getDoc, writeBatch, serverTimestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
@@ -19,6 +19,8 @@ import { format, parseISO } from "date-fns";
 import { getAirportByCode } from "@/services/airport-service";
 import { Separator } from "@/components/ui/separator";
 import { logAuditEvent } from "@/lib/audit-logger";
+import { type StoredFlight } from "@/schemas/flight-schema";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface FlightForReport {
   id: string;
@@ -43,13 +45,15 @@ export default function SubmitPurserReportPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [flightData, setFlightData] = React.useState<FlightForReport | null>(null);
+  const [crewMembers, setCrewMembers] = React.useState<User[]>([]);
   const [visibleSections, setVisibleSections] = React.useState<Set<OptionalSectionName>>(new Set());
 
   const form = useForm<PurserReportFormValues>({
     resolver: zodResolver(purserReportFormSchema),
     defaultValues: {
       passengerLoad: { total: 0, adults: 0, infants: 0 },
-      crewMembers: "",
+      confirmedCrewIds: [],
+      crewNotes: "",
       generalFlightSummary: "",
     },
     mode: "onChange",
@@ -86,22 +90,38 @@ export default function SubmitPurserReportPage() {
         return;
       }
       
-      const data = flightSnap.data();
-      const depAirportInfo = await getAirportByCode(data.departureAirport);
-      const arrAirportInfo = await getAirportByCode(data.arrivalAirport);
+      const flight = flightSnap.data() as StoredFlight;
+      const depAirportInfo = await getAirportByCode(flight.departureAirport);
+      const arrAirportInfo = await getAirportByCode(flight.arrivalAirport);
       
       const loadedFlightData: FlightForReport = {
-        id: flightSnap.id, flightNumber: data.flightNumber,
-        departureAirport: data.departureAirport, departureAirportIATA: depAirportInfo?.iata,
-        arrivalAirport: data.arrivalAirport, arrivalAirportIATA: arrAirportInfo?.iata,
-        scheduledDepartureDateTimeUTC: data.scheduledDepartureDateTimeUTC, aircraftType: data.aircraftType,
+        id: flightSnap.id, flightNumber: flight.flightNumber,
+        departureAirport: flight.departureAirport, departureAirportIATA: depAirportInfo?.iata,
+        arrivalAirport: flight.arrivalAirport, arrivalAirportIATA: arrAirportInfo?.iata,
+        scheduledDepartureDateTimeUTC: flight.scheduledDepartureDateTimeUTC, aircraftType: flight.aircraftType,
       };
 
       setFlightData(loadedFlightData);
+
+      // Fetch crew details
+      if (flight.allCrewIds && flight.allCrewIds.length > 0) {
+        const crewPromises = flight.allCrewIds.map(uid => getDoc(doc(db, "users", uid)));
+        const crewDocs = await Promise.all(crewPromises);
+        const fetchedCrew = crewDocs
+            .map(snap => snap.exists() ? { uid: snap.id, ...snap.data() } as User : null)
+            .filter((c): c is User => c !== null);
+        setCrewMembers(fetchedCrew);
+        
+        form.setValue('confirmedCrewIds', fetchedCrew.map(c => c.uid));
+      }
+
       form.reset({
         flightId: loadedFlightData.id, flightNumber: loadedFlightData.flightNumber, flightDate: loadedFlightData.scheduledDepartureDateTimeUTC,
         departureAirport: loadedFlightData.departureAirport, arrivalAirport: loadedFlightData.arrivalAirport, aircraftTypeRegistration: loadedFlightData.aircraftType,
-        passengerLoad: { total: 0, adults: 0, infants: 0 }, crewMembers: "", generalFlightSummary: "",
+        passengerLoad: { total: 0, adults: 0, infants: 0 },
+        confirmedCrewIds: flight.allCrewIds || [],
+        crewNotes: "",
+        generalFlightSummary: "",
       });
       setIsLoading(false);
     };
@@ -115,7 +135,20 @@ export default function SubmitPurserReportPage() {
     const batch = writeBatch(db);
     try {
       const reportRef = doc(collection(db, "purserReports"));
-      const reportData = { ...data, userId: user.uid, userEmail: user.email, createdAt: serverTimestamp(), status: 'submitted', adminNotes: '' };
+      
+      const confirmedCrewDetails = crewMembers.filter(c => data.confirmedCrewIds.includes(c.uid))
+          .map(c => ({ uid: c.uid, name: c.fullName || c.displayName, role: c.role || 'N/A' }));
+
+      const reportData = { 
+        ...data, 
+        userId: user.uid, 
+        userEmail: user.email, 
+        crewRoster: confirmedCrewDetails,
+        createdAt: serverTimestamp(), 
+        status: 'submitted', 
+        adminNotes: '' 
+      };
+
       batch.set(reportRef, reportData);
 
       const flightRef = doc(db, "flights", data.flightId);
@@ -155,7 +188,65 @@ export default function SubmitPurserReportPage() {
               <FormField control={form.control} name="passengerLoad.adults" render={({ field }) => (<FormItem><FormLabel>Adults</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="passengerLoad.infants" render={({ field }) => (<FormItem><FormLabel>Infants</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl><FormMessage /></FormItem>)} />
             </div>
-            <FormField control={form.control} name="crewMembers" render={({ field }) => (<FormItem><FormLabel>Crew Members on Duty*</FormLabel><FormControl><Textarea placeholder="List all crew members and their roles, e.g., John Doe (Captain), Jane Smith (First Officer), Alice Williams (Purser), Bob Brown (R1)..." {...field} /></FormControl><FormDescription>Please list names and roles.</FormDescription><FormMessage /></FormItem>)} />
+             <FormField
+                control={form.control}
+                name="confirmedCrewIds"
+                render={() => (
+                    <FormItem>
+                    <FormLabel>Confirm Crew on Duty*</FormLabel>
+                    <FormDescription>Uncheck any crew member who was not on this flight.</FormDescription>
+                    <div className="space-y-2 rounded-md border p-4 max-h-60 overflow-y-auto">
+                        {crewMembers.map((member) => (
+                        <FormField
+                            key={member.uid}
+                            control={form.control}
+                            name="confirmedCrewIds"
+                            render={({ field }) => {
+                            return (
+                                <FormItem
+                                key={member.uid}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                                >
+                                <FormControl>
+                                    <Checkbox
+                                    checked={field.value?.includes(member.uid)}
+                                    onCheckedChange={(checked) => {
+                                        return checked
+                                        ? field.onChange([...(field.value || []), member.uid])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                                (value) => value !== member.uid
+                                            )
+                                            )
+                                    }}
+                                    />
+                                </FormControl>
+                                <FormLabel className="font-normal flex items-center gap-2">
+                                     {member.fullName || member.displayName} ({member.email})
+                                    <span className="text-muted-foreground capitalize text-xs p-1 bg-muted rounded-sm"> - {member.role}</span>
+                                </FormLabel>
+                                </FormItem>
+                            )
+                            }}
+                        />
+                        ))}
+                    </div>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+             <FormField
+                control={form.control}
+                name="crewNotes"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Crew Notes (Optional)</FormLabel>
+                    <FormControl>
+                        <Textarea placeholder="Note any last-minute crew changes or other roster-related observations..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )} />
           </CardContent>
         </Card>
         
