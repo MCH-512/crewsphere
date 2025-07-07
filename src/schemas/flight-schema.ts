@@ -37,7 +37,7 @@ export interface StoredFlight {
   cabinCrewIds: string[];
   instructorIds?: string[];
   traineeIds?: string[];
-  allCrewIds?: string[];
+  allCrewIds: string[];
   activityIds?: Record<string, string>; // Maps userId -> activityId
   purserReportSubmitted: boolean;
   purserReportId?: string;

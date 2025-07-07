@@ -61,6 +61,9 @@ export default function MyLogbookPage() {
                     if (data.purserId === user.uid) userRoleOnFlight = "Purser";
                     else if (data.pilotIds?.includes(user.uid)) userRoleOnFlight = "Pilot";
                     else if (data.cabinCrewIds?.includes(user.uid)) userRoleOnFlight = "Cabin Crew";
+                    else if (data.instructorIds?.includes(user.uid)) userRoleOnFlight = "Instructor";
+                    else if (data.traineeIds?.includes(user.uid)) userRoleOnFlight = "Trainee";
+
 
                     return { ...data, flightDurationMinutes, userRoleOnFlight };
                 });
