@@ -10,6 +10,8 @@ export const flightSwapStatuses = [
     "cancelled", // The initiating user cancelled their post.
 ] as const;
 
+export type FlightSwapStatus = typeof flightSwapStatuses[number];
+
 
 // This is the structure for a document in the 'flightSwaps' collection
 export interface StoredFlightSwap {
@@ -19,7 +21,6 @@ export interface StoredFlightSwap {
   initiatingUserId: string;
   initiatingUserEmail: string;
   initiatingFlightId: string;
-  // Denormalized data for easy display of the offered flight
   flightInfo: {
       flightNumber: string;
       departureAirport: string;
@@ -30,13 +31,19 @@ export interface StoredFlightSwap {
   // Requesting User/Flight (the one proposed in exchange)
   requestingUserId?: string;
   requestingUserEmail?: string;
-  requestedFlightId?: string;
+  requestingFlightId?: string;
+  requestingFlightInfo?: {
+      flightNumber: string;
+      departureAirport: string;
+      arrivalAirport: string;
+      scheduledDepartureDateTimeUTC: string;
+  };
   
-  status: typeof flightSwapStatuses[number];
+  status: FlightSwapStatus;
   
   // Timestamps
   createdAt: Timestamp;
-  updatedAt?: Timestamp; // When status changes
+  updatedAt?: Timestamp;
   
   // Admin fields
   resolvedBy?: string; // Admin UID

@@ -20,7 +20,8 @@ const formatSegment = (segment: string): string => {
 const predefinedLabels: { [key: string]: string } = {
   admin: "Admin Console",
   flights: "Flight Management",
-  "flight-swap": "Flight Swap",
+  "flight-swap": "Swap Board",
+  "my-swaps": "My Swaps",
   users: "User Management",
   create: "Create",
   edit: "Edit",

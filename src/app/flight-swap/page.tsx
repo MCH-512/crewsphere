@@ -4,11 +4,11 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, addDoc, serverTimestamp, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ArrowRightLeft, Loader2, PlusCircle, Handshake, Plane, Info } from "lucide-react";
+import { ArrowRightLeft, Loader2, PlusCircle, Handshake, Plane, Info, ListChecks } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { StoredFlight } from "@/schemas/flight-schema";
@@ -18,6 +18,7 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getAirportByCode } from "@/services/airport-service";
+import { requestFlightSwap } from "@/services/flight-swap-service";
 
 interface FlightForSwap extends StoredFlight {
     departureAirportIATA?: string;
@@ -34,6 +35,7 @@ const PostSwapDialog = ({ open, onOpenChange, userFlights, onPost }: { open: boo
         await onPost(selectedFlightId);
         setIsPosting(false);
         onOpenChange(false);
+        setSelectedFlightId(null);
     };
 
     return (
@@ -68,6 +70,52 @@ const PostSwapDialog = ({ open, onOpenChange, userFlights, onPost }: { open: boo
     );
 };
 
+const RequestSwapDialog = ({ open, onOpenChange, userFlights, targetSwap, onConfirm }: { open: boolean, onOpenChange: (open: boolean) => void, userFlights: FlightForSwap[], targetSwap: StoredFlightSwap | null, onConfirm: (requestingFlightId: string) => Promise<void> }) => {
+    const [selectedFlightId, setSelectedFlightId] = React.useState<string | null>(null);
+    const [isConfirming, setIsConfirming] = React.useState(false);
+
+    const handleConfirm = async () => {
+        if (!selectedFlightId) return;
+        setIsConfirming(true);
+        await onConfirm(selectedFlightId);
+        setIsConfirming(false);
+        onOpenChange(false);
+        setSelectedFlightId(null);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Request Swap for Flight {targetSwap?.flightInfo.flightNumber}</DialogTitle>
+                    <DialogDescription>Select one of your flights to offer in exchange.</DialogDescription>
+                </DialogHeader>
+                 <div className="py-4 space-y-3 max-h-[50vh] overflow-y-auto">
+                    {userFlights.length > 0 ? userFlights.map(flight => (
+                        <Card key={flight.id} className={`cursor-pointer transition-all ${selectedFlightId === flight.id ? 'border-primary ring-2 ring-primary' : 'hover:border-primary/50'}`} onClick={() => setSelectedFlightId(flight.id)}>
+                             <CardContent className="p-3">
+                                <p className="font-semibold">Flight {flight.flightNumber}</p>
+                                <p className="text-sm text-muted-foreground">{flight.departureAirportIATA} → {flight.arrivalAirportIATA}</p>
+                                <p className="text-xs text-muted-foreground">{format(parseISO(flight.scheduledDepartureDateTimeUTC), "PPPp")}</p>
+                            </CardContent>
+                        </Card>
+                    )) : (
+                        <p className="text-center text-muted-foreground py-6">You have no available flights to offer for a swap.</p>
+                    )}
+                </div>
+                <DialogFooter>
+                     <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                    <Button onClick={handleConfirm} disabled={!selectedFlightId || isConfirming}>
+                        {isConfirming && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                        Confirm Swap Request
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+
 export default function FlightSwapPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
@@ -76,6 +124,9 @@ export default function FlightSwapPage() {
     const [userFlights, setUserFlights] = React.useState<FlightForSwap[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isPostDialogOpen, setIsPostDialogOpen] = React.useState(false);
+    
+    const [isRequestDialogOpen, setIsRequestDialogOpen] = React.useState(false);
+    const [targetSwap, setTargetSwap] = React.useState<StoredFlightSwap | null>(null);
 
     const fetchData = React.useCallback(async () => {
         if (!user) return;
@@ -85,14 +136,14 @@ export default function FlightSwapPage() {
             const swapsQuery = query(
                 collection(db, "flightSwaps"),
                 where("status", "==", "posted"),
-                where("initiatingUserId", "!=", user.uid),
-                orderBy("initiatingUserId"),
                 orderBy("createdAt", "desc")
             );
             const swapsSnapshot = await getDocs(swapsQuery);
-            setAvailableSwaps(swapsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredFlightSwap)));
+            const allPostedSwaps = swapsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredFlightSwap));
+            // Client-side filter to exclude user's own posts
+            setAvailableSwaps(allPostedSwaps.filter(swap => swap.initiatingUserId !== user.uid));
 
-            // Fetch user's upcoming flights to allow them to post one
+            // Fetch user's upcoming flights to allow them to post one or request a swap
             const now = new Date().toISOString();
             const flightsQuery = query(
                 collection(db, "flights"),
@@ -101,10 +152,10 @@ export default function FlightSwapPage() {
                 orderBy("scheduledDepartureDateTimeUTC", "asc")
             );
             const flightsSnapshot = await getDocs(flightsQuery);
-            const activeSwapFlightIds = availableSwaps.map(s => s.initiatingFlightId);
+            const activeSwapFlightIds = allPostedSwaps.map(s => s.initiatingFlightId);
             const eligibleFlights = await Promise.all(
                 flightsSnapshot.docs
-                    .filter(doc => !activeSwapFlightIds.includes(doc.id))
+                    .filter(doc => !activeSwapFlightIds.includes(doc.id)) // Exclude flights already posted for swap
                     .map(async doc => {
                          const data = doc.data() as StoredFlight;
                          const [depAirport, arrAirport] = await Promise.all([
@@ -127,7 +178,7 @@ export default function FlightSwapPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [user, toast, availableSwaps]);
+    }, [user, toast]);
 
     React.useEffect(() => {
         if (authLoading) return;
@@ -161,10 +212,32 @@ export default function FlightSwapPage() {
                 createdAt: serverTimestamp(),
             });
             toast({ title: "Success", description: `Flight ${flightToPost.flightNumber} has been posted for swapping.` });
-            fetchData(); // Refresh all data
+            fetchData();
         } catch (error) {
             console.error("Error posting flight for swap:", error);
             toast({ title: "Post Failed", description: "Could not post your flight for swapping.", variant: "destructive" });
+        }
+    };
+    
+    const handleOpenRequestDialog = (swap: StoredFlightSwap) => {
+        setTargetSwap(swap);
+        setIsRequestDialogOpen(true);
+    };
+
+    const handleConfirmRequest = async (requestingFlightId: string) => {
+        if (!user || !targetSwap) return;
+        const requestingFlight = userFlights.find(f => f.id === requestingFlightId);
+        if (!requestingFlight) {
+            toast({ title: "Error", description: "The flight you offered could not be found.", variant: "destructive"});
+            return;
+        }
+
+        try {
+            await requestFlightSwap(targetSwap.id, requestingFlight, user);
+            toast({ title: "Request Sent", description: "Your swap request has been sent for approval." });
+            fetchData();
+        } catch (error: any) {
+            toast({ title: "Request Failed", description: error.message, variant: "destructive" });
         }
     };
     
@@ -179,16 +252,21 @@ export default function FlightSwapPage() {
                     <div>
                         <CardTitle className="text-2xl font-headline flex items-center">
                             <ArrowRightLeft className="mr-3 h-7 w-7 text-primary" />
-                            Flight Swap Board
+                            Bourse d'Échange
                         </CardTitle>
                         <CardDescription>
                             Browse available flights to swap or post one of your own.
                         </CardDescription>
                     </div>
-                    <Button onClick={() => setIsPostDialogOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Post a Flight
-                    </Button>
+                     <div className="flex gap-2">
+                        <Button asChild variant="outline">
+                            <Link href="/my-swaps"><ListChecks className="mr-2 h-4 w-4"/>My Swaps</Link>
+                        </Button>
+                        <Button onClick={() => setIsPostDialogOpen(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Post a Flight
+                        </Button>
+                    </div>
                 </CardHeader>
             </Card>
 
@@ -196,7 +274,7 @@ export default function FlightSwapPage() {
                 <Info className="h-4 w-4"/>
                 <AlertTitle>How it works</AlertTitle>
                 <AlertDescription>
-                   This board shows flights other crew members want to swap. Requesting a swap and admin approval will be available soon. All swaps are subject to final approval by administration.
+                   This board shows flights other crew members want to swap. Requesting a swap will send it to administration for approval.
                 </AlertDescription>
             </Alert>
             
@@ -217,9 +295,9 @@ export default function FlightSwapPage() {
                                 <p className="text-sm text-muted-foreground">{format(parseISO(swap.flightInfo.scheduledDepartureDateTimeUTC), "EEEE, PPP 'at' HH:mm")} UTC</p>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full" disabled>
+                                <Button className="w-full" onClick={() => handleOpenRequestDialog(swap)}>
                                     <Handshake className="mr-2 h-4 w-4" />
-                                    Request Swap (Coming Soon)
+                                    Request Swap
                                 </Button>
                             </CardFooter>
                         </Card>
@@ -240,7 +318,13 @@ export default function FlightSwapPage() {
                 userFlights={userFlights}
                 onPost={handlePostSwap}
             />
+            <RequestSwapDialog
+                open={isRequestDialogOpen}
+                onOpenChange={setIsRequestDialogOpen}
+                userFlights={userFlights}
+                targetSwap={targetSwap}
+                onConfirm={handleConfirmRequest}
+            />
         </div>
     );
 }
-
