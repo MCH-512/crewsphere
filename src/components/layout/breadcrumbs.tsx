@@ -55,7 +55,6 @@ const predefinedLabels: { [key: string]: string } = {
   "weather-decoder": "Weather Decoder",
   "live-flight-tracker": "Live Flight Tracker",
   "ftl-calculator": "EASA FTL Calculator",
-  "airport-directory": "Airport Directory",
   "flight-timeline": "Flight Timeline Calculator",
   alerts: "Alert Management",
   "expiry-management": "Expiry Management",

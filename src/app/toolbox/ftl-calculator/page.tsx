@@ -13,7 +13,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ShieldAlert, Timer, Info, AlertTriangle, CheckCircle } from "lucide-react";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { Separator } from "@/components/ui/separator";
-import { useDebounce } from "@/packages/use-debounce";
+import { useDebounce } from "@/hooks/use-debounce";
 
 // --- FTL Data and Logic ---
 
