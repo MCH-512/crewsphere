@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import { doc, runTransaction, serverTimestamp, Timestamp } from "firebase/firestore";
 import type { StoredFlight } from "@/schemas/flight-schema";
 import type { StoredFlightSwap } from "@/schemas/flight-swap-schema";
-import { logAuditEvent } from "./audit-logger";
+import { logAuditEvent } from "@/lib/audit-logger";
 import { startOfDay } from "date-fns";
 
 const findUserRoleOnFlight = (flight: StoredFlight, userId: string): { role: string; field: string } | null => {
