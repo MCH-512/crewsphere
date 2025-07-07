@@ -76,7 +76,6 @@
       "collectionGroup": "flights",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "allCrewIds", "arrayConfig": "CONTAINS" },
         { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
       ]
     },
@@ -206,12 +205,11 @@
         { "fieldPath": "sessionDateTimeUTC", "order": "DESCENDING" }
       ]
     },
-    {
+     {
       "collectionGroup": "trainingSessions",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "attendeeIds", "order": "ASCENDING" },
-        { "fieldPath": "sessionDateTimeUTC", "order": "DESCENDING" }
+        { "fieldPath": "sessionDateTimeUTC", "order": "ASCENDING" }
       ]
     },
     {
