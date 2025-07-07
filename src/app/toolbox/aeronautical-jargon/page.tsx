@@ -1,8 +1,10 @@
 "use client";
 
+import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessagesSquare } from "lucide-react";
+import { MessagesSquare, Search } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Input } from "@/components/ui/input";
 
 const jargonTerms = [
   { term: "ATC", definition: "Air Traffic Control. A service provided by ground-based controllers who direct aircraft on the ground and through controlled airspace." },
@@ -16,6 +18,18 @@ const jargonTerms = [
 ];
 
 export default function AeronauticalJargonPage() {
+    const [searchTerm, setSearchTerm] = React.useState("");
+
+    const filteredTerms = React.useMemo(() => {
+        if (!searchTerm) return jargonTerms;
+        const lowercasedTerm = searchTerm.toLowerCase();
+        return jargonTerms.filter(
+            (item) =>
+                item.term.toLowerCase().includes(lowercasedTerm) ||
+                item.definition.toLowerCase().includes(lowercasedTerm)
+        );
+    }, [searchTerm]);
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <Card className="shadow-lg">
@@ -25,19 +39,37 @@ export default function AeronauticalJargonPage() {
             Aeronautical Jargon Glossary
           </CardTitle>
           <CardDescription>
-            A glossary of common terms and acronyms used in aviation.
+            A glossary of common terms and acronyms used in aviation. Search for a term or keyword.
           </CardDescription>
         </CardHeader>
         <CardContent>
-           <Accordion type="single" collapsible className="w-full">
-            {jargonTerms.map((item) => (
-                <AccordionItem key={item.term} value={item.term}>
-                    <AccordionTrigger className="text-lg font-medium">{item.term}</AccordionTrigger>
-                    <AccordionContent className="text-base text-muted-foreground">
-                        {item.definition}
-                    </AccordionContent>
-                </AccordionItem>
-            ))}
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Search terms or definitions..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardContent className="pt-6">
+           <Accordion type="multiple" className="w-full">
+            {filteredTerms.length > 0 ? (
+                filteredTerms.map((item) => (
+                    <AccordionItem key={item.term} value={item.term}>
+                        <AccordionTrigger className="text-lg font-medium">{item.term}</AccordionTrigger>
+                        <AccordionContent className="text-base text-muted-foreground">
+                            {item.definition}
+                        </AccordionContent>
+                    </AccordionItem>
+                ))
+            ) : (
+                <p className="text-center text-muted-foreground py-6">No terms found for "{searchTerm}".</p>
+            )}
            </Accordion>
         </CardContent>
       </Card>

@@ -1,7 +1,9 @@
 "use client";
 
+import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollText } from "lucide-react";
+import { ScrollText, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 const timelineEvents = [
   { year: "1903", title: "First Powered Flight", description: "The Wright brothers, Orville and Wilbur, achieve the first sustained, controlled, and powered flight in Kitty Hawk, North Carolina." },
@@ -14,6 +16,19 @@ const timelineEvents = [
 ];
 
 export default function AviationHistoryPage() {
+    const [searchTerm, setSearchTerm] = React.useState("");
+
+    const filteredEvents = React.useMemo(() => {
+        if (!searchTerm) return timelineEvents;
+        const lowercasedTerm = searchTerm.toLowerCase();
+        return timelineEvents.filter(
+            (event) =>
+                event.year.includes(lowercasedTerm) ||
+                event.title.toLowerCase().includes(lowercasedTerm) ||
+                event.description.toLowerCase().includes(lowercasedTerm)
+        );
+    }, [searchTerm]);
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <Card className="shadow-lg">
@@ -27,25 +42,39 @@ export default function AviationHistoryPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="relative pl-8">
-            {/* The timeline's central line */}
-            <div className="absolute left-0 top-0 h-full w-0.5 bg-border"></div>
-            
-            <div className="space-y-10">
-              {timelineEvents.map((event) => (
-                <div key={event.year} className="relative">
-                  {/* The dot on the timeline */}
-                  <div className="absolute -left-[18px] top-1 h-4 w-4 bg-primary rounded-full border-4 border-background"></div>
-                  
-                  <p className="text-lg font-bold text-primary">{event.year}</p>
-                  <h3 className="text-md font-semibold mt-1">{event.title}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
-                </div>
-              ))}
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Search events by year, title, or keyword..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
-          </div>
         </CardContent>
       </Card>
+
+       <Card>
+        <CardContent className="pt-6">
+            {filteredEvents.length > 0 ? (
+                <div className="relative pl-8">
+                    <div className="absolute left-0 top-0 h-full w-0.5 bg-border"></div>
+                    <div className="space-y-10">
+                    {filteredEvents.map((event) => (
+                        <div key={event.year} className="relative">
+                        <div className="absolute -left-[18px] top-1 h-4 w-4 bg-primary rounded-full border-4 border-background"></div>
+                        <p className="text-lg font-bold text-primary">{event.year}</p>
+                        <h3 className="text-md font-semibold mt-1">{event.title}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
+                        </div>
+                    ))}
+                    </div>
+                </div>
+            ) : (
+                <p className="text-center text-muted-foreground py-6">No historical events found for "{searchTerm}".</p>
+            )}
+        </CardContent>
+       </Card>
     </div>
   );
 }
