@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -18,53 +17,40 @@ import { useRouter } from "next/navigation";
 import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown, Info, MessageSquareText, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { VariantProps } from "class-variance-authority"; 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert";
+import { 
+    type StoredUserRequest,
+    type RequestStatus,
+    requestStatuses,
+    getStatusBadgeVariant,
+    getUrgencyBadgeVariant,
+} from "@/schemas/request-schema";
 
-
-interface UserRequest {
-  id: string;
-  userId: string;
-  userEmail: string;
-  requestType: string; 
-  specificRequestType?: string | null; 
-  urgencyLevel: "Low" | "Medium" | "High" | "Critical";
-  subject: string;
-  details: string;
-  createdAt: Timestamp;
-  status: "pending" | "approved" | "rejected" | "in-progress";
-  adminResponse?: string;
-  updatedAt?: Timestamp;
-  startDate?: string;
-  endDate?: string;
-}
 
 type SortableColumn = "createdAt" | "status" | "urgencyLevel";
 type SortDirection = "asc" | "desc";
 
-const requestStatuses: UserRequest["status"][] = ["pending", "in-progress", "approved", "rejected"];
-const urgencyOrder: Record<UserRequest["urgencyLevel"], number> = { "Low": 0, "Medium": 1, "High": 2, "Critical": 3 };
-const statusOrder: Record<UserRequest["status"], number> = { "pending": 0, "in-progress": 1, "approved": 2, "rejected": 3 };
-
+const urgencyOrder: Record<StoredUserRequest["urgencyLevel"], number> = { "Low": 0, "Medium": 1, "High": 2, "Critical": 3 };
+const statusOrder: Record<StoredUserRequest["status"], number> = { "pending": 0, "in-progress": 1, "approved": 2, "rejected": 3 };
 
 export default function AdminUserRequestsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [allRequests, setAllRequests] = React.useState<UserRequest[]>([]); 
-  const [filteredAndSortedRequests, setFilteredAndSortedRequests] = React.useState<UserRequest[]>([]); 
+  const [allRequests, setAllRequests] = React.useState<StoredUserRequest[]>([]); 
+  const [filteredAndSortedRequests, setFilteredAndSortedRequests] = React.useState<StoredUserRequest[]>([]); 
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  const [selectedRequest, setSelectedRequest] = React.useState<UserRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = React.useState<StoredUserRequest | null>(null);
   const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
-  const [newStatus, setNewStatus] = React.useState<UserRequest["status"] | "">("");
+  const [newStatus, setNewStatus] = React.useState<RequestStatus | "">("");
   const [adminResponseText, setAdminResponseText] = React.useState("");
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
   
-  const [statusFilter, setStatusFilter] = React.useState<UserRequest["status"] | "all">("all");
+  const [statusFilter, setStatusFilter] = React.useState<RequestStatus | "all">("all");
   const [searchTerm, setSearchTerm] = React.useState("");
 
   const [sortColumn, setSortColumn] = React.useState<SortableColumn>("createdAt");
@@ -79,7 +65,7 @@ export default function AdminUserRequestsPage() {
       const fetchedRequests = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-      } as UserRequest));
+      } as StoredUserRequest));
       setAllRequests(fetchedRequests); 
     } catch (err) {
       console.error("Error fetching requests:", err);
@@ -133,7 +119,7 @@ export default function AdminUserRequestsPage() {
   }, [allRequests, statusFilter, searchTerm, sortColumn, sortDirection]);
 
 
-  const handleOpenManageDialog = (request: UserRequest) => {
+  const handleOpenManageDialog = (request: StoredUserRequest) => {
     setSelectedRequest(request);
     setNewStatus(request.status); 
     setAdminResponseText(request.adminResponse || "");
@@ -176,29 +162,6 @@ export default function AdminUserRequestsPage() {
         toast({ title: "Update Failed", description: "Could not update request status/response.", variant: "destructive" });
     } finally {
         setIsUpdatingStatus(false);
-    }
-  };
-
-  const getStatusBadgeVariant = (status: UserRequest["status"]): VariantProps<typeof Badge>["variant"] => {
-    switch (status) {
-      case "pending": return "secondary";
-      case "approved": return "success"; 
-      case "rejected": return "destructive";
-      case "in-progress": return "outline";
-      default: return "secondary";
-    }
-  };
-
-  const getUrgencyBadgeVariant = (level?: UserRequest["urgencyLevel"]): VariantProps<typeof Badge>["variant"] => {
-    if (!level || !["Low", "Medium", "High", "Critical"].includes(level)) {
-        return "outline";
-    }
-    switch (level) {
-      case "Critical": return "destructive";
-      case "High": return "default"; 
-      case "Medium": return "secondary";
-      case "Low": return "outline";
-      default: return "outline";
     }
   };
   
@@ -273,7 +236,7 @@ export default function AdminUserRequestsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as UserRequest["status"] | "all")}>
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RequestStatus | "all")}>
                 <SelectTrigger className="w-full md:w-[180px]">
                     <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
                     <SelectValue placeholder="Filter by status" />
@@ -388,7 +351,7 @@ export default function AdminUserRequestsPage() {
                 <Label htmlFor="status-select" className="font-semibold">Update Status</Label>
                 <Select 
                   value={newStatus || ""}
-                  onValueChange={(value) => setNewStatus(value as UserRequest["status"])}
+                  onValueChange={(value) => setNewStatus(value as RequestStatus)}
                 >
                   <SelectTrigger id="status-select">
                     <SelectValue placeholder="Select new status" />
