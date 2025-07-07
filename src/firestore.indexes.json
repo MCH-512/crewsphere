@@ -219,6 +219,14 @@
         { "fieldPath": "allCrewIds", "arrayConfig": "CONTAINS" },
         { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "flights",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "ASCENDING" },
+        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
