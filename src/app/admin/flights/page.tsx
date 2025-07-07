@@ -50,6 +50,8 @@ export default function AdminFlightsPage() {
     const [pursers, setPursers] = React.useState<User[]>([]);
     const [pilots, setPilots] = React.useState<User[]>([]);
     const [cabinCrew, setCabinCrew] = React.useState<User[]>([]);
+    const [instructors, setInstructors] = React.useState<User[]>([]);
+    const [trainees, setTrainees] = React.useState<User[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -75,7 +77,8 @@ export default function AdminFlightsPage() {
         defaultValues: {
             flightNumber: "", departureAirport: "", arrivalAirport: "",
             scheduledDepartureDateTimeUTC: "", scheduledArrivalDateTimeUTC: "",
-            aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: []
+            aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: [],
+            instructorIds: [], traineeIds: []
         },
     });
 
@@ -92,6 +95,8 @@ export default function AdminFlightsPage() {
             setPursers(allUsersData.filter(u => u.role === 'purser'));
             setPilots(allUsersData.filter(u => u.role === 'pilote'));
             setCabinCrew(allUsersData.filter(u => u.role === 'cabin crew'));
+            setInstructors(allUsersData.filter(u => u.role === 'instructor'));
+            setTrainees(allUsersData.filter(u => u.role === 'stagiaire'));
 
             const flightsSnapshot = await getDocs(flightsQuery);
             const fetchedFlights = await Promise.all(
@@ -101,7 +106,7 @@ export default function AdminFlightsPage() {
                         getAirportByCode(data.departureAirport),
                         getAirportByCode(data.arrivalAirport),
                     ]);
-                    const crewCount = 1 + (data.pilotIds?.length || 0) + (data.cabinCrewIds?.length || 0);
+                    const crewCount = 1 + (data.pilotIds?.length || 0) + (data.cabinCrewIds?.length || 0) + (data.instructorIds?.length || 0) + (data.traineeIds?.length || 0);
                     return {
                         ...data,
                         departureAirportName: `${depAirport?.name} (${depAirport?.iata})` || data.departureAirport,
@@ -177,11 +182,13 @@ export default function AdminFlightsPage() {
     const watchedPurser = form.watch("purserId");
     const watchedPilots = form.watch("pilotIds");
     const watchedCabinCrew = form.watch("cabinCrewIds");
+    const watchedInstructors = form.watch("instructorIds");
+    const watchedTrainees = form.watch("traineeIds");
     const debouncedDep = useDebounce(form.watch("scheduledDepartureDateTimeUTC"), 500);
     const debouncedArr = useDebounce(form.watch("scheduledArrivalDateTimeUTC"), 500);
 
     React.useEffect(() => {
-        const allAssignedCrewIds = [...new Set([watchedPurser, ...(watchedPilots || []), ...(watchedCabinCrew || [])].filter(Boolean))];
+        const allAssignedCrewIds = [...new Set([watchedPurser, ...(watchedPilots || []), ...(watchedCabinCrew || []), ...(watchedInstructors || []), ...(watchedTrainees || [])].filter(Boolean))];
         
         if (allAssignedCrewIds.length === 0 || !debouncedDep || !debouncedArr) {
           setCrewWarnings({});
@@ -207,7 +214,7 @@ export default function AdminFlightsPage() {
 
         check();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [watchedPurser, JSON.stringify(watchedPilots), JSON.stringify(watchedCabinCrew), debouncedDep, debouncedArr, toast]);
+    }, [watchedPurser, JSON.stringify(watchedPilots), JSON.stringify(watchedCabinCrew), JSON.stringify(watchedInstructors), JSON.stringify(watchedTrainees), debouncedDep, debouncedArr, toast]);
 
 
     const handleOpenDialog = (flightToEdit?: StoredFlight) => {
@@ -224,6 +231,8 @@ export default function AdminFlightsPage() {
                 purserId: flightToEdit.purserId,
                 pilotIds: flightToEdit.pilotIds || [],
                 cabinCrewIds: flightToEdit.cabinCrewIds || [],
+                instructorIds: flightToEdit.instructorIds || [],
+                traineeIds: flightToEdit.traineeIds || [],
             });
         } else {
             setIsEditMode(false);
@@ -231,7 +240,8 @@ export default function AdminFlightsPage() {
             form.reset({
                 flightNumber: "", departureAirport: "", arrivalAirport: "",
                 scheduledDepartureDateTimeUTC: "", scheduledArrivalDateTimeUTC: "",
-                aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: []
+                aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: [],
+                instructorIds: [], traineeIds: [],
             });
         }
         setDepSearch("");
@@ -253,6 +263,8 @@ export default function AdminFlightsPage() {
             purserId: flight.purserId,
             pilotIds: flight.pilotIds || [],
             cabinCrewIds: flight.cabinCrewIds || [],
+            instructorIds: flight.instructorIds || [],
+            traineeIds: flight.traineeIds || [],
         });
         setDepSearch(flight.arrivalAirportName || flight.arrivalAirport);
         setArrSearch(flight.departureAirportName || flight.departureAirport);
@@ -277,7 +289,7 @@ export default function AdminFlightsPage() {
             const flightId = flightRef.id;
 
             const batch = writeBatch(db);
-            const allAssignedCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || [])].filter(Boolean))];
+            const allAssignedCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || []), ...(data.instructorIds || []), ...(data.traineeIds || [])].filter(Boolean))];
             const activityIds: Record<string, string> = {};
 
             if (isEditMode && currentFlight && currentFlight.activityIds) {
@@ -448,6 +460,8 @@ export default function AdminFlightsPage() {
                              <FormField control={form.control} name="purserId" render={({ field }) => (<FormItem><FormLabel>Assign Purser</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a purser" /></SelectTrigger></FormControl><SelectContent>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName} ({p.email})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                             <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                             <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Trainees</FormLabel><CustomMultiSelectAutocomplete placeholder="Select trainees..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                             
                              <Separator/>
                              <h3 className="text-lg font-medium">Crew Availability</h3>

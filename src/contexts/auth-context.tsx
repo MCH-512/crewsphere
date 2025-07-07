@@ -10,7 +10,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 // Define a new User type that can include a role and other Firestore fields
 export interface User extends FirebaseUser {
-  role?: 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'other' | null;
+  role?: 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'stagiaire' | 'other' | null;
   fullName?: string;
   employeeId?: string;
   joiningDate?: string | null;
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (userDocSnap.exists()) {
                 const userData = userDocSnap.data();
-                const userRole = (userData.role && ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'other'].includes(userData.role)) ? userData.role : null;
+                const userRole = (userData.role && ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'stagiaire', 'other'].includes(userData.role)) ? userData.role : null;
                 const firestoreDisplayName = userData.displayName || currentUser.displayName || '';
 
                 const enhancedUser: User = {

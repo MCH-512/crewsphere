@@ -14,6 +14,8 @@ export const flightFormSchema = z.object({
   purserId: z.string().min(1, "A purser must be assigned."),
   pilotIds: z.array(z.string()).optional(),
   cabinCrewIds: z.array(z.string()).optional(),
+  instructorIds: z.array(z.string()).optional(),
+  traineeIds: z.array(z.string()).optional(),
 }).refine(data => new Date(data.scheduledArrivalDateTimeUTC) > new Date(data.scheduledDepartureDateTimeUTC), {
     message: "Arrival time must be after departure time.",
     path: ["scheduledArrivalDateTimeUTC"],
@@ -33,6 +35,8 @@ export interface StoredFlight {
   purserId: string; // UID of the assigned purser
   pilotIds: string[];
   cabinCrewIds: string[];
+  instructorIds?: string[];
+  traineeIds?: string[];
   allCrewIds?: string[];
   activityIds?: Record<string, string>; // Maps userId -> activityId
   purserReportSubmitted: boolean;

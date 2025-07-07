@@ -29,7 +29,7 @@ import Link from 'next/link';
 
 type BadgeCvaVariantProps = CvaVariantProps<typeof badgeVariants>;
 
-type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'other';
+type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'stagiaire' | 'other';
 type AccountStatus = 'active' | 'inactive';
 
 interface UserDocument {
@@ -45,7 +45,7 @@ interface UserDocument {
   accountStatus?: AccountStatus; 
 }
 
-const availableRoles: SpecificRole[] = ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'other'];
+const availableRoles: SpecificRole[] = ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'stagiaire', 'other'];
 const NO_ROLE_SENTINEL = "_NONE_"; 
 
 const manageUserFormSchema = z.object({
@@ -336,6 +336,7 @@ export default function AdminUsersPage() {
       case "cabin crew": return "secondary";
       case "instructor": return "default"; 
       case "pilote": return "default";    
+      case "stagiaire": return "outline";
       case "other": return "outline";
       default: return "outline";
     }
