@@ -14,6 +14,7 @@ export async function decodeWeatherReport(input: DecodeWeatherReportInput): Prom
 
 const decodeWeatherReportPrompt = ai.definePrompt({
   name: 'decodeWeatherReportPrompt',
+  model: 'googleai/gemini-1.5-flash-latest',
   input: {schema: DecodeWeatherReportInputSchema},
   output: {schema: DecodeWeatherReportOutputSchema},
   prompt: `You are an expert aviation meteorologist. Your task is to decode the provided METAR or TAF report into a structured JSON format. Provide units for all values.

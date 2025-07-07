@@ -29,6 +29,7 @@ export async function summarizeReport(input: SummarizeReportInput): Promise<Summ
 
 const summarizeReportPrompt = ai.definePrompt({
   name: 'summarizeReportPrompt',
+  model: 'googleai/gemini-1.5-flash-latest',
   input: {schema: SummarizeReportInputSchema},
   output: {schema: SummarizeReportOutputSchema},
   prompt: `You are an expert aviation analyst. Your task is to read the following purser's flight report and provide a structured summary.
