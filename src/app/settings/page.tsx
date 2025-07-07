@@ -136,8 +136,8 @@ export default function SettingsPage() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    if (file) {
         if (file.size > 2 * 1024 * 1024) { // 2MB limit
             toast({ title: "File Too Large", description: "Please select an image smaller than 2MB.", variant: "destructive" });
             return;
