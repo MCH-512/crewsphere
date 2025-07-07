@@ -9,12 +9,20 @@ import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquar
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, where, query, Timestamp } from "firebase/firestore";
+import { collection, getDocs, where, query, Timestamp, orderBy, limit } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, Cell, XAxis, YAxis } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart"
+import { formatDistanceToNowStrict } from "date-fns";
+import type { AuditLogData } from "@/lib/audit-logger";
+import { Separator } from "@/components/ui/separator";
+
+interface DisplayAuditLog extends AuditLogData {
+  id: string;
+  timestamp: Timestamp;
+}
 
 interface Stat {
   value: number | null;
@@ -44,7 +52,62 @@ export default function AdminConsolePage() {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [stats, setStats({ value: usersSnap.size, isLoading: false, label: "Total Users" },
+  const [stats, setStats] = React.useState<Record<string, Stat>>({
+      users: { value: null, isLoading: true, label: "Total Users" },
+      flights: { value: null, isLoading: true, label: "Total Flights" },
+      suggestions: { value: null, isLoading: true, label: "New Suggestions" },
+      reports: { value: null, isLoading: true, label: "New Reports" },
+      requests: { value: null, isLoading: true, label: "Pending Requests" },
+      documents: { value: null, isLoading: true, label: "Total Documents" },
+      courses: { value: null, isLoading: true, label: "Total Courses" },
+      quizzes: { value: null, isLoading: true, label: "Total Quizzes" },
+      activeAlerts: { value: null, isLoading: true, label: "Active Alerts" },
+      upcomingSessions: { value: null, isLoading: true, label: "Upcoming Sessions"},
+      pendingSwaps: { value: null, isLoading: true, label: "Pending Swaps" },
+  });
+
+  const [requestsChartData, setRequestsChartData] = React.useState<any[]>([]);
+  const [suggestionsChartData, setSuggestionsChartData] = React.useState<any[]>([]);
+  const [userRolesChartData, setUserRolesChartData] = React.useState<any[]>([]);
+  const [recentLogs, setRecentLogs] = React.useState<DisplayAuditLog[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  
+  const [suggestionsChartConfig, setSuggestionsChartConfig] = React.useState<ChartConfig>({});
+  const [userRolesChartConfig, setUserRolesChartConfig] = React.useState<ChartConfig>({});
+
+
+  const fetchDashboardData = React.useCallback(async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+        const now = new Date();
+        const usersSnapPromise = getDocs(collection(db, "users"));
+        const flightsSnapPromise = getDocs(collection(db, "flights"));
+        const suggestionsPromise = getDocs(collection(db, "suggestions"));
+        const reportsPromise = getDocs(collection(db, "purserReports"));
+        const requestsPromise = getDocs(collection(db, "requests"));
+        const documentsSnapPromise = getDocs(collection(db, "documents"));
+        const coursesSnapPromise = getDocs(collection(db, "courses"));
+        const quizzesSnapPromise = getDocs(collection(db, "quizzes"));
+        const alertsSnapPromise = getDocs(query(collection(db, "alerts"), where("isActive", "==", true)));
+        const sessionsSnapPromise = getDocs(query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", now.toISOString())));
+        const swapsSnapPromise = getDocs(query(collection(db, "flightSwaps"), where("status", "==", "pending_approval")));
+        const auditLogsPromise = getDocs(query(collection(db, "auditLogs"), orderBy("timestamp", "desc"), limit(5)));
+
+        const [
+            usersSnap, flightsSnap, suggestionsSnap, reportsSnap, requestsSnap,
+            documentsSnap, coursesSnap, quizzesSnap, alertsSnap, sessionsSnap, swapsSnap, auditLogsSnap
+        ] = await Promise.all([
+            usersSnapPromise, flightsSnapPromise, suggestionsPromise, reportsSnapPromise, requestsPromise,
+            documentsSnapPromise, coursesSnapPromise, quizzesSnapPromise, alertsSnapPromise, sessionsSnapPromise, swapsSnapPromise, auditLogsPromise
+        ]);
+        
+        const suggestions = suggestionsSnap.docs.map(doc => doc.data());
+        const reports = reportsSnap.docs.map(doc => doc.data());
+        const requests = requestsSnap.docs.map(doc => doc.data());
+
+        setStats({
+            users: { value: usersSnap.size, isLoading: false, label: "Total Users" },
             flights: { value: flightsSnap.size, isLoading: false, label: "Total Flights" },
             suggestions: { value: suggestions.filter(s => s.status === 'new').length, isLoading: false, label: "New Suggestions" },
             reports: { value: reports.filter(r => r.status === 'submitted').length, isLoading: false, label: "New Reports" },
@@ -57,8 +120,6 @@ export default function AdminConsolePage() {
             pendingSwaps: { value: swapsSnap.size, isLoading: false, label: "Pending Swaps" },
         });
 
-        // --- Process data for charts ---
-        // Requests by status
         const requestsByStatus = requests.reduce((acc, req) => {
             const status = req.status || 'unknown';
             acc[status] = (acc[status] || 0) + 1;
@@ -70,7 +131,6 @@ export default function AdminConsolePage() {
             fill: "var(--color-count)",
         })));
 
-        // Suggestions by category
         const suggestionsByCategory = suggestions.reduce((acc, sug) => {
             const category = sug.category || 'Other';
             acc[category] = (acc[category] || 0) + 1;
@@ -90,7 +150,6 @@ export default function AdminConsolePage() {
             fill: `var(--color-${name})`
         })));
         
-        // User roles distribution
         const usersData = usersSnap.docs.map(doc => doc.data());
         const rolesDistribution = usersData.reduce((acc, u) => {
             const role = u.role || 'Other';
@@ -110,11 +169,14 @@ export default function AdminConsolePage() {
             count: rolesDistribution[name],
             fill: `var(--color-${name})`
         })));
-
+        
+        setRecentLogs(auditLogsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as DisplayAuditLog)));
 
     } catch (error) {
         console.error(`Error fetching dashboard data:`, error);
         toast({ title: "Error", description: `Could not fetch dashboard data.`, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
   }, [user, toast]);
 
@@ -269,7 +331,6 @@ export default function AdminConsolePage() {
         </Card>
       </AnimatedCard>
       
-      {/* Charts Section */}
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
           <AnimatedCard delay={0.1}>
               <Card className="shadow-sm">
@@ -326,6 +387,43 @@ export default function AdminConsolePage() {
           </AnimatedCard>
       </div>
 
+      <AnimatedCard delay={0.25}>
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-primary"/>Recent System Activity</CardTitle>
+            <CardDescription>A log of the last 5 important actions performed in the admin console.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin"/></div>
+            ) : recentLogs.length > 0 ? (
+              <div className="space-y-4">
+                {recentLogs.map((log, index) => (
+                  <React.Fragment key={log.id}>
+                    <div className="flex items-center justify-between text-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-x-2">
+                            <Badge variant="secondary" className="w-fit mb-1 sm:mb-0">{log.actionType.replace(/_/g, ' ')}</Badge>
+                            <span className="text-muted-foreground">by</span>
+                            <Link href={`/admin/users/${log.userId}`} className="font-semibold hover:underline">{log.userEmail}</Link>
+                        </div>
+                        <span className="text-muted-foreground text-xs">{formatDistanceToNowStrict(log.timestamp.toDate(), { addSuffix: true })}</span>
+                    </div>
+                    {index < recentLogs.length - 1 && <Separator />}
+                  </React.Fragment>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-4">No recent activity found.</p>
+            )}
+          </CardContent>
+          <CardFooter>
+            <Button asChild variant="outline" size="sm" className="ml-auto">
+                <Link href="/admin/audit-logs">View Full Audit Log</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </AnimatedCard>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {adminSections.map((section) => {
           const IconComponent = section.icon;
@@ -381,5 +479,3 @@ export default function AdminConsolePage() {
     </div>
   );
 }
-
-    
