@@ -44,67 +44,7 @@ export default function AdminConsolePage() {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [stats, setStats] = React.useState({
-    users: { value: null, isLoading: true, label: "Total Users" } as Stat,
-    flights: { value: null, isLoading: true, label: "Total Flights" } as Stat,
-    suggestions: { value: null, isLoading: true, label: "New Suggestions" } as Stat,
-    reports: { value: null, isLoading: true, label: "New Reports" } as Stat,
-    requests: { value: null, isLoading: true, label: "Pending Requests" } as Stat,
-    documents: { value: null, isLoading: true, label: "Total Documents" } as Stat,
-    courses: { value: null, isLoading: true, label: "Total Courses" } as Stat,
-    quizzes: { value: null, isLoading: true, label: "Total Quizzes" } as Stat,
-    activeAlerts: { value: null, isLoading: true, label: "Active Alerts" } as Stat,
-    upcomingSessions: { value: null, isLoading: true, label: "Upcoming Sessions" } as Stat,
-    pendingSwaps: { value: null, isLoading: true, label: "Pending Swaps" } as Stat,
-  });
-
-  const [requestsChartData, setRequestsChartData] = React.useState<any[]>([]);
-  const [suggestionsChartData, setSuggestionsChartData] = React.useState<any[]>([]);
-  const [suggestionsChartConfig, setSuggestionsChartConfig] = React.useState<ChartConfig>({});
-  const [userRolesChartData, setUserRolesChartData] = React.useState<any[]>([]);
-  const [userRolesChartConfig, setUserRolesChartConfig] = React.useState<ChartConfig>({});
-
-
-  const fetchDashboardData = React.useCallback(async () => {
-    if (!user || user.role !== 'admin') {
-      setStats(prev => Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: { ...prev[key as keyof typeof prev], isLoading: false } }), {} as typeof stats));
-      return;
-    }
-
-    try {
-        const [
-            usersSnap,
-            flightsSnap,
-            suggestionsSnap,
-            reportsSnap,
-            requestsSnap,
-            documentsSnap,
-            coursesSnap,
-            quizzesSnap,
-            alertsSnap,
-            sessionsSnap,
-            swapsSnap,
-        ] = await Promise.all([
-            getDocs(collection(db, "users")),
-            getDocs(collection(db, "flights")),
-            getDocs(collection(db, "suggestions")),
-            getDocs(collection(db, "purserReports")),
-            getDocs(collection(db, "requests")),
-            getDocs(collection(db, "documents")),
-            getDocs(collection(db, "courses")),
-            getDocs(collection(db, "quizzes")),
-            getDocs(query(collection(db, "alerts"), where("isActive", "==", true))),
-            getDocs(query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", new Date().toISOString()))),
-            getDocs(query(collection(db, "flightSwaps"), where("status", "==", "pending_approval"))),
-        ]);
-
-        const suggestions = suggestionsSnap.docs.map(doc => doc.data());
-        const reports = reportsSnap.docs.map(doc => doc.data());
-        const requests = requestsSnap.docs.map(doc => doc.data());
-
-        // Update stats cards
-        setStats({
-            users: { value: usersSnap.size, isLoading: false, label: "Total Users" },
+  const [stats, setStats({ value: usersSnap.size, isLoading: false, label: "Total Users" },
             flights: { value: flightsSnap.size, isLoading: false, label: "Total Flights" },
             suggestions: { value: suggestions.filter(s => s.status === 'new').length, isLoading: false, label: "New Suggestions" },
             reports: { value: reports.filter(r => r.status === 'submitted').length, isLoading: false, label: "New Reports" },
@@ -441,3 +381,5 @@ export default function AdminConsolePage() {
     </div>
   );
 }
+
+    
