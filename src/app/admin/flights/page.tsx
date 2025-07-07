@@ -313,7 +313,7 @@ export default function AdminFlightsPage() {
                 activityIds[crewId] = activityRef.id;
             }
             
-            const flightData = { ...data, activityIds, allCrewIds: allAssignedCrewIds, updatedAt: serverTimestamp() };
+            const flightData = { ...data, activityIds, allCrewIds, updatedAt: serverTimestamp() };
 
             if (isEditMode && currentFlight) {
                 batch.update(flightRef, flightData);
@@ -493,3 +493,5 @@ export default function AdminFlightsPage() {
         </div>
     );
 }
+
+    
