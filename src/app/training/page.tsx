@@ -129,7 +129,7 @@ export default function TrainingPage() {
 
                 const [coursesSnapshot, attemptsSnapshot] = await Promise.all([
                     getDocs(coursesQuery),
-                    getDocs(attemptsSnapshot)
+                    getDocs(attemptsQuery)
                 ]);
 
                 const fetchedCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCourse));
@@ -228,5 +228,4 @@ export default function TrainingPage() {
         </div>
     );
 }
-
     
