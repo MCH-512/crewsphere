@@ -2,7 +2,7 @@
 import {
   LayoutDashboard, Settings, Plane, ServerCog, Users, ClipboardList, 
   ClipboardCheck, MessageSquare, MessagesSquare, Activity, FileSignature, 
-  Calendar, Library, GraduationCap, CheckSquare, Compass, BellRing, 
+  Calendar as CalendarIcon, Library, GraduationCap, CheckSquare, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Book, Calculator, CloudSun, 
   Globe, Map, Mic, ScrollText, ShieldAlert, Waypoints, Wrench, 
   ArrowRightLeft, Handshake, Inbox, Lightbulb, User
@@ -15,13 +15,14 @@ export const mainNavConfig = {
       label: "My Hub",
       icon: User,
       subItems: [
-        { href: "/my-schedule", label: "My Schedule", icon: Calendar },
+        { href: "/my-schedule", label: "My Schedule", icon: CalendarIcon },
         { href: "/my-logbook", label: "My Logbook", icon: NotebookPen },
         { href: "/my-documents", label: "My Documents", icon: ShieldCheck },
         { href: "/requests", label: "My Requests", icon: Inbox },
         { href: "/my-swaps", label: "My Swaps", icon: Handshake },
       ]
     },
+    { href: "/timeline", label: "Flight Timeline", icon: CalendarIcon },
     { href: "/flight-swap", label: "Swap Board", icon: ArrowRightLeft },
     { href: "/training", label: "E-Learning", icon: GraduationCap },
     { href: "/document-library", label: "Document Library", icon: Library },

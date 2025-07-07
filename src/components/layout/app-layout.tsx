@@ -37,6 +37,7 @@ import {
   Plane,
   Moon,
   Sun,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";

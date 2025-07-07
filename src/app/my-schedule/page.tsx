@@ -104,6 +104,8 @@ const FlightDetailsSheet = ({ isOpen, onOpenChange, flight, isLoading }: { isOpe
                                     {renderCrewList('purser')}
                                     {renderCrewList('pilote')}
                                     {renderCrewList('cabin crew')}
+                                    {renderCrewList('instructor')}
+                                    {renderCrewList('stagiaire')}
                                 </CardContent>
                             </Card>
                         </div>
@@ -208,7 +210,9 @@ export default function MySchedulePage() {
             const crewIds = Array.from(new Set([
                 flight.purserId,
                 ...(flight.pilotIds || []),
-                ...(flight.cabinCrewIds || [])
+                ...(flight.cabinCrewIds || []),
+                ...(flight.instructorIds || []),
+                ...(flight.traineeIds || []),
             ].filter(Boolean)));
 
             const crewPromises = crewIds.map(uid => getDoc(doc(db, "users", uid)));
