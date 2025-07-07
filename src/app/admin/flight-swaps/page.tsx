@@ -19,6 +19,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { approveFlightSwap, rejectFlightSwap } from "@/services/admin-flight-swap-service";
 import type { VariantProps } from "class-variance-authority";
+import { getAirportByCode } from "@/services/airport-service";
+
+interface FlightSwapForDisplay extends StoredFlightSwap {
+    flightInfo: {
+        flightNumber: string;
+        departureAirport: string;
+        arrivalAirport: string;
+        scheduledDepartureDateTimeUTC: string;
+        departureAirportDisplay?: string;
+        arrivalAirportDisplay?: string;
+    };
+    requestingFlightInfo?: {
+        flightNumber: string;
+        departureAirport: string;
+        arrivalAirport: string;
+        scheduledDepartureDateTimeUTC: string;
+        departureAirportDisplay?: string;
+        arrivalAirportDisplay?: string;
+    };
+}
+
 
 const getStatusBadgeVariant = (status: FlightSwapStatus): VariantProps<typeof Badge>["variant"] => {
     switch (status) {
@@ -35,10 +56,10 @@ export default function AdminFlightSwapsPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
-    const [swaps, setSwaps] = React.useState<StoredFlightSwap[]>([]);
+    const [swaps, setSwaps] = React.useState<FlightSwapForDisplay[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     
-    const [selectedSwap, setSelectedSwap] = React.useState<StoredFlightSwap | null>(null);
+    const [selectedSwap, setSelectedSwap] = React.useState<FlightSwapForDisplay | null>(null);
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [rejectionNotes, setRejectionNotes] = React.useState("");
@@ -49,7 +70,30 @@ export default function AdminFlightSwapsPage() {
         try {
             const swapsQuery = query(collection(db, "flightSwaps"), orderBy("createdAt", "desc"));
             const snapshot = await getDocs(swapsQuery);
-            setSwaps(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredFlightSwap)));
+
+            const swapsData = await Promise.all(snapshot.docs.map(async (doc) => {
+                const swap = { id: doc.id, ...doc.data() } as StoredFlightSwap;
+
+                const [initDep, initArr] = await Promise.all([
+                    getAirportByCode(swap.flightInfo.departureAirport),
+                    getAirportByCode(swap.flightInfo.arrivalAirport)
+                ]);
+                
+                (swap.flightInfo as any).departureAirportDisplay = initDep ? `${initDep.city} (${initDep.iata})` : swap.flightInfo.departureAirport;
+                (swap.flightInfo as any).arrivalAirportDisplay = initArr ? `${initArr.city} (${initArr.iata})` : swap.flightInfo.arrivalAirport;
+
+                if (swap.requestingFlightInfo) {
+                    const [reqDep, reqArr] = await Promise.all([
+                        getAirportByCode(swap.requestingFlightInfo.departureAirport),
+                        getAirportByCode(swap.requestingFlightInfo.arrivalAirport)
+                    ]);
+                    (swap.requestingFlightInfo as any).departureAirportDisplay = reqDep ? `${reqDep.city} (${reqDep.iata})` : swap.requestingFlightInfo.departureAirport;
+                    (swap.requestingFlightInfo as any).arrivalAirportDisplay = reqArr ? `${reqArr.city} (${reqArr.iata})` : swap.requestingFlightInfo.arrivalAirport;
+                }
+                return swap;
+            }));
+            
+            setSwaps(swapsData as FlightSwapForDisplay[]);
         } catch (error) {
             toast({ title: "Error", description: "Could not load flight swaps.", variant: "destructive" });
         } finally {
@@ -65,7 +109,7 @@ export default function AdminFlightSwapsPage() {
         }
     }, [user, authLoading, router, fetchData]);
 
-    const handleOpenDialog = (swap: StoredFlightSwap, type: 'approve' | 'reject') => {
+    const handleOpenDialog = (swap: FlightSwapForDisplay, type: 'approve' | 'reject') => {
         setSelectedSwap(swap);
         setActionType(type);
         setRejectionNotes("");
@@ -135,12 +179,18 @@ export default function AdminFlightSwapsPage() {
                                                 <p className="text-xs text-muted-foreground">Initiator</p>
                                                 <p className="font-semibold">{swap.initiatingUserEmail}</p>
                                                 <p>Flight {swap.flightInfo.flightNumber}</p>
+                                                <p className="text-xs text-muted-foreground">{swap.flightInfo.departureAirportDisplay} → {swap.flightInfo.arrivalAirportDisplay}</p>
                                             </div>
                                             <ArrowRight className="h-6 w-6 text-muted-foreground hidden md:block" />
                                             <div className="text-sm">
                                                  <p className="text-xs text-muted-foreground">Requestor</p>
-                                                 <p className="font-semibold">{swap.requestingUserEmail}</p>
-                                                 <p>Flight {swap.requestingFlightInfo?.flightNumber}</p>
+                                                 <p className="font-semibold">{swap.requestingUserEmail || "N/A"}</p>
+                                                 {swap.requestingFlightInfo ? (
+                                                     <>
+                                                         <p>Flight {swap.requestingFlightInfo.flightNumber}</p>
+                                                         <p className="text-xs text-muted-foreground">{swap.requestingFlightInfo.departureAirportDisplay} → {swap.requestingFlightInfo.arrivalAirportDisplay}</p>
+                                                     </>
+                                                 ) : <p>N/A</p>}
                                             </div>
                                             <div className="flex gap-2 justify-self-end">
                                                 {status === 'pending_approval' && (
@@ -176,11 +226,13 @@ export default function AdminFlightSwapsPage() {
                             <Card className="p-3"><CardHeader className="p-1 pb-2"><CardTitle className="text-sm">Original Flight</CardTitle></CardHeader><CardContent className="text-xs p-1 space-y-1">
                                 <p><strong>User:</strong> {selectedSwap?.initiatingUserEmail}</p>
                                 <p><strong>Flight:</strong> {selectedSwap?.flightInfo.flightNumber}</p>
+                                <p><strong>Route:</strong> {selectedSwap?.flightInfo.departureAirportDisplay} → {selectedSwap?.flightInfo.arrivalAirportDisplay}</p>
                                 <p><strong>Date:</strong> {format(parseISO(selectedSwap?.flightInfo.scheduledDepartureDateTimeUTC || '_'), 'PP')}</p>
                             </CardContent></Card>
                             <Card className="p-3"><CardHeader className="p-1 pb-2"><CardTitle className="text-sm">Requested Flight</CardTitle></CardHeader><CardContent className="text-xs p-1 space-y-1">
                                 <p><strong>User:</strong> {selectedSwap?.requestingUserEmail}</p>
                                 <p><strong>Flight:</strong> {selectedSwap?.requestingFlightInfo?.flightNumber}</p>
+                                <p><strong>Route:</strong> {selectedSwap?.requestingFlightInfo?.departureAirportDisplay} → {selectedSwap?.requestingFlightInfo?.arrivalAirportDisplay}</p>
                                 <p><strong>Date:</strong> {format(parseISO(selectedSwap?.requestingFlightInfo?.scheduledDepartureDateTimeUTC || '_'), 'PP')}</p>
                             </CardContent></Card>
                          </div>

@@ -23,7 +23,7 @@ import { logAuditEvent } from "@/lib/audit-logger";
 import { getAirportByCode, searchAirports, type Airport } from "@/services/airport-service";
 import { CustomAutocompleteAirport } from "@/components/ui/custom-autocomplete-airport";
 import { CustomMultiSelectAutocomplete } from "@/components/ui/custom-multi-select-autocomplete";
-import { useDebounce } from "@/packages/use-debounce";
+import { useDebounce } from "@/hooks/use-debounce";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { checkCrewAvailability, type Conflict } from "@/services/user-activity-service";
