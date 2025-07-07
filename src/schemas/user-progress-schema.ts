@@ -17,5 +17,3 @@ export type UserQuizAttempt = z.infer<typeof userQuizAttemptSchema>;
 export interface StoredUserQuizAttempt extends UserQuizAttempt {
   id: string;
 }
-
-    
