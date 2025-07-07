@@ -5,20 +5,26 @@ import {
   Calendar, Library, GraduationCap, CheckSquare, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Book, Calculator, CloudSun, 
   Globe, Map, Mic, ScrollText, ShieldAlert, Waypoints, Wrench, 
-  ArrowRightLeft, Handshake, Inbox, Lightbulb
+  ArrowRightLeft, Handshake, Inbox, Lightbulb, User
 } from "lucide-react";
 
 export const mainNavConfig = {
   items: [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/my-schedule", label: "My Schedule", icon: Calendar },
-    { href: "/my-logbook", label: "My Logbook", icon: NotebookPen },
-    { href: "/my-documents", label: "My Documents", icon: ShieldCheck },
+    {
+      label: "My Hub",
+      icon: User,
+      subItems: [
+        { href: "/my-schedule", label: "My Schedule", icon: Calendar },
+        { href: "/my-logbook", label: "My Logbook", icon: NotebookPen },
+        { href: "/my-documents", label: "My Documents", icon: ShieldCheck },
+        { href: "/requests", label: "My Requests", icon: Inbox },
+        { href: "/my-swaps", label: "My Swaps", icon: Handshake },
+      ]
+    },
     { href: "/flight-swap", label: "Swap Board", icon: ArrowRightLeft },
-    { href: "/my-swaps", label: "My Swaps", icon: Handshake },
     { href: "/training", label: "E-Learning", icon: GraduationCap },
     { href: "/document-library", label: "Document Library", icon: Library },
-    { href: "/requests", label: "My Requests", icon: Inbox },
     { href: "/purser-reports", label: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin'] },
     { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
     {
