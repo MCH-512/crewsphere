@@ -92,7 +92,7 @@ export default function AdminConsolePage() {
             getDocs(collection(db, "courses")),
             getDocs(collection(db, "quizzes")),
             getDocs(query(collection(db, "alerts"), where("isActive", "==", true))),
-            getDocs(query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", Timestamp.now()))),
+            getDocs(query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", new Date().toISOString()))),
         ]);
 
         const suggestions = suggestionsSnap.docs.map(doc => doc.data());
