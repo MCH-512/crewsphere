@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { NotebookPen, Loader2, AlertTriangle, ArrowRight, Hourglass, Route, Sigma } from "lucide-react";
+import { NotebookPen, Loader2, AlertTriangle, ArrowRight, Hourglass, Route, Sigma, Plane, UserSquare } from "lucide-react";
 import { format, differenceInMinutes, parseISO } from "date-fns";
 import { StoredFlight } from "@/schemas/flight-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
@@ -82,9 +82,26 @@ export default function MyLogbookPage() {
     const summaryStats = React.useMemo(() => {
         const totalFlights = logbookEntries.length;
         const totalFlightMinutes = logbookEntries.reduce((acc, entry) => acc + entry.flightDurationMinutes, 0);
+        
+        const hoursByAircraft = logbookEntries.reduce((acc, entry) => {
+            const type = entry.aircraftType || "Unknown";
+            const currentMinutes = acc[type] || 0;
+            acc[type] = currentMinutes + entry.flightDurationMinutes;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const hoursByRole = logbookEntries.reduce((acc, entry) => {
+            const role = entry.userRoleOnFlight || "Unknown";
+            const currentMinutes = acc[role] || 0;
+            acc[role] = currentMinutes + entry.flightDurationMinutes;
+            return acc;
+        }, {} as Record<string, number>);
+
         return {
             totalFlights,
             totalFlightTime: formatDuration(totalFlightMinutes),
+            hoursByAircraft: Object.entries(hoursByAircraft).map(([type, minutes]) => ({ type, time: formatDuration(minutes) })).sort((a,b) => b.time.localeCompare(a.time)),
+            hoursByRole: Object.entries(hoursByRole).map(([role, minutes]) => ({ role, time: formatDuration(minutes) })).sort((a,b) => b.time.localeCompare(a.time)),
         };
     }, [logbookEntries]);
     
@@ -113,13 +130,13 @@ export default function MyLogbookPage() {
                             My Flight Logbook
                         </CardTitle>
                         <CardDescription>
-                            A synchronized record of all your completed flights.
+                            A synchronized record of all your completed flights with detailed statistics.
                         </CardDescription>
                     </CardHeader>
                 </Card>
             </AnimatedCard>
 
-             <div className="grid gap-4 md:grid-cols-2">
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <AnimatedCard delay={0.1}>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -142,9 +159,49 @@ export default function MyLogbookPage() {
                         </CardContent>
                     </Card>
                 </AnimatedCard>
+                <AnimatedCard delay={0.2}>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Hours by Aircraft</CardTitle>
+                            <Plane className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent className="h-16 overflow-y-auto">
+                             {summaryStats.hoursByAircraft.length > 0 ? (
+                                <div className="text-xs space-y-1">
+                                    {summaryStats.hoursByAircraft.map(item => (
+                                        <div key={item.type} className="flex justify-between">
+                                            <span className="font-medium text-foreground">{item.type}</span>
+                                            <span className="text-muted-foreground">{item.time}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : <p className="text-xs text-muted-foreground">No data</p>}
+                        </CardContent>
+                    </Card>
+                </AnimatedCard>
+                 <AnimatedCard delay={0.25}>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Hours by Role</CardTitle>
+                            <UserSquare className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                         <CardContent className="h-16 overflow-y-auto">
+                            {summaryStats.hoursByRole.length > 0 ? (
+                                 <div className="text-xs space-y-1">
+                                    {summaryStats.hoursByRole.map(item => (
+                                        <div key={item.role} className="flex justify-between">
+                                            <span className="font-medium text-foreground">{item.role}</span>
+                                            <span className="text-muted-foreground">{item.time}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : <p className="text-xs text-muted-foreground">No data</p>}
+                        </CardContent>
+                    </Card>
+                </AnimatedCard>
             </div>
 
-            <AnimatedCard delay={0.2}>
+            <AnimatedCard delay={0.3}>
                  <Card>
                     <CardHeader>
                          <CardTitle>Logbook Entries</CardTitle>
