@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -12,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { CloudSun, Loader2, Send, AlertTriangle, Wind, Eye, Thermometer, Cloud, Compass, Watch } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { decodeWeatherReport, type DecodeWeatherReportOutput } from "@/ai/flows/decode-weather-flow";
+import { decodeWeatherReport } from "@/ai/flows/decode-weather-flow";
+import type { DecodeWeatherReportOutput } from "@/schemas/weather-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
 const formSchema = z.object({
