@@ -21,6 +21,7 @@ const predefinedLabels: { [key: string]: string } = {
   admin: "Admin Console",
   flights: "Flight Management",
   "flight-swap": "Swap Board",
+  "flight-swaps": "Flight Swaps",
   "my-swaps": "My Swaps",
   users: "User Management",
   create: "Create",
