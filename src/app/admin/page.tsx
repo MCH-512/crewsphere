@@ -309,14 +309,69 @@ export default function AdminConsolePage() {
               <CardTitle className="text-2xl font-headline">Admin Dashboard</CardTitle>
               <CardDescription>
                 Centralized hub for managing application settings, users, and operational data.
-                <br />
-                Conçu et géré par : <strong>Chabouha Mahmoud</strong> (Cabin Crew Manager).
               </CardDescription>
             </div>
           </CardHeader>
         </Card>
       </AnimatedCard>
       
+      {/* Charts Section */}
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
+          <AnimatedCard delay={0.1}>
+              <Card className="shadow-sm">
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><BarChart2 className="h-5 w-5 text-primary"/>Requests by Status</CardTitle>
+                      <CardDescription>An overview of all user requests.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <ChartContainer config={requestsChartConfig} className="min-h-[250px] w-full">
+                          <BarChart accessibilityLayer data={requestsChartData}>
+                              <CartesianGrid vertical={false} />
+                              <XAxis dataKey="status" tickLine={false} tickMargin={10} axisLine={false} fontSize={12} />
+                              <YAxis tickLine={false} axisLine={false} fontSize={12} allowDecimals={false} />
+                              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                              <Bar dataKey="count" radius={8} />
+                          </BarChart>
+                      </ChartContainer>
+                  </CardContent>
+              </Card>
+          </AnimatedCard>
+          <AnimatedCard delay={0.15}>
+              <Card className="shadow-sm">
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><PieChartIcon className="h-5 w-5 text-primary"/>Suggestions by Category</CardTitle>
+                      <CardDescription>A breakdown of submitted ideas.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-center pb-0">
+                       <ChartContainer config={suggestionsChartConfig} className="mx-auto aspect-square max-h-[300px]">
+                          <PieChart>
+                              <ChartTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
+                              <Pie data={suggestionsChartData} dataKey="count" nameKey="name" labelLine={false} />
+                               <ChartLegend content={<ChartLegendContent nameKey="name" className="flex-wrap" />} />
+                          </PieChart>
+                      </ChartContainer>
+                  </CardContent>
+              </Card>
+          </AnimatedCard>
+          <AnimatedCard delay={0.2}>
+              <Card className="shadow-sm">
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary"/>User Role Distribution</CardTitle>
+                      <CardDescription>A breakdown of all user roles.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-center pb-0">
+                       <ChartContainer config={userRolesChartConfig} className="mx-auto aspect-square max-h-[300px]">
+                          <PieChart>
+                              <ChartTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
+                              <Pie data={userRolesChartData} dataKey="count" nameKey="name" labelLine={false} />
+                               <ChartLegend content={<ChartLegendContent nameKey="name" className="flex-wrap" />} />
+                          </PieChart>
+                      </ChartContainer>
+                  </CardContent>
+              </Card>
+          </AnimatedCard>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {adminSections.map((section) => {
           const IconComponent = section.icon;
@@ -325,7 +380,7 @@ export default function AdminConsolePage() {
           return (
             <AnimatedCard 
                 key={section.title} 
-                delay={section.delay}
+                delay={0.3 + section.delay}
             >
               <Card className={cn(
                 "shadow-sm h-full flex flex-col transition-all hover:shadow-md",
@@ -367,63 +422,6 @@ export default function AdminConsolePage() {
             </AnimatedCard>
           );
         })}
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
-          <AnimatedCard delay={0.6}>
-              <Card className="shadow-sm">
-                  <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><BarChart2 className="h-5 w-5 text-primary"/>Requests by Status</CardTitle>
-                      <CardDescription>An overview of all user requests.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <ChartContainer config={requestsChartConfig} className="min-h-[250px] w-full">
-                          <BarChart accessibilityLayer data={requestsChartData}>
-                              <CartesianGrid vertical={false} />
-                              <XAxis dataKey="status" tickLine={false} tickMargin={10} axisLine={false} fontSize={12} />
-                              <YAxis tickLine={false} axisLine={false} fontSize={12} />
-                              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                              <Bar dataKey="count" radius={8} />
-                          </BarChart>
-                      </ChartContainer>
-                  </CardContent>
-              </Card>
-          </AnimatedCard>
-          <AnimatedCard delay={0.65}>
-              <Card className="shadow-sm">
-                  <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><PieChartIcon className="h-5 w-5 text-primary"/>Suggestions by Category</CardTitle>
-                      <CardDescription>A breakdown of submitted ideas.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex items-center justify-center pb-0">
-                       <ChartContainer config={suggestionsChartConfig} className="mx-auto aspect-square max-h-[300px]">
-                          <PieChart>
-                              <ChartTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
-                              <Pie data={suggestionsChartData} dataKey="count" nameKey="name" labelLine={false} />
-                               <ChartLegend content={<ChartLegendContent nameKey="name" className="flex-wrap" />} />
-                          </PieChart>
-                      </ChartContainer>
-                  </CardContent>
-              </Card>
-          </AnimatedCard>
-          <AnimatedCard delay={0.7}>
-              <Card className="shadow-sm">
-                  <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary"/>User Role Distribution</CardTitle>
-                      <CardDescription>A breakdown of all user roles.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex items-center justify-center pb-0">
-                       <ChartContainer config={userRolesChartConfig} className="mx-auto aspect-square max-h-[300px]">
-                          <PieChart>
-                              <ChartTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
-                              <Pie data={userRolesChartData} dataKey="count" nameKey="name" labelLine={false} />
-                               <ChartLegend content={<ChartLegendContent nameKey="name" className="flex-wrap" />} />
-                          </PieChart>
-                      </ChartContainer>
-                  </CardContent>
-              </Card>
-          </AnimatedCard>
       </div>
 
     </div>
