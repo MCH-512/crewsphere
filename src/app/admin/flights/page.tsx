@@ -15,7 +15,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, getDoc, deleteDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowUpDown } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowUpDown, ArrowRightLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, parseISO } from "date-fns";
 import { flightFormSchema, type FlightFormValues, type StoredFlight, aircraftTypes } from "@/schemas/flight-schema";
@@ -240,6 +240,27 @@ export default function AdminFlightsPage() {
         setIsManageDialogOpen(true);
     };
 
+    const handleCreateReturnFlight = (flight: FlightForDisplay) => {
+        setIsEditMode(false);
+        setCurrentFlight(null);
+        form.reset({
+            flightNumber: flight.flightNumber,
+            departureAirport: flight.arrivalAirport, // Swapped
+            arrivalAirport: flight.departureAirport, // Swapped
+            scheduledDepartureDateTimeUTC: "",
+            scheduledArrivalDateTimeUTC: "",
+            aircraftType: flight.aircraftType as any,
+            purserId: flight.purserId,
+            pilotIds: flight.pilotIds || [],
+            cabinCrewIds: flight.cabinCrewIds || [],
+        });
+        setDepSearch(flight.arrivalAirportName || flight.arrivalAirport);
+        setArrSearch(flight.departureAirportName || flight.departureAirport);
+        setCrewWarnings({});
+        setIsManageDialogOpen(true);
+    };
+
+
     const handleFormSubmit = async (data: FlightFormValues) => {
         if (!user) return;
         
@@ -370,8 +391,9 @@ export default function AdminFlightsPage() {
                                         <TableCell className="text-xs">{f.aircraftType}</TableCell>
                                         <TableCell className="text-xs flex items-center gap-1"><Users className="h-3 w-3"/>{f.crewCount}</TableCell>
                                         <TableCell className="text-right space-x-1">
-                                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(f)}><Edit className="h-4 w-4" /></Button>
-                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(f)}><Trash2 className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" onClick={() => handleCreateReturnFlight(f)} title="Create Return Flight"><ArrowRightLeft className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(f)} title="Edit Flight"><Edit className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(f)} title="Delete Flight"><Trash2 className="h-4 w-4" /></Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}
