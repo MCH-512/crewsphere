@@ -49,6 +49,7 @@ export async function checkCrewAvailability(
           }
       } catch (e) {
           console.error(`Error checking availability for user ${userId}:`, e);
+          // Do not throw, just skip this user. The UI will show no warning for them.
       }
   }
 

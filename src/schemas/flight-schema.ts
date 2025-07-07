@@ -12,8 +12,8 @@ export const flightFormSchema = z.object({
   scheduledArrivalDateTimeUTC: z.string().refine((val) => val && !isNaN(Date.parse(val)), { message: "Invalid arrival date/time." }),
   aircraftType: z.enum(aircraftTypes, { required_error: "Aircraft type is required." }),
   purserId: z.string().min(1, "A purser must be assigned."),
-  pilotIds: z.array(z.string()).optional(),
-  cabinCrewIds: z.array(z.string()).optional(),
+  pilotIds: z.array(z.string()).min(2, "At least two pilots must be assigned."),
+  cabinCrewIds: z.array(z.string()).min(1, "At least one cabin crew member is required."),
   instructorIds: z.array(z.string()).optional(),
   traineeIds: z.array(z.string()).optional(),
 }).refine(data => new Date(data.scheduledArrivalDateTimeUTC) > new Date(data.scheduledDepartureDateTimeUTC), {
