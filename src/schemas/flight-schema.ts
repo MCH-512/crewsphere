@@ -2,13 +2,15 @@
 import { z } from "zod";
 import type { Timestamp } from 'firebase/firestore';
 
+export const aircraftTypes = ["B737-800", "B737-300", "A320"] as const;
+
 export const flightFormSchema = z.object({
   flightNumber: z.string().min(3, "Flight number must be at least 3 characters.").max(10),
   departureAirport: z.string().min(3, "Departure airport is required."),
   arrivalAirport: z.string().min(3, "Arrival airport is required."),
   scheduledDepartureDateTimeUTC: z.string().refine((val) => val && !isNaN(Date.parse(val)), { message: "Invalid departure date/time." }),
   scheduledArrivalDateTimeUTC: z.string().refine((val) => val && !isNaN(Date.parse(val)), { message: "Invalid arrival date/time." }),
-  aircraftType: z.string().min(3, "Aircraft type is required.").max(50),
+  aircraftType: z.enum(aircraftTypes, { required_error: "Aircraft type is required." }),
   purserId: z.string().min(1, "A purser must be assigned."),
   pilotIds: z.array(z.string()).optional(),
   cabinCrewIds: z.array(z.string()).optional(),

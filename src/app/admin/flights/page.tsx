@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, parseISO } from "date-fns";
-import { flightFormSchema, type FlightFormValues, type StoredFlight } from "@/schemas/flight-schema";
+import { flightFormSchema, type FlightFormValues, type StoredFlight, aircraftTypes } from "@/schemas/flight-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { getAirportByCode, searchAirports, type Airport } from "@/services/airport-service";
 import { CustomAutocompleteAirport } from "@/components/ui/custom-autocomplete-airport";
@@ -75,7 +75,7 @@ export default function AdminFlightsPage() {
         defaultValues: {
             flightNumber: "", departureAirport: "", arrivalAirport: "",
             scheduledDepartureDateTimeUTC: "", scheduledArrivalDateTimeUTC: "",
-            aircraftType: "", purserId: "", pilotIds: [], cabinCrewIds: []
+            aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: []
         },
     });
 
@@ -220,7 +220,7 @@ export default function AdminFlightsPage() {
                 arrivalAirport: flightToEdit.arrivalAirport,
                 scheduledDepartureDateTimeUTC: flightToEdit.scheduledDepartureDateTimeUTC,
                 scheduledArrivalDateTimeUTC: flightToEdit.scheduledArrivalDateTimeUTC,
-                aircraftType: flightToEdit.aircraftType,
+                aircraftType: flightToEdit.aircraftType as any,
                 purserId: flightToEdit.purserId,
                 pilotIds: flightToEdit.pilotIds || [],
                 cabinCrewIds: flightToEdit.cabinCrewIds || [],
@@ -231,7 +231,7 @@ export default function AdminFlightsPage() {
             form.reset({
                 flightNumber: "", departureAirport: "", arrivalAirport: "",
                 scheduledDepartureDateTimeUTC: "", scheduledArrivalDateTimeUTC: "",
-                aircraftType: "", purserId: "", pilotIds: [], cabinCrewIds: []
+                aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: []
             });
         }
         setDepSearch("");
@@ -394,7 +394,24 @@ export default function AdminFlightsPage() {
                             <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="aircraftType" render={({ field }) => (<FormItem><FormLabel>Aircraft Type</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="aircraftType" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Aircraft Type</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select an aircraft" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {aircraftTypes.map(type => (
+                                                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                <Controller control={form.control} name="departureAirport" render={({ field }) => (<FormItem><FormLabel>Departure</FormLabel><CustomAutocompleteAirport value={field.value} onSelect={(airport) => field.onChange(airport?.icao || "")} airports={depResults} isLoading={isSearchingAirports} onInputChange={setDepSearch} currentSearchTerm={depSearch} placeholder="Search departure..." /><FormMessage /></FormItem>)} />
