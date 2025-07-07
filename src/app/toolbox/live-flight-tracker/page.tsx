@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -8,7 +7,6 @@ import dynamic from 'next/dynamic';
 
 const DynamicMap = dynamic(() => import('@/components/features/live-map'), {
     ssr: false,
-    loading: () => <div className="h-[600px] w-full bg-muted rounded-lg flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /><p className="ml-2">Loading Map...</p></div>,
 });
 
 export default function LiveFlightTrackerPage() {
