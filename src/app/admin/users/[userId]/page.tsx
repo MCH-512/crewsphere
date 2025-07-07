@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -96,7 +95,7 @@ export default function UserDetailPage() {
                 const requestsPromise = getDocs(query(collection(db, "requests"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(5)));
                 const documentsPromise = getDocs(query(collection(db, "userDocuments"), where("userId", "==", userId), orderBy("expiryDate", "asc")));
 
-                const [userSnap, activitiesSnap, trainingsSnap, requestsSnap, documentsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsSnap, documentsPromise]);
+                const [userSnap, activitiesSnap, trainingsSnap, requestsSnap, documentsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsSnap, documentsSnap]);
                 
                 if (!userSnap.exists()) throw new Error("User not found.");
                 const fetchedUser = { uid: userSnap.id, ...userSnap.data() } as User;
