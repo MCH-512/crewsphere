@@ -26,7 +26,7 @@ export const mainNavConfig = {
     { href: "/flight-swap", label: "Swap Board", icon: ArrowRightLeft },
     { href: "/training", label: "E-Learning", icon: GraduationCap },
     { href: "/document-library", label: "Document Library", icon: Library },
-    { href: "/purser-reports", label: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin'] },
+    { href: "/purser-reports", label: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin', 'instructor'] },
     { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
     {
       href: "/toolbox",

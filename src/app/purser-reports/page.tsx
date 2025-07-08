@@ -35,8 +35,8 @@ export default function PurserReportsPage() {
             router.push('/login');
             return;
         }
-        if (user.role !== 'purser' && user.role !== 'admin') {
-             toast({ title: "Access Denied", description: "This page is for pursers only.", variant: "destructive" });
+        if (!['purser', 'admin', 'instructor'].includes(user.role || '')) {
+             toast({ title: "Access Denied", description: "This page is for authorized personnel only (Pursers, Admins, Instructors).", variant: "destructive" });
              router.push('/');
              return;
         }
@@ -82,8 +82,8 @@ export default function PurserReportsPage() {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
 
-     if (!user || (user.role !== 'purser' && user.role !== 'admin')) {
-        return <div className="flex flex-col items-center justify-center min-h-screen text-center p-4"><AlertTriangle className="h-16 w-16 text-destructive mb-4" /><CardTitle className="text-2xl mb-2">Access Denied</CardTitle><p className="text-muted-foreground">This section is for Pursers only.</p><Button onClick={() => router.push('/')} className="mt-6">Go to Dashboard</Button></div>;
+     if (!user || (!['purser', 'admin', 'instructor'].includes(user.role || ''))) {
+        return <div className="flex flex-col items-center justify-center min-h-screen text-center p-4"><AlertTriangle className="h-16 w-16 text-destructive mb-4" /><CardTitle className="text-2xl mb-2">Access Denied</CardTitle><p className="text-muted-foreground">This section is for authorized personnel only.</p><Button onClick={() => router.push('/')} className="mt-6">Go to Dashboard</Button></div>;
     }
 
     return (

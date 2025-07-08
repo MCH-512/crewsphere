@@ -92,7 +92,7 @@ export default function AdminFlightsPage() {
 
             setAllUsers(allUsersData);
             setUserMap(userMapData);
-            setPursers(allUsersData.filter(u => u.role === 'purser'));
+            setPursers(allUsersData.filter(u => ['purser', 'admin', 'instructor'].includes(u.role || '')));
             setPilots(allUsersData.filter(u => u.role === 'pilote'));
             setCabinCrew(allUsersData.filter(u => u.role === 'cabin crew'));
             setInstructors(allUsersData.filter(u => u.role === 'instructor'));
@@ -313,7 +313,7 @@ export default function AdminFlightsPage() {
                 activityIds[crewId] = activityRef.id;
             }
             
-            const flightData = { ...data, allCrewIds: allAssignedCrewIds, activityIds, updatedAt: serverTimestamp() };
+            const flightData = { ...data, allCrewIds, activityIds, updatedAt: serverTimestamp() };
 
             if (isEditMode && currentFlight) {
                 batch.update(flightRef, flightData);
