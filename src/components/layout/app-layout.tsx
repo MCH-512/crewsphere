@@ -16,8 +16,6 @@ import {
   SidebarTrigger,
   useSidebar,
   SidebarProvider,
-  SidebarGroup,
-  SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -133,7 +131,7 @@ function LayoutWithSidebar({
         <SidebarHeader className="h-16 flex items-center justify-center">
           <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
             <Plane className="w-8 h-8 text-sidebar-primary" />
-            <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">AirCrew Hub</span>
+            <span className="font-bold text-lg group-data-[state=collapsed]:hidden">AirCrew Hub</span>
           </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">
@@ -154,42 +152,45 @@ function LayoutWithSidebar({
                     >
                       <a>
                         <item.icon className="w-5 h-5" />
-                        <span>{item.title}</span>
+                        <span className="group-data-[state=collapsed]:hidden">{item.title}</span>
                       </a>
                     </SidebarMenuButton>
                   </Link>
                 </SidebarMenuItem>
               );
             })}
-             {currentNavConfig.sidebarNav.map((navGroup, groupIndex) => (
-              <React.Fragment key={groupIndex}>
-                <SidebarGroup className="mt-4">
-                  <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">{navGroup.title}</SidebarGroupLabel>
-                  {navGroup.items.map((item) => {
-                    if (item.roles && !item.roles.some((role: string) => user?.role === role)) return null;
-                    const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
-                    return (
-                       <SidebarMenuItem key={item.href}>
-                         <Link href={item.href!} passHref legacyBehavior>
-                           <SidebarMenuButton
-                              asChild
-                              variant={isActive ? "active" : "ghost"}
-                              tooltip={{ children: item.title, side: "right", align: "center" }}
-                              className="h-9 w-full justify-start"
-                           >
-                              <a>
-                                 <item.icon className="w-4 h-4" />
-                                 <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
-                              </a>
-                           </SidebarMenuButton>
-                         </Link>
-                       </SidebarMenuItem>
-                    )
-                  })}
-                </SidebarGroup>
-              </React.Fragment>
-            ))}
           </SidebarMenu>
+          
+          {currentNavConfig.sidebarNav.map((navGroup, groupIndex) => (
+            <div key={groupIndex} className="mt-4">
+              <h2 className="mb-1 px-4 text-xs font-semibold text-sidebar-foreground/70 tracking-wider uppercase group-data-[state=collapsed]:hidden">
+                {navGroup.title}
+              </h2>
+              <SidebarMenu>
+                {navGroup.items.map((item) => {
+                  if (item.roles && !item.roles.some((role: string) => user?.role === role)) return null;
+                  const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
+                  return (
+                     <SidebarMenuItem key={item.href}>
+                       <Link href={item.href!} passHref legacyBehavior>
+                         <SidebarMenuButton
+                            asChild
+                            variant={isActive ? "active" : "ghost"}
+                            tooltip={{ children: item.title, side: "right", align: "center" }}
+                            className="h-9 w-full justify-start"
+                         >
+                            <a>
+                               <item.icon className="w-4 h-4" />
+                               <span className="group-data-[state=collapsed]:hidden">{item.title}</span>
+                            </a>
+                         </SidebarMenuButton>
+                       </Link>
+                     </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </div>
+          ))}
         </SidebarContent>
         <SidebarFooter className="p-2">
           <SidebarMenu>
@@ -202,7 +203,7 @@ function LayoutWithSidebar({
                 >
                   <a>
                     <Settings className="w-5 h-5" />
-                    <span>Settings</span>
+                    <span className="group-data-[state=collapsed]:hidden">Settings</span>
                   </a>
                 </SidebarMenuButton>
               </Link>
