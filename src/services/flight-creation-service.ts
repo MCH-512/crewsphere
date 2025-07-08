@@ -97,7 +97,8 @@ export async function createFlights(data: FlightFormValues, adminUser: User): Pr
         return { success: true, count: flightInstances.length };
 
     } catch (e) {
-        console.error("Error creating flights:", e);
-        return { success: false, count: 0, error: (e as Error).message || "An unknown error occurred" };
+        const errorMessage = e instanceof Error ? e.message : "An unknown error occurred while creating flights.";
+        console.error("Error details in flight-creation-service:", errorMessage);
+        return { success: false, count: 0, error: errorMessage };
     }
 }

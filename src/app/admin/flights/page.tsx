@@ -331,8 +331,9 @@ export default function AdminFlightsPage() {
             fetchPageData();
             setIsManageDialogOpen(false);
         } catch (error: any) {
-            console.error("Error submitting flight(s):", error);
-            toast({ title: "Submission Failed", description: error.message || "Could not save flight details.", variant: "destructive" });
+            const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+            console.error("Error submitting flight(s):", errorMessage);
+            toast({ title: "Submission Failed", description: errorMessage, variant: "destructive" });
         } finally {
             setIsSubmitting(false);
         }
@@ -357,8 +358,9 @@ export default function AdminFlightsPage() {
             toast({ title: "Flight Deleted", description: `Flight "${flightToDelete.flightNumber}" and associated schedule entries have been removed.` });
             fetchPageData();
         } catch (error) {
-            console.error("Error deleting flight:", error);
-            toast({ title: "Deletion Failed", variant: "destructive" });
+            const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+            console.error("Error deleting flight:", errorMessage);
+            toast({ title: "Deletion Failed", description: errorMessage, variant: "destructive" });
         }
     };
 
