@@ -1,16 +1,18 @@
+
 "use client";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, HeartPulse, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Edit, Save, Sparkles, Users } from "lucide-react";
+import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, HeartPulse, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Edit, Save, Sparkles, Users, UserX } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { StoredPurserReport, optionalReportSections } from "@/schemas/purser-report-schema";
+import { StoredFlight } from "@/schemas/flight-schema";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +28,13 @@ const statusConfig: Record<ReportStatus, { label: string; color: "secondary" | "
     closed: { label: "Closed", color: "success" },
 };
 
+interface FullCrewMemberInfo {
+    uid: string;
+    name: string;
+    role: string;
+    present: boolean;
+}
+
 export default function PurserReportDetailPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
@@ -34,6 +43,7 @@ export default function PurserReportDetailPage() {
     const reportId = params.reportId as string;
 
     const [report, setReport] = React.useState<StoredPurserReport | null>(null);
+    const [fullCrewList, setFullCrewList] = React.useState<FullCrewMemberInfo[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [isEditingNotes, setIsEditingNotes] = React.useState(false);
@@ -51,18 +61,40 @@ export default function PurserReportDetailPage() {
         setError(null);
         try {
             const reportDocRef = doc(db, "purserReports", reportId);
-            const docSnap = await getDoc(reportDocRef);
-            if (docSnap.exists()) {
-                const data = { id: docSnap.id, ...docSnap.data() } as StoredPurserReport;
-                setReport(data);
-                setAdminNotes(data.adminNotes || "");
-            } else {
-                setError("Report not found.");
-                toast({ title: "Error", description: "The requested purser report could not be found.", variant: "destructive" });
+            const reportSnap = await getDoc(reportDocRef);
+            if (!reportSnap.exists()) {
+                throw new Error("Report not found.");
             }
-        } catch (err) {
+            const reportData = { id: reportSnap.id, ...reportSnap.data() } as StoredPurserReport;
+            setReport(reportData);
+            setAdminNotes(reportData.adminNotes || "");
+
+            // Fetch original flight to compare crew lists
+            const flightDocRef = doc(db, "flights", reportData.flightId);
+            const flightSnap = await getDoc(flightDocRef);
+            if(flightSnap.exists()) {
+                const flightData = flightSnap.data() as StoredFlight;
+                const crewPromises = (flightData.allCrewIds || []).map(uid => getDoc(doc(db, "users", uid)));
+                const crewDocs = await Promise.all(crewPromises);
+                
+                const confirmedCrewIds = new Set(reportData.crewRoster.map(c => c.uid));
+                const allPlannedCrew = crewDocs
+                    .map(snap => snap.exists() ? {uid: snap.id, ...snap.data()} as User : null)
+                    .filter(Boolean) as User[];
+                
+                const crewListWithStatus: FullCrewMemberInfo[] = allPlannedCrew.map(crewMember => ({
+                    uid: crewMember.uid,
+                    name: crewMember.fullName || crewMember.displayName || 'Unknown',
+                    role: crewMember.role || 'N/A',
+                    present: confirmedCrewIds.has(crewMember.uid),
+                }));
+                setFullCrewList(crewListWithStatus);
+            }
+
+        } catch (err: any) {
             console.error("Error fetching report:", err);
-            setError("Failed to load the report.");
+            setError(err.message || "Failed to load the report.");
+            toast({ title: "Error", description: err.message, variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
@@ -290,12 +322,15 @@ export default function PurserReportDetailPage() {
                 </CardContent>
             </Card>
              <Card>
-                <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Users />Crew on Duty</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Users />Crew Status</CardTitle></CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                   {report.crewRoster?.map(member => (
-                    <div key={member.uid} className="flex justify-between">
-                        <span>{member.name}</span>
-                        <Badge variant="secondary" className="capitalize">{member.role}</Badge>
+                   {fullCrewList.map(member => (
+                    <div key={member.uid} className="flex justify-between items-center">
+                        <span className="flex items-center gap-2">
+                           {member.present ? <UserCheck className="h-4 w-4 text-green-600"/> : <UserX className="h-4 w-4 text-destructive"/>}
+                           {member.name}
+                        </span>
+                        <Badge variant={member.present ? "secondary" : "outline"} className="capitalize">{member.role}</Badge>
                     </div>
                    ))}
                    {report.crewNotes && <p className="text-xs text-muted-foreground pt-2 border-t mt-2"><strong>Notes:</strong> {report.crewNotes}</p>}

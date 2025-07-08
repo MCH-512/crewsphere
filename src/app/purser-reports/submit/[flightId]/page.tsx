@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -21,6 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { type StoredFlight } from "@/schemas/flight-schema";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 interface FlightForReport {
   id: string;
@@ -202,6 +204,7 @@ export default function SubmitPurserReportPage() {
                             control={form.control}
                             name="confirmedCrewIds"
                             render={({ field }) => {
+                            const isChecked = field.value?.includes(member.uid);
                             return (
                                 <FormItem
                                 key={member.uid}
@@ -209,7 +212,7 @@ export default function SubmitPurserReportPage() {
                                 >
                                 <FormControl>
                                     <Checkbox
-                                    checked={field.value?.includes(member.uid)}
+                                    checked={isChecked}
                                     onCheckedChange={(checked) => {
                                         return checked
                                         ? field.onChange([...(field.value || []), member.uid])
@@ -221,7 +224,10 @@ export default function SubmitPurserReportPage() {
                                     }}
                                     />
                                 </FormControl>
-                                <FormLabel className="font-normal flex items-center gap-2">
+                                <FormLabel className={cn(
+                                    "font-normal flex items-center gap-2 transition-opacity",
+                                    !isChecked && "opacity-50 line-through"
+                                )}>
                                      {member.fullName || member.displayName} ({member.email})
                                     <span className="text-muted-foreground capitalize text-xs p-1 bg-muted rounded-sm"> - {member.role}</span>
                                 </FormLabel>
