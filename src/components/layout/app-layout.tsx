@@ -33,13 +33,10 @@ import {
   LogIn,
   UserPlus,
   Loader2,
-  ChevronDown,
   Plane,
   Moon,
   Sun,
-  Calendar as CalendarIcon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { Breadcrumbs } from "./breadcrumbs";
@@ -109,55 +106,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-const CollapsibleSidebarItem = ({ item, pathname }: { item: typeof mainNavConfig.items[number], pathname: string }) => {
-    const isSubActive = item.subItems?.some(sub => pathname.startsWith(sub.href)) ?? false;
-    const [isOpen, setIsOpen] = React.useState(isSubActive);
-  
-    React.useEffect(() => {
-      if (isSubActive) {
-        setIsOpen(true);
-      }
-    }, [isSubActive]);
-  
-    return (
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          variant={isSubActive ? "active" : "border"}
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full justify-between"
-        >
-          <div className="flex items-center gap-2">
-            <item.icon className="w-5 h-5" />
-            <span>{item.label}</span>
-          </div>
-          <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
-        </SidebarMenuButton>
-        {isOpen && (
-          <div className="ml-4 mt-1 border-l-2 border-sidebar-accent/50 pl-5 py-1">
-            <SidebarMenu>
-              {item.subItems?.map(subItem => (
-                <SidebarMenuItem key={subItem.href}>
-                  <Link href={subItem.href} passHref legacyBehavior>
-                    <SidebarMenuButton
-                      asChild
-                      variant={pathname.startsWith(subItem.href) ? "active" : "ghost"}
-                      tooltip={{ children: subItem.label, side: "right", align: "center" }}
-                      className="h-8 w-full justify-start"
-                    >
-                      <a>
-                        <subItem.icon className="w-4 h-4" />
-                        <span>{subItem.label}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </div>
-        )}
-      </SidebarMenuItem>
-    );
-}
 
 function LayoutWithSidebar({
   children,
@@ -175,7 +123,7 @@ function LayoutWithSidebar({
   const { isMobile } = useSidebar();
   const pathname = usePathname();
 
-  const currentNavItems = pathname.startsWith('/admin') && user?.role === 'admin' ? adminNavConfig.items : mainNavConfig.items;
+  const currentNavConfig = pathname.startsWith('/admin') && user?.role === 'admin' ? adminNavConfig : mainNavConfig;
 
   return (
     <>
@@ -183,20 +131,15 @@ function LayoutWithSidebar({
         <SidebarHeader className="h-16 flex items-center justify-center">
           <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
             <Plane className="w-8 h-8 text-sidebar-primary" />
-            <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">Crew World</span>
+            <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">AirCrew Hub</span>
           </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">
           <SidebarMenu>
-            {currentNavItems.map((item: any) => {
+            {currentNavConfig.mainNav.map((item) => {
               if (item.roles && !item.roles.some((role: string) => user?.role === role)) {
                 return null;
               }
-
-              if (item.subItems) {
-                return <CollapsibleSidebarItem key={item.label} item={item} pathname={pathname} />;
-              }
-              
               const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
 
               return (
@@ -205,17 +148,45 @@ function LayoutWithSidebar({
                     <SidebarMenuButton
                       asChild
                       variant={isActive ? "active" : "border"}
-                      tooltip={{ children: item.label, side: "right", align: "center" }}
+                      tooltip={{ children: item.title, side: "right", align: "center" }}
                     >
                       <a>
                         <item.icon className="w-5 h-5" />
-                        <span>{item.label}</span>
+                        <span>{item.title}</span>
                       </a>
                     </SidebarMenuButton>
                   </Link>
                 </SidebarMenuItem>
               );
             })}
+             {currentNavConfig.sidebarNav.map((navGroup, groupIndex) => (
+              <React.Fragment key={groupIndex}>
+                <SidebarGroup className="mt-4">
+                  <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">{navGroup.title}</SidebarGroupLabel>
+                  {navGroup.items.map((item) => {
+                    if (item.roles && !item.roles.some((role: string) => user?.role === role)) return null;
+                    const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
+                    return (
+                       <SidebarMenuItem key={item.href}>
+                         <Link href={item.href!} passHref legacyBehavior>
+                           <SidebarMenuButton
+                              asChild
+                              variant={isActive ? "active" : "ghost"}
+                              tooltip={{ children: item.title, side: "right", align: "center" }}
+                              className="h-9 w-full justify-start"
+                           >
+                              <a>
+                                 <item.icon className="w-4 h-4" />
+                                 <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                              </a>
+                           </SidebarMenuButton>
+                         </Link>
+                       </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarGroup>
+              </React.Fragment>
+            ))}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-2">
