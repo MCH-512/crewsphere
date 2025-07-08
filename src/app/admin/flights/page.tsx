@@ -286,10 +286,11 @@ export default function AdminFlightsPage() {
         }
 
         setIsSubmitting(true);
+        let wasSuccessful = false;
         
         try {
             if (isEditMode && currentFlight) {
-                // UPDATE logic for a single flight
+                // UPDATE logic
                 const batch = writeBatch(db);
                 const flightRef = doc(db, "flights", currentFlight.id);
 
@@ -312,29 +313,35 @@ export default function AdminFlightsPage() {
                     });
                     activityIds[crewId] = activityRef.id;
                 }
+                
+                // Exclude recurrence fields from the update data for a single flight
+                const { recurrence, recurrenceEndDate, ...singleFlightData } = data;
 
-                batch.update(flightRef, { ...data, allCrewIds, activityIds, updatedAt: serverTimestamp() });
+                batch.update(flightRef, { ...singleFlightData, allCrewIds, activityIds, updatedAt: serverTimestamp() });
                 await batch.commit();
+
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityType: "FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
                 toast({ title: "Flight Updated", description: `Flight ${data.flightNumber} has been updated.` });
+                wasSuccessful = true;
             
             } else {
-                // CREATE logic for single or recurring flights
+                // CREATE logic
                 const result = await createFlights(data, user);
                 if (result.success) {
                     toast({ title: "Flights Created", description: `${result.count} flight(s) for flight number ${data.flightNumber} have been scheduled.` });
+                    wasSuccessful = true;
                 } else {
-                    throw new Error(result.error || "Failed to create flights.");
+                    toast({ title: "Submission Failed", description: result.error || "Failed to create flights.", variant: "destructive" });
                 }
             }
-
-            fetchPageData();
-            setIsManageDialogOpen(false);
         } catch (error: any) {
             const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
-            console.error("Error submitting flight(s):", errorMessage);
-            toast({ title: "Submission Failed", description: errorMessage, variant: "destructive" });
+            toast({ title: "Operation Failed", description: errorMessage, variant: "destructive" });
         } finally {
+            if (wasSuccessful) {
+                fetchPageData();
+                setIsManageDialogOpen(false);
+            }
             setIsSubmitting(false);
         }
     };
@@ -359,7 +366,6 @@ export default function AdminFlightsPage() {
             fetchPageData();
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
-            console.error("Error deleting flight:", errorMessage);
             toast({ title: "Deletion Failed", description: errorMessage, variant: "destructive" });
         }
     };
