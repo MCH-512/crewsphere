@@ -53,8 +53,7 @@ export function TodaysScheduleCard() {
                 if (!querySnapshot.empty) {
                     setActivities(querySnapshot.docs.map(doc => doc.data() as TodayActivity));
                 } else {
-                    // If no specific activity, assume it's a day off for display purposes.
-                    setActivities([{ activityType: 'day-off', comments: 'Enjoy your day off!' }]);
+                    setActivities([]);
                 }
             } catch (error) {
                 console.error("Error fetching today's schedule:", error);
@@ -77,7 +76,17 @@ export function TodaysScheduleCard() {
         }
 
         if (activities.length === 0) {
-            return <p className="text-sm text-muted-foreground">No schedule information available.</p>;
+            return (
+                 <div className="flex items-start gap-4">
+                    <Bed className="h-6 w-6 text-primary mt-1" />
+                    <div>
+                        <p className="font-semibold">No Scheduled Activities</p>
+                        <div className="text-sm text-muted-foreground">
+                            <p>Enjoy your day!</p>
+                        </div>
+                    </div>
+                </div>
+            );
         }
 
         return (
