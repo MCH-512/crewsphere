@@ -99,7 +99,7 @@ export default function AdminConsolePage() {
             usersSnap, flightsSnap, suggestionsSnap, reportsSnap, requestsSnap,
             documentsSnap, coursesSnap, quizzesSnap, alertsSnap, sessionsSnap, swapsSnap, auditLogsSnap
         ] = await Promise.all([
-            usersSnapPromise, flightsSnapPromise, suggestionsPromise, reportsSnapPromise, requestsPromise,
+            usersSnapPromise, flightsSnapPromise, suggestionsPromise, reportsPromise, requestsPromise,
             documentsSnapPromise, coursesSnapPromise, quizzesSnapPromise, alertsSnapPromise, sessionsSnapPromise, swapsSnapPromise, auditLogsPromise
         ]);
         
