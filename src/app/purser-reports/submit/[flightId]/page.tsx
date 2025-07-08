@@ -9,7 +9,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileSignature, Loader2, Send, PlusCircle, Trash2 } from "lucide-react";
+import { FileSignature, Loader2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -18,11 +18,11 @@ import { useRouter, useParams } from "next/navigation";
 import { purserReportFormSchema, type PurserReportFormValues, optionalReportSections } from "@/schemas/purser-report-schema";
 import { format, parseISO } from "date-fns";
 import { getAirportByCode } from "@/services/airport-service";
-import { Separator } from "@/components/ui/separator";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { type StoredFlight } from "@/schemas/flight-schema";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface FlightForReport {
   id: string;
@@ -35,8 +35,6 @@ interface FlightForReport {
   aircraftType: string;
 }
 
-type OptionalSectionName = typeof optionalReportSections[number]['name'];
-
 export default function SubmitPurserReportPage() {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -48,7 +46,6 @@ export default function SubmitPurserReportPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [flightData, setFlightData] = React.useState<FlightForReport | null>(null);
   const [crewMembers, setCrewMembers] = React.useState<User[]>([]);
-  const [visibleSections, setVisibleSections] = React.useState<Set<OptionalSectionName>>(new Set());
 
   const form = useForm<PurserReportFormValues>({
     resolver: zodResolver(purserReportFormSchema),
@@ -61,18 +58,6 @@ export default function SubmitPurserReportPage() {
     mode: "onChange",
   });
 
-  const toggleSection = (sectionName: OptionalSectionName) => {
-    setVisibleSections(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(sectionName)) {
-            newSet.delete(sectionName);
-            form.setValue(sectionName, undefined);
-        } else {
-            newSet.add(sectionName);
-        }
-        return newSet;
-    });
-  };
 
   React.useEffect(() => {
     if (!flightId || authLoading) return;
@@ -264,44 +249,42 @@ export default function SubmitPurserReportPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Detailed Observations (Optional)</CardTitle>
-            <CardDescription>Add sections for any specific incidents or notes that occurred during the flight.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                {optionalReportSections.map(({ name, label, icon: Icon }) => (
-                    <Button key={name} type="button" variant={visibleSections.has(name) ? "secondary" : "outline"} onClick={() => toggleSection(name)}>
-                        <Icon className="mr-2 h-4 w-4"/> {label}
-                    </Button>
-                ))}
-            </div>
-            <Separator />
-            <div className="space-y-6">
-            {optionalReportSections.map(({ name, label, placeholder, icon: Icon }) => (
-              visibleSections.has(name) && (
-                <div key={name} className="space-y-2 border-l-4 pl-4 py-2 border-primary/50 bg-muted/30 rounded-r-md">
-                   <div className="flex justify-between items-center">
-                    <FormLabel className="font-semibold flex items-center gap-2"><Icon className="h-4 w-4 text-primary"/>{label}</FormLabel>
-                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => toggleSection(name)}><Trash2 className="h-4 w-4"/></Button>
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name={name}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Textarea placeholder={placeholder} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )
-            ))}
-            </div>
-          </CardContent>
+            <CardHeader>
+                <CardTitle className="text-lg">Detailed Observations (Optional)</CardTitle>
+                <CardDescription>Expand any relevant sections below to add specific details.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Accordion type="multiple" className="w-full">
+                    {optionalReportSections.map(({ name, label, placeholder, icon: Icon }) => (
+                        <AccordionItem value={name} key={name}>
+                            <AccordionTrigger className="text-base hover:no-underline">
+                                <div className="flex items-center gap-3">
+                                    <Icon className="h-5 w-5 text-primary" />
+                                    {label}
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                <FormField
+                                    control={form.control}
+                                    name={name}
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormControl>
+                                        <Textarea
+                                            placeholder={placeholder}
+                                            {...field}
+                                            className="min-h-[120px]"
+                                        />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
+            </CardContent>
         </Card>
         
         <div className="flex justify-end">
