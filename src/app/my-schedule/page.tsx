@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { type StoredFlight } from "@/schemas/flight-schema";
 import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode, type Airport } from "@/services/airport-service";
+import type { DayContentProps } from "react-day-picker";
 
 interface UserActivity {
   id: string;
@@ -258,11 +259,11 @@ export default function MySchedulePage() {
         }
     };
     
-    const ActivityDay = ({ date }: { date: Date }) => {
-        const dayActivities = activities.filter(a => a.date.toDate().toDateString() === date.toDateString());
+    const ActivityDayContent = (props: DayContentProps) => {
+        const dayActivities = activities.filter(a => a.date.toDate().toDateString() === props.date.toDateString());
         return (
             <div className="relative h-full w-full flex items-center justify-center">
-                {date.getDate()}
+                <p>{format(props.date, 'd')}</p>
                 {dayActivities.length > 0 && (
                     <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">
                         {dayActivities.slice(0, 3).map(activity => (
@@ -304,7 +305,7 @@ export default function MySchedulePage() {
                             selected={selectedDay}
                             onSelect={setSelectedDay}
                             onMonthChange={setCurrentMonth}
-                            components={{ Day: ActivityDay }}
+                            components={{ DayContent: ActivityDayContent }}
                             className="p-2 sm:p-4"
                         />
                     </Card>

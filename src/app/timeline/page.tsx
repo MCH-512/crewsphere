@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { type StoredFlight } from "@/schemas/flight-schema";
 import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode, type Airport } from "@/services/airport-service";
+import type { DayContentProps } from "react-day-picker";
 
 interface TimelineActivity {
   id: string;
@@ -185,11 +186,11 @@ export default function TimelinePage() {
         }
     };
 
-    const ActivityDay = ({ date }: { date: Date }) => {
-        const dayActivities = activities.filter(f => f.date.toDate().toDateString() === date.toDateString());
+    const ActivityDayContent = (props: DayContentProps) => {
+        const dayActivities = activities.filter(f => f.date.toDate().toDateString() === props.date.toDateString());
         return (
             <div className="relative h-full w-full flex items-center justify-center">
-                {date.getDate()}
+                <p>{format(props.date, 'd')}</p>
                 {dayActivities.length > 0 && <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">{dayActivities.slice(0, 3).map(activity => (<div key={activity.id} className={cn("h-1.5 w-1.5 rounded-full", activityConfig[activity.type]?.dotColor)} />))}</div>}
             </div>
         );
@@ -208,7 +209,7 @@ export default function TimelinePage() {
             </AnimatedCard>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 <AnimatedCard delay={0.1} className="lg:col-span-3">
-                    <Card className="shadow-sm"><Calendar mode="single" selected={selectedDay} onSelect={setSelectedDay} onMonthChange={setCurrentMonth} components={{ Day: ActivityDay }} className="p-2 sm:p-4" /></Card>
+                    <Card className="shadow-sm"><Calendar mode="single" selected={selectedDay} onSelect={setSelectedDay} onMonthChange={setCurrentMonth} components={{ DayContent: ActivityDayContent }} className="p-2 sm:p-4" /></Card>
                 </AnimatedCard>
                 <AnimatedCard delay={0.15} className="lg:col-span-2">
                     <Card className="shadow-sm h-full">
