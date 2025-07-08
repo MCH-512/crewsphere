@@ -28,7 +28,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { checkCrewAvailability, type Conflict } from "@/services/user-activity-service";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { createFlights } from "@/services/flight-creation-service";
 
 
 interface FlightForDisplay extends StoredFlight {
@@ -79,7 +78,7 @@ export default function AdminFlightsPage() {
             flightNumber: "", departureAirport: "", arrivalAirport: "",
             scheduledDepartureDateTimeUTC: "", scheduledArrivalDateTimeUTC: "",
             aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: [],
-            instructorIds: [], traineeIds: [], recurrence: "none", recurrenceEndDate: ""
+            instructorIds: [], traineeIds: []
         },
     });
 
@@ -234,7 +233,6 @@ export default function AdminFlightsPage() {
                 cabinCrewIds: flightToEdit.cabinCrewIds || [],
                 instructorIds: flightToEdit.instructorIds || [],
                 traineeIds: flightToEdit.traineeIds || [],
-                recurrence: "none",
             });
         } else {
             setIsEditMode(false);
@@ -243,7 +241,7 @@ export default function AdminFlightsPage() {
                 flightNumber: "", departureAirport: "", arrivalAirport: "",
                 scheduledDepartureDateTimeUTC: "", scheduledArrivalDateTimeUTC: "",
                 aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: [],
-                instructorIds: [], traineeIds: [], recurrence: "none", recurrenceEndDate: "",
+                instructorIds: [], traineeIds: [],
             });
         }
         setDepSearch("");
@@ -267,7 +265,6 @@ export default function AdminFlightsPage() {
             cabinCrewIds: flight.cabinCrewIds || [],
             instructorIds: flight.instructorIds || [],
             traineeIds: flight.traineeIds || [],
-            recurrence: "none",
         });
         setDepSearch(flight.arrivalAirportName || flight.arrivalAirport);
         setArrSearch(flight.departureAirportName || flight.departureAirport);
@@ -289,6 +286,8 @@ export default function AdminFlightsPage() {
         let wasSuccessful = false;
         
         try {
+            const allAssignedCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || []), ...(data.instructorIds || []), ...(data.traineeIds || [])].filter(Boolean))];
+            
             if (isEditMode && currentFlight) {
                 // UPDATE logic
                 const batch = writeBatch(db);
@@ -300,7 +299,6 @@ export default function AdminFlightsPage() {
                     }
                 }
                 
-                const allAssignedCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || []), ...(data.instructorIds || []), ...(data.traineeIds || [])].filter(Boolean))];
                 const activityIds: Record<string, string> = {};
 
                 for (const crewId of allAssignedCrewIds) {
@@ -314,9 +312,7 @@ export default function AdminFlightsPage() {
                     activityIds[crewId] = activityRef.id;
                 }
                 
-                const { recurrence, recurrenceEndDate, ...singleFlightData } = data;
-
-                batch.update(flightRef, { ...singleFlightData, allCrewIds, activityIds, updatedAt: serverTimestamp() });
+                batch.update(flightRef, { ...data, allCrewIds, activityIds, updatedAt: serverTimestamp() });
                 await batch.commit();
 
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityType: "FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
@@ -324,17 +320,44 @@ export default function AdminFlightsPage() {
                 wasSuccessful = true;
             
             } else {
-                // CREATE logic
-                const result = await createFlights(data, user);
-                if (result.success) {
-                    toast({ title: "Flights Created", description: `${result.count} flight(s) for flight number ${data.flightNumber} have been scheduled.` });
-                    wasSuccessful = true;
-                } else {
-                    toast({ title: "Submission Failed", description: result.error || "Failed to create flights.", variant: "destructive" });
+                // CREATE logic for a single flight
+                const batch = writeBatch(db);
+                const flightRef = doc(collection(db, "flights"));
+                
+                const activityIds: Record<string, string> = {};
+
+                for (const crewId of allAssignedCrewIds) {
+                    const activityRef = doc(collection(db, "userActivities"));
+                    batch.set(activityRef, {
+                        userId: crewId,
+                        activityType: 'flight' as const,
+                        flightId: flightRef.id,
+                        date: Timestamp.fromDate(startOfDay(new Date(data.scheduledDepartureDateTimeUTC))),
+                        flightNumber: data.flightNumber,
+                        departureAirport: data.departureAirport,
+                        arrivalAirport: data.arrivalAirport,
+                        comments: `Flight ${data.flightNumber} from ${data.departureAirport} to ${data.arrivalAirport}`,
+                    });
+                    activityIds[crewId] = activityRef.id;
                 }
+                
+                batch.set(flightRef, {
+                    ...data,
+                    allCrewIds,
+                    activityIds,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    purserReportSubmitted: false,
+                });
+                
+                await batch.commit();
+
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_FLIGHT", entityType: "FLIGHT", entityId: flightRef.id, details: { flightNumber: data.flightNumber } });
+                toast({ title: "Flight Created", description: `Flight ${data.flightNumber} has been scheduled.` });
+                wasSuccessful = true;
             }
         } catch (error) {
-             const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+            const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
             toast({ title: "Operation Failed", description: errorMessage, variant: "destructive" });
         } finally {
             if (wasSuccessful) {
@@ -461,34 +484,6 @@ export default function AdminFlightsPage() {
                                 <FormField control={form.control} name="scheduledDepartureDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Departure Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="scheduledArrivalDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Arrival Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             </div>
-
-                            {!isEditMode && (
-                                <>
-                                <Separator/>
-                                <h3 className="text-lg font-medium">Recurrence</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <FormField control={form.control} name="recurrence" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Frequency</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value}>
-                                                <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="none">None (Single Flight)</SelectItem>
-                                                    <SelectItem value="daily">Daily</SelectItem>
-                                                    <SelectItem value="weekly">Weekly</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                     {form.watch("recurrence") !== 'none' && (
-                                        <FormField control={form.control} name="recurrenceEndDate" render={({ field }) => (
-                                            <FormItem><FormLabel>Recurrence End Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                     )}
-                                </div>
-                                </>
-                            )}
                             
                             <Separator/>
                             <h3 className="text-lg font-medium">Crew Assignment</h3>
@@ -519,7 +514,7 @@ export default function AdminFlightsPage() {
                         </ScrollArea>
                             <DialogFooter className="mt-4 pt-4 border-t">
                                 <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                                <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}{isEditMode ? "Save Changes" : "Create Flight(s)"}</Button>
+                                <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}{isEditMode ? "Save Changes" : "Create Flight"}</Button>
                             </DialogFooter>
                         </form>
                     </Form>
