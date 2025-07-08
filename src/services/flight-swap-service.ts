@@ -5,7 +5,7 @@ import { db, isConfigValid } from "@/lib/firebase";
 import { collection, doc, getDoc, updateDoc, writeBatch, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { StoredFlight } from "@/schemas/flight-schema";
 import { User } from "@/contexts/auth-context";
-import { logAuditEvent } from "./audit-logger";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 /**
  * Creates a request to swap a flight.
