@@ -314,7 +314,6 @@ export default function AdminFlightsPage() {
                     activityIds[crewId] = activityRef.id;
                 }
                 
-                // Exclude recurrence fields from the update data for a single flight
                 const { recurrence, recurrenceEndDate, ...singleFlightData } = data;
 
                 batch.update(flightRef, { ...singleFlightData, allCrewIds, activityIds, updatedAt: serverTimestamp() });
@@ -334,8 +333,8 @@ export default function AdminFlightsPage() {
                     toast({ title: "Submission Failed", description: result.error || "Failed to create flights.", variant: "destructive" });
                 }
             }
-        } catch (error: any) {
-            const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+        } catch (error) {
+             const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
             toast({ title: "Operation Failed", description: errorMessage, variant: "destructive" });
         } finally {
             if (wasSuccessful) {

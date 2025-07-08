@@ -26,7 +26,9 @@ export async function createFlights(data: FlightFormValues, adminUser: User): Pr
             let currentDate = startDate;
             while (isBefore(currentDate, endDate) || isEqual(currentDate, endDate)) {
                  if (flightInstances.length * operationsPerFlight > MAX_OPERATIONS) {
-                    throw new Error(`This recurrence creates too many flights. Maximum of ${Math.floor(MAX_OPERATIONS / operationsPerFlight)} flights can be created at once.`);
+                    // Instead of throwing, return an error object. This is the key fix.
+                    const errorMessage = `This recurrence creates too many flights. Maximum of ${Math.floor(MAX_OPERATIONS / operationsPerFlight)} flights can be created at once.`;
+                    return { success: false, count: 0, error: errorMessage };
                 }
 
                 const newDepartureDate = new Date(currentDate);
@@ -43,7 +45,7 @@ export async function createFlights(data: FlightFormValues, adminUser: User): Pr
         }
 
         if (flightInstances.length === 0) {
-            throw new Error("No flights to create for the given date range.");
+            return { success: false, count: 0, error: "No flights to create for the given date range." };
         }
 
         const batch = writeBatch(db);
@@ -67,7 +69,6 @@ export async function createFlights(data: FlightFormValues, adminUser: User): Pr
                 activityIds[crewId] = activityRef.id;
             }
             
-            // Remove recurrence fields for individual flight docs
             const { recurrence, recurrenceEndDate, ...singleFlightData } = flightData;
 
             batch.set(flightRef, {
@@ -97,8 +98,8 @@ export async function createFlights(data: FlightFormValues, adminUser: User): Pr
         return { success: true, count: flightInstances.length };
 
     } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : "An unknown error occurred while creating flights.";
-        console.error("Error details in flight-creation-service:", errorMessage);
+        const errorMessage = e instanceof Error ? e.message : "An unknown error occurred while preparing flights.";
+        console.error("Critical error in flight-creation-service:", e);
         return { success: false, count: 0, error: errorMessage };
     }
 }
