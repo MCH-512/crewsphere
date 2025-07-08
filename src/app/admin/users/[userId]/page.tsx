@@ -5,28 +5,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, orderBy, limit, getDocs, Timestamp } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, orderBy, limit, getDocs, Timestamp, writeBatch } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, AlertTriangle, ArrowLeft, User as UserIcon, Calendar, GraduationCap, Inbox, CheckCircle, XCircle, ShieldCheck, CalendarX, CalendarClock, CalendarCheck2 } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowLeft, User as UserIcon, Calendar, GraduationCap, Inbox, CheckCircle, XCircle, ShieldCheck, CalendarX, CalendarClock, CalendarCheck2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { format, formatDistanceToNowStrict, differenceInDays } from "date-fns";
+import { format, formatDistanceToNowStrict, differenceInDays, startOfDay, eachDayOfInterval } from "date-fns";
 import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
 import { StoredCourse } from "@/schemas/course-schema";
 import { StoredUserDocument } from "@/schemas/user-document-schema";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { UserActivity, ActivityType } from "@/schemas/user-activity-schema";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { manualActivityFormSchema, manualActivityTypes, type ManualActivityFormValues } from "@/schemas/manual-activity-schema";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 // --- Interfaces for fetched data ---
-interface UserActivity {
-  id: string;
-  activityType: 'flight' | 'leave' | 'training' | 'standby' | 'day-off';
-  date: Timestamp;
-  comments?: string;
-  flightNumber?: string;
-}
-
 interface RequestSummary {
     id: string;
     subject: string;
@@ -65,6 +66,93 @@ const statusConfig: Record<DocumentStatus, { icon: React.ElementType, color: str
     valid: { icon: CalendarCheck2, color: "text-green-600", label: "Valid" },
 };
 
+
+const AddManualActivityDialog = ({ userId, onActivityAdded }: { userId: string, onActivityAdded: () => void }) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const { toast } = useToast();
+
+    const form = useForm<ManualActivityFormValues>({
+        resolver: zodResolver(manualActivityFormSchema),
+        defaultValues: {
+            activityType: "Day Off",
+            startDate: new Date().toISOString().split('T')[0],
+            endDate: new Date().toISOString().split('T')[0],
+            comments: ""
+        },
+    });
+
+    const onSubmit = async (data: ManualActivityFormValues) => {
+        setIsSubmitting(true);
+        try {
+            const batch = writeBatch(db);
+            const interval = eachDayOfInterval({ 
+                start: new Date(data.startDate), 
+                end: new Date(data.endDate) 
+            });
+
+            const activityTypeMapping: Record<typeof manualActivityTypes[number], ActivityType> = {
+                "Standby": "standby",
+                "Day Off": "day-off",
+                "Sick Leave": "leave",
+                "Emergency Leave": "leave",
+                "Annual Leave": "leave",
+            };
+            const dbActivityType = activityTypeMapping[data.activityType];
+            const comments = data.comments ? `${data.activityType}: ${data.comments}` : data.activityType;
+
+            interval.forEach(day => {
+                const activityRef = doc(collection(db, "userActivities"));
+                batch.set(activityRef, {
+                    userId,
+                    activityType: dbActivityType,
+                    date: Timestamp.fromDate(startOfDay(day)),
+                    comments,
+                });
+            });
+
+            await batch.commit();
+            toast({ title: "Activity Added", description: `The new activity has been added to the user's schedule.` });
+            onActivityAdded();
+            setIsOpen(false);
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message || "Could not add activity.", variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    return (
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+            <Button><PlusCircle className="mr-2 h-4 w-4"/>Add Manual Activity</Button>
+        </DialogTrigger>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Add Manual Schedule Activity</DialogTitle>
+                <DialogDescription>Add a non-flight activity like leave or standby to this user's schedule.</DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField control={form.control} name="activityType" render={({ field }) => (
+                        <FormItem><FormLabel>Activity Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{manualActivityTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                    )}/>
+                     <div className="grid grid-cols-2 gap-4">
+                        <FormField control={form.control} name="startDate" render={({ field }) => <FormItem><FormLabel>Start Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
+                        <FormField control={form.control} name="endDate" render={({ field }) => <FormItem><FormLabel>End Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
+                    </div>
+                    <FormField control={form.control} name="comments" render={({ field }) => <FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea {...field} placeholder="Add any relevant details..."/></FormControl><FormMessage /></FormItem>} />
+                    <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                        <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Add to Schedule</Button>
+                    </DialogFooter>
+                </form>
+            </Form>
+        </DialogContent>
+      </Dialog>
+    );
+}
+
 // --- Page Component ---
 export default function UserDetailPage() {
     const { user: adminUser, loading: authLoading } = useAuth();
@@ -77,52 +165,52 @@ export default function UserDetailPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
 
+    const fetchUserProfileData = React.useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const userDocRef = doc(db, "users", userId);
+            
+            const userPromise = getDoc(userDocRef);
+            const activitiesPromise = getDocs(query(collection(db, "userActivities"), where("userId", "==", userId), orderBy("date", "desc"), limit(5)));
+            const trainingsPromise = getDocs(query(collection(db, "userQuizAttempts"), where("userId", "==", userId), orderBy("completedAt", "desc"), limit(5)));
+            const requestsPromise = getDocs(query(collection(db, "requests"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(5)));
+            const documentsPromise = getDocs(query(collection(db, "userDocuments"), where("userId", "==", userId), orderBy("expiryDate", "asc")));
+
+            const [userSnap, activitiesSnap, trainingsSnap, requestsSnap, documentsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsSnap, documentsSnap]);
+            
+            if (!userSnap.exists()) throw new Error("User not found.");
+            const fetchedUser = { uid: userSnap.id, ...userSnap.data() } as User;
+            
+            const activities = activitiesSnap.docs.map(d => ({ id: d.id, ...d.data() }) as UserActivity);
+            const requests = requestsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as RequestSummary);
+            const documents = documentsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserDocument);
+
+            const trainingAttempts = trainingsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserQuizAttempt);
+            const courseIds = [...new Set(trainingAttempts.map(t => t.courseId))];
+            const coursePromises = courseIds.map(id => getDoc(doc(db, "courses", id)));
+            const courseDocs = await Promise.all(coursePromises);
+            const coursesMap = new Map(courseDocs.map(d => [d.id, d.data() as StoredCourse]));
+            const trainings = trainingAttempts.map(t => ({ ...t, courseTitle: coursesMap.get(t.courseId)?.title || "Unknown Course" }));
+
+            setProfileData({ user: fetchedUser, activities, trainings, requests, documents });
+
+        } catch (err: any) {
+            setError(err.message || "Failed to load user profile.");
+            toast({ title: "Loading Error", description: err.message, variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [userId, toast]);
+
+
     React.useEffect(() => {
         if (!userId || !adminUser || adminUser.role !== 'admin') {
             if (!authLoading) router.push('/');
             return;
         }
-
-        const fetchUserProfileData = async () => {
-            setIsLoading(true);
-            setError(null);
-            try {
-                const userDocRef = doc(db, "users", userId);
-                
-                const userPromise = getDoc(userDocRef);
-                const activitiesPromise = getDocs(query(collection(db, "userActivities"), where("userId", "==", userId), orderBy("date", "desc"), limit(5)));
-                const trainingsPromise = getDocs(query(collection(db, "userQuizAttempts"), where("userId", "==", userId), orderBy("completedAt", "desc"), limit(5)));
-                const requestsPromise = getDocs(query(collection(db, "requests"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(5)));
-                const documentsPromise = getDocs(query(collection(db, "userDocuments"), where("userId", "==", userId), orderBy("expiryDate", "asc")));
-
-                const [userSnap, activitiesSnap, trainingsSnap, requestsSnap, documentsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsSnap, documentsSnap]);
-                
-                if (!userSnap.exists()) throw new Error("User not found.");
-                const fetchedUser = { uid: userSnap.id, ...userSnap.data() } as User;
-                
-                const activities = activitiesSnap.docs.map(d => ({ id: d.id, ...d.data() }) as UserActivity);
-                const requests = requestsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as RequestSummary);
-                const documents = documentsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserDocument);
-
-                const trainingAttempts = trainingsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserQuizAttempt);
-                const courseIds = [...new Set(trainingAttempts.map(t => t.courseId))];
-                const coursePromises = courseIds.map(id => getDoc(doc(db, "courses", id)));
-                const courseDocs = await Promise.all(coursePromises);
-                const coursesMap = new Map(courseDocs.map(d => [d.id, d.data() as StoredCourse]));
-                const trainings = trainingAttempts.map(t => ({ ...t, courseTitle: coursesMap.get(t.courseId)?.title || "Unknown Course" }));
-
-                setProfileData({ user: fetchedUser, activities, trainings, requests, documents });
-
-            } catch (err: any) {
-                setError(err.message || "Failed to load user profile.");
-                toast({ title: "Loading Error", description: err.message, variant: "destructive" });
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchUserProfileData();
-    }, [userId, adminUser, authLoading, router, toast]);
+    }, [userId, adminUser, authLoading, router, toast, fetchUserProfileData]);
 
     if (isLoading || authLoading) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -160,7 +248,10 @@ export default function UserDetailPage() {
 
              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
-                    <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Calendar className="h-5 w-5 text-primary"/>Recent Schedule</CardTitle></CardHeader>
+                    <CardHeader className="flex-row justify-between items-center">
+                        <CardTitle className="text-lg flex items-center gap-2"><Calendar className="h-5 w-5 text-primary"/>Recent Schedule</CardTitle>
+                        <AddManualActivityDialog userId={userId} onActivityAdded={fetchUserProfileData} />
+                    </CardHeader>
                     <CardContent>
                         {activities.length > 0 ? (
                              <ul className="space-y-2">{activities.map(act => <li key={act.id} className="text-sm flex justify-between"><span>{act.activityType === 'flight' ? `Flight ${act.flightNumber}` : act.comments || act.activityType}</span> <span className="text-muted-foreground">{format(act.date.toDate(), 'PP')}</span></li>)}</ul>

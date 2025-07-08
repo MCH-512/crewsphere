@@ -12,10 +12,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input"; 
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, query as firestoreQuery, orderBy, Timestamp, doc, updateDoc, serverTimestamp, writeBatch, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown, Info, MessageSquareText, CheckCircle } from "lucide-react";
-import { format } from "date-fns";
+import { format, eachDayOfInterval, startOfDay } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { logAuditEvent } from "@/lib/audit-logger";
@@ -60,7 +60,7 @@ export default function AdminUserRequestsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const q = query(collection(db, "requests"), orderBy("createdAt", "desc")); 
+      const q = firestoreQuery(collection(db, "requests"), orderBy("createdAt", "desc")); 
       const querySnapshot = await getDocs(q);
       const fetchedRequests = querySnapshot.docs.map(doc => ({
         id: doc.id,
@@ -139,12 +139,45 @@ export default function AdminUserRequestsPage() {
 
     setIsUpdatingStatus(true);
     try {
+        const batch = writeBatch(db);
         const requestDocRef = doc(db, "requests", selectedRequest.id);
-        await updateDoc(requestDocRef, {
+        
+        batch.update(requestDocRef, {
             status: newStatus,
             adminResponse: adminResponseText || null,
             updatedAt: serverTimestamp(),
         });
+        
+        const isLeaveRequest = selectedRequest.requestType === 'Leave & Absences';
+        const isNowApproved = newStatus === 'approved';
+        const wasPreviouslyApproved = selectedRequest.status === 'approved';
+
+        if (isLeaveRequest) {
+            const activitiesQuery = firestoreQuery(collection(db, "userActivities"), where("requestId", "==", selectedRequest.id));
+            const activitiesSnapshot = await getDocs(activitiesQuery);
+            activitiesSnapshot.forEach(doc => batch.delete(doc.ref));
+        }
+
+        if (isLeaveRequest && isNowApproved && selectedRequest.startDate && selectedRequest.endDate) {
+            const interval = eachDayOfInterval({ 
+                start: new Date(selectedRequest.startDate), 
+                end: new Date(selectedRequest.endDate) 
+            });
+
+            interval.forEach(day => {
+                const activityRef = doc(collection(db, "userActivities"));
+                batch.set(activityRef, {
+                    userId: selectedRequest.userId,
+                    activityType: 'leave',
+                    date: Timestamp.fromDate(startOfDay(day)),
+                    comments: selectedRequest.specificRequestType || 'Leave',
+                    requestId: selectedRequest.id
+                });
+            });
+        }
+        
+        await batch.commit();
+
         await logAuditEvent({
             userId: user.uid,
             userEmail: user.email || "N/A",
@@ -157,9 +190,9 @@ export default function AdminUserRequestsPage() {
         toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. Response saved.` });
         fetchRequests(); 
         setIsManageDialogOpen(false);
-    } catch (err) {
+    } catch (err: any) {
         console.error("Error updating status:", err);
-        toast({ title: "Update Failed", description: "Could not update request status/response.", variant: "destructive" });
+        toast({ title: "Update Failed", description: err.message || "Could not update request status/response.", variant: "destructive" });
     } finally {
         setIsUpdatingStatus(false);
     }

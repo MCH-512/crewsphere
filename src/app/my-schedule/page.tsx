@@ -18,18 +18,8 @@ import { type StoredFlight } from "@/schemas/flight-schema";
 import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode, type Airport } from "@/services/airport-service";
 import type { DayContentProps } from "react-day-picker";
+import { type UserActivity } from "@/schemas/user-activity-schema";
 
-interface UserActivity {
-  id: string;
-  activityType: 'flight' | 'leave' | 'training' | 'standby' | 'day-off';
-  date: Timestamp;
-  comments?: string;
-  flightId?: string;
-  trainingSessionId?: string;
-  flightNumber?: string;
-  departureAirport?: string;
-  arrivalAirport?: string;
-}
 
 interface FlightWithCrewDetails extends StoredFlight {
     departureAirportInfo?: Airport | null;
@@ -261,7 +251,7 @@ export default function MySchedulePage() {
     
     const ActivityDayContent = (props: DayContentProps) => {
         const dayActivities = activities.filter(a => a.date.toDate().toDateString() === props.date.toDateString());
-        return (
+        const dayButton = (
             <div className="relative h-full w-full flex items-center justify-center">
                 <p>{format(props.date, 'd')}</p>
                 {dayActivities.length > 0 && (
@@ -273,6 +263,7 @@ export default function MySchedulePage() {
                 )}
             </div>
         );
+        return props.active ? <button>{dayButton}</button> : dayButton;
     };
 
     const selectedDayActivities = activities.filter(
@@ -305,7 +296,7 @@ export default function MySchedulePage() {
                             selected={selectedDay}
                             onSelect={setSelectedDay}
                             onMonthChange={setCurrentMonth}
-                            components={{ DayContent: ActivityDayContent }}
+                            components={{ Day: ActivityDayContent }}
                             className="p-2 sm:p-4"
                         />
                     </Card>
