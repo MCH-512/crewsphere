@@ -28,6 +28,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { checkCrewAvailability, type Conflict } from "@/services/user-activity-service";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { createFlights } from "@/services/flight-creation-service";
 
 
 interface FlightForDisplay extends StoredFlight {
@@ -78,7 +79,7 @@ export default function AdminFlightsPage() {
             flightNumber: "", departureAirport: "", arrivalAirport: "",
             scheduledDepartureDateTimeUTC: "", scheduledArrivalDateTimeUTC: "",
             aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: [],
-            instructorIds: [], traineeIds: []
+            instructorIds: [], traineeIds: [], recurrence: "none", recurrenceEndDate: ""
         },
     });
 
@@ -225,14 +226,15 @@ export default function AdminFlightsPage() {
                 flightNumber: flightToEdit.flightNumber,
                 departureAirport: flightToEdit.departureAirport,
                 arrivalAirport: flightToEdit.arrivalAirport,
-                scheduledDepartureDateTimeUTC: flightToEdit.scheduledDepartureDateTimeUTC,
-                scheduledArrivalDateTimeUTC: flightToEdit.scheduledArrivalDateTimeUTC,
+                scheduledDepartureDateTimeUTC: flightToEdit.scheduledDepartureDateTimeUTC.substring(0, 16),
+                scheduledArrivalDateTimeUTC: flightToEdit.scheduledArrivalDateTimeUTC.substring(0, 16),
                 aircraftType: flightToEdit.aircraftType as any,
                 purserId: flightToEdit.purserId,
                 pilotIds: flightToEdit.pilotIds || [],
                 cabinCrewIds: flightToEdit.cabinCrewIds || [],
                 instructorIds: flightToEdit.instructorIds || [],
                 traineeIds: flightToEdit.traineeIds || [],
+                recurrence: "none",
             });
         } else {
             setIsEditMode(false);
@@ -241,7 +243,7 @@ export default function AdminFlightsPage() {
                 flightNumber: "", departureAirport: "", arrivalAirport: "",
                 scheduledDepartureDateTimeUTC: "", scheduledArrivalDateTimeUTC: "",
                 aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: [],
-                instructorIds: [], traineeIds: [],
+                instructorIds: [], traineeIds: [], recurrence: "none", recurrenceEndDate: "",
             });
         }
         setDepSearch("");
@@ -265,6 +267,7 @@ export default function AdminFlightsPage() {
             cabinCrewIds: flight.cabinCrewIds || [],
             instructorIds: flight.instructorIds || [],
             traineeIds: flight.traineeIds || [],
+            recurrence: "none",
         });
         setDepSearch(flight.arrivalAirportName || flight.arrivalAirport);
         setArrSearch(flight.departureAirportName || flight.departureAirport);
@@ -285,55 +288,51 @@ export default function AdminFlightsPage() {
         setIsSubmitting(true);
         
         try {
-            const flightRef = isEditMode && currentFlight ? doc(db, "flights", currentFlight.id) : doc(collection(db, "flights"));
-            const flightId = flightRef.id;
+            if (isEditMode && currentFlight) {
+                // UPDATE logic for a single flight
+                const batch = writeBatch(db);
+                const flightRef = doc(db, "flights", currentFlight.id);
 
-            const batch = writeBatch(db);
-            const allAssignedCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || []), ...(data.instructorIds || []), ...(data.traineeIds || [])].filter(Boolean))];
-            const activityIds: Record<string, string> = {};
+                if (currentFlight.activityIds) {
+                    for (const activityId of Object.values(currentFlight.activityIds)) {
+                        batch.delete(doc(db, "userActivities", activityId));
+                    }
+                }
+                
+                const allAssignedCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || []), ...(data.instructorIds || []), ...(data.traineeIds || [])].filter(Boolean))];
+                const activityIds: Record<string, string> = {};
 
-            if (isEditMode && currentFlight && currentFlight.activityIds) {
-                for (const activityId of Object.values(currentFlight.activityIds)) {
-                    batch.delete(doc(db, "userActivities", activityId));
+                for (const crewId of allAssignedCrewIds) {
+                    const activityRef = doc(collection(db, "userActivities"));
+                    batch.set(activityRef, {
+                        userId: crewId, activityType: 'flight' as const, flightId: currentFlight.id,
+                        date: Timestamp.fromDate(startOfDay(new Date(data.scheduledDepartureDateTimeUTC))),
+                        flightNumber: data.flightNumber, departureAirport: data.departureAirport, arrivalAirport: data.arrivalAirport,
+                        comments: `Flight ${data.flightNumber} from ${data.departureAirport} to ${data.arrivalAirport}`,
+                    });
+                    activityIds[crewId] = activityRef.id;
+                }
+
+                batch.update(flightRef, { ...data, allCrewIds, activityIds, updatedAt: serverTimestamp() });
+                await batch.commit();
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityType: "FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
+                toast({ title: "Flight Updated", description: `Flight ${data.flightNumber} has been updated.` });
+            
+            } else {
+                // CREATE logic for single or recurring flights
+                const result = await createFlights(data, user);
+                if (result.success) {
+                    toast({ title: "Flights Created", description: `${result.count} flight(s) for flight number ${data.flightNumber} have been scheduled.` });
+                } else {
+                    throw new Error(result.error || "Failed to create flights.");
                 }
             }
 
-            for (const crewId of allAssignedCrewIds) {
-                const activityRef = doc(collection(db, "userActivities"));
-                batch.set(activityRef, {
-                    userId: crewId,
-                    activityType: 'flight' as const,
-                    flightId: flightId,
-                    date: Timestamp.fromDate(startOfDay(new Date(data.scheduledDepartureDateTimeUTC))),
-                    flightNumber: data.flightNumber,
-                    departureAirport: data.departureAirport,
-                    arrivalAirport: data.arrivalAirport,
-                    comments: `Flight ${data.flightNumber} from ${data.departureAirport} to ${data.arrivalAirport}`,
-                });
-                activityIds[crewId] = activityRef.id;
-            }
-            
-            const flightData = { ...data, allCrewIds, activityIds, updatedAt: serverTimestamp() };
-
-            if (isEditMode && currentFlight) {
-                batch.update(flightRef, flightData);
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityType: "FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
-            } else {
-                batch.set(flightRef, { 
-                    ...flightData, 
-                    createdAt: serverTimestamp(), 
-                    purserReportSubmitted: false,
-                });
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_FLIGHT", entityType: "FLIGHT", entityId: flightRef.id, details: { flightNumber: data.flightNumber } });
-            }
-
-            await batch.commit();
-            toast({ title: isEditMode ? "Flight Updated" : "Flight Created", description: `Flight ${data.flightNumber} has been saved and crew schedules updated.` });
             fetchPageData();
             setIsManageDialogOpen(false);
-        } catch (error) {
-            console.error("Error submitting flight:", error);
-            toast({ title: "Submission Failed", description: "Could not save flight details.", variant: "destructive" });
+        } catch (error: any) {
+            console.error("Error submitting flight(s):", error);
+            toast({ title: "Submission Failed", description: error.message || "Could not save flight details.", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
         }
@@ -455,6 +454,35 @@ export default function AdminFlightsPage() {
                                 <FormField control={form.control} name="scheduledDepartureDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Departure Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="scheduledArrivalDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Arrival Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             </div>
+
+                            {!isEditMode && (
+                                <>
+                                <Separator/>
+                                <h3 className="text-lg font-medium">Recurrence</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="recurrence" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Frequency</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="none">None (Single Flight)</SelectItem>
+                                                    <SelectItem value="daily">Daily</SelectItem>
+                                                    <SelectItem value="weekly">Weekly</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                     {form.watch("recurrence") !== 'none' && (
+                                        <FormField control={form.control} name="recurrenceEndDate" render={({ field }) => (
+                                            <FormItem><FormLabel>Recurrence End Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                     )}
+                                </div>
+                                </>
+                            )}
+                            
                             <Separator/>
                             <h3 className="text-lg font-medium">Crew Assignment</h3>
                              <FormField control={form.control} name="purserId" render={({ field }) => (<FormItem><FormLabel>Assign Purser</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a purser" /></SelectTrigger></FormControl><SelectContent>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName} ({p.email})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
@@ -484,7 +512,7 @@ export default function AdminFlightsPage() {
                         </ScrollArea>
                             <DialogFooter className="mt-4 pt-4 border-t">
                                 <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                                <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}{isEditMode ? "Save Changes" : "Create Flight"}</Button>
+                                <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}{isEditMode ? "Save Changes" : "Create Flight(s)"}</Button>
                             </DialogFooter>
                         </form>
                     </Form>
@@ -493,5 +521,3 @@ export default function AdminFlightsPage() {
         </div>
     );
 }
-
-    

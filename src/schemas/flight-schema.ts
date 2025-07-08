@@ -16,9 +16,27 @@ export const flightFormSchema = z.object({
   cabinCrewIds: z.array(z.string()).min(1, "At least one cabin crew member is required."),
   instructorIds: z.array(z.string()).optional(),
   traineeIds: z.array(z.string()).optional(),
+  recurrence: z.enum(["none", "daily", "weekly"]).default("none"),
+  recurrenceEndDate: z.string().optional(),
 }).refine(data => new Date(data.scheduledArrivalDateTimeUTC) > new Date(data.scheduledDepartureDateTimeUTC), {
     message: "Arrival time must be after departure time.",
     path: ["scheduledArrivalDateTimeUTC"],
+}).superRefine((data, ctx) => {
+    if (data.recurrence !== 'none') {
+        if (!data.recurrenceEndDate) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Recurrence end date is required.",
+                path: ["recurrenceEndDate"],
+            });
+        } else if (new Date(data.recurrenceEndDate) < new Date(data.scheduledDepartureDateTimeUTC)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Recurrence end date must be after the first departure date.",
+                path: ["recurrenceEndDate"],
+            });
+        }
+    }
 });
 
 export type FlightFormValues = z.infer<typeof flightFormSchema>;
@@ -43,6 +61,6 @@ export interface StoredFlight {
   purserReportId?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  recurrence?: "none" | "daily" | "weekly";
+  recurrenceEndDate?: string;
 }
-
-    
