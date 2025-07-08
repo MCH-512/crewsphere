@@ -16,6 +16,8 @@ import {
   SidebarTrigger,
   useSidebar,
   SidebarProvider,
+  SidebarGroup,
+  SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
