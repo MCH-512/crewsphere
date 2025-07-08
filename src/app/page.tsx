@@ -13,7 +13,7 @@ import { TodaysScheduleCard } from "@/components/features/todays-schedule";
 import { ActiveAlerts } from "@/components/features/active-alerts";
 import { MyTrainingStatusCard } from "@/components/features/my-training-status";
 import { MyRequestsStatusCard } from "@/components/features/my-requests-status";
-import { Bar, BarChart, CartesianGrid, Pie, PieChart, Cell, XAxis, YAxis, Tooltip } from "recharts"
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, Cell, XAxis, YAxis } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart"
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
