@@ -288,19 +288,21 @@ export default function AdminFlightsPage() {
         try {
             const allAssignedCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || []), ...(data.instructorIds || []), ...(data.traineeIds || [])].filter(Boolean))];
             
+            const batch = writeBatch(db);
+
             if (isEditMode && currentFlight) {
                 // UPDATE logic
-                const batch = writeBatch(db);
                 const flightRef = doc(db, "flights", currentFlight.id);
 
+                // 1. Clean up old activities
                 if (currentFlight.activityIds) {
                     for (const activityId of Object.values(currentFlight.activityIds)) {
                         batch.delete(doc(db, "userActivities", activityId));
                     }
                 }
                 
+                // 2. Create new activities
                 const activityIds: Record<string, string> = {};
-
                 for (const crewId of allAssignedCrewIds) {
                     const activityRef = doc(collection(db, "userActivities"));
                     batch.set(activityRef, {
@@ -312,6 +314,7 @@ export default function AdminFlightsPage() {
                     activityIds[crewId] = activityRef.id;
                 }
                 
+                // 3. Update the flight document itself
                 batch.update(flightRef, { ...data, allCrewIds: allAssignedCrewIds, activityIds, updatedAt: serverTimestamp() });
                 await batch.commit();
 
@@ -320,8 +323,7 @@ export default function AdminFlightsPage() {
                 wasSuccessful = true;
             
             } else {
-                // CREATE logic for a single flight
-                const batch = writeBatch(db);
+                // CREATE logic
                 const flightRef = doc(collection(db, "flights"));
                 
                 const activityIds: Record<string, string> = {};
