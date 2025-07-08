@@ -312,7 +312,7 @@ export default function AdminFlightsPage() {
                     activityIds[crewId] = activityRef.id;
                 }
                 
-                batch.update(flightRef, { ...data, allCrewIds, activityIds, updatedAt: serverTimestamp() });
+                batch.update(flightRef, { ...data, allCrewIds: allAssignedCrewIds, activityIds, updatedAt: serverTimestamp() });
                 await batch.commit();
 
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityType: "FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
@@ -343,7 +343,7 @@ export default function AdminFlightsPage() {
                 
                 batch.set(flightRef, {
                     ...data,
-                    allCrewIds,
+                    allCrewIds: allAssignedCrewIds,
                     activityIds,
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
