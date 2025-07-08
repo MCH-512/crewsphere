@@ -358,8 +358,8 @@ export default function AdminConsolePage() {
                       <CardTitle className="flex items-center gap-2"><PieChartIcon className="h-5 w-5 text-primary"/>Suggestions by Category</CardTitle>
                       <CardDescription>A breakdown of submitted ideas.</CardDescription>
                   </CardHeader>
-                  <CardContent className="flex items-center justify-center pb-0">
-                       <ChartContainer config={suggestionsChartConfig} className="mx-auto aspect-square max-h-[300px]">
+                  <CardContent className="h-[300px] pb-0">
+                       <ChartContainer config={suggestionsChartConfig}>
                           <PieChart>
                               <ChartTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
                               <Pie data={suggestionsChartData} dataKey="count" nameKey="name" labelLine={false} />
@@ -375,8 +375,8 @@ export default function AdminConsolePage() {
                       <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary"/>User Role Distribution</CardTitle>
                       <CardDescription>A breakdown of all user roles.</CardDescription>
                   </CardHeader>
-                  <CardContent className="flex items-center justify-center pb-0">
-                       <ChartContainer config={userRolesChartConfig} className="mx-auto aspect-square max-h-[300px]">
+                  <CardContent className="h-[300px] pb-0">
+                       <ChartContainer config={userRolesChartConfig}>
                           <PieChart>
                               <ChartTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
                               <Pie data={userRolesChartData} dataKey="count" nameKey="name" labelLine={false} />
