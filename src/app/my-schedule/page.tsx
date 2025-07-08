@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { type StoredFlight } from "@/schemas/flight-schema";
+import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode, type Airport } from "@/services/airport-service";
 
 interface UserActivity {
@@ -22,10 +23,11 @@ interface UserActivity {
   activityType: 'flight' | 'leave' | 'training' | 'standby' | 'day-off';
   date: Timestamp;
   comments?: string;
+  flightId?: string;
+  trainingSessionId?: string;
   flightNumber?: string;
   departureAirport?: string;
   arrivalAirport?: string;
-  flightId?: string;
 }
 
 interface FlightWithCrewDetails extends StoredFlight {
@@ -33,6 +35,13 @@ interface FlightWithCrewDetails extends StoredFlight {
     arrivalAirportInfo?: Airport | null;
     crew: User[];
 }
+
+interface TrainingWithAttendeesDetails extends StoredTrainingSession {
+    attendees: User[];
+}
+
+type SheetActivity = { type: 'flight', data: FlightWithCrewDetails } | { type: 'training', data: TrainingWithAttendeesDetails };
+
 
 const activityConfig: Record<UserActivity['activityType'], { icon: React.ElementType; label: string; className: string; dotColor: string; }> = {
     flight: { icon: Plane, label: "Flight", className: "border-blue-500", dotColor: "bg-blue-500" },
@@ -42,77 +51,93 @@ const activityConfig: Record<UserActivity['activityType'], { icon: React.Element
     standby: { icon: Anchor, label: "Standby", className: "border-orange-500", dotColor: "bg-orange-500" },
 };
 
-const FlightDetailsSheet = ({ isOpen, onOpenChange, flight, isLoading }: { isOpen: boolean, onOpenChange: (open: boolean) => void, flight: FlightWithCrewDetails | null, isLoading: boolean }) => {
+const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading }: { isOpen: boolean, onOpenChange: (open: boolean) => void, activity: SheetActivity | null, isLoading: boolean }) => {
     if (!isOpen) return null;
 
-    const renderCrewList = (role: User['role']) => {
-        const members = flight?.crew.filter(c => c.role === role);
-        if (!members || members.length === 0) return null;
+    const renderFlightDetails = (data: FlightWithCrewDetails) => (
+        <div className="space-y-4">
+            <Card>
+                <CardHeader className="pb-2">
+                    <CardDescription>Flight Info</CardDescription>
+                    <CardTitle className="flex items-center gap-2"><Plane className="h-5 w-5"/> {data.flightNumber}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm space-y-1">
+                    <p><strong>Route:</strong> {data.departureAirportInfo?.iata || data.departureAirport} → {data.arrivalAirportInfo?.iata || data.arrivalAirport}</p>
+                    <p><strong>Departure:</strong> {format(new Date(data.scheduledDepartureDateTimeUTC), "PPP HH:mm")} UTC</p>
+                    <p><strong>Arrival:</strong> {format(new Date(data.scheduledArrivalDateTimeUTC), "PPP HH:mm")} UTC</p>
+                    <p><strong>Aircraft:</strong> {data.aircraftType}</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="pb-2"><CardDescription>Assigned Crew ({data.crew.length})</CardDescription></CardHeader>
+                <CardContent>
+                    {['purser', 'pilote', 'cabin crew', 'instructor', 'stagiaire'].map(role => {
+                        const members = data.crew.filter(c => c.role === role);
+                        if (members.length === 0) return null;
+                        return (
+                            <div key={role}>
+                                <h4 className="font-semibold capitalize mt-3 mb-2 text-primary">{role}</h4>
+                                <div className="space-y-2">
+                                    {members.map(member => (
+                                        <div key={member.uid} className="flex items-center gap-2 text-sm">
+                                            <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                                            <span>{member.displayName}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </CardContent>
+            </Card>
+        </div>
+    );
 
-        return (
-            <div>
-                <h4 className="font-semibold capitalize mt-3 mb-2 text-primary">{role}</h4>
-                <div className="space-y-2">
-                    {members.map(member => (
-                        <div key={member.uid} className="flex items-center gap-2 text-sm">
-                            <Avatar className="h-6 w-6">
-                                <AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" />
-                                <AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <span>{member.displayName}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    };
+    const renderTrainingDetails = (data: TrainingWithAttendeesDetails) => (
+        <div className="space-y-4">
+            <Card>
+                <CardHeader className="pb-2">
+                    <CardDescription>Training Session</CardDescription>
+                    <CardTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5"/> {data.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm space-y-1">
+                    <p><strong>Location:</strong> {data.location}</p>
+                    <p><strong>Time:</strong> {format(new Date(data.sessionDateTimeUTC), "PPP HH:mm")} UTC</p>
+                    <p><strong>Description:</strong> {data.description}</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="pb-2"><CardDescription>Attendees ({data.attendees.length})</CardDescription></CardHeader>
+                <CardContent>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {data.attendees.map(member => (
+                             <div key={member.uid} className="flex items-center gap-2 text-sm">
+                                <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                                <span>{member.displayName} ({member.role})</span>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
 
     return (
         <Sheet open={isOpen} onOpenChange={onOpenChange}>
             <SheetContent className="w-full sm:max-w-md">
                 <SheetHeader>
-                    <SheetTitle>Flight Details</SheetTitle>
+                    <SheetTitle>Activity Details</SheetTitle>
                     <SheetDescription>
-                        {isLoading ? "Loading flight information..." : `Details for flight ${flight?.flightNumber}.`}
+                        {isLoading ? "Loading details..." : "Information about the selected event."}
                     </SheetDescription>
                 </SheetHeader>
                 <div className="py-4">
                     {isLoading ? (
-                        <div className="flex justify-center items-center py-10">
-                            <Loader2 className="h-8 w-8 animate-spin" />
-                        </div>
-                    ) : flight ? (
-                        <div className="space-y-4">
-                            <Card>
-                                <CardHeader className="pb-2">
-                                    <CardDescription>Flight Info</CardDescription>
-                                    <CardTitle className="flex items-center gap-2"><Plane className="h-5 w-5"/> {flight.flightNumber}</CardTitle>
-                                </CardHeader>
-                                <CardContent className="text-sm space-y-1">
-                                    <p><strong>Route:</strong> {flight.departureAirportInfo?.iata || flight.departureAirport} → {flight.arrivalAirportInfo?.iata || flight.arrivalAirport}</p>
-                                    <p><strong>Departure:</strong> {format(new Date(flight.scheduledDepartureDateTimeUTC), "PPP HH:mm")} UTC</p>
-                                    <p><strong>Arrival:</strong> {format(new Date(flight.scheduledArrivalDateTimeUTC), "PPP HH:mm")} UTC</p>
-                                    <p><strong>Aircraft:</strong> {flight.aircraftType}</p>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardHeader className="pb-2">
-                                     <CardDescription>Assigned Crew</CardDescription>
-                                     <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/> {flight.crew.length} Members</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    {renderCrewList('purser')}
-                                    {renderCrewList('pilote')}
-                                    {renderCrewList('cabin crew')}
-                                    {renderCrewList('instructor')}
-                                    {renderCrewList('stagiaire')}
-                                </CardContent>
-                            </Card>
-                        </div>
+                        <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                    ) : activity ? (
+                        activity.type === 'flight' ? renderFlightDetails(activity.data) : renderTrainingDetails(activity.data)
                     ) : (
-                        <div className="text-center text-muted-foreground py-10">
-                            <p>Could not load flight details.</p>
-                        </div>
+                        <div className="text-center text-muted-foreground py-10"><p>Could not load activity details.</p></div>
                     )}
                 </div>
             </SheetContent>
@@ -121,10 +146,10 @@ const FlightDetailsSheet = ({ isOpen, onOpenChange, flight, isLoading }: { isOpe
 };
 
 
-const ActivityCard = ({ activity, onFlightClick }: { activity: UserActivity; onFlightClick: (flightId: string) => void }) => {
+const ActivityCard = ({ activity, onActivityClick }: { activity: UserActivity; onActivityClick: (activity: UserActivity) => void }) => {
     const config = activityConfig[activity.activityType];
     const Icon = config.icon;
-    const isClickable = activity.activityType === 'flight' && activity.flightId;
+    const isClickable = activity.activityType === 'flight' || activity.activityType === 'training';
     
     const content = (
         <div className={cn('p-3 w-full border-l-4 rounded-r-md flex items-start gap-4 bg-muted/30', config.className, isClickable && 'hover:bg-muted/50 transition-colors')}>
@@ -140,7 +165,7 @@ const ActivityCard = ({ activity, onFlightClick }: { activity: UserActivity; onF
     );
 
     if (isClickable) {
-        return <button className="w-full text-left mb-2" onClick={() => onFlightClick(activity.flightId!)}>{content}</button>
+        return <button className="w-full text-left mb-2" onClick={() => onActivityClick(activity)}>{content}</button>;
     }
 
     return <div className="mb-2">{content}</div>;
@@ -154,7 +179,7 @@ export default function MySchedulePage() {
     const [currentMonth, setCurrentMonth] = React.useState(new Date());
     const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(new Date());
     
-    const [selectedFlight, setSelectedFlight] = React.useState<FlightWithCrewDetails | null>(null);
+    const [selectedActivity, setSelectedActivity] = React.useState<SheetActivity | null>(null);
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
     const [isSheetLoading, setIsSheetLoading] = React.useState(false);
 
@@ -192,47 +217,41 @@ export default function MySchedulePage() {
         }
     }, [user, authLoading, router, fetchActivities, currentMonth]);
 
-    const handleShowFlightDetails = async (flightId: string) => {
-        if (!flightId) return;
+    const handleShowActivityDetails = async (activity: UserActivity) => {
+        if (!activity.flightId && !activity.trainingSessionId) return;
 
         setIsSheetOpen(true);
         setIsSheetLoading(true);
-        setSelectedFlight(null);
+        setSelectedActivity(null);
 
         try {
-            const flightDocRef = doc(db, "flights", flightId);
-            const flightSnap = await getDoc(flightDocRef);
-            if (!flightSnap.exists()) {
-                throw new Error("Flight details not found.");
+            if (activity.activityType === 'flight' && activity.flightId) {
+                const flightDocRef = doc(db, "flights", activity.flightId);
+                const flightSnap = await getDoc(flightDocRef);
+                if (!flightSnap.exists()) throw new Error("Flight details not found.");
+                
+                const flight = { id: flightSnap.id, ...flightSnap.data() } as StoredFlight;
+                const crewPromises = flight.allCrewIds.map(uid => getDoc(doc(db, "users", uid)));
+                const crewDocs = await Promise.all(crewPromises);
+                const crew = crewDocs.map(snap => snap.exists() ? { uid: snap.id, ...snap.data() } as User : null).filter(Boolean) as User[];
+                const [depAirport, arrAirport] = await Promise.all([getAirportByCode(flight.departureAirport), getAirportByCode(flight.arrivalAirport)]);
+                
+                setSelectedActivity({ type: 'flight', data: { ...flight, departureAirportInfo: depAirport, arrivalAirportInfo: arrAirport, crew } });
+
+            } else if (activity.activityType === 'training' && activity.trainingSessionId) {
+                const sessionDocRef = doc(db, "trainingSessions", activity.trainingSessionId);
+                const sessionSnap = await getDoc(sessionDocRef);
+                if (!sessionSnap.exists()) throw new Error("Training session not found.");
+
+                const session = { id: sessionSnap.id, ...sessionSnap.data() } as StoredTrainingSession;
+                const attendeePromises = session.attendeeIds.map(uid => getDoc(doc(db, "users", uid)));
+                const attendeeDocs = await Promise.all(attendeePromises);
+                const attendees = attendeeDocs.map(snap => snap.exists() ? { uid: snap.id, ...snap.data() } as User : null).filter(Boolean) as User[];
+
+                setSelectedActivity({ type: 'training', data: { ...session, attendees } });
             }
-            const flight = { id: flightSnap.id, ...flightSnap.data() } as StoredFlight;
-
-            const crewIds = Array.from(new Set([
-                flight.purserId,
-                ...(flight.pilotIds || []),
-                ...(flight.cabinCrewIds || []),
-                ...(flight.instructorIds || []),
-                ...(flight.traineeIds || []),
-            ].filter(Boolean)));
-
-            const crewPromises = crewIds.map(uid => getDoc(doc(db, "users", uid)));
-            const crewDocs = await Promise.all(crewPromises);
-            const crew = crewDocs.map(snap => snap.exists() ? { uid: snap.id, ...snap.data() } as User : null).filter(Boolean) as User[];
-            
-            const [depAirport, arrAirport] = await Promise.all([
-                getAirportByCode(flight.departureAirport),
-                getAirportByCode(flight.arrivalAirport),
-            ]);
-
-            setSelectedFlight({
-                ...flight,
-                departureAirportInfo: depAirport,
-                arrivalAirportInfo: arrAirport,
-                crew,
-            });
-
         } catch (err) {
-            console.error("Error fetching flight details:", err);
+            console.error("Error fetching activity details:", err);
             setIsSheetOpen(false);
         } finally {
             setIsSheetLoading(false);
@@ -272,7 +291,7 @@ export default function MySchedulePage() {
                             <CalendarIcon className="mr-3 h-7 w-7 text-primary" />
                             My Schedule
                         </CardTitle>
-                        <CardDescription>View your monthly flight, training, and leave schedule. Click on a flight for more details.</CardDescription>
+                        <CardDescription>View your monthly flight, training, and leave schedule. Click on a flight or training for more details.</CardDescription>
                     </CardHeader>
                 </Card>
             </AnimatedCard>
@@ -303,7 +322,7 @@ export default function MySchedulePage() {
                                     <Loader2 className="h-6 w-6 animate-spin text-primary" />
                                 </div>
                             ) : selectedDayActivities.length > 0 ? (
-                                selectedDayActivities.map(activity => <ActivityCard key={activity.id} activity={activity} onFlightClick={handleShowFlightDetails} />)
+                                selectedDayActivities.map(activity => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} />)
                             ) : (
                                 <p className="text-sm text-muted-foreground text-center p-4">No activities scheduled for this day.</p>
                             )}
@@ -311,10 +330,10 @@ export default function MySchedulePage() {
                     </Card>
                 </AnimatedCard>
             </div>
-             <FlightDetailsSheet
+             <ActivityDetailsSheet
                 isOpen={isSheetOpen}
                 onOpenChange={setIsSheetOpen}
-                flight={selectedFlight}
+                activity={selectedActivity}
                 isLoading={isSheetLoading}
             />
         </div>

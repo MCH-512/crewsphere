@@ -158,6 +158,7 @@ export default function AdminTrainingSessionsPage() {
                     userId: attendeeId,
                     activityType: 'training' as const,
                     flightId: null,
+                    trainingSessionId: sessionRef.id,
                     date: Timestamp.fromDate(startOfDay(new Date(data.sessionDateTimeUTC))),
                     comments: `Training: ${data.title}`,
                 });
@@ -290,5 +291,3 @@ export default function AdminTrainingSessionsPage() {
         </div>
     );
 }
-
-    
