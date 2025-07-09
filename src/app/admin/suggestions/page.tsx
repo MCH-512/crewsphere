@@ -10,21 +10,22 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { MessageSquare, Loader2, AlertTriangle, RefreshCw, Edit, ThumbsUp, ArrowUpDown } from "lucide-react";
+import { MessageSquare, Loader2, AlertTriangle, RefreshCw, Edit, ThumbsUp, ArrowUpDown, Filter, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { StoredSuggestion } from "@/schemas/suggestion-schema";
+import { StoredSuggestion, suggestionCategories, suggestionStatuses } from "@/schemas/suggestion-schema";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { logAuditEvent } from "@/lib/audit-logger";
 import Link from "next/link";
-
-const suggestionStatuses: StoredSuggestion["status"][] = ['new', 'under-review', 'planned', 'implemented', 'rejected'];
+import { Input } from "@/components/ui/input";
 
 type SortableColumn = 'createdAt' | 'userEmail' | 'subject' | 'category' | 'upvoteCount' | 'status';
 type SortDirection = 'asc' | 'desc';
+type SuggestionStatus = StoredSuggestion["status"];
+type SuggestionCategory = StoredSuggestion["category"];
 
 export default function AdminSuggestionsPage() {
     const { user, loading: authLoading } = useAuth();
@@ -41,6 +42,9 @@ export default function AdminSuggestionsPage() {
 
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>('createdAt');
     const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
+    const [searchTerm, setSearchTerm] = React.useState("");
+    const [statusFilter, setStatusFilter] = React.useState<SuggestionStatus | "all">("all");
+    const [categoryFilter, setCategoryFilter] = React.useState<SuggestionCategory | "all">("all");
 
     const fetchSuggestions = React.useCallback(async () => {
         setIsLoading(true);
@@ -57,8 +61,21 @@ export default function AdminSuggestionsPage() {
         }
     }, [toast]);
     
-    const sortedSuggestions = React.useMemo(() => {
-        return [...suggestions].sort((a, b) => {
+    const filteredAndSortedSuggestions = React.useMemo(() => {
+        let filtered = suggestions.filter(s => {
+            if (statusFilter !== "all" && s.status !== statusFilter) return false;
+            if (categoryFilter !== "all" && s.category !== categoryFilter) return false;
+            if (searchTerm) {
+                const lowercasedTerm = searchTerm.toLowerCase();
+                return (
+                    s.subject.toLowerCase().includes(lowercasedTerm) ||
+                    (!s.isAnonymous && s.userEmail?.toLowerCase().includes(lowercasedTerm))
+                );
+            }
+            return true;
+        });
+
+        return filtered.sort((a, b) => {
             const valA = a[sortColumn];
             const valB = b[sortColumn];
             let comparison = 0;
@@ -72,7 +89,7 @@ export default function AdminSuggestionsPage() {
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
-    }, [suggestions, sortColumn, sortDirection]);
+    }, [suggestions, sortColumn, sortDirection, statusFilter, categoryFilter, searchTerm]);
 
     const handleSort = (column: SortableColumn) => {
         if (sortColumn === column) {
@@ -169,9 +186,46 @@ export default function AdminSuggestionsPage() {
                     <Button variant="outline" onClick={fetchSuggestions} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
                 </CardHeader>
                 <CardContent>
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                        <div className="relative flex-grow">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                type="search"
+                                placeholder="Search by subject or user..."
+                                className="pl-8 w-full md:max-w-xs"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+                            <SelectTrigger className="w-full md:w-[180px]">
+                                <Filter className="mr-2 h-4 w-4" />
+                                <SelectValue placeholder="Filter by status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Statuses</SelectItem>
+                                {suggestionStatuses.map(status => (
+                                    <SelectItem key={status} value={status} className="capitalize">{status.replace('-', ' ')}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as any)}>
+                            <SelectTrigger className="w-full md:w-[220px]">
+                                <Filter className="mr-2 h-4 w-4" />
+                                <SelectValue placeholder="Filter by category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Categories</SelectItem>
+                                {suggestionCategories.map(cat => (
+                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
                     {isLoading && suggestions.length === 0 ? (
                         <div className="text-center py-8"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary"/></div>
-                    ) : suggestions.length > 0 ? (
+                    ) : filteredAndSortedSuggestions.length > 0 ? (
                         <div className="rounded-md border">
                             <Table>
                                 <TableHeader>
@@ -186,7 +240,7 @@ export default function AdminSuggestionsPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {sortedSuggestions.map((s) => (
+                                    {filteredAndSortedSuggestions.map((s) => (
                                         <TableRow key={s.id}>
                                             <TableCell className="text-xs">{format(s.createdAt.toDate(), "PPp")}</TableCell>
                                             <TableCell className="text-xs">
@@ -211,7 +265,7 @@ export default function AdminSuggestionsPage() {
                             </Table>
                         </div>
                     ) : (
-                        <p className="text-center text-muted-foreground py-8">No suggestions have been submitted yet.</p>
+                        <p className="text-center text-muted-foreground py-8">No suggestions found matching your criteria.</p>
                     )}
                 </CardContent>
             </Card>

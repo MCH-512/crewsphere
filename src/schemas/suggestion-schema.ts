@@ -12,6 +12,8 @@ export const suggestionCategories = [
   "Other",
 ] as const;
 
+export const suggestionStatuses = ['new', 'under-review', 'planned', 'implemented', 'rejected'] as const;
+
 export const suggestionFormSchema = z.object({
   category: z.enum(suggestionCategories, {
     required_error: "Please select a category for your suggestion.",
@@ -31,7 +33,7 @@ export interface StoredSuggestion {
   category: typeof suggestionCategories[number];
   subject: string;
   details: string;
-  status: 'new' | 'under-review' | 'planned' | 'implemented' | 'rejected';
+  status: typeof suggestionStatuses[number];
   upvotes: string[];
   upvoteCount: number;
   createdAt: Timestamp;
