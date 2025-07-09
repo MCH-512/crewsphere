@@ -86,10 +86,42 @@ export default function SubmitPurserReportPage() {
   const form = useForm<PurserReportFormValues>({
     resolver: zodResolver(purserReportFormSchema),
     defaultValues: {
+      flightId: "",
+      flightNumber: "",
+      flightDate: "",
+      route: "",
+      aircraftType: "",
+      aircraftRegistration: "",
+      picName: "",
+      foName: "",
+      sccmName: "",
+      cabinCrewOnBoard: [],
+      passengerCount: 0,
+      briefing: [],
+      atmosphere: [],
+      positivePoints: "",
+      improvementPoints: "",
       followUpRecommended: false,
+      passengersToReport: [],
+      passengerBehaviorNotes: "",
       passengerComplaint: false,
+      cabinConditionBoarding: [],
+      cabinConditionArrival: [],
+      technicalIssues: [],
+      cabinActionsTaken: "",
+      safetyDemo: [],
+      safetyChecks: [],
+      crossCheck: [],
+      safetyAnomalies: "",
+      servicePerformance: [],
       cateringShortage: false,
+      servicePassengerFeedback: "",
+      delayCauses: [],
+      cockpitCommunication: "",
+      groundHandlingRemarks: "",
       specificIncident: false,
+      incidentTypes: [],
+      incidentDetails: "",
     },
     mode: "onChange",
   });
@@ -143,18 +175,13 @@ export default function SubmitPurserReportPage() {
         flightId: loadedFlightData.id,
         flightNumber: loadedFlightData.flightNumber,
         flightDate: loadedFlightData.scheduledDepartureDateTimeUTC,
-        route: `${loadedFlightData.departureAirport} -> ${loadedFlightData.arrivalAirport}`,
+        route: `${loadedFlightData.departureAirport} → ${loadedFlightData.arrivalAirport}`,
         aircraftType: loadedFlightData.aircraftType,
         aircraftRegistration: flight.aircraftType, // Placeholder
         picName: loadedFlightData.picName,
         foName: loadedFlightData.foName,
         sccmName: loadedFlightData.sccmName,
         cabinCrewOnBoard: crewMembers.filter(c => c.role === 'cabin crew').map(c => c.displayName || c.email!),
-        passengerCount: 0,
-        followUpRecommended: false,
-        passengerComplaint: false,
-        cateringShortage: false,
-        specificIncident: false,
       });
       setIsLoading(false);
     };
@@ -247,7 +274,7 @@ export default function SubmitPurserReportPage() {
             <CheckboxGroup control={form.control} name="atmosphere" label="Working Atmosphere" options={atmosphereChecklistOptions} />
             <FormField control={form.control} name="positivePoints" render={({ field }) => (<FormItem><FormLabel>Positive points of the day</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="improvementPoints" render={({ field }) => (<FormItem><FormLabel>Weak points / Follow-up needed</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="followUpRecommended" render={({ field }) => (<FormItem><FormLabel>Follow-up recommended</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="followUpRecommended" render={({ field }) => (<FormItem><FormLabel>Follow-up recommended</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')} defaultValue={String(field.value)}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
           </CardContent>
         </Card>
         
@@ -257,7 +284,7 @@ export default function SubmitPurserReportPage() {
             <FormField control={form.control} name="passengerCount" render={({ field }) => (<FormItem><FormLabel>Total number of passengers</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value,10))} /></FormControl><FormMessage /></FormItem>)} />
             <CheckboxGroup control={form.control} name="passengersToReport" label="Passengers to report" options={passengersToReportOptions} />
             <FormField control={form.control} name="passengerBehaviorNotes" render={({ field }) => (<FormItem><FormLabel>Passenger behavior notes</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="passengerComplaint" render={({ field }) => (<FormItem><FormLabel>Complaint reported by passenger</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="passengerComplaint" render={({ field }) => (<FormItem><FormLabel>Complaint reported by passenger</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')} defaultValue={String(field.value)}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
           </CardContent>
         </Card>
         
@@ -285,7 +312,7 @@ export default function SubmitPurserReportPage() {
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><Utensils/>In-Flight Service</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <CheckboxGroup control={form.control} name="servicePerformance" label="Service performance" options={servicePerformanceOptions} />
-            <FormField control={form.control} name="cateringShortage" render={({ field }) => (<FormItem><FormLabel>Catering shortage</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="cateringShortage" render={({ field }) => (<FormItem><FormLabel>Catering shortage</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')} defaultValue={String(field.value)}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="servicePassengerFeedback" render={({ field }) => (<FormItem><FormLabel>Passenger feedback</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
           </CardContent>
         </Card>
@@ -302,7 +329,7 @@ export default function SubmitPurserReportPage() {
         {/* Section 8: Specific Incidents */}
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle/>Specific Incidents</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <FormField control={form.control} name="specificIncident" render={({ field }) => (<FormItem><FormLabel>Incident to report</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="specificIncident" render={({ field }) => (<FormItem><FormLabel>Incident to report</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')} defaultValue={String(field.value)}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
             {form.watch('specificIncident') && (
               <>
                 <CheckboxGroup control={form.control} name="incidentTypes" label="Type of incident" options={incidentTypesOptions} />
@@ -322,5 +349,3 @@ export default function SubmitPurserReportPage() {
     </div>
   );
 }
-
-    
