@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -138,6 +139,20 @@ export default function SubmitPurserReportPage() {
     const batch = writeBatch(db);
     try {
       const reportRef = doc(collection(db, "purserReports"));
+
+      const crewRoster = data.cabinCrewOnBoard
+        .map(name => {
+            const member = flightData.crewMembers.find(c => (c.displayName || c.email) === name);
+            if (member) {
+                return {
+                    uid: member.uid,
+                    name: member.displayName || member.email!,
+                    role: member.role || 'cabin crew',
+                };
+            }
+            return null;
+        })
+        .filter(Boolean) as { uid: string, name: string, role: string }[];
       
       const reportData: any = { 
         ...data, 
@@ -146,7 +161,7 @@ export default function SubmitPurserReportPage() {
         createdAt: serverTimestamp(), 
         status: 'submitted', 
         adminNotes: '',
-        crewRoster: (data.cabinCrewOnBoard || []).map(name => ({ name, role: 'cabin crew', uid: '' })), // Simplified for now
+        crewRoster,
         departureAirport: flightData.departureAirport,
         arrivalAirport: flightData.arrivalAirport
       };
