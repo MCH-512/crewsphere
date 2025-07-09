@@ -3,8 +3,7 @@ import {
   LayoutDashboard, Settings, Plane, ServerCog, Users, ClipboardList, 
   ClipboardCheck, MessageSquare, Activity, FileSignature, 
   Calendar as CalendarIcon, Library, GraduationCap, CheckSquare, Compass, BellRing, 
-  BadgeAlert, NotebookPen, ShieldCheck, Book, Calculator, CloudSun, 
-  Globe, Map, Mic, ScrollText, ShieldAlert, Waypoints, Wrench, 
+  BadgeAlert, NotebookPen, ShieldCheck, Wrench, 
   ArrowRightLeft, Handshake, Inbox, Lightbulb
 } from "lucide-react";
 
