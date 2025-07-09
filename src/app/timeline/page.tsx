@@ -18,6 +18,7 @@ import { type StoredFlight } from "@/schemas/flight-schema";
 import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode, type Airport } from "@/services/airport-service";
 import type { DayContentProps } from "react-day-picker";
+import Link from 'next/link';
 
 interface TimelineActivity {
   id: string;
@@ -44,7 +45,7 @@ const activityConfig: Record<TimelineActivity['type'], { icon: React.ElementType
     training: { icon: GraduationCap, className: "border-yellow-500", dotColor: "bg-yellow-500" },
 };
 
-const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading }: { isOpen: boolean, onOpenChange: (open: boolean) => void, activity: SheetActivity | null, isLoading: boolean }) => {
+const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authUser }: { isOpen: boolean, onOpenChange: (open: boolean) => void, activity: SheetActivity | null, isLoading: boolean, authUser: User | null }) => {
     if (!isOpen) return null;
 
     const renderFlightDetails = (data: FlightWithCrewDetails) => (
@@ -65,7 +66,14 @@ const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading }: { i
                         const members = data.crew.filter(c => c.role === role);
                         if (members.length === 0) return null;
                         return (
-                            <div key={role}><h4 className="font-semibold capitalize mt-3 mb-2 text-primary">{role}</h4><div className="space-y-2">{members.map(member => (<div key={member.uid} className="flex items-center gap-2 text-sm"><Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar><span>{member.displayName}</span></div>))}</div></div>
+                            <div key={role}><h4 className="font-semibold capitalize mt-3 mb-2 text-primary">{role}</h4><div className="space-y-2">{members.map(member => (<div key={member.uid} className="flex items-center gap-2 text-sm">
+                                <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                                {authUser?.role === 'admin' ? (
+                                    <Link href={`/admin/users/${member.uid}`} className="hover:underline text-primary">{member.displayName}</Link>
+                                ) : (
+                                    <span>{member.displayName}</span>
+                                )}
+                            </div>))}</div></div>
                         );
                     })}
                 </CardContent>
@@ -85,7 +93,15 @@ const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading }: { i
             </Card>
             <Card>
                 <CardHeader className="pb-2"><CardDescription>Attendees ({data.attendees.length})</CardDescription></CardHeader>
-                <CardContent><div className="space-y-2 max-h-60 overflow-y-auto">{data.attendees.map(member => (<div key={member.uid} className="flex items-center gap-2 text-sm"><Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar><span>{member.displayName} ({member.role})</span></div>))}</div></CardContent>
+                <CardContent><div className="space-y-2 max-h-60 overflow-y-auto">{data.attendees.map(member => (
+                <div key={member.uid} className="flex items-center gap-2 text-sm">
+                    <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                    {authUser?.role === 'admin' ? (
+                        <Link href={`/admin/users/${member.uid}`} className="hover:underline text-primary">{member.displayName} ({member.role})</Link>
+                    ) : (
+                        <span>{member.displayName} ({member.role})</span>
+                    )}
+                </div>))}</div></CardContent>
             </Card>
         </div>
     );
@@ -188,12 +204,13 @@ export default function TimelinePage() {
 
     const ActivityDayContent = (props: DayContentProps) => {
         const dayActivities = activities.filter(f => f.date.toDate().toDateString() === props.date.toDateString());
-        return (
+        const dayButton = (
             <div className="relative h-full w-full flex items-center justify-center">
                 <p>{format(props.date, 'd')}</p>
                 {dayActivities.length > 0 && <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">{dayActivities.slice(0, 3).map(activity => (<div key={activity.id} className={cn("h-1.5 w-1.5 rounded-full", activityConfig[activity.type]?.dotColor)} />))}</div>}
             </div>
         );
+        return props.active ? <button type="button" className="w-full h-full">{dayButton}</button> : dayButton;
     };
     
     const selectedDayActivities = activities.filter(activity => selectedDay && activity.date.toDate().toDateString() === selectedDay.toDateString());
@@ -218,7 +235,7 @@ export default function TimelinePage() {
                     </Card>
                 </AnimatedCard>
             </div>
-            <ActivityDetailsSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} activity={selectedActivity} isLoading={isSheetLoading} />
+            <ActivityDetailsSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} activity={selectedActivity} isLoading={isSheetLoading} authUser={user} />
         </div>
     );
 }

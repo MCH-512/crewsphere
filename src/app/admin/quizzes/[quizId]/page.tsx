@@ -11,7 +11,7 @@ import { useRouter, useParams } from "next/navigation";
 import { CheckSquare, Loader2, AlertTriangle, ArrowLeft, PlusCircle, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { StoredQuestion } from "@/schemas/quiz-question-schema";
-import { StoredQuiz } from "@/schemas/course-schema";
+import { StoredQuiz, StoredCourse } from "@/schemas/course-schema";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -31,6 +31,7 @@ export default function QuizDetailPage() {
     const quizId = params.quizId as string;
 
     const [quiz, setQuiz] = React.useState<StoredQuiz | null>(null);
+    const [course, setCourse] = React.useState<StoredCourse | null>(null);
     const [questions, setQuestions] = React.useState<StoredQuestion[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
@@ -68,7 +69,16 @@ export default function QuizDetailPage() {
                 setIsLoading(false);
                 return;
             }
-            setQuiz({ id: quizSnap.id, ...quizSnap.data() } as StoredQuiz);
+            const quizData = { id: quizSnap.id, ...quizSnap.data() } as StoredQuiz;
+            setQuiz(quizData);
+
+            if (quizData.courseId) {
+                const courseDocRef = doc(db, "courses", quizData.courseId);
+                const courseSnap = await getDoc(courseDocRef);
+                if (courseSnap.exists()) {
+                    setCourse({ id: courseSnap.id, ...courseSnap.data() } as StoredCourse);
+                }
+            }
 
             const q = query(collection(db, "questions"), where("quizId", "==", quizId), orderBy("createdAt", "asc"));
             const questionsSnap = await getDocs(q);
@@ -155,7 +165,7 @@ export default function QuizDetailPage() {
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle className="text-2xl font-headline flex items-center"><CheckSquare className="mr-3 h-7 w-7 text-primary" />{quiz.title}</CardTitle>
-                    <CardDescription>Associated Course ID: {quiz.courseId}</CardDescription>
+                    <CardDescription>Associated Course: {course?.title || quiz.courseId}</CardDescription>
                 </CardHeader>
             </Card>
 
