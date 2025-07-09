@@ -109,7 +109,7 @@ export default function PurserReportsHistoryPage() {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex-grow">
-                                    <p className="text-sm text-muted-foreground line-clamp-3">{report.generalFlightSummary}</p>
+                                    <p className="text-sm text-muted-foreground line-clamp-3">{report.aiSummary || 'No summary available.'}</p>
                                 </CardContent>
                                 <CardFooter className="flex-col items-start gap-2">
                                      <p className="text-xs text-muted-foreground">Submitted: {format(report.createdAt.toDate(), "PPp")}</p>
