@@ -452,8 +452,8 @@ export default function AdminUsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <SortableHeader column="email" label="Email"/>
                     <SortableHeader column="fullName" label="Full Name"/>
+                    <SortableHeader column="email" label="Email"/>
                     <SortableHeader column="role" label="Role"/>
                     <SortableHeader column="accountStatus" label="Status"/>
                     <SortableHeader column="employeeId" label="Employee ID"/>
@@ -464,8 +464,12 @@ export default function AdminUsersPage() {
                 <TableBody>
                   {filteredAndSortedUsers.map((u) => (
                     <TableRow key={u.uid}>
-                      <TableCell className="font-medium">{u.email || 'N/A'}</TableCell>
-                      <TableCell>{u.fullName || 'N/A'}</TableCell>
+                      <TableCell className="font-medium">
+                        <Link href={`/admin/users/${u.uid}`} className="hover:underline text-primary">
+                            {u.fullName || 'N/A'}
+                        </Link>
+                      </TableCell>
+                      <TableCell>{u.email || 'N/A'}</TableCell>
                       <TableCell>
                         <Badge variant={getRoleBadgeVariant(u.role)} className="capitalize">
                           {u.role || 'Not Assigned'}

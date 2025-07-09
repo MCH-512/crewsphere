@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -20,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert";
+import Link from "next/link";
 import { 
     type StoredUserRequest,
     type RequestStatus,
@@ -316,7 +318,11 @@ export default function AdminUserRequestsPage() {
                       <TableCell className="text-xs">
                         {request.createdAt ? format(request.createdAt.toDate(), "PPp") : 'N/A'}
                       </TableCell>
-                      <TableCell className="font-medium text-xs">{request.userEmail}</TableCell>
+                      <TableCell className="font-medium text-xs">
+                        <Link href={`/admin/users/${request.userId}`} className="hover:underline text-primary">
+                          {request.userEmail}
+                        </Link>
+                      </TableCell>
                       <TableCell className="text-xs">{request.requestType}</TableCell>
                       <TableCell className="text-xs max-w-[200px] truncate" title={request.subject}>{request.subject}</TableCell>
                       <TableCell>

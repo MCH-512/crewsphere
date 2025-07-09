@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -26,6 +27,7 @@ import { manualActivityFormSchema, manualActivityTypes, type ManualActivityFormV
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import Link from "next/link";
 
 // --- Interfaces for fetched data ---
 interface RequestSummary {
@@ -276,7 +278,11 @@ export default function UserDetailPage() {
                             {trainings.map(t => (
                                 <div key={t.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
                                     <div>
-                                        <p className="font-medium">{t.courseTitle}</p>
+                                        <p className="font-medium">
+                                            <Link href={`/training/${t.courseId}`} className="hover:underline text-primary">
+                                                {t.courseTitle}
+                                            </Link>
+                                        </p>
                                         <p className="text-xs text-muted-foreground">Completed {formatDistanceToNowStrict(t.completedAt.toDate(), { addSuffix: true })}</p>
                                     </div>
                                     <Badge variant={t.status === 'passed' ? 'success' : 'destructive'} className="flex items-center gap-1">

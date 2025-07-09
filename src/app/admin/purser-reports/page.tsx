@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority"; 
 import { StoredPurserReport } from "@/schemas/purser-report-schema";
+import Link from "next/link";
 
 type SortableColumn = "createdAt" | "status" | "flightNumber" | "flightDate";
 type SortDirection = "asc" | "desc";
@@ -191,7 +192,11 @@ export default function AdminPurserReportsPage() {
                       <TableCell className="text-xs">{format(new Date(report.flightDate), "PP")}</TableCell>
                       <TableCell className="font-medium text-xs">{report.flightNumber}</TableCell>
                       <TableCell className="text-xs">{report.departureAirport} → {report.arrivalAirport}</TableCell>
-                      <TableCell className="text-xs">{report.userEmail}</TableCell>
+                      <TableCell className="text-xs">
+                         <Link href={`/admin/users/${report.userId}`} className="hover:underline text-primary">
+                            {report.userEmail}
+                          </Link>
+                      </TableCell>
                       <TableCell className="text-xs">{format(report.createdAt.toDate(), "PPp")}</TableCell>
                       <TableCell><Badge variant={getStatusBadgeVariant(report.status)} className="capitalize">{report.status.replace('-', ' ')}</Badge></TableCell>
                       <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => router.push(`/admin/purser-reports/${report.id}`)}><Eye className="mr-1 h-4 w-4" /> View Details</Button></TableCell>

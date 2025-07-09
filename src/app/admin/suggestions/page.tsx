@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { logAuditEvent } from "@/lib/audit-logger";
+import Link from "next/link";
 
 const suggestionStatuses: StoredSuggestion["status"][] = ['new', 'under-review', 'planned', 'implemented', 'rejected'];
 
@@ -188,7 +189,15 @@ export default function AdminSuggestionsPage() {
                                     {sortedSuggestions.map((s) => (
                                         <TableRow key={s.id}>
                                             <TableCell className="text-xs">{format(s.createdAt.toDate(), "PPp")}</TableCell>
-                                            <TableCell className="text-xs">{s.isAnonymous ? "Anonymous" : s.userEmail}</TableCell>
+                                            <TableCell className="text-xs">
+                                                {s.isAnonymous ? (
+                                                    "Anonymous"
+                                                ) : (
+                                                    <Link href={`/admin/users/${s.userId}`} className="hover:underline text-primary">
+                                                        {s.userEmail}
+                                                    </Link>
+                                                )}
+                                            </TableCell>
                                             <TableCell className="font-medium max-w-xs truncate" title={s.subject}>{s.subject}</TableCell>
                                             <TableCell><Badge variant="outline">{s.category}</Badge></TableCell>
                                             <TableCell className="flex items-center gap-1"><ThumbsUp className="h-4 w-4 text-muted-foreground"/>{s.upvoteCount}</TableCell>

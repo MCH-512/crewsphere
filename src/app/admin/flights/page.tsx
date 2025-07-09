@@ -28,6 +28,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { checkCrewAvailability, type Conflict } from "@/services/user-activity-service";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Link from "next/link";
 
 
 interface FlightForDisplay extends StoredFlight {
@@ -315,7 +316,7 @@ export default function AdminFlightsPage() {
                 }
                 
                 // 3. Update the flight document itself
-                batch.update(flightRef, { ...data, allCrewIds: allCrewIds, activityIds, updatedAt: serverTimestamp() });
+                batch.update(flightRef, { ...data, allCrewIds, activityIds, updatedAt: serverTimestamp() });
                 await batch.commit();
 
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityType: "FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
@@ -345,7 +346,7 @@ export default function AdminFlightsPage() {
                 
                 batch.set(flightRef, {
                     ...data,
-                    allCrewIds: allCrewIds,
+                    allCrewIds,
                     activityIds,
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
@@ -430,7 +431,11 @@ export default function AdminFlightsPage() {
                                         <TableCell className="font-medium text-xs">{format(new Date(f.scheduledDepartureDateTimeUTC), "PP")}</TableCell>
                                         <TableCell>{f.flightNumber}</TableCell>
                                         <TableCell className="text-xs">{f.departureAirportName} → {f.arrivalAirportName}</TableCell>
-                                        <TableCell className="text-xs">{f.purserName}</TableCell>
+                                        <TableCell className="text-xs">
+                                             <Link href={`/admin/users/${f.purserId}`} className="hover:underline text-primary">
+                                                {f.purserName}
+                                            </Link>
+                                        </TableCell>
                                         <TableCell className="text-xs">{f.aircraftType}</TableCell>
                                         <TableCell className="text-xs flex items-center gap-1"><Users className="h-3 w-3"/>{f.crewCount}</TableCell>
                                         <TableCell className="text-right space-x-1">
