@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -23,6 +22,7 @@ import { type StoredFlight } from "@/schemas/flight-schema";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { summarizeReport } from "@/ai/flows/summarize-report-flow";
+import { CheckboxGroup } from "@/components/ui/custom-checkbox-group";
 
 interface FlightForReport {
   id: string;
@@ -36,43 +36,6 @@ interface FlightForReport {
   defaultFoName: string;
   defaultSccmName: string;
 }
-
-const CheckboxGroup = ({ control, name, label, options }: { control: any; name: any; label: string; options: readonly string[] }) => (
-    <FormField
-      control={control}
-      name={name}
-      render={() => (
-        <FormItem>
-          <FormLabel className="text-base">{label}</FormLabel>
-          <div className="grid grid-cols-2 gap-2">
-            {options.map((item) => (
-              <FormField
-                key={item}
-                control={control}
-                name={name}
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value?.includes(item)}
-                        onCheckedChange={(checked) => {
-                          return checked
-                            ? field.onChange([...(field.value || []), item])
-                            : field.onChange(field.value?.filter((value: string) => value !== item));
-                        }}
-                      />
-                    </FormControl>
-                    <FormLabel className="font-normal">{item}</FormLabel>
-                  </FormItem>
-                )}
-              />
-            ))}
-          </div>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-);
 
 export default function SubmitPurserReportPage() {
   const { toast } = useToast();
