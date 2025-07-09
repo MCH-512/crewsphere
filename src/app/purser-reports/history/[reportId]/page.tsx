@@ -9,13 +9,26 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, HeartPulse, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle } from "lucide-react";
+import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Users, PersonStanding, Plane, Waypoints, HeartPulse } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { StoredPurserReport, optionalReportSections } from "@/schemas/purser-report-schema";
+import { StoredPurserReport } from "@/schemas/purser-report-schema";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type ReportStatus = "submitted" | "under-review" | "closed";
+
+const SectionDisplay = ({ label, value, icon: Icon }: { label: string; value?: string | string[] | null; icon: React.ElementType }) => {
+    if (!value || (Array.isArray(value) && value.length === 0)) return null;
+
+    const displayValue = Array.isArray(value) ? value.join(', ') : value;
+
+    return (
+        <div className="space-y-1">
+            <h4 className="font-semibold text-base flex items-center gap-2"><Icon className="h-4 w-4 text-primary"/>{label}</h4>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap p-3 rounded-md bg-muted/50 border">{displayValue}</p>
+        </div>
+    );
+};
 
 export default function PurserReportHistoryDetailPage() {
     const { user, loading: authLoading } = useAuth();
@@ -28,39 +41,37 @@ export default function PurserReportHistoryDetailPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
 
-    const fetchReport = React.useCallback(async () => {
+    React.useEffect(() => {
         if (!reportId || !user) return;
         setIsLoading(true);
         setError(null);
-        try {
-            const reportDocRef = doc(db, "purserReports", reportId);
-            const docSnap = await getDoc(reportDocRef);
+        const fetchReport = async () => {
+            try {
+                const reportDocRef = doc(db, "purserReports", reportId);
+                const docSnap = await getDoc(reportDocRef);
 
-            if (docSnap.exists()) {
-                const data = { id: docSnap.id, ...docSnap.data() } as StoredPurserReport;
-                if (data.userId !== user.uid && user.role !== 'admin') {
-                    throw new Error("You do not have permission to view this report.");
+                if (docSnap.exists()) {
+                    const data = { id: docSnap.id, ...docSnap.data() } as StoredPurserReport;
+                    if (data.userId !== user.uid && user.role !== 'admin') {
+                        throw new Error("You do not have permission to view this report.");
+                    }
+                    setReport(data);
+                } else {
+                    setError("Report not found.");
                 }
-                setReport(data);
-            } else {
-                setError("Report not found.");
+            } catch (err: any) {
+                console.error("Error fetching report:", err);
+                setError(err.message || "Failed to load the report.");
+                toast({ title: "Loading Error", description: err.message, variant: "destructive" });
+            } finally {
+                setIsLoading(false);
             }
-        } catch (err: any) {
-            console.error("Error fetching report:", err);
-            setError(err.message || "Failed to load the report.");
-            toast({ title: "Loading Error", description: err.message, variant: "destructive" });
-        } finally {
-            setIsLoading(false);
-        }
-    }, [reportId, user, toast]);
+        };
 
-    React.useEffect(() => {
-        if (!authLoading && user) {
+        if (!authLoading) {
             fetchReport();
-        } else if (!authLoading && !user) {
-            router.push('/login');
         }
-    }, [user, authLoading, router, fetchReport]);
+    }, [reportId, user, authLoading, router, toast]);
 
     const getStatusBadgeVariant = (status: ReportStatus) => {
         switch (status) {
@@ -94,18 +105,6 @@ export default function PurserReportHistoryDetailPage() {
         return <div className="text-center py-10"><p>No report data to display.</p></div>;
     }
 
-    const SectionDisplay = ({ name }: { name: keyof StoredPurserReport}) => {
-        const config = optionalReportSections.find(s => s.name === name);
-        const value = report[name];
-        if (!config || !value) return null;
-        const Icon = config.icon;
-        return (
-             <div className="space-y-1">
-                <h4 className="font-semibold text-base flex items-center gap-2"><Icon className="h-4 w-4 text-primary"/>{config.label}</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap p-3 rounded-md bg-muted/50 border">{value as string}</p>
-            </div>
-        )
-    };
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
@@ -136,20 +135,20 @@ export default function PurserReportHistoryDetailPage() {
                 </Alert>
             )}
             
-            <Card>
-                <CardHeader><CardTitle className="text-lg">General Flight Summary</CardTitle></CardHeader>
-                <CardContent>
-                    <p className="text-sm whitespace-pre-wrap text-muted-foreground">{report.generalFlightSummary}</p>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader><CardTitle className="text-lg">Detailed Observations</CardTitle></CardHeader>
+             <Card>
+                <CardHeader><CardTitle className="text-lg">Detailed Report</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                    {optionalReportSections.map(section => <SectionDisplay key={section.name} name={section.name}/>)}
-                    {optionalReportSections.every(s => !report[s.name]) && <p className="text-muted-foreground text-sm">No optional sections were filled out for this report.</p>}
+                    <SectionDisplay label="Crew Performance & Coordination" value={[`Briefing: ${report.briefing?.join(', ') || 'N/A'}`, `Atmosphere: ${report.atmosphere?.join(', ') || 'N/A'}`, `Positive: ${report.positivePoints || 'N/A'}`, `Improvement: ${report.improvementPoints || 'N/A'}`, `Follow-up: ${report.followUpRecommended ? 'Yes' : 'No'}`].join('\n')} icon={Users} />
+                    <SectionDisplay label="Passengers" value={[`Count: ${report.passengerCount}`, `Reported: ${report.passengersToReport?.join(', ') || 'None'}`, `Notes: ${report.passengerBehaviorNotes || 'N/A'}`, `Complaint: ${report.passengerComplaint ? 'Yes' : 'No'}`].join('\n')} icon={PersonStanding} />
+                    <SectionDisplay label="Cabin Condition" value={[`Boarding: ${report.cabinConditionBoarding?.join(', ') || 'N/A'}`, `Arrival: ${report.cabinConditionArrival?.join(', ') || 'N/A'}`, `Issues: ${report.technicalIssues?.join(', ') || 'None'}`, `Actions: ${report.cabinActionsTaken || 'N/A'}`].join('\n')} icon={Wrench} />
+                    <SectionDisplay label="Safety" value={[`Demo: ${report.safetyDemo?.join(', ') || 'N/A'}`, `Checks: ${report.safetyChecks?.join(', ') || 'N/A'}`, `Cross-check: ${report.crossCheck?.join(', ') || 'N/A'}`, `Anomalies: ${report.safetyAnomalies || 'N/A'}`].join('\n')} icon={Shield} />
+                    <SectionDisplay label="In-Flight Service" value={[`Performance: ${report.servicePerformance?.join(', ') || 'N/A'}`, `Catering Shortage: ${report.cateringShortage ? 'Yes' : 'No'}`, `Feedback: ${report.servicePassengerFeedback || 'N/A'}`].join('\n')} icon={Utensils} />
+                    <SectionDisplay label="Operational Events" value={[`Delay Causes: ${report.delayCauses?.join(', ') || 'None'}`, `Cockpit Comms: ${report.cockpitCommunication || 'N/A'}`, `Ground Handling: ${report.groundHandlingRemarks || 'N/A'}`].join('\n')} icon={Plane} />
+                    <SectionDisplay label="Specific Incidents" value={[`Incident to Report: ${report.specificIncident ? 'Yes' : 'No'}`, `Type: ${report.incidentTypes?.join(', ') || 'None'}`, `Details: ${report.incidentDetails || 'N/A'}`].join('\n')} icon={AlertTriangle} />
                 </CardContent>
             </Card>
         </div>
     );
 }
+
+    

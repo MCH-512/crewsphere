@@ -9,7 +9,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, HeartPulse, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Edit, Save, Sparkles, Users, UserX } from "lucide-react";
+import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Edit, Save, Sparkles, Users, UserX, Plane, Waypoints, PersonStanding, Briefcase, HeartPulse } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { StoredPurserReport, optionalReportSections } from "@/schemas/purser-report-schema";
 import { StoredFlight } from "@/schemas/flight-schema";
@@ -28,12 +28,18 @@ const statusConfig: Record<ReportStatus, { label: string; color: "secondary" | "
     closed: { label: "Closed", color: "success" },
 };
 
-interface FullCrewMemberInfo {
-    uid: string;
-    name: string;
-    role: string;
-    present: boolean;
-}
+const SectionDisplay = ({ label, value, icon: Icon }: { label: string; value?: string | string[] | null; icon: React.ElementType }) => {
+    if (!value || (Array.isArray(value) && value.length === 0)) return null;
+
+    const displayValue = Array.isArray(value) ? value.join(', ') : value;
+
+    return (
+        <div className="space-y-1">
+            <h4 className="font-semibold text-base flex items-center gap-2"><Icon className="h-4 w-4 text-primary"/>{label}</h4>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap p-3 rounded-md bg-muted/50 border">{displayValue}</p>
+        </div>
+    );
+};
 
 export default function PurserReportDetailPage() {
     const { user, loading: authLoading } = useAuth();
@@ -43,7 +49,6 @@ export default function PurserReportDetailPage() {
     const reportId = params.reportId as string;
 
     const [report, setReport] = React.useState<StoredPurserReport | null>(null);
-    const [fullCrewList, setFullCrewList] = React.useState<FullCrewMemberInfo[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [isEditingNotes, setIsEditingNotes] = React.useState(false);
@@ -68,29 +73,6 @@ export default function PurserReportDetailPage() {
             const reportData = { id: reportSnap.id, ...reportSnap.data() } as StoredPurserReport;
             setReport(reportData);
             setAdminNotes(reportData.adminNotes || "");
-
-            // Fetch original flight to compare crew lists
-            const flightDocRef = doc(db, "flights", reportData.flightId);
-            const flightSnap = await getDoc(flightDocRef);
-            if(flightSnap.exists()) {
-                const flightData = flightSnap.data() as StoredFlight;
-                const crewPromises = (flightData.allCrewIds || []).map(uid => getDoc(doc(db, "users", uid)));
-                const crewDocs = await Promise.all(crewPromises);
-                
-                const confirmedCrewIds = new Set(reportData.crewRoster.map(c => c.uid));
-                const allPlannedCrew = crewDocs
-                    .map(snap => snap.exists() ? {uid: snap.id, ...snap.data()} as User : null)
-                    .filter(Boolean) as User[];
-                
-                const crewListWithStatus: FullCrewMemberInfo[] = allPlannedCrew.map(crewMember => ({
-                    uid: crewMember.uid,
-                    name: crewMember.fullName || crewMember.displayName || 'Unknown',
-                    role: crewMember.role || 'N/A',
-                    present: confirmedCrewIds.has(crewMember.uid),
-                }));
-                setFullCrewList(crewListWithStatus);
-            }
-
         } catch (err: any) {
             console.error("Error fetching report:", err);
             setError(err.message || "Failed to load the report.");
@@ -150,20 +132,54 @@ export default function PurserReportDetailPage() {
         setAiSummary(null);
 
         try {
-            const reportContent = [
-                `Flight Summary: ${report.generalFlightSummary}`,
-                report.crewNotes && `Crew Notes: ${report.crewNotes}`,
-                report.briefingDetails && `Briefing Details: ${report.briefingDetails}`,
-                report.crewTaskDistribution && `Crew Task Distribution: ${report.crewTaskDistribution}`,
-                report.cateringDetails && `Catering & Service Details: ${report.cateringDetails}`,
-                report.safetyIncidents && `Safety Incidents: ${report.safetyIncidents}`,
-                report.securityIncidents && `Security Incidents: ${report.securityIncidents}`,
-                report.medicalIncidents && `Medical Incidents: ${report.medicalIncidents}`,
-                report.passengerFeedback && `Passenger Feedback: ${report.passengerFeedback}`,
-                report.maintenanceIssues && `Maintenance Issues: ${report.maintenanceIssues}`,
-                report.crewPerformanceNotes && `Crew Performance Notes: ${report.crewPerformanceNotes}`,
-                report.otherObservations && `Other Observations: ${report.otherObservations}`,
-            ].filter(Boolean).join("\n\n");
+             const reportContent = `
+                Rapport de vol pour le vol ${report.flightNumber} (${report.departureAirport} -> ${report.arrivalAirport})
+                Date: ${report.flightDate}
+                
+                Informations générales:
+                - Passagers: ${report.passengerCount}
+                - Équipage confirmé: ${report.crewRoster.map(c => c.name).join(', ')}
+                - Notes sur l'équipage: ${report.crewNotes || 'N/A'}
+                
+                Performance et coordination de l'équipage:
+                - Briefing: ${report.briefing?.join(', ') || 'Non spécifié'}
+                - Ambiance: ${report.atmosphere?.join(', ') || 'Non spécifié'}
+                - Points positifs: ${report.positivePoints || 'N/A'}
+                - Points à améliorer: ${report.improvementPoints || 'N/A'}
+                - Suivi recommandé: ${report.followUpRecommended ? 'Oui' : 'Non'}
+
+                Passagers:
+                - Passagers signalés: ${report.passengersToReport?.join(', ') || 'Aucun'}
+                - Notes sur le comportement: ${report.passengerBehaviorNotes || 'N/A'}
+                - Plainte signalée: ${report.passengerComplaint ? 'Oui' : 'Non'}
+                
+                État de la cabine:
+                - État au départ: ${report.cabinConditionBoarding?.join(', ') || 'Non spécifié'}
+                - État à l'arrivée: ${report.cabinConditionArrival?.join(', ') || 'Non spécifié'}
+                - Problèmes techniques: ${report.technicalIssues?.join(', ') || 'Aucun'}
+                - Actions/observations: ${report.cabinActionsTaken || 'N/A'}
+                
+                Sécurité (Safety):
+                - Démonstration de sécurité: ${report.safetyDemo?.join(', ') || 'Non spécifié'}
+                - Vérifications de sécurité: ${report.safetyChecks?.join(', ') || 'Non spécifié'}
+                - Cross-check: ${report.crossCheck?.join(', ') || 'Non spécifié'}
+                - Anomalies observées: ${report.safetyAnomalies || 'N/A'}
+                
+                Service à bord:
+                - Performance du service: ${report.servicePerformance?.join(', ') || 'Non spécifié'}
+                - Manque de catering: ${report.cateringShortage ? 'Oui' : 'Non'}
+                - Retours passagers: ${report.servicePassengerFeedback || 'N/A'}
+
+                Événements opérationnels:
+                - Causes de retard: ${report.delayCauses?.join(', ') || 'Aucun'}
+                - Communication avec le cockpit: ${report.cockpitCommunication || 'Non spécifié'}
+                - Remarques sur l'assistance au sol: ${report.groundHandlingRemarks || 'N/A'}
+
+                Incidents spécifiques:
+                - Incident à signaler: ${report.specificIncident ? 'Oui' : 'Non'}
+                - Type d'incident: ${report.incidentTypes?.join(', ') || 'Aucun'}
+                - Détails factuels: ${report.incidentDetails || 'N/A'}
+            `;
 
             if (reportContent.trim() === "") {
                 setSummaryError("Report content is empty, cannot generate summary.");
@@ -200,20 +216,6 @@ export default function PurserReportDetailPage() {
     if (!report) {
         return <div className="text-center py-10"><p>No report data to display.</p></div>;
     }
-
-    const SectionDisplay = ({ name }: { name: keyof StoredPurserReport}) => {
-        const config = optionalReportSections.find(s => s.name === name);
-        const value = report[name as keyof typeof report];
-        if (!config || !value) return null;
-        const Icon = config.icon;
-        return (
-             <div className="space-y-1">
-                <h4 className="font-semibold text-base flex items-center gap-2"><Icon className="h-4 w-4 text-primary"/>{config.label}</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap p-3 rounded-md bg-muted/50 border">{value as string}</p>
-            </div>
-        )
-    };
-
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -311,48 +313,19 @@ export default function PurserReportDetailPage() {
             </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-                <CardHeader><CardTitle className="text-lg">Flight Details</CardTitle></CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                    <p><strong>Aircraft:</strong> {report.aircraftTypeRegistration}</p>
-                    <p><strong>Total Passengers:</strong> {report.passengerLoad.total}</p>
-                    <p><strong>Adults:</strong> {report.passengerLoad.adults}</p>
-                    <p><strong>Infants:</strong> {report.passengerLoad.infants}</p>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Users />Crew Status</CardTitle></CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                   {fullCrewList.map(member => (
-                    <div key={member.uid} className="flex justify-between items-center">
-                        <span className="flex items-center gap-2">
-                           {member.present ? <UserCheck className="h-4 w-4 text-green-600"/> : <UserX className="h-4 w-4 text-destructive"/>}
-                           {member.name}
-                        </span>
-                        <Badge variant={member.present ? "secondary" : "outline"} className="capitalize">{member.role}</Badge>
-                    </div>
-                   ))}
-                   {report.crewNotes && <p className="text-xs text-muted-foreground pt-2 border-t mt-2"><strong>Notes:</strong> {report.crewNotes}</p>}
-                </CardContent>
-            </Card>
-        </div>
-
         <Card>
-            <CardHeader><CardTitle className="text-lg">General Flight Summary</CardTitle></CardHeader>
-            <CardContent>
-                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{report.generalFlightSummary}</p>
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader><CardTitle className="text-lg">Detailed Observations</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg">Detailed Report</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-                {optionalReportSections.map(section => <SectionDisplay key={section.name} name={section.name}/>)}
-                {optionalReportSections.every(s => !report[s.name as keyof typeof report]) && <p className="text-muted-foreground text-sm">No optional sections were filled out for this report.</p>}
+                <SectionDisplay label="Crew Performance & Coordination" value={[`Briefing: ${report.briefing?.join(', ') || 'N/A'}`, `Atmosphere: ${report.atmosphere?.join(', ') || 'N/A'}`, `Positive: ${report.positivePoints || 'N/A'}`, `Improvement: ${report.improvementPoints || 'N/A'}`, `Follow-up: ${report.followUpRecommended ? 'Yes' : 'No'}`].join('\n')} icon={Users} />
+                <SectionDisplay label="Passengers" value={[`Count: ${report.passengerCount}`, `Reported: ${report.passengersToReport?.join(', ') || 'None'}`, `Notes: ${report.passengerBehaviorNotes || 'N/A'}`, `Complaint: ${report.passengerComplaint ? 'Yes' : 'No'}`].join('\n')} icon={PersonStanding} />
+                <SectionDisplay label="Cabin Condition" value={[`Boarding: ${report.cabinConditionBoarding?.join(', ') || 'N/A'}`, `Arrival: ${report.cabinConditionArrival?.join(', ') || 'N/A'}`, `Issues: ${report.technicalIssues?.join(', ') || 'None'}`, `Actions: ${report.cabinActionsTaken || 'N/A'}`].join('\n')} icon={Wrench} />
+                <SectionDisplay label="Safety" value={[`Demo: ${report.safetyDemo?.join(', ') || 'N/A'}`, `Checks: ${report.safetyChecks?.join(', ') || 'N/A'}`, `Cross-check: ${report.crossCheck?.join(', ') || 'N/A'}`, `Anomalies: ${report.safetyAnomalies || 'N/A'}`].join('\n')} icon={Shield} />
+                <SectionDisplay label="In-Flight Service" value={[`Performance: ${report.servicePerformance?.join(', ') || 'N/A'}`, `Catering Shortage: ${report.cateringShortage ? 'Yes' : 'No'}`, `Feedback: ${report.servicePassengerFeedback || 'N/A'}`].join('\n')} icon={Utensils} />
+                <SectionDisplay label="Operational Events" value={[`Delay Causes: ${report.delayCauses?.join(', ') || 'None'}`, `Cockpit Comms: ${report.cockpitCommunication || 'N/A'}`, `Ground Handling: ${report.groundHandlingRemarks || 'N/A'}`].join('\n')} icon={Plane} />
+                <SectionDisplay label="Specific Incidents" value={[`Incident to Report: ${report.specificIncident ? 'Yes' : 'No'}`, `Type: ${report.incidentTypes?.join(', ') || 'None'}`, `Details: ${report.incidentDetails || 'N/A'}`].join('\n')} icon={AlertTriangle} />
             </CardContent>
         </Card>
-        
+
         <Card>
              <CardHeader className="flex flex-row justify-between items-center">
                 <CardTitle className="text-lg">Administrator Notes</CardTitle>
@@ -381,3 +354,5 @@ export default function PurserReportDetailPage() {
     </div>
   )
 }
+
+    

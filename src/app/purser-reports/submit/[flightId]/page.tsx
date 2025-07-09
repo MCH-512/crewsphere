@@ -9,31 +9,68 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileSignature, Loader2, Send } from "lucide-react";
+import { FileSignature, Loader2, Send, Users, PersonStanding, Wrench, Shield, Utensils, Plane, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, doc, getDoc, writeBatch, serverTimestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { purserReportFormSchema, type PurserReportFormValues, optionalReportSections } from "@/schemas/purser-report-schema";
+import { purserReportFormSchema, type PurserReportFormValues, briefingChecklistOptions, atmosphereChecklistOptions, passengersToReportOptions, cabinConditionOptions, technicalIssuesOptions, safetyDemoOptions, safetyChecksOptions, crossCheckOptions, servicePerformanceOptions, delayCausesOptions, cockpitCommunicationOptions, incidentTypesOptions } from "@/schemas/purser-report-schema";
 import { format, parseISO } from "date-fns";
 import { getAirportByCode } from "@/services/airport-service";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { type StoredFlight } from "@/schemas/flight-schema";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface FlightForReport {
   id: string;
   flightNumber: string;
   departureAirport: string;
-  departureAirportIATA?: string;
   arrivalAirport: string;
-  arrivalAirportIATA?: string;
   scheduledDepartureDateTimeUTC: string;
   aircraftType: string;
+  picName: string;
+  foName: string;
+  sccmName: string;
 }
+
+const CheckboxGroup = ({ control, name, label, options }: { control: any; name: any; label: string; options: readonly string[] }) => (
+    <FormField
+      control={control}
+      name={name}
+      render={() => (
+        <FormItem>
+          <FormLabel className="text-base">{label}</FormLabel>
+          <div className="grid grid-cols-2 gap-2">
+            {options.map((item) => (
+              <FormField
+                key={item}
+                control={control}
+                name={name}
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value?.includes(item)}
+                        onCheckedChange={(checked) => {
+                          return checked
+                            ? field.onChange([...(field.value || []), item])
+                            : field.onChange(field.value?.filter((value: string) => value !== item));
+                        }}
+                      />
+                    </FormControl>
+                    <FormLabel className="font-normal">{item}</FormLabel>
+                  </FormItem>
+                )}
+              />
+            ))}
+          </div>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+);
 
 export default function SubmitPurserReportPage() {
   const { toast } = useToast();
@@ -45,15 +82,14 @@ export default function SubmitPurserReportPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [flightData, setFlightData] = React.useState<FlightForReport | null>(null);
-  const [crewMembers, setCrewMembers] = React.useState<User[]>([]);
 
   const form = useForm<PurserReportFormValues>({
     resolver: zodResolver(purserReportFormSchema),
     defaultValues: {
-      passengerLoad: { total: 0, adults: 0, infants: 0 },
-      confirmedCrewIds: [],
-      crewNotes: "",
-      generalFlightSummary: "",
+      followUpRecommended: false,
+      passengerComplaint: false,
+      cateringShortage: false,
+      specificIncident: false,
     },
     mode: "onChange",
   });
@@ -78,37 +114,47 @@ export default function SubmitPurserReportPage() {
       }
       
       const flight = flightSnap.data() as StoredFlight;
-      const depAirportInfo = await getAirportByCode(flight.departureAirport);
-      const arrAirportInfo = await getAirportByCode(flight.arrivalAirport);
+      const [depAirportInfo, arrAirportInfo] = await Promise.all([
+        getAirportByCode(flight.departureAirport),
+        getAirportByCode(flight.arrivalAirport),
+      ]);
       
+      const crewPromises = (flight.allCrewIds || []).map(uid => getDoc(doc(db, "users", uid)));
+      const crewDocs = await Promise.all(crewPromises);
+      const crewMembers = crewDocs.map(snap => snap.exists() ? { uid: snap.id, ...snap.data() } as User : null).filter(Boolean) as User[];
+      
+      const pilots = crewMembers.filter(c => c.role === 'pilote');
+      const purser = crewMembers.find(c => c.uid === flight.purserId);
+
       const loadedFlightData: FlightForReport = {
         id: flightSnap.id, flightNumber: flight.flightNumber,
-        departureAirport: flight.departureAirport, departureAirportIATA: depAirportInfo?.iata,
-        arrivalAirport: flight.arrivalAirport, arrivalAirportIATA: arrAirportInfo?.iata,
-        scheduledDepartureDateTimeUTC: flight.scheduledDepartureDateTimeUTC, aircraftType: flight.aircraftType,
+        departureAirport: depAirportInfo?.name || flight.departureAirport,
+        arrivalAirport: arrAirportInfo?.name || flight.arrivalAirport,
+        scheduledDepartureDateTimeUTC: flight.scheduledDepartureDateTimeUTC,
+        aircraftType: flight.aircraftType,
+        picName: pilots[0]?.displayName || 'N/A',
+        foName: pilots[1]?.displayName || 'N/A',
+        sccmName: purser?.displayName || 'N/A',
       };
 
       setFlightData(loadedFlightData);
 
-      // Fetch crew details
-      if (flight.allCrewIds && flight.allCrewIds.length > 0) {
-        const crewPromises = flight.allCrewIds.map(uid => getDoc(doc(db, "users", uid)));
-        const crewDocs = await Promise.all(crewPromises);
-        const fetchedCrew = crewDocs
-            .map(snap => snap.exists() ? { uid: snap.id, ...snap.data() } as User : null)
-            .filter((c): c is User => c !== null);
-        setCrewMembers(fetchedCrew);
-        
-        form.setValue('confirmedCrewIds', fetchedCrew.map(c => c.uid));
-      }
-
       form.reset({
-        flightId: loadedFlightData.id, flightNumber: loadedFlightData.flightNumber, flightDate: loadedFlightData.scheduledDepartureDateTimeUTC,
-        departureAirport: loadedFlightData.departureAirport, arrivalAirport: loadedFlightData.arrivalAirport, aircraftTypeRegistration: loadedFlightData.aircraftType,
-        passengerLoad: { total: 0, adults: 0, infants: 0 },
-        confirmedCrewIds: flight.allCrewIds || [],
-        crewNotes: "",
-        generalFlightSummary: "",
+        flightId: loadedFlightData.id,
+        flightNumber: loadedFlightData.flightNumber,
+        flightDate: loadedFlightData.scheduledDepartureDateTimeUTC,
+        route: `${loadedFlightData.departureAirport} -> ${loadedFlightData.arrivalAirport}`,
+        aircraftType: loadedFlightData.aircraftType,
+        aircraftRegistration: flight.aircraftType, // Placeholder
+        picName: loadedFlightData.picName,
+        foName: loadedFlightData.foName,
+        sccmName: loadedFlightData.sccmName,
+        cabinCrewOnBoard: crewMembers.filter(c => c.role === 'cabin crew').map(c => c.displayName || c.email!),
+        passengerCount: 0,
+        followUpRecommended: false,
+        passengerComplaint: false,
+        cateringShortage: false,
+        specificIncident: false,
       });
       setIsLoading(false);
     };
@@ -123,17 +169,17 @@ export default function SubmitPurserReportPage() {
     try {
       const reportRef = doc(collection(db, "purserReports"));
       
-      const confirmedCrewDetails = crewMembers.filter(c => data.confirmedCrewIds.includes(c.uid))
-          .map(c => ({ uid: c.uid, name: c.fullName || c.displayName, role: c.role || 'N/A' }));
-
       const reportData = { 
         ...data, 
         userId: user.uid, 
         userEmail: user.email, 
-        crewRoster: confirmedCrewDetails,
         createdAt: serverTimestamp(), 
         status: 'submitted', 
-        adminNotes: '' 
+        adminNotes: '',
+        // Make sure to match the stored schema
+        crewRoster: (data.cabinCrewOnBoard || []).map(name => ({ name, role: 'cabin crew', uid: '' })), // Simplified for now
+        departureAirport: flightData?.departureAirport,
+        arrivalAirport: flightData?.arrivalAirport
       };
 
       batch.set(reportRef, reportData);
@@ -158,141 +204,123 @@ export default function SubmitPurserReportPage() {
   }
 
   return (
+    <div className="max-w-4xl mx-auto">
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl font-headline flex items-center"><FileSignature className="mr-3 h-7 w-7 text-primary" />Purser Report for Flight {flightData?.flightNumber}</CardTitle>
-            <CardDescription>{flightData?.departureAirportIATA || flightData?.departureAirport} to {flightData?.arrivalAirportIATA || flightData?.arrivalAirport} on {flightData ? format(parseISO(flightData.scheduledDepartureDateTimeUTC), "PPP") : '...'}</CardDescription>
+            <CardTitle className="text-2xl font-headline flex items-center"><FileSignature className="mr-3 h-7 w-7 text-primary" />Purser Report Submission</CardTitle>
+            <CardDescription>Fill all relevant flight information in a clear, fast, and standardized manner.</CardDescription>
           </CardHeader>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Passenger & Crew Information</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField control={form.control} name="passengerLoad.total" render={({ field }) => (<FormItem><FormLabel>Total Passengers</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="passengerLoad.adults" render={({ field }) => (<FormItem><FormLabel>Adults</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="passengerLoad.infants" render={({ field }) => (<FormItem><FormLabel>Infants</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl><FormMessage /></FormItem>)} />
-            </div>
+        {/* Section 1: General Flight Info */}
+        <Card><CardHeader><CardTitle>General Flight Information</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormItem><FormLabel>Flight Number</FormLabel><Input readOnly value={flightData?.flightNumber} /></FormItem>
+            <FormItem><FormLabel>Flight Date</FormLabel><Input readOnly value={flightData ? format(parseISO(flightData.scheduledDepartureDateTimeUTC), "PPP") : ''} /></FormItem>
+            <FormItem><FormLabel>Route</FormLabel><Input readOnly value={`${flightData?.departureAirport} → ${flightData?.arrivalAirport}`} /></FormItem>
+            <FormItem><FormLabel>Aircraft Type</FormLabel><Input readOnly value={flightData?.aircraftType} /></FormItem>
+            <FormItem><FormLabel>PIC Name</FormLabel><Input readOnly value={flightData?.sccmName} /></FormItem>
+            <FormItem><FormLabel>FO Name</FormLabel><Input readOnly value={flightData?.foName} /></FormItem>
+            <FormItem><FormLabel>SCCM Name</FormLabel><Input readOnly value={flightData?.sccmName} /></FormItem>
              <FormField
                 control={form.control}
-                name="confirmedCrewIds"
-                render={() => (
-                    <FormItem>
-                    <FormLabel>Confirm Crew on Duty*</FormLabel>
-                    <FormDescription>Uncheck any crew member who was not on this flight.</FormDescription>
-                    <div className="space-y-2 rounded-md border p-4 max-h-60 overflow-y-auto">
-                        {crewMembers.map((member) => (
-                        <FormField
-                            key={member.uid}
-                            control={form.control}
-                            name="confirmedCrewIds"
-                            render={({ field }) => {
-                            const isChecked = field.value?.includes(member.uid);
-                            return (
-                                <FormItem
-                                key={member.uid}
-                                className="flex flex-row items-start space-x-3 space-y-0"
-                                >
-                                <FormControl>
-                                    <Checkbox
-                                    checked={isChecked}
-                                    onCheckedChange={(checked) => {
-                                        return checked
-                                        ? field.onChange([...(field.value || []), member.uid])
-                                        : field.onChange(
-                                            field.value?.filter(
-                                                (value) => value !== member.uid
-                                            )
-                                            )
-                                    }}
-                                    />
-                                </FormControl>
-                                <FormLabel className={cn(
-                                    "font-normal flex items-center gap-2 transition-opacity",
-                                    !isChecked && "opacity-50 line-through"
-                                )}>
-                                     {member.fullName || member.displayName} ({member.email})
-                                    <span className="text-muted-foreground capitalize text-xs p-1 bg-muted rounded-sm"> - {member.role}</span>
-                                </FormLabel>
-                                </FormItem>
-                            )
-                            }}
-                        />
-                        ))}
-                    </div>
-                    <FormMessage />
+                name="cabinCrewOnBoard"
+                render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                        <FormLabel>Cabin Crew on board</FormLabel>
+                        <FormControl>
+                             <Input readOnly value={field.value?.join(', ') || 'N/A'}/>
+                        </FormControl>
+                        <FormMessage />
                     </FormItem>
                 )}
             />
-             <FormField
-                control={form.control}
-                name="crewNotes"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Crew Notes (Optional)</FormLabel>
-                    <FormControl>
-                        <Textarea placeholder="Note any last-minute crew changes or other roster-related observations..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-            )} />
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader><CardTitle className="text-lg">General Flight Summary</CardTitle></CardHeader>
-          <CardContent>
-            <FormField control={form.control} name="generalFlightSummary" render={({ field }) => (<FormItem><FormLabel>General Summary*</FormLabel><FormControl><Textarea placeholder="Describe the overall flight experience, punctuality, and any general observations..." className="min-h-[120px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
           </CardContent>
         </Card>
 
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-lg">Detailed Observations (Optional)</CardTitle>
-                <CardDescription>Expand any relevant sections below to add specific details.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Accordion type="multiple" className="w-full">
-                    {optionalReportSections.map(({ name, label, placeholder, icon: Icon }) => (
-                        <AccordionItem value={name} key={name}>
-                            <AccordionTrigger className="text-base hover:no-underline">
-                                <div className="flex items-center gap-3">
-                                    <Icon className="h-5 w-5 text-primary" />
-                                    {label}
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent>
-                                <FormField
-                                    control={form.control}
-                                    name={name}
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                        <Textarea
-                                            placeholder={placeholder}
-                                            {...field}
-                                            className="min-h-[120px]"
-                                        />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                            </AccordionContent>
-                        </AccordionItem>
-                    ))}
-                </Accordion>
-            </CardContent>
+        {/* Section 2: Crew */}
+        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Users/>Crew – Performance & Coordination</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <CheckboxGroup control={form.control} name="briefing" label="Briefing" options={briefingChecklistOptions} />
+            <CheckboxGroup control={form.control} name="atmosphere" label="Working Atmosphere" options={atmosphereChecklistOptions} />
+            <FormField control={form.control} name="positivePoints" render={({ field }) => (<FormItem><FormLabel>Positive points of the day</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="improvementPoints" render={({ field }) => (<FormItem><FormLabel>Weak points / Follow-up needed</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="followUpRecommended" render={({ field }) => (<FormItem><FormLabel>Follow-up recommended</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+          </CardContent>
         </Card>
         
+        {/* Section 3: Passengers */}
+        <Card><CardHeader><CardTitle className="flex items-center gap-2"><PersonStanding/>Passengers – Specificities & Behavior</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <FormField control={form.control} name="passengerCount" render={({ field }) => (<FormItem><FormLabel>Total number of passengers</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value,10))} /></FormControl><FormMessage /></FormItem>)} />
+            <CheckboxGroup control={form.control} name="passengersToReport" label="Passengers to report" options={passengersToReportOptions} />
+            <FormField control={form.control} name="passengerBehaviorNotes" render={({ field }) => (<FormItem><FormLabel>Passenger behavior notes</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="passengerComplaint" render={({ field }) => (<FormItem><FormLabel>Complaint reported by passenger</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+          </CardContent>
+        </Card>
+        
+        {/* Section 4: Cabin */}
+        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Wrench/>Cabin – Condition & Cleanliness</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <CheckboxGroup control={form.control} name="cabinConditionBoarding" label="Cabin condition at boarding" options={cabinConditionOptions} />
+            <CheckboxGroup control={form.control} name="cabinConditionArrival" label="Cabin condition on arrival" options={cabinConditionOptions.slice(0, 2)} />
+            <CheckboxGroup control={form.control} name="technicalIssues" label="Technical issues" options={technicalIssuesOptions} />
+            <FormField control={form.control} name="cabinActionsTaken" render={({ field }) => (<FormItem><FormLabel>Actions taken or observations</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+          </CardContent>
+        </Card>
+
+        {/* Section 5: Safety */}
+        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Shield/>Safety – Procedures & Checks</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <CheckboxGroup control={form.control} name="safetyDemo" label="Safety demo" options={safetyDemoOptions} />
+            <CheckboxGroup control={form.control} name="safetyChecks" label="Safety checks" options={safetyChecksOptions} />
+            <CheckboxGroup control={form.control} name="crossCheck" label="Cross-check" options={crossCheckOptions} />
+            <FormField control={form.control} name="safetyAnomalies" render={({ field }) => (<FormItem><FormLabel>Safety anomalies observed</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+          </CardContent>
+        </Card>
+        
+        {/* Section 6: In-Flight Service */}
+        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Utensils/>In-Flight Service</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <CheckboxGroup control={form.control} name="servicePerformance" label="Service performance" options={servicePerformanceOptions} />
+            <FormField control={form.control} name="cateringShortage" render={({ field }) => (<FormItem><FormLabel>Catering shortage</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="servicePassengerFeedback" render={({ field }) => (<FormItem><FormLabel>Passenger feedback</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+          </CardContent>
+        </Card>
+        
+        {/* Section 7: Operational Events */}
+        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Plane/>Operational Events</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <CheckboxGroup control={form.control} name="delayCauses" label="Delay causes" options={delayCausesOptions} />
+            <FormField control={form.control} name="cockpitCommunication" render={({ field }) => (<FormItem><FormLabel>Cockpit communication</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{cockpitCommunicationOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="groundHandlingRemarks" render={({ field }) => (<FormItem><FormLabel>Remarks regarding ground handling</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+          </CardContent>
+        </Card>
+
+        {/* Section 8: Specific Incidents */}
+        <Card><CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle/>Specific Incidents</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <FormField control={form.control} name="specificIncident" render={({ field }) => (<FormItem><FormLabel>Incident to report</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+            {form.watch('specificIncident') && (
+              <>
+                <CheckboxGroup control={form.control} name="incidentTypes" label="Type of incident" options={incidentTypesOptions} />
+                <FormField control={form.control} name="incidentDetails" render={({ field }) => (<FormItem><FormLabel>Factual details (what, who, when)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting || !form.formState.isValid} size="lg">
+          <Button type="submit" disabled={isSubmitting} size="lg">
             {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting Report...</> : <><Send className="mr-2 h-4 w-4" /> Submit Report</>}
           </Button>
         </div>
       </form>
     </Form>
+    </div>
   );
 }
+
+    
