@@ -9,7 +9,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Edit, Save, Sparkles, Users, UserX, Plane, Waypoints, PersonStanding, Briefcase, HeartPulse } from "lucide-react";
+import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, Utensils, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Edit, Save, Sparkles, Users, UserX, Plane, Waypoints, PersonStanding, Briefcase, HeartPulse } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { StoredPurserReport, optionalReportSections } from "@/schemas/purser-report-schema";
 import { StoredFlight } from "@/schemas/flight-schema";
@@ -17,7 +17,6 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { logAuditEvent } from "@/lib/audit-logger";
-import { summarizeReport, type SummarizeReportOutput } from "@/ai/flows/summarize-report-flow";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type ReportStatus = "submitted" | "under-review" | "closed";
@@ -54,11 +53,6 @@ export default function PurserReportDetailPage() {
     const [isEditingNotes, setIsEditingNotes] = React.useState(false);
     const [adminNotes, setAdminNotes] = React.useState("");
     const [isSaving, setIsSaving] = React.useState(false);
-    
-    const [aiSummary, setAiSummary] = React.useState<SummarizeReportOutput | null>(null);
-    const [isGeneratingSummary, setIsGeneratingSummary] = React.useState(false);
-    const [summaryError, setSummaryError] = React.useState<string | null>(null);
-
 
     const fetchReport = React.useCallback(async () => {
         if (!reportId) return;
@@ -125,82 +119,6 @@ export default function PurserReportDetailPage() {
         }
     };
 
-    const handleGenerateSummary = async () => {
-        if (!report || !user) return;
-        setIsGeneratingSummary(true);
-        setSummaryError(null);
-        setAiSummary(null);
-
-        try {
-             const reportContent = `
-                Rapport de vol pour le vol ${report.flightNumber} (${report.departureAirport} -> ${report.arrivalAirport})
-                Date: ${report.flightDate}
-                
-                Informations générales:
-                - Passagers: ${report.passengerCount}
-                - Équipage confirmé: ${report.crewRoster.map(c => c.name).join(', ')}
-                - Notes sur l'équipage: ${report.crewNotes || 'N/A'}
-                
-                Performance et coordination de l'équipage:
-                - Briefing: ${report.briefing?.join(', ') || 'Non spécifié'}
-                - Ambiance: ${report.atmosphere?.join(', ') || 'Non spécifié'}
-                - Points positifs: ${report.positivePoints || 'N/A'}
-                - Points à améliorer: ${report.improvementPoints || 'N/A'}
-                - Suivi recommandé: ${report.followUpRecommended ? 'Oui' : 'Non'}
-
-                Passagers:
-                - Passagers signalés: ${report.passengersToReport?.join(', ') || 'Aucun'}
-                - Notes sur le comportement: ${report.passengerBehaviorNotes || 'N/A'}
-                - Plainte signalée: ${report.passengerComplaint ? 'Oui' : 'Non'}
-                
-                État de la cabine:
-                - État au départ: ${report.cabinConditionBoarding?.join(', ') || 'Non spécifié'}
-                - État à l'arrivée: ${report.cabinConditionArrival?.join(', ') || 'Non spécifié'}
-                - Problèmes techniques: ${report.technicalIssues?.join(', ') || 'Aucun'}
-                - Actions/observations: ${report.cabinActionsTaken || 'N/A'}
-                
-                Sécurité (Safety):
-                - Démonstration de sécurité: ${report.safetyDemo?.join(', ') || 'Non spécifié'}
-                - Vérifications de sécurité: ${report.safetyChecks?.join(', ') || 'Non spécifié'}
-                - Cross-check: ${report.crossCheck?.join(', ') || 'Non spécifié'}
-                - Anomalies observées: ${report.safetyAnomalies || 'N/A'}
-                
-                Service à bord:
-                - Performance du service: ${report.servicePerformance?.join(', ') || 'Non spécifié'}
-                - Manque de catering: ${report.cateringShortage ? 'Oui' : 'Non'}
-                - Retours passagers: ${report.servicePassengerFeedback || 'N/A'}
-
-                Événements opérationnels:
-                - Causes de retard: ${report.delayCauses?.join(', ') || 'Aucun'}
-                - Communication avec le cockpit: ${report.cockpitCommunication || 'Non spécifié'}
-                - Remarques sur l'assistance au sol: ${report.groundHandlingRemarks || 'N/A'}
-
-                Incidents spécifiques:
-                - Incident à signaler: ${report.specificIncident ? 'Oui' : 'Non'}
-                - Type d'incident: ${report.incidentTypes?.join(', ') || 'Aucun'}
-                - Détails factuels: ${report.incidentDetails || 'N/A'}
-            `;
-
-            if (reportContent.trim() === "") {
-                setSummaryError("Report content is empty, cannot generate summary.");
-                return;
-            }
-
-            const summary = await summarizeReport({ reportContent });
-            setAiSummary(summary);
-            
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "GENERATE_AI_SUMMARY", entityType: "PURSER_REPORT", entityId: report.id });
-
-            toast({ title: "AI Summary Generated", description: "The report summary has been successfully generated." });
-        } catch (error: any) {
-            console.error("Error generating AI summary:", error);
-            setSummaryError(error.message || "An unexpected error occurred while generating the summary.");
-            toast({ title: "Summary Generation Failed", variant: "destructive", description: "Could not generate AI summary." });
-        } finally {
-            setIsGeneratingSummary(false);
-        }
-    };
-
     if (isLoading || authLoading) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
@@ -253,62 +171,38 @@ export default function PurserReportDetailPage() {
             <CardHeader className="flex-row items-center justify-between">
                 <div>
                     <CardTitle className="text-lg flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" />AI-Powered Summary</CardTitle>
-                    <CardDescription>A quick overview generated by AI.</CardDescription>
+                    <CardDescription>A quick overview generated by AI upon submission.</CardDescription>
                 </div>
-                <Button onClick={handleGenerateSummary} disabled={isGeneratingSummary}>
-                    {isGeneratingSummary ? (
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Generating...</>
-                    ) : (
-                        <><Sparkles className="mr-2 h-4 w-4"/>Generate Summary</>
-                    )}
-                </Button>
             </CardHeader>
             <CardContent>
-                {isGeneratingSummary && (
-                    <div className="flex items-center justify-center py-6 text-muted-foreground">
-                        <Loader2 className="h-6 w-6 animate-spin mr-3"/>
-                        <p>The AI is analyzing the report. This may take a moment...</p>
-                    </div>
-                )}
-                {summaryError && (
-                    <Alert variant="destructive">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>Error</AlertTitle>
-                        <AlertDescription>{summaryError}</AlertDescription>
-                    </Alert>
-                )}
-                {aiSummary && (
+                {report.aiSummary ? (
                     <div className="space-y-4">
                         <div>
                             <h4 className="font-semibold text-base mb-1">Executive Summary</h4>
-                            <p className="text-sm text-muted-foreground">{aiSummary.summary}</p>
+                            <p className="text-sm text-muted-foreground">{report.aiSummary}</p>
                         </div>
-                        {aiSummary.keyPoints.length > 0 && (
+                        {report.aiKeyPoints && report.aiKeyPoints.length > 0 && (
                             <div>
                                 <h4 className="font-semibold text-base mb-2">Key Points</h4>
                                 <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                                    {aiSummary.keyPoints.map((point, index) => <li key={index}>{point}</li>)}
+                                    {report.aiKeyPoints.map((point, index) => <li key={index}>{point}</li>)}
                                 </ul>
                             </div>
                         )}
-                        {aiSummary.potentialRisks.length > 0 && (
+                        {report.aiPotentialRisks && report.aiPotentialRisks.length > 0 && (
                             <Alert variant="warning">
                                 <AlertTriangle className="h-4 w-4" />
                                 <AlertTitle>Potential Risks Identified</AlertTitle>
                                 <AlertDescription>
                                     <ul className="list-disc list-inside">
-                                        {aiSummary.potentialRisks.map((risk, index) => <li key={index}>{risk}</li>)}
+                                        {report.aiPotentialRisks.map((risk, index) => <li key={index}>{risk}</li>)}
                                     </ul>
                                 </AlertDescription>
                             </Alert>
                         )}
-                        {aiSummary.keyPoints.length === 0 && aiSummary.potentialRisks.length === 0 && (
-                            <p className="text-sm text-muted-foreground">The AI did not identify any specific key points or risks from this report.</p>
-                        )}
                     </div>
-                )}
-                {!isGeneratingSummary && !summaryError && !aiSummary && (
-                    <p className="text-sm text-muted-foreground text-center py-4">Click "Generate Summary" to get an AI-powered analysis of this report.</p>
+                ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">AI summary was not generated for this report.</p>
                 )}
             </CardContent>
         </Card>
@@ -354,5 +248,3 @@ export default function PurserReportDetailPage() {
     </div>
   )
 }
-
-    

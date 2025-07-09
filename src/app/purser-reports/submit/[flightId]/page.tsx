@@ -22,6 +22,7 @@ import { logAuditEvent } from "@/lib/audit-logger";
 import { type StoredFlight } from "@/schemas/flight-schema";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { summarizeReport } from "@/ai/flows/summarize-report-flow";
 
 interface FlightForReport {
   id: string;
@@ -159,6 +160,8 @@ export default function SubmitPurserReportPage() {
         foName: loadedFlightData.defaultFoName,
         sccmName: loadedFlightData.defaultSccmName,
         cabinCrewOnBoard: crewMembers.filter(c => flight.cabinCrewIds.includes(c.uid)).map(c => c.displayName || c.email!),
+        positivePoints: "", improvementPoints: "", passengerBehaviorNotes: "", cabinActionsTaken: "",
+        safetyAnomalies: "", servicePassengerFeedback: "", groundHandlingRemarks: "", incidentDetails: "",
       });
       setIsLoading(false);
     };
@@ -167,23 +170,82 @@ export default function SubmitPurserReportPage() {
   }, [flightId, user, authLoading, router, toast, form]);
 
   async function onSubmit(data: PurserReportFormValues) {
-    if (!user) { toast({ title: "Not Authenticated", description: "You must be logged in to submit a report.", variant: "destructive" }); return; }
+    if (!user || !flightData) { toast({ title: "Not Authenticated", description: "You must be logged in to submit a report.", variant: "destructive" }); return; }
     setIsSubmitting(true);
     const batch = writeBatch(db);
     try {
       const reportRef = doc(collection(db, "purserReports"));
       
-      const reportData = { 
+      const reportData: any = { 
         ...data, 
         userId: user.uid, 
         userEmail: user.email, 
         createdAt: serverTimestamp(), 
         status: 'submitted', 
         adminNotes: '',
-        crewRoster: (data.cabinCrewOnBoard || []).map(name => ({ name, role: 'cabin crew', uid: '' })),
-        departureAirport: flightData?.departureAirport,
-        arrivalAirport: flightData?.arrivalAirport
+        crewRoster: (data.cabinCrewOnBoard || []).map(name => ({ name, role: 'cabin crew', uid: '' })), // Simplified for now
+        departureAirport: flightData.departureAirport,
+        arrivalAirport: flightData.arrivalAirport
       };
+      
+      // AI Summary Generation
+      try {
+            const reportContent = `
+                Rapport de vol pour le vol ${data.flightNumber} (${data.route})
+                Date: ${format(parseISO(data.flightDate), "PPP")}
+                
+                Informations générales:
+                - Passagers: ${data.passengerCount}
+                - Équipage de cabine: ${data.cabinCrewOnBoard.join(', ')}
+                
+                Performance et coordination de l'équipage:
+                - Briefing: ${data.briefing?.join(', ') || 'Non spécifié'}
+                - Ambiance: ${data.atmosphere?.join(', ') || 'Non spécifié'}
+                - Points positifs: ${data.positivePoints || 'N/A'}
+                - Points à améliorer: ${data.improvementPoints || 'N/A'}
+                - Suivi recommandé: ${data.followUpRecommended ? 'Oui' : 'Non'}
+
+                Passagers:
+                - Passagers signalés: ${data.passengersToReport?.join(', ') || 'Aucun'}
+                - Notes sur le comportement: ${data.passengerBehaviorNotes || 'N/A'}
+                - Plainte signalée: ${data.passengerComplaint ? 'Oui' : 'Non'}
+                
+                État de la cabine:
+                - État au départ: ${data.cabinConditionBoarding?.join(', ') || 'Non spécifié'}
+                - État à l'arrivée: ${data.cabinConditionArrival?.join(', ') || 'Non spécifié'}
+                - Problèmes techniques: ${data.technicalIssues?.join(', ') || 'Aucun'}
+                - Actions/observations: ${data.cabinActionsTaken || 'N/A'}
+                
+                Sécurité (Safety):
+                - Démonstration de sécurité: ${data.safetyDemo?.join(', ') || 'Non spécifié'}
+                - Vérifications de sécurité: ${data.safetyChecks?.join(', ') || 'Non spécifié'}
+                - Cross-check: ${data.crossCheck?.join(', ') || 'Non spécifié'}
+                - Anomalies observées: ${data.safetyAnomalies || 'N/A'}
+                
+                Service à bord:
+                - Performance du service: ${data.servicePerformance?.join(', ') || 'Non spécifié'}
+                - Manque de catering: ${data.cateringShortage ? 'Oui' : 'Non'}
+                - Retours passagers: ${data.servicePassengerFeedback || 'N/A'}
+
+                Événements opérationnels:
+                - Causes de retard: ${data.delayCauses?.join(', ') || 'Aucun'}
+                - Communication avec le cockpit: ${data.cockpitCommunication || 'Non spécifié'}
+                - Remarques sur l'assistance au sol: ${data.groundHandlingRemarks || 'N/A'}
+
+                Incidents spécifiques:
+                - Incident à signaler: ${data.specificIncident ? 'Oui' : 'Non'}
+                - Type d'incident: ${data.incidentTypes?.join(', ') || 'Aucun'}
+                - Détails factuels: ${data.incidentDetails || 'N/A'}
+            `;
+            const summary = await summarizeReport({ reportContent });
+            reportData.aiSummary = summary.summary;
+            reportData.aiKeyPoints = summary.keyPoints;
+            reportData.aiPotentialRisks = summary.potentialRisks;
+      } catch(aiError) {
+          console.error("AI summary generation failed during report submission:", aiError);
+          // Do not block submission, just log the error. The fields will be undefined.
+      }
+
 
       batch.set(reportRef, reportData);
 

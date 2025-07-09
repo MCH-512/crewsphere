@@ -90,6 +90,10 @@ export interface StoredPurserReport extends PurserReportFormValues {
   departureAirport: string;
   arrivalAirport: string;
   crewRoster: { uid: string, name: string, role: string }[];
+  // AI Summary fields
+  aiSummary?: string;
+  aiKeyPoints?: string[];
+  aiPotentialRisks?: string[];
 }
 
 // This is a temporary type definition until the schema is fully updated.
