@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { FileSignature, Loader2, AlertTriangle, RefreshCw, Eye, Search, Filter, ArrowUpDown } from "lucide-react";
+import { FileSignature, Loader2, AlertTriangle, RefreshCw, Eye, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { VariantProps } from "class-variance-authority"; 
@@ -121,9 +121,13 @@ export default function AdminPurserReportsPage() {
 
   const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
     <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50 transition-colors">
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         {label}
-        {sortColumn === column && <ArrowUpDown className={`h-3 w-3 ${sortDirection === "desc" ? "" : "rotate-180"}`} />}
+        {sortColumn === column ? (
+            sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+        ) : (
+            <ArrowUpDown className="h-4 w-4 opacity-50" />
+        )}
       </div>
     </TableHead>
   );

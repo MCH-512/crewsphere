@@ -18,7 +18,7 @@ import { db, auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye, ArrowUpDown } from "lucide-react"; 
+import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge"; 
 import { format, parseISO } from "date-fns"; 
@@ -198,7 +198,11 @@ export default function AdminUsersPage() {
     <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
         <div className="flex items-center gap-2">
             {label}
-            {sortColumn === column && <ArrowUpDown className="h-4 w-4" />}
+            {sortColumn === column ? (
+                sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+            ) : (
+                <ArrowUpDown className="h-4 w-4 opacity-50" />
+            )}
         </div>
     </TableHead>
   );

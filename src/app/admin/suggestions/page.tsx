@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { MessageSquare, Loader2, AlertTriangle, RefreshCw, Edit, ThumbsUp, ArrowUpDown, Filter, Search } from "lucide-react";
+import { MessageSquare, Loader2, AlertTriangle, RefreshCw, Edit, ThumbsUp, ArrowUpDown, Filter, Search, ArrowUp, ArrowDown } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { StoredSuggestion, suggestionCategories, suggestionStatuses } from "@/schemas/suggestion-schema";
@@ -104,7 +104,11 @@ export default function AdminSuggestionsPage() {
         <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
             <div className="flex items-center gap-2">
                 {label}
-                {sortColumn === column && <ArrowUpDown className="h-4 w-4" />}
+                {sortColumn === column ? (
+                    sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                ) : (
+                    <ArrowUpDown className="h-4 w-4 opacity-50" />
+                )}
             </div>
         </TableHead>
     );

@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { BellRing, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, ArrowUpDown } from "lucide-react";
+import { BellRing, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { VariantProps } from "class-variance-authority";
@@ -166,7 +166,11 @@ export default function AdminAlertsPage() {
         <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
             <div className="flex items-center gap-2">
                 {label}
-                {sortColumn === column && <ArrowUpDown className="h-4 w-4" />}
+                {sortColumn === column ? (
+                    sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                ) : (
+                    <ArrowUpDown className="h-4 w-4 opacity-50" />
+                )}
             </div>
         </TableHead>
     );
