@@ -30,9 +30,10 @@ interface FlightForReport {
   arrivalAirport: string;
   scheduledDepartureDateTimeUTC: string;
   aircraftType: string;
-  picName: string;
-  foName: string;
-  sccmName: string;
+  crewMembers: User[];
+  defaultPicName: string;
+  defaultFoName: string;
+  defaultSccmName: string;
 }
 
 const CheckboxGroup = ({ control, name, label, options }: { control: any; name: any; label: string; options: readonly string[] }) => (
@@ -86,42 +87,17 @@ export default function SubmitPurserReportPage() {
   const form = useForm<PurserReportFormValues>({
     resolver: zodResolver(purserReportFormSchema),
     defaultValues: {
-      flightId: "",
-      flightNumber: "",
-      flightDate: "",
-      route: "",
-      aircraftType: "",
-      aircraftRegistration: "",
-      picName: "",
-      foName: "",
-      sccmName: "",
-      cabinCrewOnBoard: [],
-      passengerCount: 0,
-      briefing: [],
-      atmosphere: [],
-      positivePoints: "",
-      improvementPoints: "",
-      followUpRecommended: false,
-      passengersToReport: [],
-      passengerBehaviorNotes: "",
-      passengerComplaint: false,
-      cabinConditionBoarding: [],
-      cabinConditionArrival: [],
-      technicalIssues: [],
-      cabinActionsTaken: "",
-      safetyDemo: [],
-      safetyChecks: [],
-      crossCheck: [],
-      safetyAnomalies: "",
-      servicePerformance: [],
-      cateringShortage: false,
-      servicePassengerFeedback: "",
-      delayCauses: [],
-      cockpitCommunication: "",
-      groundHandlingRemarks: "",
-      specificIncident: false,
-      incidentTypes: [],
-      incidentDetails: "",
+        flightId: "", flightNumber: "", flightDate: "", route: "", aircraftType: "",
+        aircraftRegistration: "", picName: "", foName: "", sccmName: "",
+        cabinCrewOnBoard: [], passengerCount: 0, briefing: [], atmosphere: [],
+        positivePoints: "", improvementPoints: "", followUpRecommended: false,
+        passengersToReport: [], passengerBehaviorNotes: "", passengerComplaint: false,
+        cabinConditionBoarding: [], cabinConditionArrival: [], technicalIssues: [],
+        cabinActionsTaken: "", safetyDemo: [], safetyChecks: [], crossCheck: [],
+        safetyAnomalies: "", servicePerformance: [], cateringShortage: false,
+        servicePassengerFeedback: "", delayCauses: [], cockpitCommunication: "",
+        groundHandlingRemarks: "", specificIncident: false, incidentTypes: [],
+        incidentDetails: "",
     },
     mode: "onChange",
   });
@@ -155,7 +131,7 @@ export default function SubmitPurserReportPage() {
       const crewDocs = await Promise.all(crewPromises);
       const crewMembers = crewDocs.map(snap => snap.exists() ? { uid: snap.id, ...snap.data() } as User : null).filter(Boolean) as User[];
       
-      const pilots = crewMembers.filter(c => c.role === 'pilote');
+      const pilots = crewMembers.filter(c => flight.pilotIds.includes(c.uid));
       const purser = crewMembers.find(c => c.uid === flight.purserId);
 
       const loadedFlightData: FlightForReport = {
@@ -164,9 +140,10 @@ export default function SubmitPurserReportPage() {
         arrivalAirport: arrAirportInfo?.name || flight.arrivalAirport,
         scheduledDepartureDateTimeUTC: flight.scheduledDepartureDateTimeUTC,
         aircraftType: flight.aircraftType,
-        picName: pilots[0]?.displayName || 'N/A',
-        foName: pilots[1]?.displayName || 'N/A',
-        sccmName: purser?.displayName || 'N/A',
+        crewMembers: crewMembers,
+        defaultPicName: pilots[0]?.displayName || '',
+        defaultFoName: pilots[1]?.displayName || '',
+        defaultSccmName: purser?.displayName || '',
       };
 
       setFlightData(loadedFlightData);
@@ -178,10 +155,10 @@ export default function SubmitPurserReportPage() {
         route: `${loadedFlightData.departureAirport} → ${loadedFlightData.arrivalAirport}`,
         aircraftType: loadedFlightData.aircraftType,
         aircraftRegistration: flight.aircraftType, // Placeholder
-        picName: loadedFlightData.picName,
-        foName: loadedFlightData.foName,
-        sccmName: loadedFlightData.sccmName,
-        cabinCrewOnBoard: crewMembers.filter(c => c.role === 'cabin crew').map(c => c.displayName || c.email!),
+        picName: loadedFlightData.defaultPicName,
+        foName: loadedFlightData.defaultFoName,
+        sccmName: loadedFlightData.defaultSccmName,
+        cabinCrewOnBoard: crewMembers.filter(c => flight.cabinCrewIds.includes(c.uid)).map(c => c.displayName || c.email!),
       });
       setIsLoading(false);
     };
@@ -203,8 +180,7 @@ export default function SubmitPurserReportPage() {
         createdAt: serverTimestamp(), 
         status: 'submitted', 
         adminNotes: '',
-        // Make sure to match the stored schema
-        crewRoster: (data.cabinCrewOnBoard || []).map(name => ({ name, role: 'cabin crew', uid: '' })), // Simplified for now
+        crewRoster: (data.cabinCrewOnBoard || []).map(name => ({ name, role: 'cabin crew', uid: '' })),
         departureAirport: flightData?.departureAirport,
         arrivalAirport: flightData?.arrivalAirport
       };
@@ -225,6 +201,10 @@ export default function SubmitPurserReportPage() {
       toast({ title: "Submission Failed", description: "Could not submit your report.", variant: "destructive" });
     } finally { setIsSubmitting(false); }
   }
+
+  const pilotsOnFlight = flightData?.crewMembers.filter(c => c.role === 'pilote') || [];
+  const sccmOnFlight = flightData?.crewMembers.filter(c => ['purser', 'admin', 'instructor'].includes(c.role || '')) || [];
+  const selectedPic = form.watch("picName");
   
   if (isLoading || authLoading) {
     return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /><p className="ml-4 text-lg text-muted-foreground">Loading Flight Data...</p></div>;
@@ -248,22 +228,22 @@ export default function SubmitPurserReportPage() {
             <FormItem><FormLabel>Flight Date</FormLabel><Input readOnly value={flightData ? format(parseISO(flightData.scheduledDepartureDateTimeUTC), "PPP") : ''} /></FormItem>
             <FormItem><FormLabel>Route</FormLabel><Input readOnly value={`${flightData?.departureAirport} → ${flightData?.arrivalAirport}`} /></FormItem>
             <FormItem><FormLabel>Aircraft Type</FormLabel><Input readOnly value={flightData?.aircraftType} /></FormItem>
-            <FormItem><FormLabel>PIC Name</FormLabel><Input readOnly value={flightData?.sccmName} /></FormItem>
-            <FormItem><FormLabel>FO Name</FormLabel><Input readOnly value={flightData?.foName} /></FormItem>
-            <FormItem><FormLabel>SCCM Name</FormLabel><Input readOnly value={flightData?.sccmName} /></FormItem>
-             <FormField
-                control={form.control}
-                name="cabinCrewOnBoard"
-                render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                        <FormLabel>Cabin Crew on board</FormLabel>
-                        <FormControl>
-                             <Input readOnly value={field.value?.join(', ') || 'N/A'}/>
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
+             <FormField control={form.control} name="picName" render={({ field }) => (
+                <FormItem><FormLabel>PIC Name</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{pilotsOnFlight.map(p => <SelectItem key={p.uid} value={p.displayName || p.email!}>{p.displayName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+            )}/>
+            <FormField control={form.control} name="foName" render={({ field }) => (
+                <FormItem><FormLabel>FO Name</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{pilotsOnFlight.filter(p => p.displayName !== selectedPic).map(p => <SelectItem key={p.uid} value={p.displayName || p.email!}>{p.displayName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+            )}/>
+             <FormField control={form.control} name="sccmName" render={({ field }) => (
+                <FormItem><FormLabel>SCCM Name</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{sccmOnFlight.map(p => <SelectItem key={p.uid} value={p.displayName || p.email!}>{p.displayName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+            )}/>
+             <FormField control={form.control} name="cabinCrewOnBoard" render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                    <FormLabel>Cabin Crew on board</FormLabel>
+                    <FormControl><Input readOnly value={field.value?.join(', ') || 'N/A'}/></FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}/>
           </CardContent>
         </Card>
 

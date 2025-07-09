@@ -92,8 +92,8 @@ export default function AdminFlightsPage() {
 
             setAllUsers(allUsersData);
             setUserMap(userMapData);
-            setPursers(allUsersData.filter(u => ['purser', 'admin', 'instructor'].includes(u.role || '')));
             setPilots(allUsersData.filter(u => u.role === 'pilote'));
+            setPursers(allUsersData.filter(u => ['purser', 'admin', 'instructor'].includes(u.role || '') && u.role !== 'pilote'));
             setCabinCrew(allUsersData.filter(u => u.role === 'cabin crew'));
             setInstructors(allUsersData.filter(u => u.role === 'instructor'));
             setTrainees(allUsersData.filter(u => u.role === 'stagiaire'));
@@ -286,7 +286,7 @@ export default function AdminFlightsPage() {
         let wasSuccessful = false;
         
         try {
-            const allAssignedCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || []), ...(data.instructorIds || []), ...(data.traineeIds || [])].filter(Boolean))];
+            const allCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || []), ...(data.instructorIds || []), ...(data.traineeIds || [])].filter(Boolean))];
             
             const batch = writeBatch(db);
 
@@ -303,7 +303,7 @@ export default function AdminFlightsPage() {
                 
                 // 2. Create new activities
                 const activityIds: Record<string, string> = {};
-                for (const crewId of allAssignedCrewIds) {
+                for (const crewId of allCrewIds) {
                     const activityRef = doc(collection(db, "userActivities"));
                     batch.set(activityRef, {
                         userId: crewId, activityType: 'flight' as const, flightId: currentFlight.id,
@@ -315,7 +315,7 @@ export default function AdminFlightsPage() {
                 }
                 
                 // 3. Update the flight document itself
-                batch.update(flightRef, { ...data, allCrewIds: allAssignedCrewIds, activityIds, updatedAt: serverTimestamp() });
+                batch.update(flightRef, { ...data, allCrewIds: allCrewIds, activityIds, updatedAt: serverTimestamp() });
                 await batch.commit();
 
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityType: "FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
@@ -328,7 +328,7 @@ export default function AdminFlightsPage() {
                 
                 const activityIds: Record<string, string> = {};
 
-                for (const crewId of allAssignedCrewIds) {
+                for (const crewId of allCrewIds) {
                     const activityRef = doc(collection(db, "userActivities"));
                     batch.set(activityRef, {
                         userId: crewId,
@@ -345,7 +345,7 @@ export default function AdminFlightsPage() {
                 
                 batch.set(flightRef, {
                     ...data,
-                    allCrewIds: allAssignedCrewIds,
+                    allCrewIds: allCrewIds,
                     activityIds,
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
