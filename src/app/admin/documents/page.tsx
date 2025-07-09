@@ -17,7 +17,7 @@ import { db, storage } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { useRouter } from "next/navigation";
-import { Library, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Download, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Library, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Download, ArrowUpDown, ArrowUp, ArrowDown, Search, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { StoredDocument, documentFormSchema, documentEditFormSchema, documentCategories } from "@/schemas/document-schema";
@@ -28,6 +28,7 @@ type ManageDocumentEditFormValues = z.infer<typeof documentEditFormSchema>;
 
 type SortableColumn = 'title' | 'category' | 'version' | 'lastUpdated' | 'uploaderEmail';
 type SortDirection = 'asc' | 'desc';
+type DocumentCategory = StoredDocument["category"];
 
 export default function AdminDocumentsPage() {
     const { user, loading: authLoading } = useAuth();
@@ -42,6 +43,9 @@ export default function AdminDocumentsPage() {
 
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>('lastUpdated');
     const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
+    
+    const [searchTerm, setSearchTerm] = React.useState("");
+    const [categoryFilter, setCategoryFilter] = React.useState<DocumentCategory | "all">("all");
 
     const form = useForm<ManageDocumentFormValues>({
         resolver: zodResolver(isEditMode ? documentEditFormSchema : documentFormSchema),
@@ -69,7 +73,13 @@ export default function AdminDocumentsPage() {
     }, [user, authLoading, router, fetchDocuments]);
 
     const sortedDocuments = React.useMemo(() => {
-        return [...documents].sort((a, b) => {
+        const filteredDocs = documents.filter(doc => {
+            if (categoryFilter !== 'all' && doc.category !== categoryFilter) return false;
+            if (searchTerm && !doc.title.toLowerCase().includes(searchTerm.toLowerCase()) && !doc.description.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+            return true;
+        });
+
+        return filteredDocs.sort((a, b) => {
             const valA = a[sortColumn];
             const valB = b[sortColumn];
             let comparison = 0;
@@ -81,7 +91,7 @@ export default function AdminDocumentsPage() {
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
-    }, [documents, sortColumn, sortDirection]);
+    }, [documents, sortColumn, sortDirection, searchTerm, categoryFilter]);
     
     const handleSort = (column: SortableColumn) => {
         if (sortColumn === column) {
@@ -219,6 +229,30 @@ export default function AdminDocumentsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                        <div className="relative flex-grow">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                type="search"
+                                placeholder="Search by title or description..."
+                                className="pl-8 w-full md:max-w-md"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as any)}>
+                            <SelectTrigger className="w-full md:w-[220px]">
+                                <Filter className="mr-2 h-4 w-4" />
+                                <SelectValue placeholder="Filter by category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Categories</SelectItem>
+                                {documentCategories.map(cat => (
+                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div className="rounded-md border">
                         <Table>
                             <TableHeader>
@@ -249,7 +283,7 @@ export default function AdminDocumentsPage() {
                             </TableBody>
                         </Table>
                     </div>
-                     {sortedDocuments.length === 0 && <p className="text-center text-muted-foreground py-8">No documents found.</p>}
+                     {sortedDocuments.length === 0 && <p className="text-center text-muted-foreground py-8">No documents found matching your criteria.</p>}
                 </CardContent>
             </Card>
 
@@ -283,3 +317,5 @@ export default function AdminDocumentsPage() {
         </div>
     );
 }
+
+    

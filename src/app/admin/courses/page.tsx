@@ -18,7 +18,7 @@ import { db, storage } from "@/lib/firebase";
 import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { collection, getDocs, query, orderBy, writeBatch, doc, serverTimestamp, where, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion, ArrowUpDown, ArrowUp, ArrowDown, Search, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { courseFormSchema, CourseFormValues, courseCategories, courseTypes } from "@/schemas/course-schema";
 import { StoredCourse } from "@/schemas/course-schema";
@@ -33,6 +33,10 @@ import { Badge } from "@/components/ui/badge";
 
 type SortableColumn = 'title' | 'category' | 'courseType' | 'published';
 type SortDirection = 'asc' | 'desc';
+type CourseCategory = StoredCourse["category"];
+type CourseType = StoredCourse["courseType"];
+type StatusFilter = "all" | "published" | "draft";
+
 
 export default function AdminCoursesPage() {
     const { user, loading: authLoading } = useAuth();
@@ -49,6 +53,12 @@ export default function AdminCoursesPage() {
 
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>("title");
     const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc");
+    
+    const [searchTerm, setSearchTerm] = React.useState("");
+    const [categoryFilter, setCategoryFilter] = React.useState<CourseCategory | "all">("all");
+    const [typeFilter, setTypeFilter] = React.useState<CourseType | "all">("all");
+    const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("all");
+
 
     const form = useForm<CourseFormValues>({
         resolver: zodResolver(courseFormSchema),
@@ -85,7 +95,18 @@ export default function AdminCoursesPage() {
     }, [user, authLoading, router, fetchCourses]);
     
      const sortedCourses = React.useMemo(() => {
-        const sorted = [...courses];
+        const filtered = courses.filter(course => {
+            if (searchTerm && !course.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+            if (categoryFilter !== 'all' && course.category !== categoryFilter) return false;
+            if (typeFilter !== 'all' && course.courseType !== typeFilter) return false;
+            if (statusFilter !== 'all') {
+                if (statusFilter === 'published' && !course.published) return false;
+                if (statusFilter === 'draft' && course.published) return false;
+            }
+            return true;
+        });
+
+        const sorted = [...filtered];
         sorted.sort((a, b) => {
             const valA = a[sortColumn];
             const valB = b[sortColumn];
@@ -99,7 +120,7 @@ export default function AdminCoursesPage() {
             return sortDirection === 'asc' ? comparison : -comparison;
         });
         return sorted;
-    }, [courses, sortColumn, sortDirection]);
+    }, [courses, sortColumn, sortDirection, searchTerm, categoryFilter, typeFilter, statusFilter]);
 
     const handleSort = (column: SortableColumn) => {
         if (sortColumn === column) {
@@ -294,6 +315,30 @@ export default function AdminCoursesPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
+                    <div className="flex flex-col md:flex-row gap-2 mb-6">
+                        <div className="relative flex-grow">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                type="search"
+                                placeholder="Search by title..."
+                                className="pl-8 w-full"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as any)}>
+                            <SelectTrigger className="w-full md:w-[240px]"><Filter className="mr-2 h-4 w-4" /><SelectValue placeholder="Filter by category" /></SelectTrigger>
+                            <SelectContent><SelectItem value="all">All Categories</SelectItem>{courseCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                        </Select>
+                         <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as any)}>
+                            <SelectTrigger className="w-full md:w-[200px]"><Filter className="mr-2 h-4 w-4" /><SelectValue placeholder="Filter by type" /></SelectTrigger>
+                            <SelectContent><SelectItem value="all">All Types</SelectItem>{courseTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+                            <SelectTrigger className="w-full md:w-[180px]"><Filter className="mr-2 h-4 w-4" /><SelectValue placeholder="Filter by status" /></SelectTrigger>
+                            <SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="published">Published</SelectItem><SelectItem value="draft">Draft</SelectItem></SelectContent>
+                        </Select>
+                    </div>
                     <Table>
                         <TableHeader><TableRow>
                             <SortableHeader column="title" label="Title" />
@@ -322,7 +367,7 @@ export default function AdminCoursesPage() {
                             ))}
                         </TableBody>
                     </Table>
-                    {courses.length === 0 && <p className="text-center text-muted-foreground p-8">No courses found.</p>}
+                    {sortedCourses.length === 0 && <p className="text-center text-muted-foreground p-8">No courses found matching your criteria.</p>}
                 </CardContent>
             </Card>
 
@@ -423,3 +468,5 @@ export default function AdminCoursesPage() {
         </div>
     );
 }
+
+    
