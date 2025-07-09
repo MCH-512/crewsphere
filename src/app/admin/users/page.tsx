@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns"; 
 import { logAuditEvent } from "@/lib/audit-logger";
 import Link from 'next/link';
+import { Separator } from "@/components/ui/separator";
 
 type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'stagiaire' | 'other';
 type AccountStatus = 'active' | 'inactive';
@@ -510,161 +511,57 @@ export default function AdminUsersPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="py-4 space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email{isCreateMode ? "*" : ""}</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="user@example.com" {...field} disabled={!isCreateMode} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                {isCreateMode && (
-                  <>
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password*</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="Min. 6 characters" {...field} />
-                          </FormControl>
+                 {isCreateMode && (
+                  <div className="space-y-4">
+                      <h4 className="text-base font-semibold text-muted-foreground">Account Credentials</h4>
+                      <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email*</FormLabel><FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                      <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Password*</FormLabel><FormControl><Input type="password" placeholder="Min. 6 characters" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                      <FormField control={form.control} name="confirmPassword" render={({ field }) => (<FormItem><FormLabel>Confirm Password*</FormLabel><FormControl><Input type="password" placeholder="Re-enter password" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                      <Separator/>
+                  </div>
+                 )}
+                  <h4 className="text-base font-semibold text-muted-foreground">Personal & Professional Info</h4>
+                  <div className="space-y-4">
+                     {!isCreateMode && <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>)}/>}
+                     <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Full Name{isCreateMode ? "*" : ""}</FormLabel><FormControl><Input placeholder="e.g., Johnathan Doe" {...field} /></FormControl><FormDescription>The user's full legal name.</FormDescription><FormMessage /></FormItem>)}/>
+                     <FormField control={form.control} name="displayName" render={({ field }) => (<FormItem><FormLabel>Display Name{isCreateMode ? "*" : ""}</FormLabel><FormControl><Input placeholder="e.g., John D." {...field} /></FormControl><FormDescription>This name will be shown publicly and in greetings.</FormDescription><FormMessage /></FormItem>)}/>
+                     <FormField control={form.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>Employee ID{isCreateMode ? "*" : ""}</FormLabel><FormControl><Input placeholder="e.g., EMP12345" {...field} /></FormControl><FormDescription>Unique company identifier for the employee.</FormDescription><FormMessage /></FormItem>)}/>
+                     <FormField control={form.control} name="joiningDate" render={({ field }) => (<FormItem><FormLabel>Joining Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormDescription>Optional. When the user joined the company.</FormDescription><FormMessage /></FormItem>)}/>
+                  </div>
+
+                  <Separator />
+                  <h4 className="text-base font-semibold text-muted-foreground">System Role & Status</h4>
+                  <div className="space-y-4">
+                      <FormField control={form.control} name="role" render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>Role</FormLabel>
+                          <Select onValueChange={(value) => field.onChange(value === NO_ROLE_SENTINEL ? "" : value)} value={field.value || NO_ROLE_SENTINEL} >
+                              <FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl>
+                              <SelectContent>
+                              {availableRoles.map(roleValue => (<SelectItem key={roleValue} value={roleValue} className="capitalize">{roleValue}</SelectItem>))}
+                              <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
+                              </SelectContent>
+                          </Select>
+                          <FormDescription>Assign a system role or leave as default for standard user permissions.</FormDescription>
                           <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="confirmPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Confirm Password*</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="Re-enter password" {...field} />
-                          </FormControl>
+                          </FormItem>
+                      )} />
+                      <FormField control={form.control} name="accountStatus" render={({ field }) => (
+                          <FormItem className="flex flex-col rounded-lg border p-3 shadow-sm">
+                          <FormLabel>Account Status</FormLabel>
+                          <div className="flex items-center space-x-2">
+                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Account status toggle"/></FormControl>
+                              {field.value ? <Power className="h-5 w-5 text-success" /> : <PowerOff className="h-5 w-5 text-destructive" />}
+                              <span className={field.value ? "font-medium text-success" : "font-medium text-destructive"}>{field.value ? "Active" : "Inactive"}</span>
+                          </div>
+                          <FormDescription>Controls if the user account is active or inactive in the application.</FormDescription>
                           <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </>
-                )}
-                 <FormField
-                  control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name{isCreateMode ? "*" : ""}</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Johnathan Doe" {...field} />
-                      </FormControl>
-                       <FormDescription>The user's full legal name.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="displayName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Display Name{isCreateMode ? "*" : ""}</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., John D." {...field} />
-                      </FormControl>
-                      <FormDescription>This name will be shown publicly and in greetings.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="employeeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Employee ID{isCreateMode ? "*" : ""}</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., EMP12345" {...field} />
-                      </FormControl>
-                      <FormDescription>Unique company identifier for the employee.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="joiningDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Joining Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormDescription>Optional. When the user joined the company.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                    control={form.control}
-                    name="role"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Role</FormLabel>
-                        <Select
-                            onValueChange={(value) => field.onChange(value === NO_ROLE_SENTINEL ? "" : value)}
-                            value={field.value || NO_ROLE_SENTINEL} 
-                        >
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a role" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            {availableRoles.map(roleValue => (
-                                <SelectItem key={roleValue} value={roleValue} className="capitalize">{roleValue}</SelectItem>
-                            ))}
-                            <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormDescription>Assign a system role or leave as default for standard user permissions.</FormDescription>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                 />
-                <FormField
-                  control={form.control}
-                  name="accountStatus"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col rounded-lg border p-3 shadow-sm">
-                      <FormLabel>Account Status</FormLabel>
-                      <div className="flex items-center space-x-2">
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            aria-label="Account status toggle"
-                          />
-                        </FormControl>
-                        {field.value ? <Power className="h-5 w-5 text-success" /> : <PowerOff className="h-5 w-5 text-destructive" />}
-                        <span className={field.value ? "font-medium text-success" : "font-medium text-destructive"}>
-                          {field.value ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-                      <FormDescription>Controls if the user account is active or inactive in the application.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                          </FormItem>
+                      )} />
+                  </div>
               </div>
               <DialogFooter>
-                <DialogClose asChild>
-                  <Button type="button" variant="outline">Cancel</Button>
-                </DialogClose>
+                <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isCreateMode ? "Create User" : "Save Changes"}

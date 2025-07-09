@@ -19,6 +19,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import { formatDistanceToNowStrict } from "date-fns";
 import type { AuditLogData } from "@/lib/audit-logger";
 import { Separator } from "@/components/ui/separator";
+import { adminNavConfig } from "@/config/nav";
 
 interface DisplayAuditLog extends AuditLogData {
   id: string;
@@ -317,7 +318,7 @@ export default function AdminConsolePage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <AnimatedCard>
         <Card className="shadow-lg">
           <CardHeader className="flex flex-row items-start gap-4">
@@ -424,59 +425,56 @@ export default function AdminConsolePage() {
           </CardFooter>
         </Card>
       </AnimatedCard>
+      
+      {adminNavConfig.sidebarNav.map((group, groupIndex) => (
+          <section key={groupIndex}>
+              <h2 className="text-2xl font-bold tracking-tight mb-4">{group.title}</h2>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {group.items.map(item => {
+                      const section = adminSections.find(s => s.href === item.href);
+                      if (!section) return null;
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {adminSections.map((section) => {
-          const IconComponent = section.icon;
-          const shouldHighlight = section.highlightWhen?.(section.stat?.value ?? null);
+                      const IconComponent = section.icon;
+                      const shouldHighlight = section.highlightWhen?.(section.stat?.value ?? null);
 
-          return (
-            <AnimatedCard 
-                key={section.title} 
-                delay={0.3 + section.delay}
-            >
-              <Card className={cn(
-                "shadow-sm h-full flex flex-col transition-all hover:shadow-md",
-                shouldHighlight && "ring-2 ring-destructive/50 bg-destructive/5"
-              )}>
-                <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
-                  <div className="flex items-center gap-3">
-                    <IconComponent className="h-6 w-6 text-primary" />
-                    <CardTitle className="text-lg">{section.title}</CardTitle>
-                  </div>
-                   {section.stat && (
-                    <div className="flex justify-end">
-                       <Badge variant={shouldHighlight ? "destructive" : "secondary"} className="shrink-0">
-                          {section.stat.isLoading ? <Loader2 className="h-3 w-3 animate-spin"/> : section.stat.value}
-                          <span className="ml-1.5 hidden sm:inline">{section.stat.label}</span>
-                       </Badge>
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <p className="text-sm text-muted-foreground">
-                    {section.description}
-                  </p>
-                </CardContent>
-                <CardFooter>
-                  <Button asChild className="w-full mt-auto">
-                    <Link href={section.href}>
-                      {section.buttonText}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                      {shouldHighlight && !section.stat?.isLoading && (
-                        <Badge variant="secondary" className="ml-2 px-1.5 py-0.5 text-xs bg-white text-destructive hover:bg-white">
-                          {section.stat?.value}
-                        </Badge>
-                      )}
-                    </Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            </AnimatedCard>
-          );
-        })}
-      </div>
-
+                      return (
+                          <AnimatedCard key={section.title} delay={0.3 + section.delay}>
+                              <Card className={cn("shadow-sm h-full flex flex-col transition-all hover:shadow-md", shouldHighlight && "ring-2 ring-destructive/50 bg-destructive/5")}>
+                                  <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
+                                      <div className="flex items-center gap-3">
+                                          <IconComponent className="h-6 w-6 text-primary" />
+                                          <CardTitle className="text-lg">{section.title}</CardTitle>
+                                      </div>
+                                      {section.stat && (
+                                          <div className="flex justify-end">
+                                              <Badge variant={shouldHighlight ? "destructive" : "secondary"} className="shrink-0">
+                                                  {section.stat.isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : section.stat.value}
+                                                  <span className="ml-1.5 hidden sm:inline">{section.stat.label}</span>
+                                              </Badge>
+                                          </div>
+                                      )}
+                                  </CardHeader>
+                                  <CardContent className="flex-grow">
+                                      <p className="text-sm text-muted-foreground">{section.description}</p>
+                                  </CardContent>
+                                  <CardFooter>
+                                      <Button asChild className="w-full mt-auto">
+                                          <Link href={section.href}>
+                                              {section.buttonText}
+                                              <ArrowRight className="ml-2 h-4 w-4" />
+                                              {shouldHighlight && !section.stat?.isLoading && (
+                                                  <Badge variant="secondary" className="ml-2 px-1.5 py-0.5 text-xs bg-white text-destructive hover:bg-white">{section.stat?.value}</Badge>
+                                              )}
+                                          </Link>
+                                      </Button>
+                                  </CardFooter>
+                              </Card>
+                          </AnimatedCard>
+                      );
+                  })}
+              </div>
+          </section>
+      ))}
     </div>
   );
 }
