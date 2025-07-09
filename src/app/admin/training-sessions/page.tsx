@@ -23,6 +23,11 @@ import { logAuditEvent } from "@/lib/audit-logger";
 import { CustomMultiSelectAutocomplete } from "@/components/ui/custom-multi-select-autocomplete";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { useDebounce } from "@/hooks/use-debounce";
+import { checkCrewAvailability, type Conflict } from "@/services/user-activity-service";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+
 
 type SortableColumn = 'title' | 'location' | 'sessionDateTimeUTC' | 'attendeeCount';
 type SortDirection = 'asc' | 'desc';
@@ -37,6 +42,7 @@ export default function AdminTrainingSessionsPage() {
     const { toast } = useToast();
     const [sessions, setSessions] = React.useState<SessionForDisplay[]>([]);
     const [allUsers, setAllUsers] = React.useState<User[]>([]);
+    const [userMap, setUserMap] = React.useState<Map<string, User>>(new Map());
     const [isLoading, setIsLoading] = React.useState(true);
     
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
@@ -47,10 +53,16 @@ export default function AdminTrainingSessionsPage() {
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>('sessionDateTimeUTC');
     const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
 
+    const [crewWarnings, setCrewWarnings] = React.useState<Record<string, Conflict>>({});
+    const [isCheckingAvailability, setIsCheckingAvailability] = React.useState(false);
+
     const form = useForm<TrainingSessionFormValues>({
         resolver: zodResolver(trainingSessionFormSchema),
         defaultValues: { title: "", description: "", location: "", sessionDateTimeUTC: "", attendeeIds: [] },
     });
+    
+    const watchedAttendees = form.watch("attendeeIds");
+    const debouncedSessionDate = useDebounce(form.watch("sessionDateTimeUTC"), 500);
 
     const fetchPageData = React.useCallback(async () => {
         setIsLoading(true);
@@ -68,7 +80,9 @@ export default function AdminTrainingSessionsPage() {
                     attendeeCount: data.attendeeIds.length,
                 }
             }));
-            setAllUsers(usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User)));
+            const allUsersData = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
+            setAllUsers(allUsersData);
+            setUserMap(new Map(allUsersData.map(u => [u.uid, u])));
         } catch (err) {
             toast({ title: "Loading Error", description: "Could not fetch sessions and users.", variant: "destructive" });
         } finally {
@@ -118,6 +132,33 @@ export default function AdminTrainingSessionsPage() {
             else fetchPageData();
         }
     }, [user, authLoading, router, fetchPageData]);
+    
+    React.useEffect(() => {
+        if (watchedAttendees.length === 0 || !debouncedSessionDate) {
+            setCrewWarnings({});
+            return;
+        }
+
+        const check = async () => {
+            setIsCheckingAvailability(true);
+            try {
+                const sessionDate = startOfDay(new Date(debouncedSessionDate));
+                if (isNaN(sessionDate.getTime())) return;
+
+                const warnings = await checkCrewAvailability(watchedAttendees, sessionDate, sessionDate);
+                setCrewWarnings(warnings);
+            } catch (e) {
+                console.error("Failed to check crew availability for training session", e);
+                toast({ title: "Error", description: "Could not check crew availability.", variant: "destructive" });
+            } finally {
+                setIsCheckingAvailability(false);
+            }
+        };
+
+        check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(watchedAttendees), debouncedSessionDate, toast]);
+
 
     const handleOpenDialog = (sessionToEdit?: StoredTrainingSession) => {
         if (sessionToEdit) {
@@ -135,11 +176,19 @@ export default function AdminTrainingSessionsPage() {
             setCurrentSession(null);
             form.reset({ title: "", description: "", location: "", sessionDateTimeUTC: "", attendeeIds: [] });
         }
+        setCrewWarnings({});
         setIsManageDialogOpen(true);
     };
 
     const handleFormSubmit = async (data: TrainingSessionFormValues) => {
         if (!user) return;
+
+         if (Object.keys(crewWarnings).length > 0) {
+            if (!window.confirm("There are scheduling conflicts for some attendees. Are you sure you want to proceed?")) {
+                return;
+            }
+        }
+
         setIsSubmitting(true);
         try {
             const batch = writeBatch(db);
@@ -269,7 +318,7 @@ export default function AdminTrainingSessionsPage() {
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleFormSubmit)}>
-                            <ScrollArea className="h-[60vh] p-4">
+                            <ScrollArea className="h-[70vh] p-4">
                                 <div className="space-y-6">
                                     <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Session Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} className="min-h-[100px]" /></FormControl><FormMessage /></FormItem>)} />
@@ -278,6 +327,24 @@ export default function AdminTrainingSessionsPage() {
                                         <FormField control={form.control} name="sessionDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Date & Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     </div>
                                     <FormField control={form.control} name="attendeeIds" render={({ field }) => (<FormItem><FormLabel>Assign Attendees</FormLabel><CustomMultiSelectAutocomplete placeholder="Select attendees..." options={allUsers.map(u => ({value: u.uid, label: `${u.displayName} (${u.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                    
+                                    <Separator />
+                                     <h3 className="text-lg font-medium">Attendee Availability</h3>
+                                        {isCheckingAvailability ? (
+                                            <div className="flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Checking schedules...</div>
+                                        ) : Object.keys(crewWarnings).length > 0 ? (
+                                            <div className="space-y-2">
+                                                {Object.entries(crewWarnings).map(([userId, conflict]) => (
+                                                    <Alert key={userId} variant="warning">
+                                                        <AlertTriangle className="h-4 w-4" />
+                                                        <AlertTitle>{userMap.get(userId)?.displayName || 'User'} has a conflict</AlertTitle>
+                                                        <AlertDescription>{conflict.details}</AlertDescription>
+                                                    </Alert>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground">No conflicts detected for the selected attendees and date.</p>
+                                        )}
                                 </div>
                             </ScrollArea>
                             <DialogFooter className="mt-4 pt-4 border-t">
