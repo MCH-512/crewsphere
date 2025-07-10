@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -59,7 +60,7 @@ export default function SubmitPurserReportPage() {
         cabinConditionBoarding: [], cabinConditionArrival: [], technicalIssues: [],
         cabinActionsTaken: "", safetyDemo: [], safetyChecks: [], crossCheck: [],
         safetyAnomalies: "", servicePerformance: [], cateringShortage: false,
-        servicePassengerFeedback: "", delayCauses: [], cockpitCommunication: "",
+        servicePassengerFeedback: "", cockpitCommunication: "", delayCauses: [],
         groundHandlingRemarks: "", specificIncident: false, incidentTypes: [],
         incidentDetails: "",
     },
@@ -124,7 +125,8 @@ export default function SubmitPurserReportPage() {
         sccmName: loadedFlightData.defaultSccmName,
         cabinCrewOnBoard: crewMembers.filter(c => flight.cabinCrewIds.includes(c.uid)).map(c => c.displayName || c.email!),
         positivePoints: "", improvementPoints: "", passengerBehaviorNotes: "", cabinActionsTaken: "",
-        safetyAnomalies: "", servicePassengerFeedback: "", groundHandlingRemarks: "", incidentDetails: "",
+        safetyAnomalies: "", servicePassengerFeedback: "", cockpitCommunication: "",
+        delayCauses: [], groundHandlingRemarks: "", incidentDetails: "",
       });
       setIsLoading(false);
     };
