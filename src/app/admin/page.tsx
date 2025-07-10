@@ -112,8 +112,8 @@ export default function AdminConsolePage() {
             users: { value: usersSnap.size, isLoading: false, label: "Total Users" },
             flights: { value: flightsSnap.size, isLoading: false, label: "Total Flights" },
             suggestions: { value: suggestions.filter(s => s.status === 'new').length, isLoading: false, label: "New Suggestions" },
-            reports: { value: reports.filter(r => r.status === 'submitted').length, isLoading: false, label: "New Reports" },
-            requests: { value: requests.filter(r => r.status === 'pending').length, isLoading: false, label: "Pending Requests" },
+            reports: { value: reports.filter((r: any) => r.status === 'submitted').length, isLoading: false, label: "New Reports" },
+            requests: { value: requests.filter((r: any) => r.status === 'pending').length, isLoading: false, label: "Pending Requests" },
             documents: { value: documentsSnap.size, isLoading: false, label: "Total Documents" },
             courses: { value: coursesSnap.size, isLoading: false, label: "Total Courses" },
             quizzes: { value: quizzesSnap.size, isLoading: false, label: "Total Quizzes" },
@@ -122,7 +122,7 @@ export default function AdminConsolePage() {
             pendingSwaps: { value: swapsSnap.size, isLoading: false, label: "Pending Swaps" },
         });
 
-        const requestsByStatus = requests.reduce((acc, req) => {
+        const requestsByStatus = requests.reduce((acc, req: any) => {
             const status = req.status || 'unknown';
             acc[status] = (acc[status] || 0) + 1;
             return acc;
@@ -133,7 +133,7 @@ export default function AdminConsolePage() {
             fill: "var(--color-count)",
         })));
 
-        const suggestionsByCategory = suggestions.reduce((acc, sug) => {
+        const suggestionsByCategory = suggestions.reduce((acc, sug: any) => {
             const category = sug.category || 'Other';
             acc[category] = (acc[category] || 0) + 1;
             return acc;
@@ -153,7 +153,7 @@ export default function AdminConsolePage() {
         })));
         
         const usersData = usersSnap.docs.map(doc => doc.data());
-        const rolesDistribution = usersData.reduce((acc, u) => {
+        const rolesDistribution = usersData.reduce((acc, u: any) => {
             const role = u.role || 'Other';
             acc[role] = (acc[role] || 0) + 1;
             return acc;

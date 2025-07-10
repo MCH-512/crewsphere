@@ -9,7 +9,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, Utensils, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Edit, Save, Sparkles, Users, UserX, Plane, Waypoints, PersonStanding, Briefcase, HeartPulse, AlertCircle } from "lucide-react";
+import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, Utensils, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Sparkles, Users, UserX, Plane, Waypoints, PersonStanding, Briefcase, HeartPulse, AlertCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { StoredPurserReport } from "@/schemas/purser-report-schema";
 import { StoredFlight } from "@/schemas/flight-schema";
@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Edit, Save } from "lucide-react";
 
 type ReportStatus = "submitted" | "under-review" | "closed";
 
