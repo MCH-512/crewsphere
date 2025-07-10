@@ -3,24 +3,10 @@
  * @fileOverview An AI flow to summarize purser reports.
  *
  * - summarizeReport - A function that takes the content of a purser report and returns a structured summary.
- * - SummarizeReportInput - The input type for the summarizeReport function.
- * - SummarizeReportOutput - The return type for the summarizeReport function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
-
-export const SummarizeReportInputSchema = z.object({
-  reportContent: z.string().describe('The full text content of the purser report to be summarized.'),
-});
-export type SummarizeReportInput = z.infer<typeof SummarizeReportInputSchema>;
-
-export const SummarizeReportOutputSchema = z.object({
-  summary: z.string().describe("A concise, neutral summary of the entire report in 2-3 sentences."),
-  keyPoints: z.array(z.string()).describe("A list of the most important key points or events mentioned in the report."),
-  potentialRisks: z.array(z.string()).describe("A list of any potential risks or issues that may require follow-up, such as safety, security, or maintenance problems. If none, return an empty array."),
-});
-export type SummarizeReportOutput = z.infer<typeof SummarizeReportOutputSchema>;
+import { SummarizeReportInputSchema, SummarizeReportOutputSchema, type SummarizeReportInput, type SummarizeReportOutput } from '@/schemas/purser-report-schema';
 
 export async function summarizeReport(input: SummarizeReportInput): Promise<SummarizeReportOutput> {
   return summarizeReportFlow(input);

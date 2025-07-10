@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -301,7 +300,7 @@ export default function SubmitPurserReportPage() {
         {/* Section 3: Passengers */}
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><PersonStanding/>Passengers – Specificities & Behavior</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <FormField control={form.control} name="passengerCount" render={({ field }) => (<FormItem><FormLabel>Total number of passengers</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value,10))} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="passengerCount" render={({ field }) => (<FormItem><FormLabel>Total number of passengers</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormMessage /></FormItem>)} />
             <CheckboxGroup control={form.control} name="passengersToReport" label="Passengers to report" options={passengersToReportOptions} />
             <FormField control={form.control} name="passengerBehaviorNotes" render={({ field }) => (<FormItem><FormLabel>Passenger behavior notes</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="passengerComplaint" render={({ field }) => (<FormItem><FormLabel>Complaint reported by passenger</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')} defaultValue={String(field.value)}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
