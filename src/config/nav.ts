@@ -22,6 +22,7 @@ export const mainNavConfig = {
       items: [
         { href: "/purser-reports", title: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin', 'instructor'] },
         { href: "/flight-swap", title: "Swap Board", icon: ArrowRightLeft },
+        { href: "/my-swaps", title: "My Swaps", icon: Handshake },
         { href: "/my-logbook", title: "My Logbook", icon: NotebookPen },
       ]
     },
