@@ -5,22 +5,21 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileSignature, Loader2, Send, Users, PersonStanding, Wrench, Shield, Utensils, Plane, AlertTriangle, ArrowLeft, ArrowRight, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, doc, getDoc, writeBatch, serverTimestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { purserReportFormSchema, type PurserReportFormValues, briefingChecklistOptions, atmosphereChecklistOptions, passengersToReportOptions, cabinConditionOptions, technicalIssuesOptions, safetyDemoOptions, safetyChecksOptions, crossCheckOptions, servicePerformanceOptions, delayCausesOptions, cockpitCommunicationOptions, incidentTypesOptions } from "@/schemas/purser-report-schema";
+import { purserReportFormSchema, type PurserReportFormValues, passengersToReportOptions, technicalIssuesOptions, safetyChecksOptions, incidentTypesOptions } from "@/schemas/purser-report-schema";
 import { format, parseISO } from "date-fns";
 import { getAirportByCode } from "@/services/airport-service";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { type StoredFlight } from "@/schemas/flight-schema";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { summarizeReport } from "@/ai/flows/summarize-report-flow";
 import { CheckboxGroup } from "@/components/ui/custom-checkbox-group";
@@ -41,14 +40,11 @@ interface FlightForReport {
 }
 
 const steps = [
-    { id: 1, title: 'Flight Info', fields: ['flightNumber', 'flightDate', 'route', 'aircraftType', 'aircraftRegistration', 'picName', 'foName', 'sccmName'], icon: Plane },
-    { id: 2, title: 'Crew', fields: ['briefing', 'atmosphere', 'positivePoints', 'improvementPoints', 'followUpRecommended'], icon: Users },
-    { id: 3, title: 'Passengers', fields: ['passengerCount', 'passengersToReport', 'passengerBehaviorNotes', 'passengerComplaint'], icon: PersonStanding },
-    { id: 4, title: 'Cabin', fields: ['cabinConditionBoarding', 'cabinConditionArrival', 'technicalIssues', 'cabinActionsTaken'], icon: Wrench },
-    { id: 5, title: 'Safety', fields: ['safetyDemo', 'safetyChecks', 'crossCheck', 'safetyAnomalies'], icon: Shield },
-    { id: 6, title: 'Service', fields: ['servicePerformance', 'cateringShortage', 'servicePassengerFeedback'], icon: Utensils },
-    { id: 7, title: 'Operational', fields: ['delayCauses', 'cockpitCommunication', 'groundHandlingRemarks'], icon: UserCheck },
-    { id: 8, title: 'Incidents', fields: ['specificIncident', 'incidentTypes', 'incidentDetails'], icon: AlertTriangle },
+    { id: 1, title: 'Flight Info', fields: ['flightNumber', 'flightDate', 'route', 'aircraftType', 'picName', 'foName', 'sccmName'], icon: Plane },
+    { id: 2, title: 'Crew', fields: ['positivePoints', 'improvementPoints', 'actionRequired'], icon: Users },
+    { id: 3, title: 'Passengers & Cabin', fields: ['passengerCount', 'passengersToReport', 'technicalIssues'], icon: PersonStanding },
+    { id: 4, title: 'Safety & Service', fields: ['safetyChecks', 'safetyAnomalies', 'servicePassengerFeedback'], icon: Shield },
+    { id: 5, title: 'Incidents', fields: ['specificIncident', 'incidentTypes', 'incidentDetails'], icon: AlertTriangle },
 ];
 
 export default function SubmitPurserReportPage() {
@@ -66,15 +62,13 @@ export default function SubmitPurserReportPage() {
   const form = useForm<PurserReportFormValues>({
     resolver: zodResolver(purserReportFormSchema),
     defaultValues: {
-        flightId: "", flightNumber: "", flightDate: "", route: "", aircraftType: "",
-        aircraftRegistration: "", picName: "", foName: "", sccmName: "",
-        cabinCrewOnBoard: [], passengerCount: 0, briefing: [], atmosphere: [],
-        positivePoints: "", improvementPoints: "", followUpRecommended: false,
-        passengersToReport: [], passengerBehaviorNotes: "", passengerComplaint: false,
-        cabinConditionBoarding: [], cabinConditionArrival: [], technicalIssues: [],
-        cabinActionsTaken: "", safetyDemo: [], safetyChecks: [], crossCheck: [],
-        safetyAnomalies: "", servicePerformance: [], cateringShortage: false, servicePassengerFeedback: "",
-        cockpitCommunication: "", delayCauses: [], groundHandlingRemarks: "",
+        flightId: "", flightNumber: "", flightDate: "", route: "", aircraftType: "", picName: "", foName: "", sccmName: "",
+        cabinCrewOnBoard: [], passengerCount: 0,
+        positivePoints: "", improvementPoints: "", actionRequired: false,
+        passengersToReport: [],
+        technicalIssues: [],
+        safetyChecks: [], safetyAnomalies: "",
+        servicePassengerFeedback: "",
         specificIncident: false, incidentTypes: [], incidentDetails: "",
     },
     mode: "onChange",
@@ -120,13 +114,12 @@ export default function SubmitPurserReportPage() {
       setFlightData(loadedFlightData);
 
       form.reset({
-        ...form.control._defaultValues, // Keep all default values
+        ...form.control._defaultValues,
         flightId: loadedFlightData.id, 
         flightNumber: loadedFlightData.flightNumber,
         flightDate: loadedFlightData.scheduledDepartureDateTimeUTC,
         route: `${loadedFlightData.departureAirport} → ${loadedFlightData.arrivalAirport}`,
         aircraftType: loadedFlightData.aircraftType, 
-        aircraftRegistration: flight.aircraftType, // Re-using for simplicity
         picName: loadedFlightData.defaultPicName, 
         foName: loadedFlightData.defaultFoName,
         sccmName: loadedFlightData.defaultSccmName,
@@ -156,7 +149,7 @@ export default function SubmitPurserReportPage() {
 
   const prevStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => prev - 1);
     }
   };
 
@@ -177,7 +170,7 @@ export default function SubmitPurserReportPage() {
       };
       
       try {
-            const reportContent = `Flight report for ${data.flightNumber} (${data.route}) on ${format(parseISO(data.flightDate), "PPP")}. Passengers: ${data.passengerCount}. Crew performance: Briefing ${data.briefing?.join(', ') || 'N/A'}, Atmosphere ${data.atmosphere?.join(', ') || 'N/A'}. Positives: ${data.positivePoints}. Improvements: ${data.improvementPoints}. Passengers notes: ${data.passengerBehaviorNotes}. Cabin issues: ${data.technicalIssues?.join(', ')}. Safety anomalies: ${data.safetyAnomalies}. Service feedback: ${data.servicePassengerFeedback}. Delays: ${data.delayCauses?.join(', ')}. Incident: ${data.specificIncident ? `Yes, ${data.incidentTypes?.join(', ')} - ${data.incidentDetails}` : 'No'}.`;
+            const reportContent = `Flight report for ${data.flightNumber} (${data.route}) on ${format(parseISO(data.flightDate), "PPP")}. Passengers: ${data.passengerCount}. Positives: ${data.positivePoints}. Improvements: ${data.improvementPoints}. Passenger notes: ${data.passengersToReport?.join(', ')}. Cabin issues: ${data.technicalIssues?.join(', ')}. Safety anomalies: ${data.safetyAnomalies}. Service feedback: ${data.servicePassengerFeedback}. Incident: ${data.specificIncident ? `Yes, ${data.incidentTypes?.join(', ')} - ${data.incidentDetails}` : 'No'}.`;
             const summary = await summarizeReport({ reportContent });
             reportData.aiSummary = summary.summary;
             reportData.aiKeyPoints = summary.keyPoints;
@@ -245,78 +238,43 @@ export default function SubmitPurserReportPage() {
                 
                 {/* Step 2: Crew */}
                 <div className={cn(currentStep !== 1 && "hidden")}>
-                    <Card><CardHeader><CardTitle className="flex items-center gap-2"><Users/>Crew – Performance & Coordination</CardTitle></CardHeader>
+                    <Card><CardHeader><CardTitle className="flex items-center gap-2"><Users/>Crew Coordination</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        <CheckboxGroup control={form.control} name="briefing" label="Briefing" options={briefingChecklistOptions} />
-                        <CheckboxGroup control={form.control} name="atmosphere" label="Working Atmosphere" options={atmosphereChecklistOptions} />
-                        <FormField control={form.control} name="positivePoints" render={({ field }) => (<FormItem><FormLabel>Positive points of the day</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="improvementPoints" render={({ field }) => (<FormItem><FormLabel>Weak points / Follow-up needed</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="followUpRecommended" render={({ field }) => (<FormItem><FormLabel>Follow-up recommended</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')} defaultValue={String(field.value)}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="positivePoints" render={({ field }) => (<FormItem><FormLabel>Positive points to report (teamwork, initiative, etc.)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="improvementPoints" render={({ field }) => (<FormItem><FormLabel>Points for improvement or follow-up</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="actionRequired" render={({ field }) => (<FormItem><FormLabel>Does this section require a specific action from management?</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')} defaultValue={String(field.value)}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                     </CardContent></Card>
                 </div>
                 
-                {/* Step 3: Passengers */}
+                {/* Step 3: Passengers & Cabin */}
                  <div className={cn(currentStep !== 2 && "hidden")}>
-                    <Card><CardHeader><CardTitle className="flex items-center gap-2"><PersonStanding/>Passengers – Specificities & Behavior</CardTitle></CardHeader>
+                    <Card><CardHeader><CardTitle className="flex items-center gap-2"><PersonStanding/>Passengers & Cabin</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <FormField control={form.control} name="passengerCount" render={({ field }) => (<FormItem><FormLabel>Total number of passengers</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormMessage /></FormItem>)} />
-                        <CheckboxGroup control={form.control} name="passengersToReport" label="Passengers to report" options={passengersToReportOptions} />
-                        <FormField control={form.control} name="passengerBehaviorNotes" render={({ field }) => (<FormItem><FormLabel>Passenger behavior notes</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="passengerComplaint" render={({ field }) => (<FormItem><FormLabel>Complaint reported by passenger</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')} defaultValue={String(field.value)}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                        <CheckboxGroup control={form.control} name="passengersToReport" label="Specific passenger types on board" options={passengersToReportOptions} />
+                        <CheckboxGroup control={form.control} name="technicalIssues" label="Technical issues observed in the cabin" options={technicalIssuesOptions} />
                     </CardContent></Card>
                 </div>
-                
-                {/* Step 4: Cabin */}
+
+                {/* Step 4: Safety & Service */}
                 <div className={cn(currentStep !== 3 && "hidden")}>
-                    <Card><CardHeader><CardTitle className="flex items-center gap-2"><Wrench/>Cabin – Condition & Cleanliness</CardTitle></CardHeader>
+                    <Card><CardHeader><CardTitle className="flex items-center gap-2"><Shield/>Safety & Service</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        <CheckboxGroup control={form.control} name="cabinConditionBoarding" label="Cabin condition at boarding" options={cabinConditionOptions} />
-                        <CheckboxGroup control={form.control} name="cabinConditionArrival" label="Cabin condition on arrival" options={cabinConditionOptions.slice(0, 2)} />
-                        <CheckboxGroup control={form.control} name="technicalIssues" label="Technical issues" options={technicalIssuesOptions} />
-                        <FormField control={form.control} name="cabinActionsTaken" render={({ field }) => (<FormItem><FormLabel>Actions taken or observations</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <CheckboxGroup control={form.control} name="safetyChecks" label="Safety checks performed" options={safetyChecksOptions} />
+                        <FormField control={form.control} name="safetyAnomalies" render={({ field }) => (<FormItem><FormLabel>Safety anomalies observed (if any)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="servicePassengerFeedback" render={({ field }) => (<FormItem><FormLabel>Notable passenger feedback on service (positive or negative)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </CardContent></Card>
                 </div>
 
-                {/* Step 5: Safety */}
-                 <div className={cn(currentStep !== 4 && "hidden")}>
-                    <Card><CardHeader><CardTitle className="flex items-center gap-2"><Shield/>Safety – Procedures & Checks</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                        <CheckboxGroup control={form.control} name="safetyDemo" label="Safety demo" options={safetyDemoOptions} />
-                        <CheckboxGroup control={form.control} name="safetyChecks" label="Safety checks" options={safetyChecksOptions} />
-                        <CheckboxGroup control={form.control} name="crossCheck" label="Cross-check" options={crossCheckOptions} />
-                        <FormField control={form.control} name="safetyAnomalies" render={({ field }) => (<FormItem><FormLabel>Safety anomalies observed</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </CardContent></Card>
-                </div>
-
-                 {/* Step 6: In-Flight Service */}
-                <div className={cn(currentStep !== 5 && "hidden")}>
-                    <Card><CardHeader><CardTitle className="flex items-center gap-2"><Utensils/>In-Flight Service</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                        <CheckboxGroup control={form.control} name="servicePerformance" label="Service performance" options={servicePerformanceOptions} />
-                        <FormField control={form.control} name="cateringShortage" render={({ field }) => (<FormItem><FormLabel>Catering shortage</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')} defaultValue={String(field.value)}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="servicePassengerFeedback" render={({ field }) => (<FormItem><FormLabel>Passenger feedback</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </CardContent></Card>
-                </div>
-
-                {/* Step 7: Operational Events */}
-                <div className={cn(currentStep !== 6 && "hidden")}>
-                    <Card><CardHeader><CardTitle className="flex items-center gap-2"><UserCheck/>Operational Events</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                        <CheckboxGroup control={form.control} name="delayCauses" label="Delay causes" options={delayCausesOptions} />
-                        <FormField control={form.control} name="cockpitCommunication" render={({ field }) => (<FormItem><FormLabel>Cockpit communication</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{cockpitCommunicationOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="groundHandlingRemarks" render={({ field }) => (<FormItem><FormLabel>Remarks regarding ground handling</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </CardContent></Card>
-                </div>
-
-                {/* Step 8: Specific Incidents */}
-                <div className={cn(currentStep !== 7 && "hidden")}>
+                 {/* Step 5: Specific Incidents */}
+                <div className={cn(currentStep !== 4 && "hidden")}>
                     <Card><CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle/>Specific Incidents</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        <FormField control={form.control} name="specificIncident" render={({ field }) => (<FormItem><FormLabel>Incident to report</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')} defaultValue={String(field.value)}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="specificIncident" render={({ field }) => (<FormItem><FormLabel>Was there a specific incident to report?</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')} defaultValue={String(field.value)}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                         {form.watch('specificIncident') && (
                         <>
                             <CheckboxGroup control={form.control} name="incidentTypes" label="Type of incident" options={incidentTypesOptions} />
-                            <FormField control={form.control} name="incidentDetails" render={({ field }) => (<FormItem><FormLabel>Factual details (what, who, when)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="incidentDetails" render={({ field }) => (<FormItem><FormLabel>Factual details of the incident (what, who, when, actions taken)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </>
                         )}
                     </CardContent></Card>

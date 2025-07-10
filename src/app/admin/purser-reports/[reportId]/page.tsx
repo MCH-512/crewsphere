@@ -9,9 +9,9 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, Utensils, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Edit, Save, Sparkles, Users, UserX, Plane, Waypoints, PersonStanding, Briefcase, HeartPulse } from "lucide-react";
+import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, Utensils, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Edit, Save, Sparkles, Users, UserX, Plane, Waypoints, PersonStanding, Briefcase, HeartPulse, AlertCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { StoredPurserReport, optionalReportSections } from "@/schemas/purser-report-schema";
+import { StoredPurserReport } from "@/schemas/purser-report-schema";
 import { StoredFlight } from "@/schemas/flight-schema";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,10 +27,19 @@ const statusConfig: Record<ReportStatus, { label: string; color: "secondary" | "
     closed: { label: "Closed", color: "success" },
 };
 
-const SectionDisplay = ({ label, value, icon: Icon }: { label: string; value?: string | string[] | null; icon: React.ElementType }) => {
-    if (!value || (Array.isArray(value) && value.length === 0)) return null;
+const SectionDisplay = ({ label, value, icon: Icon }: { label: string; value?: string | string[] | null | boolean; icon: React.ElementType }) => {
+    if (value === undefined || value === null || (Array.isArray(value) && value.length === 0)) return null;
 
-    const displayValue = Array.isArray(value) ? value.join(', ') : value;
+    let displayValue: string;
+    if (typeof value === 'boolean') {
+        displayValue = value ? 'Yes' : 'No';
+    } else if (Array.isArray(value)) {
+        displayValue = value.join(', ');
+    } else {
+        displayValue = value;
+    }
+    
+    if (displayValue.trim() === '') return null;
 
     return (
         <div className="space-y-1">
@@ -210,13 +219,19 @@ export default function PurserReportDetailPage() {
         <Card>
             <CardHeader><CardTitle className="text-lg">Detailed Report</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-                <SectionDisplay label="Crew Performance & Coordination" value={[`Briefing: ${report.briefing?.join(', ') || 'N/A'}`, `Atmosphere: ${report.atmosphere?.join(', ') || 'N/A'}`, `Positive: ${report.positivePoints || 'N/A'}`, `Improvement: ${report.improvementPoints || 'N/A'}`, `Follow-up: ${report.followUpRecommended ? 'Yes' : 'No'}`].join('\n')} icon={Users} />
-                <SectionDisplay label="Passengers" value={[`Count: ${report.passengerCount}`, `Reported: ${report.passengersToReport?.join(', ') || 'None'}`, `Notes: ${report.passengerBehaviorNotes || 'N/A'}`, `Complaint: ${report.passengerComplaint ? 'Yes' : 'No'}`].join('\n')} icon={PersonStanding} />
-                <SectionDisplay label="Cabin Condition" value={[`Boarding: ${report.cabinConditionBoarding?.join(', ') || 'N/A'}`, `Arrival: ${report.cabinConditionArrival?.join(', ') || 'N/A'}`, `Issues: ${report.technicalIssues?.join(', ') || 'None'}`, `Actions: ${report.cabinActionsTaken || 'N/A'}`].join('\n')} icon={Wrench} />
-                <SectionDisplay label="Safety" value={[`Demo: ${report.safetyDemo?.join(', ') || 'N/A'}`, `Checks: ${report.safetyChecks?.join(', ') || 'N/A'}`, `Cross-check: ${report.crossCheck?.join(', ') || 'N/A'}`, `Anomalies: ${report.safetyAnomalies || 'N/A'}`].join('\n')} icon={Shield} />
-                <SectionDisplay label="In-Flight Service" value={[`Performance: ${report.servicePerformance?.join(', ') || 'N/A'}`, `Catering Shortage: ${report.cateringShortage ? 'Yes' : 'No'}`, `Feedback: ${report.servicePassengerFeedback || 'N/A'}`].join('\n')} icon={Utensils} />
-                <SectionDisplay label="Operational Events" value={[`Delay Causes: ${report.delayCauses?.join(', ') || 'None'}`, `Cockpit Comms: ${report.cockpitCommunication || 'N/A'}`, `Ground Handling: ${report.groundHandlingRemarks || 'N/A'}`].join('\n')} icon={Plane} />
-                <SectionDisplay label="Specific Incidents" value={[`Incident to Report: ${report.specificIncident ? 'Yes' : 'No'}`, `Type: ${report.incidentTypes?.join(', ') || 'None'}`, `Details: ${report.incidentDetails || 'N/A'}`].join('\n')} icon={AlertTriangle} />
+                <SectionDisplay label="Crew Coordination: Positive Points" value={report.positivePoints} icon={Users} />
+                <SectionDisplay label="Crew Coordination: Improvement Points" value={report.improvementPoints} icon={Users} />
+                <SectionDisplay label="Action Required from Management" value={report.actionRequired} icon={AlertCircle} />
+                
+                <SectionDisplay label="Passengers & Cabin: Specific Passenger Types" value={report.passengersToReport} icon={PersonStanding} />
+                <SectionDisplay label="Passengers & Cabin: Technical Issues" value={report.technicalIssues} icon={Wrench} />
+
+                <SectionDisplay label="Safety & Service: Safety Checks Performed" value={report.safetyChecks} icon={Shield} />
+                <SectionDisplay label="Safety & Service: Safety Anomalies" value={report.safetyAnomalies} icon={AlertTriangle} />
+                <SectionDisplay label="Safety & Service: Passenger Feedback" value={report.servicePassengerFeedback} icon={MessageSquare} />
+
+                <SectionDisplay label="Incidents: Type" value={report.incidentTypes} icon={AlertTriangle} />
+                <SectionDisplay label="Incidents: Details" value={report.incidentDetails} icon={FileSignature} />
             </CardContent>
         </Card>
 
