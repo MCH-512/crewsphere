@@ -14,9 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp, doc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp, doc, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { BadgeAlert, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Search, Filter } from "lucide-react";
+import { BadgeAlert, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
 import { logAuditEvent } from "@/lib/audit-logger";
@@ -27,6 +27,8 @@ import { cn } from "@/lib/utils";
 const EXPIRY_WARNING_DAYS = 30;
 
 type DocumentStatus = 'valid' | 'expiring-soon' | 'expired';
+type SortableColumn = 'userEmail' | 'documentName' | 'expiryDate' | 'status' | 'lastUpdatedAt';
+type SortDirection = 'asc' | 'desc';
 
 const getDocumentStatus = (expiryDate: Date): DocumentStatus => {
     const today = new Date();
@@ -36,6 +38,8 @@ const getDocumentStatus = (expiryDate: Date): DocumentStatus => {
     if (daysUntilExpiry <= EXPIRY_WARNING_DAYS) return 'expiring-soon';
     return 'valid';
 };
+
+const statusOrder: Record<DocumentStatus, number> = { 'expired': 0, 'expiring-soon': 1, 'valid': 2 };
 
 export default function AdminExpiryManagementPage() {
     const { user: adminUser, loading: authLoading } = useAuth();
@@ -52,6 +56,8 @@ export default function AdminExpiryManagementPage() {
 
     const [searchTerm, setSearchTerm] = React.useState("");
     const [statusFilter, setStatusFilter] = React.useState<DocumentStatus | "all">("all");
+    const [sortColumn, setSortColumn] = React.useState<SortableColumn>('expiryDate');
+    const [sortDirection, setSortDirection] = React.useState<SortDirection>('asc');
 
     const form = useForm<UserDocumentFormValues>({
         resolver: zodResolver(userDocumentFormSchema),
@@ -90,8 +96,8 @@ export default function AdminExpiryManagementPage() {
         }
     }, [adminUser, authLoading, router, fetchPageData]);
     
-    const filteredDocuments = React.useMemo(() => {
-        return documents.filter(doc => {
+    const sortedAndFilteredDocuments = React.useMemo(() => {
+        let processedDocs = documents.filter(doc => {
             const status = getDocumentStatus(doc.expiryDate.toDate());
             if (statusFilter !== 'all' && status !== statusFilter) return false;
             
@@ -104,7 +110,52 @@ export default function AdminExpiryManagementPage() {
             }
             return true;
         });
-    }, [documents, statusFilter, searchTerm]);
+
+        return processedDocs.sort((a, b) => {
+            let valA: string | number | Date = a[sortColumn];
+            let valB: string | number | Date = b[sortColumn];
+
+            if (sortColumn === 'status') {
+                valA = statusOrder[getDocumentStatus(a.expiryDate.toDate())];
+                valB = statusOrder[getDocumentStatus(b.expiryDate.toDate())];
+            } else if (valA instanceof Timestamp && valB instanceof Timestamp) {
+                valA = valA.toMillis();
+                valB = valB.toMillis();
+            }
+
+            let comparison = 0;
+            if (typeof valA === 'string' && typeof valB === 'string') {
+                comparison = valA.localeCompare(valB);
+            } else if (typeof valA === 'number' && typeof valB === 'number') {
+                comparison = valA - valB;
+            } else {
+                 comparison = String(valA).localeCompare(String(valB));
+            }
+            return sortDirection === 'asc' ? comparison : -comparison;
+        });
+    }, [documents, statusFilter, searchTerm, sortColumn, sortDirection]);
+
+    const handleSort = (column: SortableColumn) => {
+        if (sortColumn === column) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection(column === 'expiryDate' ? 'asc' : 'desc');
+        }
+    };
+    
+    const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
+        <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
+            <div className="flex items-center gap-2">
+                {label}
+                {sortColumn === column ? (
+                    sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                ) : (
+                    <ArrowUpDown className="h-4 w-4 opacity-50" />
+                )}
+            </div>
+        </TableHead>
+    );
 
     const handleOpenDialog = (docToEdit?: StoredUserDocument) => {
         if (docToEdit) {
@@ -207,9 +258,16 @@ export default function AdminExpiryManagementPage() {
 
                     <div className="rounded-md border">
                     <Table>
-                        <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Document</TableHead><TableHead>Expires On</TableHead><TableHead>Status</TableHead><TableHead>Last Updated</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow>
+                            <SortableHeader column="userEmail" label="User" />
+                            <SortableHeader column="documentName" label="Document" />
+                            <SortableHeader column="expiryDate" label="Expires On" />
+                            <SortableHeader column="status" label="Status" />
+                            <SortableHeader column="lastUpdatedAt" label="Last Updated" />
+                            <TableHead>Actions</TableHead>
+                        </TableRow></TableHeader>
                         <TableBody>
-                            {filteredDocuments.map(d => {
+                            {sortedAndFilteredDocuments.map(d => {
                                 const expiryDate = d.expiryDate.toDate();
                                 const status = getDocumentStatus(expiryDate);
                                 return (
@@ -233,7 +291,7 @@ export default function AdminExpiryManagementPage() {
                         </TableBody>
                     </Table>
                     </div>
-                    {filteredDocuments.length === 0 && <p className="text-center text-muted-foreground p-8">No documents found matching criteria.</p>}
+                    {sortedAndFilteredDocuments.length === 0 && <p className="text-center text-muted-foreground p-8">No documents found matching criteria.</p>}
                 </CardContent>
             </Card>
 
