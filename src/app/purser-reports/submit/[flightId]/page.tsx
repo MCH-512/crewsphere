@@ -59,9 +59,8 @@ export default function SubmitPurserReportPage() {
         passengersToReport: [], passengerBehaviorNotes: "", passengerComplaint: false,
         cabinConditionBoarding: [], cabinConditionArrival: [], technicalIssues: [],
         cabinActionsTaken: "", safetyDemo: [], safetyChecks: [], crossCheck: [],
-        safetyAnomalies: "", servicePerformance: [], cateringShortage: false,
-        servicePassengerFeedback: "", cockpitCommunication: "", delayCauses: [],
-        groundHandlingRemarks: "", specificIncident: false, incidentTypes: [],
+        safetyAnomalies: "", servicePassengerFeedback: "", cockpitCommunication: "",
+        delayCauses: [], groundHandlingRemarks: "", specificIncident: false, incidentTypes: [],
         incidentDetails: "",
     },
     mode: "onChange",
@@ -141,19 +140,11 @@ export default function SubmitPurserReportPage() {
     try {
       const reportRef = doc(collection(db, "purserReports"));
 
-      const crewRoster = data.cabinCrewOnBoard
-        .map(name => {
-            const member = flightData.crewMembers.find(c => (c.displayName || c.email) === name);
-            if (member) {
-                return {
-                    uid: member.uid,
-                    name: member.displayName || member.email!,
-                    role: member.role || 'cabin crew',
-                };
-            }
-            return null;
-        })
-        .filter(Boolean) as { uid: string, name: string, role: string }[];
+      const crewRoster = flightData.crewMembers.filter(c => data.cabinCrewOnBoard.includes(c.displayName || c.email!)).map(member => ({
+        uid: member.uid,
+        name: member.displayName || member.email!,
+        role: member.role || 'cabin crew',
+      }));
       
       const reportData: any = { 
         ...data, 
@@ -245,7 +236,9 @@ export default function SubmitPurserReportPage() {
 
   const pilotsOnFlight = flightData?.crewMembers.filter(c => c.role === 'pilote') || [];
   const sccmOnFlight = flightData?.crewMembers.filter(c => ['purser', 'admin', 'instructor'].includes(c.role || '')) || [];
-  const selectedPic = form.watch("picName");
+  
+  const selectedPicName = form.watch("picName");
+  const selectedFoName = form.watch("foName");
   
   if (isLoading || authLoading) {
     return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /><p className="ml-4 text-lg text-muted-foreground">Loading Flight Data...</p></div>;
@@ -269,22 +262,21 @@ export default function SubmitPurserReportPage() {
             <FormItem><FormLabel>Flight Date</FormLabel><Input readOnly value={flightData ? format(parseISO(flightData.scheduledDepartureDateTimeUTC), "PPP") : ''} /></FormItem>
             <FormItem><FormLabel>Route</FormLabel><Input readOnly value={`${flightData?.departureAirport} → ${flightData?.arrivalAirport}`} /></FormItem>
             <FormItem><FormLabel>Aircraft Type</FormLabel><Input readOnly value={flightData?.aircraftType} /></FormItem>
-             <FormField control={form.control} name="picName" render={({ field }) => (
-                <FormItem><FormLabel>PIC Name</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{pilotsOnFlight.map(p => <SelectItem key={p.uid} value={p.displayName || p.email!}>{p.displayName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+            <FormField control={form.control} name="picName" render={({ field }) => (
+                <FormItem><FormLabel>PIC Name</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{pilotsOnFlight.filter(p => p.displayName !== selectedFoName).map(p => <SelectItem key={p.uid} value={p.displayName || p.email!}>{p.displayName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
             )}/>
             <FormField control={form.control} name="foName" render={({ field }) => (
-                <FormItem><FormLabel>FO Name</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{pilotsOnFlight.filter(p => p.displayName !== selectedPic).map(p => <SelectItem key={p.uid} value={p.displayName || p.email!}>{p.displayName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                <FormItem><FormLabel>FO Name</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{pilotsOnFlight.filter(p => p.displayName !== selectedPicName).map(p => <SelectItem key={p.uid} value={p.displayName || p.email!}>{p.displayName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
             )}/>
              <FormField control={form.control} name="sccmName" render={({ field }) => (
                 <FormItem><FormLabel>SCCM Name</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{sccmOnFlight.map(p => <SelectItem key={p.uid} value={p.displayName || p.email!}>{p.displayName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
             )}/>
-             <FormField control={form.control} name="cabinCrewOnBoard" render={({ field }) => (
-                <FormItem className="md:col-span-2">
-                    <FormLabel>Cabin Crew on board</FormLabel>
-                    <FormControl><Input readOnly value={field.value?.join(', ') || 'N/A'}/></FormControl>
-                    <FormMessage />
-                </FormItem>
-            )}/>
+             <FormItem className="md:col-span-2">
+                <FormLabel>Cabin Crew on board</FormLabel>
+                <div className="p-2 border rounded-md bg-muted/50 text-sm text-muted-foreground">
+                    {form.getValues('cabinCrewOnBoard').join(', ')}
+                </div>
+            </FormItem>
           </CardContent>
         </Card>
 
