@@ -16,6 +16,8 @@ import {
   SidebarTrigger,
   useSidebar,
   SidebarProvider,
+  SidebarGroup,
+  SidebarGroupLabel
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,12 +38,14 @@ import {
   Plane,
   Moon,
   Sun,
+  ServerCog
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { Breadcrumbs } from "./breadcrumbs";
 import { HeaderClocks } from "@/components/features/header-clocks";
 import { mainNavConfig, adminNavConfig } from "@/config/nav";
+import { Separator } from "@/components/ui/separator";
 
 const useTheme = () => {
   const [theme, setTheme] = React.useState("light");
@@ -123,7 +127,8 @@ function LayoutWithSidebar({
   const { isMobile } = useSidebar();
   const pathname = usePathname();
 
-  const currentNavConfig = pathname.startsWith('/admin') && user?.role === 'admin' ? adminNavConfig : mainNavConfig;
+  const isAdminPage = pathname.startsWith('/admin');
+  const currentNavConfig = isAdminPage && user?.role === 'admin' ? adminNavConfig : mainNavConfig;
 
   return (
     <>
@@ -135,37 +140,9 @@ function LayoutWithSidebar({
           </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">
-          <SidebarMenu>
-            {currentNavConfig.mainNav.map((item) => {
-              if (item.roles && !item.roles.some((role: string) => user?.role === role)) {
-                return null;
-              }
-              const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
-
-              return (
-                <SidebarMenuItem key={item.href}>
-                  <Link href={item.href!} passHref legacyBehavior>
-                    <SidebarMenuButton
-                      asChild
-                      variant={isActive ? "active" : "border"}
-                      tooltip={{ children: item.title, side: "right", align: "center" }}
-                    >
-                      <a>
-                        <item.icon className="w-5 h-5" />
-                        <span className="group-data-[state=collapsed]:hidden">{item.title}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-              );
-            })}
-          </SidebarMenu>
-          
           {currentNavConfig.sidebarNav.map((navGroup, groupIndex) => (
-            <div key={groupIndex} className="mt-4">
-              <h2 className="mb-1 px-4 text-xs font-semibold text-sidebar-foreground/70 tracking-wider uppercase group-data-[state=collapsed]:hidden">
-                {navGroup.title}
-              </h2>
+            <SidebarGroup key={groupIndex}>
+              <SidebarGroupLabel className="group-data-[state=collapsed]:hidden">{navGroup.title}</SidebarGroupLabel>
               <SidebarMenu>
                 {navGroup.items.map((item) => {
                   if (item.roles && !item.roles.some((role: string) => user?.role === role)) return null;
@@ -189,8 +166,30 @@ function LayoutWithSidebar({
                   )
                 })}
               </SidebarMenu>
-            </div>
+            </SidebarGroup>
           ))}
+          {isAdminPage && user?.role === 'admin' && (
+             <SidebarGroup>
+                <Separator className="my-2 bg-sidebar-border"/>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <Link href="/" passHref legacyBehavior>
+                          <SidebarMenuButton
+                              asChild
+                              variant="ghost"
+                              tooltip={{ children: "Exit Admin", side: "right", align: "center" }}
+                              className="h-9 w-full justify-start"
+                          >
+                              <a>
+                                  <ServerCog className="w-4 h-4 text-destructive" />
+                                  <span className="group-data-[state=collapsed]:hidden">Exit Admin</span>
+                              </a>
+                          </SidebarMenuButton>
+                        </Link>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarGroup>
+          )}
         </SidebarContent>
         <SidebarFooter className="p-2">
           <SidebarMenu>
