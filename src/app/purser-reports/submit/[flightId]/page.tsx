@@ -73,9 +73,9 @@ export default function SubmitPurserReportPage() {
         passengersToReport: [], passengerBehaviorNotes: "", passengerComplaint: false,
         cabinConditionBoarding: [], cabinConditionArrival: [], technicalIssues: [],
         cabinActionsTaken: "", safetyDemo: [], safetyChecks: [], crossCheck: [],
-        safetyAnomalies: "", cateringShortage: false, servicePassengerFeedback: "", cockpitCommunication: "",
-        delayCauses: [], groundHandlingRemarks: "", specificIncident: false, incidentTypes: [],
-        incidentDetails: "",
+        safetyAnomalies: "", servicePerformance: [], cateringShortage: false, servicePassengerFeedback: "",
+        cockpitCommunication: "", delayCauses: [], groundHandlingRemarks: "",
+        specificIncident: false, incidentTypes: [], incidentDetails: "",
     },
     mode: "onChange",
   });
@@ -120,16 +120,17 @@ export default function SubmitPurserReportPage() {
       setFlightData(loadedFlightData);
 
       form.reset({
-        flightId: loadedFlightData.id, flightNumber: loadedFlightData.flightNumber,
+        ...form.control._defaultValues, // Keep all default values
+        flightId: loadedFlightData.id, 
+        flightNumber: loadedFlightData.flightNumber,
         flightDate: loadedFlightData.scheduledDepartureDateTimeUTC,
         route: `${loadedFlightData.departureAirport} → ${loadedFlightData.arrivalAirport}`,
-        aircraftType: loadedFlightData.aircraftType, aircraftRegistration: flight.aircraftType, 
-        picName: loadedFlightData.defaultPicName, foName: loadedFlightData.defaultFoName,
+        aircraftType: loadedFlightData.aircraftType, 
+        aircraftRegistration: flight.aircraftType, // Re-using for simplicity
+        picName: loadedFlightData.defaultPicName, 
+        foName: loadedFlightData.defaultFoName,
         sccmName: loadedFlightData.defaultSccmName,
         cabinCrewOnBoard: crewMembers.filter(c => flight.cabinCrewIds.includes(c.uid)).map(c => c.displayName || c.email!),
-        positivePoints: "", improvementPoints: "", passengerBehaviorNotes: "", cabinActionsTaken: "",
-        safetyAnomalies: "", servicePassengerFeedback: "", cockpitCommunication: "",
-        delayCauses: [], groundHandlingRemarks: "", incidentDetails: "",
       });
       setIsLoading(false);
     };
@@ -155,7 +156,7 @@ export default function SubmitPurserReportPage() {
 
   const prevStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+      setCurrentStep(prev => prev + 1);
     }
   };
 
