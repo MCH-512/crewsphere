@@ -19,6 +19,7 @@ import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode, type Airport } from "@/services/airport-service";
 import type { DayContentProps } from "react-day-picker";
 import Link from 'next/link';
+import { Badge } from "@/components/ui/badge";
 
 interface TimelineActivity {
   id: string;
@@ -26,6 +27,11 @@ interface TimelineActivity {
   date: Timestamp;
   title: string;
   description: string;
+  details: {
+    purserName?: string;
+    crewCount?: number;
+    attendeeCount?: number;
+  }
 }
 
 interface FlightWithCrewDetails extends StoredFlight {
@@ -114,10 +120,31 @@ const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authU
     );
 };
 
-const ActivityCard = ({ activity, onActivityClick }: { activity: TimelineActivity; onActivityClick: (type: 'flight' | 'training', id: string) => void }) => {
+const ActivityCard = ({ activity, onActivityClick, authUser }: { activity: TimelineActivity; onActivityClick: (type: 'flight' | 'training', id: string) => void, authUser: User | null; }) => {
     const config = activityConfig[activity.type];
     const Icon = config.icon;
-    return <button className="w-full text-left mb-2" onClick={() => onActivityClick(activity.type, activity.id)}><div className={cn('p-3 w-full border-l-4 rounded-r-md flex items-start gap-4 bg-muted/30 hover:bg-muted/50 transition-colors', config.className)}><Icon className="h-5 w-5 mt-1 text-muted-foreground" /><div className="flex-grow text-left"><p className="font-semibold">{activity.title}</p><div className="text-sm text-muted-foreground">{activity.description}</div></div></div></button>;
+    return <button className="w-full text-left mb-2" onClick={() => onActivityClick(activity.type, activity.id)}><div className={cn('p-3 w-full border-l-4 rounded-r-md flex items-start gap-4 bg-muted/30 hover:bg-muted/50 transition-colors', config.className)}><Icon className="h-5 w-5 mt-1 text-muted-foreground" /><div className="flex-grow text-left">
+        <p className="font-semibold">{activity.title}</p>
+        <div className="text-sm text-muted-foreground">{activity.description}</div>
+        <div className="text-xs text-muted-foreground mt-1.5 flex items-center gap-4">
+            {activity.details.purserName && (
+                <div className="flex items-center gap-1">
+                    Purser:
+                    {authUser?.role === 'admin' ? (
+                        <Link href={`/admin/users/${activity.id}`} onClick={(e) => e.stopPropagation()} className="font-medium text-primary hover:underline">{activity.details.purserName}</Link>
+                    ) : (
+                        <span className="font-medium">{activity.details.purserName}</span>
+                    )}
+                </div>
+            )}
+            {(activity.details.crewCount || activity.details.attendeeCount) && (
+                <div className="flex items-center gap-1">
+                    <Users className="h-3 w-3"/>
+                    {activity.details.crewCount || activity.details.attendeeCount}
+                </div>
+            )}
+        </div>
+    </div></div></button>;
 };
 
 export default function TimelinePage() {
@@ -131,9 +158,22 @@ export default function TimelinePage() {
     const [selectedActivity, setSelectedActivity] = React.useState<SheetActivity | null>(null);
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
     const [isSheetLoading, setIsSheetLoading] = React.useState(false);
+    const [userMap, setUserMap] = React.useState<Map<string, User>>(new Map());
+
+    React.useEffect(() => {
+        const fetchAllUsers = async () => {
+            const usersSnapshot = await getDocs(collection(db, "users"));
+            const users = new Map<string, User>();
+            usersSnapshot.forEach(doc => {
+                users.set(doc.id, { uid: doc.id, ...doc.data() } as User);
+            });
+            setUserMap(users);
+        };
+        fetchAllUsers();
+    }, []);
 
     const fetchTimelineData = React.useCallback(async (month: Date) => {
-        if (!user) return;
+        if (!user || userMap.size === 0) return;
         setIsLoading(true);
         const start = startOfMonth(month);
         const end = endOfMonth(month);
@@ -146,12 +186,32 @@ export default function TimelinePage() {
 
             const flightActivities: TimelineActivity[] = flightsSnap.docs.map(doc => {
                 const data = doc.data() as StoredFlight;
-                return { id: doc.id, type: 'flight', date: Timestamp.fromDate(new Date(data.scheduledDepartureDateTimeUTC)), title: `Flight ${data.flightNumber}`, description: `${data.departureAirport} → ${data.arrivalAirport}` };
+                const purser = userMap.get(data.purserId);
+                return { 
+                    id: doc.id, 
+                    type: 'flight', 
+                    date: Timestamp.fromDate(new Date(data.scheduledDepartureDateTimeUTC)), 
+                    title: `Flight ${data.flightNumber}`, 
+                    description: `${data.departureAirport} → ${data.arrivalAirport}`,
+                    details: {
+                        purserName: purser?.displayName,
+                        crewCount: data.allCrewIds.length,
+                    }
+                };
             });
 
             const trainingActivities: TimelineActivity[] = trainingSnap.docs.map(doc => {
                 const data = doc.data() as StoredTrainingSession;
-                return { id: doc.id, type: 'training', date: Timestamp.fromDate(new Date(data.sessionDateTimeUTC)), title: `Training: ${data.title}`, description: `Location: ${data.location}` };
+                return { 
+                    id: doc.id, 
+                    type: 'training', 
+                    date: Timestamp.fromDate(new Date(data.sessionDateTimeUTC)), 
+                    title: `Training: ${data.title}`, 
+                    description: `Location: ${data.location}`,
+                    details: {
+                        attendeeCount: data.attendeeIds.length
+                    }
+                };
             });
             
             const allActivities = [...flightActivities, ...trainingActivities];
@@ -162,14 +222,14 @@ export default function TimelinePage() {
         } finally {
             setIsLoading(false);
         }
-    }, [user]);
+    }, [user, userMap]);
 
     React.useEffect(() => {
         if (!authLoading) {
             if (!user) router.push('/login');
-            else fetchTimelineData(currentMonth);
+            else if (userMap.size > 0) fetchTimelineData(currentMonth);
         }
-    }, [user, authLoading, router, fetchTimelineData, currentMonth]);
+    }, [user, authLoading, router, fetchTimelineData, currentMonth, userMap]);
     
     const handleShowActivityDetails = async (type: 'flight' | 'training', id: string) => {
         setIsSheetOpen(true);
@@ -215,7 +275,7 @@ export default function TimelinePage() {
     
     const selectedDayActivities = activities.filter(activity => selectedDay && activity.date.toDate().toDateString() === selectedDay.toDateString());
     
-    if (authLoading || (!user && !authLoading)) {
+    if (authLoading || (!user && !authLoading) || userMap.size === 0) {
       return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
 
@@ -231,7 +291,7 @@ export default function TimelinePage() {
                 <AnimatedCard delay={0.15} className="lg:col-span-2">
                     <Card className="shadow-sm h-full">
                         <CardHeader><CardTitle className="text-lg">{selectedDay ? format(selectedDay, "EEEE, PPP") : "Select a day"}</CardTitle></CardHeader>
-                        <CardContent>{isLoading ? (<div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>) : selectedDayActivities.length > 0 ? (selectedDayActivities.map(activity => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} />)) : (<p className="text-sm text-muted-foreground text-center p-4">No activities scheduled for this day.</p>)}</CardContent>
+                        <CardContent>{isLoading ? (<div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>) : selectedDayActivities.length > 0 ? (selectedDayActivities.map(activity => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} authUser={user} />)) : (<p className="text-sm text-muted-foreground text-center p-4">No activities scheduled for this day.</p>)}</CardContent>
                     </Card>
                 </AnimatedCard>
             </div>
