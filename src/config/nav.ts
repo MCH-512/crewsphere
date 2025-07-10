@@ -8,30 +8,38 @@ import {
 } from "lucide-react";
 
 export const mainNavConfig = {
-  mainNav: [
-    { href: "/", title: "Dashboard", icon: LayoutDashboard },
-    { href: "/my-schedule", title: "My Schedule", icon: CalendarIcon },
-    { href: "/training", title: "E-Learning", icon: GraduationCap },
-    { href: "/document-library", title: "Document Library", icon: Library },
-  ],
   sidebarNav: [
-    {
-      title: "Tools & Actions",
+     {
+      title: "My Day",
       items: [
-        { href: "/requests", title: "My Requests", icon: Inbox },
-        { href: "/purser-reports", title: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin', 'instructor'] },
-        { href: "/suggestion-box", title: "Suggestion Box", icon: Lightbulb },
-        { href: "/toolbox", title: "Toolbox", icon: Wrench },
-        { href: "/community-hub", title: "Community Hub", icon: Compass },
+        { href: "/", title: "Dashboard", icon: LayoutDashboard },
+        { href: "/my-schedule", title: "My Schedule", icon: CalendarIcon },
+        { href: "/my-documents", title: "My Documents", icon: ShieldCheck },
       ]
     },
     {
-      title: "Personal",
+      title: "Operations",
       items: [
-        { href: "/my-logbook", title: "My Logbook", icon: NotebookPen },
-        { href: "/my-documents", title: "My Documents", icon: ShieldCheck },
+        { href: "/purser-reports", title: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin', 'instructor'] },
         { href: "/flight-swap", title: "Swap Board", icon: ArrowRightLeft },
         { href: "/my-swaps", title: "My Swaps", icon: Handshake },
+        { href: "/my-logbook", title: "My Logbook", icon: NotebookPen },
+      ]
+    },
+    {
+      title: "Development",
+      items: [
+        { href: "/training", title: "E-Learning", icon: GraduationCap },
+        { href: "/document-library", title: "Document Library", icon: Library },
+        { href: "/toolbox", title: "Toolbox", icon: Wrench },
+      ]
+    },
+    {
+      title: "Communication & Support",
+      items: [
+        { href: "/requests", title: "My Requests", icon: Inbox },
+        { href: "/suggestion-box", title: "Suggestion Box", icon: Lightbulb },
+        { href: "/community-hub", title: "Community Hub", icon: Compass },
       ]
     },
      {
@@ -44,9 +52,6 @@ export const mainNavConfig = {
 };
 
 export const adminNavConfig = {
-  mainNav: [
-     { href: "/admin", title: "Admin Dashboard", icon: ServerCog },
-  ],
   sidebarNav: [
     {
       title: "Management",
@@ -79,3 +84,4 @@ export const adminNavConfig = {
     }
   ]
 };
+

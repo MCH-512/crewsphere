@@ -16,6 +16,8 @@ import {
   SidebarTrigger,
   useSidebar,
   SidebarProvider,
+  SidebarGroup,
+  SidebarGroupLabel
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,50 +30,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  LayoutDashboard,
   Settings,
   LogOut,
-  Plane,
-  Moon,
-  Sun,
-  ServerCog,
   LogIn,
   UserPlus,
   Loader2,
-  Inbox,
-  Lightbulb,
-  Wrench,
-  Users,
-  ClipboardCheck,
-  MessageSquare,
-  Activity,
-  FileSignature,
-  Calendar,
-  Library,
-  GraduationCap,
-  CheckSquare,
-  Compass,
-  BellRing,
+  Plane,
+  Moon,
+  Sun,
+  ServerCog
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { Breadcrumbs } from "./breadcrumbs";
 import { HeaderClocks } from "@/components/features/header-clocks";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-
-const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/my-schedule", label: "My Schedule", icon: Calendar },
-  { href: "/training", label: "E-Learning", icon: GraduationCap },
-  { href: "/document-library", label: "Document Library", icon: Library },
-  { href: "/requests", label: "My Requests", icon: Inbox },
-  { href: "/purser-reports", label: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin'] },
-  { href: "/suggestion-box", label: "Suggestion Box", icon: Lightbulb },
-  { href: "/toolbox", label: "Toolbox", icon: Wrench },
-  { href: "/community-hub", label: "Community Hub", icon: Compass },
-  { href: "/admin", label: "Admin Console", icon: ServerCog, roles: ['admin'] },
-];
+import { mainNavConfig, adminNavConfig } from "@/config/nav";
+import { Separator } from "@/components/ui/separator";
 
 const useTheme = () => {
   const [theme, setTheme] = React.useState("light");
@@ -136,6 +110,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+
 function LayoutWithSidebar({
   children,
   user,
@@ -152,22 +127,8 @@ function LayoutWithSidebar({
   const { isMobile } = useSidebar();
   const pathname = usePathname();
 
-  const adminNavItems = [
-    { href: "/admin", label: "Admin Dashboard", icon: ServerCog },
-    { href: "/admin/users", label: "User Management", icon: Users },
-    { href: "/admin/flights", label: "Flight Management", icon: Plane },
-    { href: "/admin/alerts", label: "Alert Management", icon: BellRing },
-    { href: "/admin/user-requests", label: "User Requests", icon: ClipboardList },
-    { href: "/admin/purser-reports", label: "Purser Reports", icon: FileSignature },
-    { href: "/admin/courses", label: "Course Management", icon: GraduationCap },
-    { href: "/admin/quizzes", label: "Quiz Management", icon: CheckSquare },
-    { href: "/admin/documents", label: "Documents", icon: Library },
-    { href: "/admin/suggestions", label: "Suggestions", icon: MessageSquare },
-    { href: "/admin/system-settings", label: "System Settings", icon: Settings },
-    { href: "/admin/audit-logs", label: "Audit Logs", icon: Activity },
-  ];
-
-  const currentNavItems = pathname.startsWith('/admin') && user?.role === 'admin' ? adminNavItems : navItems;
+  const isAdminPage = pathname.startsWith('/admin');
+  const currentNavConfig = isAdminPage && user?.role === 'admin' ? adminNavConfig : mainNavConfig;
 
   return (
     <>
@@ -175,35 +136,60 @@ function LayoutWithSidebar({
         <SidebarHeader className="h-16 flex items-center justify-center">
           <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
             <Plane className="w-8 h-8 text-sidebar-primary" />
-            <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">Crew World</span>
+            <span className="font-bold text-lg group-data-[state=collapsed]:hidden">Crew World</span>
           </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">
-          <SidebarMenu>
-            {currentNavItems.map((item) => {
-              if (item.roles && !item.roles.some((role: string) => user?.role === role)) {
-                return null;
-              }
-              const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
-
-              return (
-                <SidebarMenuItem key={item.href}>
-                  <Link href={item.href!} passHref legacyBehavior>
-                    <SidebarMenuButton
-                      asChild
-                      variant={isActive ? "active" : "border"}
-                      tooltip={{ children: item.label, side: "right", align: "center" }}
-                    >
-                      <a>
-                        <item.icon className="w-5 h-5" />
-                        <span>{item.label}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-              );
-            })}
-          </SidebarMenu>
+          {currentNavConfig.sidebarNav.map((navGroup, groupIndex) => (
+            <SidebarGroup key={groupIndex}>
+              <SidebarGroupLabel className="group-data-[state=collapsed]:hidden">{navGroup.title}</SidebarGroupLabel>
+              <SidebarMenu>
+                {navGroup.items.map((item) => {
+                  if (item.roles && !item.roles.some((role: string) => user?.role === role)) return null;
+                  const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
+                  return (
+                     <SidebarMenuItem key={item.href}>
+                       <Link href={item.href!} passHref legacyBehavior>
+                         <SidebarMenuButton
+                            asChild
+                            variant={isActive ? "active" : "ghost"}
+                            tooltip={{ children: item.title, side: "right", align: "center" }}
+                            className="h-9 w-full justify-start"
+                         >
+                            <a>
+                               <item.icon className="w-4 h-4" />
+                               <span className="group-data-[state=collapsed]:hidden">{item.title}</span>
+                            </a>
+                         </SidebarMenuButton>
+                       </Link>
+                     </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroup>
+          ))}
+          {isAdminPage && user?.role === 'admin' && (
+             <SidebarGroup>
+                <Separator className="my-2 bg-sidebar-border"/>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <Link href="/" passHref legacyBehavior>
+                          <SidebarMenuButton
+                              asChild
+                              variant="ghost"
+                              tooltip={{ children: "Exit Admin", side: "right", align: "center" }}
+                              className="h-9 w-full justify-start"
+                          >
+                              <a>
+                                  <ServerCog className="w-4 h-4 text-destructive" />
+                                  <span className="group-data-[state=collapsed]:hidden">Exit Admin</span>
+                              </a>
+                          </SidebarMenuButton>
+                        </Link>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarGroup>
+          )}
         </SidebarContent>
         <SidebarFooter className="p-2">
           <SidebarMenu>
@@ -216,7 +202,7 @@ function LayoutWithSidebar({
                 >
                   <a>
                     <Settings className="w-5 h-5" />
-                    <span>Settings</span>
+                    <span className="group-data-[state=collapsed]:hidden">Settings</span>
                   </a>
                 </SidebarMenuButton>
               </Link>
@@ -293,5 +279,3 @@ function LayoutWithSidebar({
     </>
   );
 }
-
-    
