@@ -8,7 +8,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, orderBy, limit, getDocs, Timestamp, writeBatch } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, AlertTriangle, ArrowLeft, User as UserIcon, Calendar, GraduationCap, Inbox, CheckCircle, XCircle, ShieldCheck, CalendarX, CalendarClock, CalendarCheck2, PlusCircle } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowLeft, User as UserIcon, Calendar, GraduationCap, Inbox, CheckCircle, XCircle, ShieldCheck, CalendarX, CalendarClock, CalendarCheck2, PlusCircle, Info, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -220,6 +220,17 @@ export default function UserDetailPage() {
         }
         fetchUserProfileData();
     }, [userId, adminUser, authLoading, router, toast, fetchUserProfileData]);
+    
+    const formatDateDisplay = (dateString?: string | null) => {
+        if (!dateString) return "N/A"; 
+        try {
+            const dateObj = new Date(dateString);
+            if (isNaN(dateObj.getTime())) return "Invalid Date";
+            return format(dateObj, "PPP"); 
+        } catch (e) {
+            return dateString; 
+        }
+    };
 
     if (isLoading || authLoading) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -250,6 +261,7 @@ export default function UserDetailPage() {
                              <Badge variant="outline" className="capitalize">{user.role || "N/A"}</Badge>
                              <Badge variant={user.accountStatus === 'active' ? 'success' : 'destructive'} className="capitalize">{user.accountStatus || "Unknown"}</Badge>
                              <span>Employee ID: <span className="font-semibold">{user.employeeId || 'N/A'}</span></span>
+                             <span>Joined: <span className="font-semibold">{formatDateDisplay(user.joiningDate)}</span></span>
                         </div>
                     </div>
                 </CardHeader>
