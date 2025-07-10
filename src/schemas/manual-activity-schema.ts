@@ -1,3 +1,4 @@
+'use server';
 import { z } from "zod";
 
 export const manualActivityTypes = ["Standby", "Day Off", "Sick Leave", "Emergency Leave", "Annual Leave"] as const;

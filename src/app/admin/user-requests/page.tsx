@@ -152,7 +152,6 @@ export default function AdminUserRequestsPage() {
         
         const isLeaveRequest = selectedRequest.requestType === 'Leave & Absences';
         const isNowApproved = newStatus === 'approved';
-        const wasPreviouslyApproved = selectedRequest.status === 'approved';
 
         if (isLeaveRequest) {
             const activitiesQuery = firestoreQuery(collection(db, "userActivities"), where("requestId", "==", selectedRequest.id));

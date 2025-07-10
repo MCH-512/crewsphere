@@ -28,6 +28,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
+import { logAuditEvent } from "@/lib/audit-logger";
+
 
 // --- Interfaces for fetched data ---
 interface RequestSummary {
@@ -69,7 +71,7 @@ const statusConfig: Record<DocumentStatus, { icon: React.ElementType, color: str
 };
 
 
-const AddManualActivityDialog = ({ userId, onActivityAdded }: { userId: string, onActivityAdded: () => void }) => {
+const AddManualActivityDialog = ({ userId, onActivityAdded, adminUser }: { userId: string, onActivityAdded: () => void, adminUser: User | null }) => {
     const [isOpen, setIsOpen] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { toast } = useToast();
@@ -85,6 +87,10 @@ const AddManualActivityDialog = ({ userId, onActivityAdded }: { userId: string, 
     });
 
     const onSubmit = async (data: ManualActivityFormValues) => {
+        if (!adminUser) {
+            toast({ title: "Unauthorized", variant: "destructive" });
+            return;
+        }
         setIsSubmitting(true);
         try {
             const batch = writeBatch(db);
@@ -114,6 +120,7 @@ const AddManualActivityDialog = ({ userId, onActivityAdded }: { userId: string, 
             });
 
             await batch.commit();
+            await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email, actionType: 'CREATE_MANUAL_ACTIVITY', entityType: "USER_ACTIVITY", entityId: userId, details: { type: data.activityType, dates: `${data.startDate} to ${data.endDate}` } });
             toast({ title: "Activity Added", description: `The new activity has been added to the user's schedule.` });
             onActivityAdded();
             setIsOpen(false);
@@ -252,7 +259,7 @@ export default function UserDetailPage() {
                 <Card>
                     <CardHeader className="flex-row justify-between items-center">
                         <CardTitle className="text-lg flex items-center gap-2"><Calendar className="h-5 w-5 text-primary"/>Recent Schedule</CardTitle>
-                        <AddManualActivityDialog userId={userId} onActivityAdded={fetchUserProfileData} />
+                        <AddManualActivityDialog userId={userId} onActivityAdded={fetchUserProfileData} adminUser={adminUser} />
                     </CardHeader>
                     <CardContent>
                         {activities.length > 0 ? (
@@ -264,7 +271,10 @@ export default function UserDetailPage() {
                     <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Inbox className="h-5 w-5 text-primary"/>Recent Requests</CardTitle></CardHeader>
                     <CardContent>
                         {requests.length > 0 ? (
-                             <ul className="space-y-2">{requests.map(req => <li key={req.id} className="text-sm flex justify-between"><span>{req.subject}</span><Badge variant="secondary" className="capitalize">{req.status}</Badge></li>)}</ul>
+                             <ul className="space-y-2">{requests.map(req => <li key={req.id} className="text-sm flex justify-between">
+                                <Link href={`/admin/user-requests`} className="hover:underline text-primary truncate pr-2">{req.subject}</Link>
+                                <Badge variant="secondary" className="capitalize">{req.status}</Badge>
+                             </li>)}</ul>
                         ) : (<p className="text-sm text-muted-foreground text-center py-4">No recent requests found.</p>)}
                     </CardContent>
                 </Card>
