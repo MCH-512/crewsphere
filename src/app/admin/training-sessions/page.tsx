@@ -138,7 +138,7 @@ export default function AdminTrainingSessionsPage() {
     }, [user, authLoading, router, fetchPageData]);
     
     React.useEffect(() => {
-        if (watchedAttendees.length === 0 || !debouncedSessionDate) {
+        if (!watchedAttendees || watchedAttendees.length === 0 || !debouncedSessionDate) {
             setCrewWarnings({});
             return;
         }

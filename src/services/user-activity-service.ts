@@ -4,9 +4,10 @@
 import { db, isConfigValid } from "@/lib/firebase";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { format } from 'date-fns';
+import { type ActivityType } from "@/schemas/user-activity-schema";
 
 export interface Conflict {
-    activityType: 'flight' | 'leave' | 'training' | 'standby' | 'day-off';
+    activityType: ActivityType;
     details: string;
 }
 
@@ -55,5 +56,3 @@ export async function checkCrewAvailability(
 
   return warnings;
 }
-
-    
