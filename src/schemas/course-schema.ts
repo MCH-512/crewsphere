@@ -82,3 +82,14 @@ export interface StoredCertificateRule {
     expiryDurationDays: number;
     createdAt: Timestamp;
 }
+
+// Schema for AI Image Generation Flow
+export const GenerateCourseImageInputSchema = z.object({
+  prompt: z.string().describe('A text prompt or hint to generate an image from, e.g., "flight safety manual".'),
+});
+export type GenerateCourseImageInput = z.infer<typeof GenerateCourseImageInputSchema>;
+
+export const GenerateCourseImageOutputSchema = z.object({
+  imageDataUri: z.string().describe("The generated image as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
+});
+export type GenerateCourseImageOutput = z.infer<typeof GenerateCourseImageOutputSchema>;
