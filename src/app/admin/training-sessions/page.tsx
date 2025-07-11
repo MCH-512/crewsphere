@@ -59,6 +59,7 @@ export default function AdminTrainingSessionsPage() {
     const form = useForm<TrainingSessionFormValues>({
         resolver: zodResolver(trainingSessionFormSchema),
         defaultValues: { title: "", description: "", location: "", sessionDateTimeUTC: "", attendeeIds: [] },
+        mode: "onSubmit",
     });
     
     const watchedAttendees = form.watch("attendeeIds");
@@ -362,4 +363,3 @@ export default function AdminTrainingSessionsPage() {
         </div>
     );
 }
-
