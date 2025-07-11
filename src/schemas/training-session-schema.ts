@@ -33,12 +33,14 @@ export interface StoredTrainingSession {
   title: string;
   description: string;
   location: string;
-  sessionDateTimeUTC: string;
+  sessionDateTimeUTC: Timestamp; // Changed from string to Timestamp
   attendeeIds: string[]; // Still stored as a single array in Firestore
   createdBy: string; // Admin's UID
   createdAt: Timestamp;
   updatedAt: Timestamp;
   activityIds?: Record<string, string>; // Maps userId -> activityId
 }
+
+    
 
     
