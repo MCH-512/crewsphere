@@ -10,7 +10,7 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Handshake, Loader2, AlertTriangle, RefreshCw, Check, X, Plane, ArrowRight } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { StoredFlightSwap, FlightSwapStatus } from "@/schemas/flight-swap-schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -142,6 +142,13 @@ export default function AdminFlightSwapsPage() {
     };
 
     const filterSwaps = (status: FlightSwapStatus) => swaps.filter(s => s.status === status);
+    
+    const formatDateSafe = (dateString?: string) => {
+        if (!dateString) return 'N/A';
+        const date = parseISO(dateString);
+        if (!isValid(date)) return 'Invalid Date';
+        return format(date, 'PP');
+    };
 
     if (isLoading || authLoading) {
         return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -227,13 +234,13 @@ export default function AdminFlightSwapsPage() {
                                 <p><strong>User:</strong> {selectedSwap?.initiatingUserEmail}</p>
                                 <p><strong>Flight:</strong> {selectedSwap?.flightInfo.flightNumber}</p>
                                 <p><strong>Route:</strong> {selectedSwap?.flightInfo.departureAirportDisplay} → {selectedSwap?.flightInfo.arrivalAirportDisplay}</p>
-                                <p><strong>Date:</strong> {format(parseISO(selectedSwap?.flightInfo.scheduledDepartureDateTimeUTC || '_'), 'PP')}</p>
+                                <p><strong>Date:</strong> {formatDateSafe(selectedSwap?.flightInfo.scheduledDepartureDateTimeUTC)}</p>
                             </CardContent></Card>
                             <Card className="p-3"><CardHeader className="p-1 pb-2"><CardTitle className="text-sm">Requested Flight</CardTitle></CardHeader><CardContent className="text-xs p-1 space-y-1">
                                 <p><strong>User:</strong> {selectedSwap?.requestingUserEmail}</p>
                                 <p><strong>Flight:</strong> {selectedSwap?.requestingFlightInfo?.flightNumber}</p>
                                 <p><strong>Route:</strong> {selectedSwap?.requestingFlightInfo?.departureAirportDisplay} → {selectedSwap?.requestingFlightInfo?.arrivalAirportDisplay}</p>
-                                <p><strong>Date:</strong> {format(parseISO(selectedSwap?.requestingFlightInfo?.scheduledDepartureDateTimeUTC || '_'), 'PP')}</p>
+                                <p><strong>Date:</strong> {formatDateSafe(selectedSwap?.requestingFlightInfo?.scheduledDepartureDateTimeUTC)}</p>
                             </CardContent></Card>
                          </div>
 
