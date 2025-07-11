@@ -42,7 +42,6 @@ export default function AdminTrainingSessionsPage() {
     const { toast } = useToast();
     const [sessions, setSessions] = React.useState<SessionForDisplay[]>([]);
     
-    const [allUsers, setAllUsers] = React.useState<User[]>([]);
     const [userMap, setUserMap] = React.useState<Map<string, User>>(new Map());
     const [pursers, setPursers] = React.useState<User[]>([]);
     const [pilots, setPilots] = React.useState<User[]>([]);
@@ -66,6 +65,7 @@ export default function AdminTrainingSessionsPage() {
     const form = useForm<TrainingSessionFormValues>({
         resolver: zodResolver(trainingSessionFormSchema),
         defaultValues: { title: "", description: "", location: "", sessionDateTimeUTC: "", purserIds: [], pilotIds: [], cabinCrewIds: [], instructorIds: [], traineeIds: [] },
+        mode: "onBlur"
     });
     
     const watchedPursers = form.watch("purserIds");
@@ -94,7 +94,6 @@ export default function AdminTrainingSessionsPage() {
 
             const allUsersData = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
             const userMapData = new Map(allUsersData.map(u => [u.uid, u]));
-            setAllUsers(allUsersData);
             setUserMap(userMapData);
             setPilots(allUsersData.filter(u => u.role === 'pilote'));
             setPursers(allUsersData.filter(u => ['purser', 'admin', 'instructor'].includes(u.role || '') && u.role !== 'pilote'));
@@ -203,7 +202,7 @@ export default function AdminTrainingSessionsPage() {
                 description: sessionToEdit.description,
                 location: sessionToEdit.location,
                 sessionDateTimeUTC: sessionToEdit.sessionDateTimeUTC,
-                purserIds: attendeesData.filter(u => ['purser', 'admin'].includes(u.role || '')).map(u => u.uid),
+                purserIds: attendeesData.filter(u => ['purser', 'admin', 'instructor'].includes(u.role || '')).map(u => u.uid),
                 pilotIds: attendeesData.filter(u => u.role === 'pilote').map(u => u.uid),
                 cabinCrewIds: attendeesData.filter(u => u.role === 'cabin crew').map(u => u.uid),
                 instructorIds: attendeesData.filter(u => u.role === 'instructor').map(u => u.uid),
