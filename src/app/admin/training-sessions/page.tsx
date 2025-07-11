@@ -17,7 +17,7 @@ import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, server
 import { useRouter } from "next/navigation";
 import { ClipboardCheck, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfDay, parseISO } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import { trainingSessionFormSchema, type TrainingSessionFormValues, type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { CustomMultiSelectAutocomplete } from "@/components/ui/custom-multi-select-autocomplete";
@@ -42,6 +42,7 @@ export default function AdminTrainingSessionsPage() {
     const { toast } = useToast();
     const [sessions, setSessions] = React.useState<SessionForDisplay[]>([]);
     
+    const [allUsers, setAllUsers] = React.useState<User[]>([]);
     const [userMap, setUserMap] = React.useState<Map<string, User>>(new Map());
     const [pursers, setPursers] = React.useState<User[]>([]);
     const [pilots, setPilots] = React.useState<User[]>([]);
@@ -79,10 +80,19 @@ export default function AdminTrainingSessionsPage() {
         setIsLoading(true);
         try {
             const sessionsQuery = query(collection(db, "trainingSessions"), orderBy("sessionDateTimeUTC", "desc"));
-            const usersQuery = query(collection(db, "users"), orderBy("email", "asc"));
+            const usersSnapshot = await getDocs(collection(db, "users"));
+            const allUsersData = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
+            const userMapData = new Map(allUsersData.map(u => [u.uid, u]));
 
-            const [sessionsSnapshot, usersSnapshot] = await Promise.all([getDocs(sessionsQuery), getDocs(usersQuery)]);
-            
+            setAllUsers(allUsersData);
+            setUserMap(userMapData);
+            setPilots(allUsersData.filter(u => u.role === 'pilote'));
+            setPursers(allUsersData.filter(u => ['purser', 'admin', 'instructor'].includes(u.role || '') && u.role !== 'pilote'));
+            setCabinCrew(allUsersData.filter(u => u.role === 'cabin crew'));
+            setInstructors(allUsersData.filter(u => u.role === 'instructor'));
+            setTrainees(allUsersData.filter(u => u.role === 'stagiaire'));
+
+            const sessionsSnapshot = await getDocs(sessionsQuery);
             setSessions(sessionsSnapshot.docs.map(doc => {
                 const data = doc.data() as StoredTrainingSession;
                 return { 
@@ -91,15 +101,6 @@ export default function AdminTrainingSessionsPage() {
                     attendeeCount: data.attendeeIds.length,
                 }
             }));
-
-            const allUsersData = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
-            const userMapData = new Map(allUsersData.map(u => [u.uid, u]));
-            setUserMap(userMapData);
-            setPilots(allUsersData.filter(u => u.role === 'pilote'));
-            setPursers(allUsersData.filter(u => ['purser', 'admin', 'instructor'].includes(u.role || '') && u.role !== 'pilote'));
-            setCabinCrew(allUsersData.filter(u => u.role === 'cabin crew'));
-            setInstructors(allUsersData.filter(u => u.role === 'instructor'));
-            setTrainees(allUsersData.filter(u => u.role === 'stagiaire'));
 
         } catch (err) {
             toast({ title: "Loading Error", description: "Could not fetch sessions and users.", variant: "destructive" });
@@ -192,7 +193,6 @@ export default function AdminTrainingSessionsPage() {
             setIsEditMode(true);
             setCurrentSession(sessionToEdit);
 
-            // Pre-populate role-based arrays for editing
             const attendeesData = await Promise.all(
                 sessionToEdit.attendeeIds.map(id => userMap.get(id))
             ).then(users => users.filter(Boolean) as User[]);
@@ -201,7 +201,7 @@ export default function AdminTrainingSessionsPage() {
                 title: sessionToEdit.title,
                 description: sessionToEdit.description,
                 location: sessionToEdit.location,
-                sessionDateTimeUTC: sessionToEdit.sessionDateTimeUTC,
+                sessionDateTimeUTC: sessionToEdit.sessionDateTimeUTC.substring(0, 16),
                 purserIds: attendeesData.filter(u => ['purser', 'admin', 'instructor'].includes(u.role || '')).map(u => u.uid),
                 pilotIds: attendeesData.filter(u => u.role === 'pilote').map(u => u.uid),
                 cabinCrewIds: attendeesData.filter(u => u.role === 'cabin crew').map(u => u.uid),
