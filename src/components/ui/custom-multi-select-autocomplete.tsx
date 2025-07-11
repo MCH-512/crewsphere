@@ -75,6 +75,7 @@ export function CustomMultiSelectAutocomplete({
                             key={option.value}
                             variant="secondary"
                             className="mr-1"
+                            aria-label={`Remove ${option.label}`}
                             onClick={(e) => {
                                 e.stopPropagation(); // prevent popover from closing
                                 handleUnselect(option.value);
