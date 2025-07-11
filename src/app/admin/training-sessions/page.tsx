@@ -41,8 +41,15 @@ export default function AdminTrainingSessionsPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [sessions, setSessions] = React.useState<SessionForDisplay[]>([]);
+    
     const [allUsers, setAllUsers] = React.useState<User[]>([]);
     const [userMap, setUserMap] = React.useState<Map<string, User>>(new Map());
+    const [pursers, setPursers] = React.useState<User[]>([]);
+    const [pilots, setPilots] = React.useState<User[]>([]);
+    const [cabinCrew, setCabinCrew] = React.useState<User[]>([]);
+    const [instructors, setInstructors] = React.useState<User[]>([]);
+    const [trainees, setTrainees] = React.useState<User[]>([]);
+    
     const [isLoading, setIsLoading] = React.useState(true);
     
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
@@ -58,11 +65,14 @@ export default function AdminTrainingSessionsPage() {
 
     const form = useForm<TrainingSessionFormValues>({
         resolver: zodResolver(trainingSessionFormSchema),
-        defaultValues: { title: "", description: "", location: "", sessionDateTimeUTC: "", attendeeIds: [] },
-        mode: "onSubmit",
+        defaultValues: { title: "", description: "", location: "", sessionDateTimeUTC: "", purserIds: [], pilotIds: [], cabinCrewIds: [], instructorIds: [], traineeIds: [] },
     });
     
-    const watchedAttendees = form.watch("attendeeIds");
+    const watchedPursers = form.watch("purserIds");
+    const watchedPilots = form.watch("pilotIds");
+    const watchedCabinCrew = form.watch("cabinCrewIds");
+    const watchedInstructors = form.watch("instructorIds");
+    const watchedTrainees = form.watch("traineeIds");
     const debouncedSessionDate = useDebounce(form.watch("sessionDateTimeUTC"), 500);
 
     const fetchPageData = React.useCallback(async () => {
@@ -81,9 +91,17 @@ export default function AdminTrainingSessionsPage() {
                     attendeeCount: data.attendeeIds.length,
                 }
             }));
+
             const allUsersData = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
+            const userMapData = new Map(allUsersData.map(u => [u.uid, u]));
             setAllUsers(allUsersData);
-            setUserMap(new Map(allUsersData.map(u => [u.uid, u])));
+            setUserMap(userMapData);
+            setPilots(allUsersData.filter(u => u.role === 'pilote'));
+            setPursers(allUsersData.filter(u => ['purser', 'admin', 'instructor'].includes(u.role || '') && u.role !== 'pilote'));
+            setCabinCrew(allUsersData.filter(u => u.role === 'cabin crew'));
+            setInstructors(allUsersData.filter(u => u.role === 'instructor'));
+            setTrainees(allUsersData.filter(u => u.role === 'stagiaire'));
+
         } catch (err) {
             toast({ title: "Loading Error", description: "Could not fetch sessions and users.", variant: "destructive" });
         } finally {
@@ -138,8 +156,13 @@ export default function AdminTrainingSessionsPage() {
         }
     }, [user, authLoading, router, fetchPageData]);
     
-    React.useEffect(() => {
-        if (!watchedAttendees || watchedAttendees.length === 0 || !debouncedSessionDate) {
+     React.useEffect(() => {
+        const allAttendees = [
+            ...(watchedPursers || []), ...(watchedPilots || []), ...(watchedCabinCrew || []),
+            ...(watchedInstructors || []), ...(watchedTrainees || [])
+        ].filter(Boolean);
+
+        if (allAttendees.length === 0 || !debouncedSessionDate) {
             setCrewWarnings({});
             return;
         }
@@ -150,7 +173,7 @@ export default function AdminTrainingSessionsPage() {
                 const sessionDate = startOfDay(new Date(debouncedSessionDate));
                 if (isNaN(sessionDate.getTime())) return;
 
-                const warnings = await checkCrewAvailability(watchedAttendees, sessionDate, sessionDate);
+                const warnings = await checkCrewAvailability(allAttendees, sessionDate, sessionDate);
                 setCrewWarnings(warnings);
             } catch (e) {
                 console.error("Failed to check crew availability for training session", e);
@@ -162,24 +185,34 @@ export default function AdminTrainingSessionsPage() {
 
         check();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [JSON.stringify(watchedAttendees), debouncedSessionDate, toast]);
+    }, [JSON.stringify(watchedPursers), JSON.stringify(watchedPilots), JSON.stringify(watchedCabinCrew), JSON.stringify(watchedInstructors), JSON.stringify(watchedTrainees), debouncedSessionDate, toast]);
 
 
-    const handleOpenDialog = (sessionToEdit?: StoredTrainingSession) => {
+    const handleOpenDialog = async (sessionToEdit?: StoredTrainingSession) => {
         if (sessionToEdit) {
             setIsEditMode(true);
             setCurrentSession(sessionToEdit);
+
+            // Pre-populate role-based arrays for editing
+            const attendeesData = await Promise.all(
+                sessionToEdit.attendeeIds.map(id => userMap.get(id))
+            ).then(users => users.filter(Boolean) as User[]);
+
             form.reset({
                 title: sessionToEdit.title,
                 description: sessionToEdit.description,
                 location: sessionToEdit.location,
                 sessionDateTimeUTC: sessionToEdit.sessionDateTimeUTC,
-                attendeeIds: sessionToEdit.attendeeIds || [],
+                purserIds: attendeesData.filter(u => ['purser', 'admin'].includes(u.role || '')).map(u => u.uid),
+                pilotIds: attendeesData.filter(u => u.role === 'pilote').map(u => u.uid),
+                cabinCrewIds: attendeesData.filter(u => u.role === 'cabin crew').map(u => u.uid),
+                instructorIds: attendeesData.filter(u => u.role === 'instructor').map(u => u.uid),
+                traineeIds: attendeesData.filter(u => u.role === 'stagiaire').map(u => u.uid),
             });
         } else {
             setIsEditMode(false);
             setCurrentSession(null);
-            form.reset({ title: "", description: "", location: "", sessionDateTimeUTC: "", attendeeIds: [] });
+            form.reset({ title: "", description: "", location: "", sessionDateTimeUTC: "", purserIds: [], pilotIds: [], cabinCrewIds: [], instructorIds: [], traineeIds: [] });
         }
         setCrewWarnings({});
         setIsManageDialogOpen(true);
@@ -199,6 +232,11 @@ export default function AdminTrainingSessionsPage() {
             const batch = writeBatch(db);
             const sessionRef = isEditMode && currentSession ? doc(db, "trainingSessions", currentSession.id) : doc(collection(db, "trainingSessions"));
             
+             const attendeeIds = [...new Set([
+                ...(data.purserIds || []), ...(data.pilotIds || []), ...(data.cabinCrewIds || []),
+                ...(data.instructorIds || []), ...(data.traineeIds || [])
+            ])];
+
             const activityIds: Record<string, string> = {};
             if (isEditMode && currentSession?.activityIds) {
                 Object.values(currentSession.activityIds).forEach(activityId => {
@@ -206,7 +244,7 @@ export default function AdminTrainingSessionsPage() {
                 });
             }
 
-            for (const attendeeId of data.attendeeIds) {
+            for (const attendeeId of attendeeIds) {
                 const activityRef = doc(collection(db, "userActivities"));
                 batch.set(activityRef, {
                     userId: attendeeId,
@@ -220,7 +258,11 @@ export default function AdminTrainingSessionsPage() {
             }
 
             const sessionData = { 
-                ...data, 
+                title: data.title,
+                description: data.description,
+                location: data.location,
+                sessionDateTimeUTC: data.sessionDateTimeUTC,
+                attendeeIds,
                 activityIds,
                 createdBy: user.uid, 
                 updatedAt: serverTimestamp() 
@@ -331,8 +373,14 @@ export default function AdminTrainingSessionsPage() {
                                         <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} placeholder="e.g., Training Center - Room A" /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={form.control} name="sessionDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Date & Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     </div>
-                                    <FormField control={form.control} name="attendeeIds" render={({ field }) => (<FormItem><FormLabel>Assign Attendees</FormLabel><CustomMultiSelectAutocomplete placeholder="Select attendees..." options={allUsers.map(u => ({value: u.uid, label: `${u.displayName} (${u.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                    
+                                    <Separator />
+                                    <h3 className="text-lg font-medium">Assign Attendees</h3>
+                                     <FormField control={form.control} name="purserIds" render={({ field }) => (<FormItem><FormLabel>Assign Pursers</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pursers..." options={pursers.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                     <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                     <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                     <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                     <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Trainees</FormLabel><CustomMultiSelectAutocomplete placeholder="Select trainees..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+
                                     <Separator />
                                      <h3 className="text-lg font-medium">Attendee Availability</h3>
                                         {isCheckingAvailability ? (
