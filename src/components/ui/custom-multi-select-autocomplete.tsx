@@ -12,6 +12,7 @@ import {
   CommandGroup,
   CommandItem,
   CommandList,
+  CommandInput,
 } from "@/components/ui/command";
 
 interface Option {
@@ -62,7 +63,12 @@ export function CustomMultiSelectAutocomplete({
   };
 
   const selectedOptions = options.filter(option => selected.includes(option.value));
-  const selectableOptions = options.filter(option => !selected.includes(option.value));
+  
+  const filteredOptions = options.filter(option => {
+    if (selected.includes(option.value)) return false;
+    if (!inputValue) return true;
+    return option.label.toLowerCase().includes(inputValue.toLowerCase());
+  });
 
   return (
     <Command onKeyDown={handleKeyDown} className={cn("overflow-visible bg-transparent", className)}>
@@ -93,11 +99,11 @@ export function CustomMultiSelectAutocomplete({
         </div>
       </div>
       <div className="relative mt-2">
-        {open && selectableOptions.length > 0 ? (
+        {open && filteredOptions.length > 0 ? (
           <div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
             <CommandList>
-              <CommandGroup className="h-full overflow-auto">
-                {selectableOptions.map((option) => (
+              <CommandGroup className="h-full max-h-60 overflow-auto">
+                {filteredOptions.map((option) => (
                   <CommandItem
                     key={option.value}
                     onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
