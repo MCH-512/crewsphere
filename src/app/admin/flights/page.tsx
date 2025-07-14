@@ -132,7 +132,7 @@ export default function AdminFlightsPage() {
             let comparison = 0;
 
             if (sortColumn === 'scheduledDepartureDateTimeUTC') {
-                comparison = new Date(valA as string).getTime() - new Date(valB as string).getTime();
+                 comparison = new Date(valA as string).getTime() - new Date(valB as string).getTime();
             } else if (sortColumn === 'crewCount') {
                 comparison = (valA as number) - (valB as number);
             } else {
@@ -207,7 +207,7 @@ export default function AdminFlightsPage() {
             const endDate = startOfDay(new Date(debouncedArr));
             if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return;
 
-            const warnings = await checkCrewAvailability(allAssignedCrewIds, startDate, endDate);
+            const warnings = await checkCrewAvailability(allAssignedCrewIds, startDate, endDate, currentFlight?.id);
             setCrewWarnings(warnings);
           } catch (e) {
             console.error("Failed to check crew availability", e);
@@ -219,7 +219,7 @@ export default function AdminFlightsPage() {
 
         check();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [watchedPurser, JSON.stringify(watchedPilots), JSON.stringify(watchedCabinCrew), JSON.stringify(watchedInstructors), JSON.stringify(watchedTrainees), debouncedDep, debouncedArr, toast]);
+    }, [watchedPurser, JSON.stringify(watchedPilots), JSON.stringify(watchedCabinCrew), JSON.stringify(watchedInstructors), JSON.stringify(watchedTrainees), debouncedDep, debouncedArr, toast, currentFlight]);
 
 
     const handleOpenDialog = (flightToEdit?: StoredFlight) => {

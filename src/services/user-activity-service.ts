@@ -4,7 +4,7 @@
 import { db, isConfigValid } from "@/lib/firebase";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { format } from 'date-fns';
-import { type ActivityType } from "@/schemas/user-activity-schema";
+import { type ActivityType, type UserActivity } from "@/schemas/user-activity-schema";
 
 export interface Conflict {
     activityType: ActivityType;
@@ -16,12 +16,14 @@ export interface Conflict {
  * @param crewUserIds An array of user UIDs to check.
  * @param startDate The start date of the period to check.
  * @param endDate The end date of the period to check.
+ * @param flightIdToIgnore Optional. The ID of the current flight being edited, to ignore its own activities.
  * @returns A promise that resolves to a record mapping user IDs to their first found conflict.
  */
 export async function checkCrewAvailability(
   crewUserIds: string[],
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  flightIdToIgnore?: string
 ): Promise<Record<string, Conflict>> {
   if (!isConfigValid || !db || crewUserIds.length === 0) {
     return {};
@@ -41,8 +43,14 @@ export async function checkCrewAvailability(
       
       try {
           const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty) {
-              const activity = querySnapshot.docs[0].data();
+          const conflictingActivity = querySnapshot.docs.find(doc => {
+              const activity = doc.data() as UserActivity;
+              // Ignore the activity if it's part of the flight we're currently editing
+              return !(flightIdToIgnore && activity.flightId === flightIdToIgnore);
+          });
+          
+          if (conflictingActivity) {
+              const activity = conflictingActivity.data() as UserActivity;
               warnings[userId] = {
                   activityType: activity.activityType,
                   details: activity.comments || `Scheduled for ${activity.activityType} on ${format(activity.date.toDate(), 'PP')}`,
