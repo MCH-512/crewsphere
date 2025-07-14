@@ -103,6 +103,7 @@ export default function AdminTrainingSessionsPage() {
             }));
 
         } catch (err) {
+            console.error("Failed to fetch sessions or users:", err)
             toast({ title: "Loading Error", description: "Could not fetch sessions and users.", variant: "destructive" });
         } finally {
             setIsLoading(false);
@@ -115,8 +116,8 @@ export default function AdminTrainingSessionsPage() {
             const valB = b[sortColumn];
             let comparison = 0;
 
-            if (sortColumn === 'sessionDateTimeUTC') {
-                comparison = new Date(valA as string).getTime() - new Date(valB as string).getTime();
+            if (valA instanceof Timestamp && valB instanceof Timestamp) {
+                comparison = valA.toMillis() - valB.toMillis();
             } else if (sortColumn === 'attendeeCount') {
                 comparison = (valA as number) - (valB as number);
             } else {
@@ -196,12 +197,16 @@ export default function AdminTrainingSessionsPage() {
             const attendeesData = await Promise.all(
                 sessionToEdit.attendeeIds.map(id => userMap.get(id))
             ).then(users => users.filter(Boolean) as User[]);
+            
+            // Convert Firestore Timestamp back to 'yyyy-MM-ddThh:mm' string for the input
+            const sessionDate = sessionToEdit.sessionDateTimeUTC.toDate();
+            const formattedDate = sessionDate.toISOString().substring(0, 16);
 
             form.reset({
                 title: sessionToEdit.title,
                 description: sessionToEdit.description,
                 location: sessionToEdit.location,
-                sessionDateTimeUTC: sessionToEdit.sessionDateTimeUTC.substring(0, 16),
+                sessionDateTimeUTC: formattedDate,
                 purserIds: attendeesData.filter(u => ['purser', 'admin', 'instructor'].includes(u.role || '')).map(u => u.uid),
                 pilotIds: attendeesData.filter(u => u.role === 'pilote').map(u => u.uid),
                 cabinCrewIds: attendeesData.filter(u => u.role === 'cabin crew').map(u => u.uid),
@@ -260,7 +265,7 @@ export default function AdminTrainingSessionsPage() {
                 title: data.title,
                 description: data.description,
                 location: data.location,
-                sessionDateTimeUTC: data.sessionDateTimeUTC,
+                sessionDateTimeUTC: Timestamp.fromDate(new Date(data.sessionDateTimeUTC)), // Convert to Timestamp
                 attendeeIds,
                 activityIds,
                 createdBy: user.uid, 
@@ -336,7 +341,7 @@ export default function AdminTrainingSessionsPage() {
                                     <TableRow key={s.id}>
                                         <TableCell className="font-medium">{s.title}</TableCell>
                                         <TableCell>{s.location}</TableCell>
-                                        <TableCell>{format(new Date(s.sessionDateTimeUTC), "PPpp")}</TableCell>
+                                        <TableCell>{format(s.sessionDateTimeUTC.toDate(), "PPpp")}</TableCell>
                                         <TableCell>
                                             <Badge variant="secondary" className="flex items-center gap-1 w-fit">
                                                 <Users className="h-3 w-3"/>
@@ -376,7 +381,7 @@ export default function AdminTrainingSessionsPage() {
                                     <h3 className="text-lg font-medium">Assign Attendees</h3>
                                      <FormField control={form.control} name="purserIds" render={({ field }) => (<FormItem><FormLabel>Assign Pursers</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pursers..." options={pursers.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                                      <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                     <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                                      <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                                      <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
 
@@ -410,5 +415,3 @@ export default function AdminTrainingSessionsPage() {
         </div>
     );
 }
-
-    
