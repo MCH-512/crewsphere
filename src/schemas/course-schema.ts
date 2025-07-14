@@ -1,7 +1,6 @@
 
 import { z } from "zod";
 import type { Timestamp } from 'firebase/firestore';
-import { questionFormSchema } from "./quiz-question-schema";
 
 export const courseCategories = [
     "Safety & Emergency Procedures (SEP)",
@@ -43,7 +42,6 @@ export const courseFormSchema = z.object({
   quizTitle: z.string().min(5, "Quiz title must be at least 5 characters."),
   passingThreshold: z.number().min(0).max(100).default(80),
   certificateExpiryDays: z.number().min(0).default(365),
-  questions: z.array(questionFormSchema).min(1, "At least one quiz question is required."),
 });
 
 export type CourseFormValues = z.infer<typeof courseFormSchema>;

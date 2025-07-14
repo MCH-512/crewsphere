@@ -37,45 +37,6 @@ type CourseCategory = StoredCourse["category"];
 type CourseType = StoredCourse["courseType"];
 type StatusFilter = "all" | "published" | "draft";
 
-// A component for managing a single question's options
-const QuestionOptionsManager = ({ control, questionIndex }: { control: any, questionIndex: number }) => {
-    const { fields: optionFields, append: appendOption, remove: removeOption } = useFieldArray({
-        control,
-        name: `questions.${questionIndex}.options`,
-    });
-
-    return (
-        <div className="space-y-3">
-            <FormLabel>Answer Options</FormLabel>
-            <div className="grid md:grid-cols-2 gap-2">
-                {optionFields.map((field, index) => (
-                    <FormField
-                        key={field.id}
-                        control={control}
-                        name={`questions.${questionIndex}.options.${index}`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormControl>
-                                    <div className="flex items-center gap-2">
-                                        <Input {...field} value={field.value || ''} placeholder={`Option ${index + 1}`} />
-                                        {optionFields.length > 2 && (
-                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                        )}
-                                    </div>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                ))}
-            </div>
-            {optionFields.length < 5 && (
-                <Button type="button" variant="outline" size="sm" onClick={() => appendOption("")}>Add Option</Button>
-            )}
-        </div>
-    );
-}
-
 export default function AdminCoursesPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
@@ -97,20 +58,17 @@ export default function AdminCoursesPage() {
     const [typeFilter, setTypeFilter] = React.useState<CourseType | "all">("all");
     const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("all");
 
-
     const form = useForm<CourseFormValues>({
         resolver: zodResolver(courseFormSchema),
         defaultValues: {
             title: "", description: "", category: undefined, courseType: undefined,
             referenceBody: "", duration: "", mandatory: true, published: false, imageHint: "",
             chapters: [{ title: "" }], quizTitle: "",
-            passingThreshold: 80, certificateExpiryDays: 365,
-            questions: [{ questionText: "", options: ["", "", "", ""], correctAnswer: "" }]
+            passingThreshold: 80, certificateExpiryDays: 365
         },
     });
 
     const { fields: chapterFields, append: appendChapter, remove: removeChapter } = useFieldArray({ control: form.control, name: "chapters" });
-    const { fields: questionFields, append: appendQuestion, remove: removeQuestion } = useFieldArray({ control: form.control, name: "questions" });
 
     const fetchCourses = React.useCallback(async () => {
         setIsLoading(true);
@@ -202,7 +160,6 @@ export default function AdminCoursesPage() {
                     passingThreshold: certRuleData.passingThreshold,
                     certificateExpiryDays: certRuleData.expiryDurationDays,
                     chapters: courseToEdit.chapters,
-                    questions: [], 
                 });
             } catch (error) {
                 toast({ title: "Error", description: "Could not load course data for editing.", variant: "destructive"});
@@ -216,7 +173,6 @@ export default function AdminCoursesPage() {
                 referenceBody: "", duration: "", mandatory: true, published: false, imageHint: "",
                 chapters: [{ title: "" }], quizTitle: "",
                 passingThreshold: 80, certificateExpiryDays: 365,
-                questions: [{ questionText: "", options: ["", "", "", ""], correctAnswer: "" }]
             });
         }
         setIsManageDialogOpen(true);
@@ -247,7 +203,6 @@ export default function AdminCoursesPage() {
                     toast({ title: "AI Image Failed", description: "Could not generate AI image, continuing without it.", variant: "default" });
                 }
             }
-
 
             if (isEditMode && currentCourse) {
                 const quizRef = doc(db, "quizzes", currentCourse.quizId);
@@ -289,17 +244,10 @@ export default function AdminCoursesPage() {
 
                 batch.set(quizRef, { courseId: courseRef.id, title: data.quizTitle, createdAt: serverTimestamp() });
                 batch.set(certRuleRef, { courseId: courseRef.id, passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays, createdAt: serverTimestamp() });
-
-                data.questions.forEach(q => {
-                    if (q.questionText.trim() !== "") {
-                        const questionRef = doc(collection(db, "questions"));
-                        batch.set(questionRef, { ...q, quizId: quizRef.id, questionType: 'mcq', createdAt: serverTimestamp() });
-                    }
-                });
                 
                 await batch.commit();
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'CREATE_COURSE', entityType: "COURSE", entityId: courseRef.id, details: { title: data.title }});
-                toast({ title: "Course Created", description: `"${data.title}" has been saved successfully.` });
+                toast({ title: "Course Created", description: `"${data.title}" has been saved. You can now add questions in Quiz Management.` });
             }
 
             fetchCourses();
@@ -398,7 +346,7 @@ export default function AdminCoursesPage() {
                                     </TableCell>
                                     <TableCell className="space-x-1">
                                         <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(course)} title="Edit Course Details"><Edit className="h-4 w-4" /></Button>
-                                        <Button variant="ghost" size="icon" asChild title="Manage Quiz Questions"><Link href={`/admin/quizzes/${course.quizId}`}><CheckSquare className="h-4 w-4"/></Link></Button>
+                                        <Button variant="ghost" size="icon" asChild title="Manage Quiz Questions"><Link href={`/admin/quizzes/${course.quizId}`}><FileQuestion className="h-4 w-4"/></Link></Button>
                                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title="Delete Course" onClick={() => { setCourseToDelete(course); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                                     </TableCell>
                                 </TableRow>
@@ -413,7 +361,7 @@ export default function AdminCoursesPage() {
                 <DialogContent className="max-w-4xl">
                     <DialogHeader>
                         <DialogTitle>{isEditMode ? "Edit Course" : "Create New Course"}</DialogTitle>
-                        <DialogDescription>{isEditMode ? "Update course details below. Chapters and questions are managed separately." : "Fill out the details for the new course, chapters, and quiz questions."}</DialogDescription>
+                        <DialogDescription>{isEditMode ? "Update course details below." : "Fill out the details for the new course, chapters, and quiz."}</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleFormSubmit)}>
@@ -454,28 +402,9 @@ export default function AdminCoursesPage() {
                                          </div>
                                     </div>
                                     
-                                    {!isEditMode && <>
-                                    <Separator />
-                                    <div className="space-y-4">
-                                        <FormLabel className="font-semibold text-base flex items-center gap-2"><FileQuestion/>Quiz Questions</FormLabel>
-                                        {questionFields.map((questionField, qIndex) => (
-                                            <div key={questionField.id} className="space-y-3 p-4 border rounded-md relative">
-                                                <Button type="button" variant="destructive" size="icon" className="absolute -top-3 -right-3 h-7 w-7" onClick={() => removeQuestion(qIndex)}><Trash2 className="h-4 w-4" /></Button>
-                                                <FormField control={form.control} name={`questions.${qIndex}.questionText`} render={({ field }) => <FormItem><FormLabel>Question {qIndex + 1}</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>} />
-                                                
-                                                <QuestionOptionsManager control={form.control} questionIndex={qIndex} />
-
-                                                <FormField control={form.control} name={`questions.${qIndex}.correctAnswer`} render={({ field }) => <FormItem><FormLabel>Correct Answer</FormLabel><Select onValueChange={field.onChange} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select the correct option" /></SelectTrigger></FormControl><SelectContent>{form.watch(`questions.${qIndex}.options`).filter(o => o?.trim() !== "").map((opt, optIndex) => <SelectItem key={`${opt}-${optIndex}`} value={opt}>{opt}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
-                                            </div>
-                                        ))}
-                                        <Button type="button" variant="outline" size="sm" onClick={() => appendQuestion({ questionText: "", options: ["", "", "", ""], correctAnswer: "" })}>Add Question</Button>
+                                    <div className="p-3 bg-muted/50 rounded-md text-sm text-muted-foreground">
+                                       Quiz questions are managed separately after course creation. Go to the <Link href={`/admin/quizzes`} className="text-primary underline">Quiz Management</Link> page to add questions to this course's quiz.
                                     </div>
-                                    </>}
-                                     {isEditMode && (
-                                        <div className="p-3 bg-muted/50 rounded-md text-sm text-muted-foreground">
-                                           Questions for this quiz can be managed from the <Link href={`/admin/quizzes/${currentCourse?.quizId}`} className="text-primary underline">quiz management page</Link>.
-                                        </div>
-                                    )}
                                 </div>
                             </ScrollArea>
                             <DialogFooter className="mt-4 pt-4 border-t">
