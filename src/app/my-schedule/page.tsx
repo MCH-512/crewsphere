@@ -18,6 +18,8 @@ import { type StoredFlight } from "@/schemas/flight-schema";
 import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode, type Airport } from "@/services/airport-service";
 import { type UserActivity } from "@/schemas/user-activity-schema";
+import Link from 'next/link';
+
 
 // --- Data Structures ---
 interface FlightWithCrewDetails extends StoredFlight {
@@ -40,7 +42,7 @@ const activityConfig: Record<UserActivity['activityType'], { icon: React.Element
 };
 
 // --- Sub-components ---
-const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity }: { isOpen: boolean, onOpenChange: (open: boolean) => void, activity: SheetActivityDetails | null }) => {
+const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authUser }: { isOpen: boolean, onOpenChange: (open: boolean) => void, activity: SheetActivityDetails | null, isLoading: boolean, authUser: User | null }) => {
     if (!isOpen) return null;
 
     const renderFlightDetails = (data: FlightWithCrewDetails) => (
@@ -53,7 +55,12 @@ const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity }: { isOpen: bool
                     const members = data.crew.filter(c => c.role === role);
                     if (members.length === 0) return null;
                     return (<div key={role}><h4 className="font-semibold capitalize mt-3 mb-2 text-primary">{role}</h4><div className="space-y-2">{members.map(member => (<div key={member.uid} className="flex items-center gap-2 text-sm">
-                        <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar><span>{member.displayName}</span>
+                        <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                        {authUser?.role === 'admin' ? (
+                            <Link href={`/admin/users/${member.uid}`} className="hover:underline text-primary">{member.displayName}</Link>
+                        ) : (
+                            <span>{member.displayName}</span>
+                        )}
                     </div>))}</div></div>);})}
                 </CardContent>
             </Card>
@@ -71,16 +78,30 @@ const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity }: { isOpen: bool
                 </Card>
                 <Card><CardHeader className="pb-2"><CardDescription>Attendees ({data.attendees.length})</CardDescription></CardHeader>
                     <CardContent><div className="space-y-2 max-h-60 overflow-y-auto">{data.attendees.map(member => (
-                        <div key={member.uid} className="flex items-center gap-2 text-sm"><Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar><span>{member.displayName} ({member.role})</span></div>))}
+                        <div key={member.uid} className="flex items-center gap-2 text-sm">
+                          <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                           {authUser?.role === 'admin' ? (
+                                <Link href={`/admin/users/${member.uid}`} className="hover:underline text-primary">{member.displayName} ({member.role})</Link>
+                            ) : (
+                                <span>{member.displayName} ({member.role})</span>
+                            )}
+                        </div>))}
                     </div></CardContent>
                 </Card>
             </div>
         );
     }
 
-    return (<Sheet open={isOpen} onOpenChange={onOpenChange}><SheetContent className="w-full sm:max-w-md"><SheetHeader><SheetTitle>Activity Details</SheetTitle><SheetDescription>Information about the selected event.</SheetDescription></SheetHeader><div className="py-4">
-        {activity ? (activity.type === 'flight' ? renderFlightDetails(activity.data) : renderTrainingDetails(activity.data)) : <div className="text-center text-muted-foreground py-10"><p>Could not load activity details.</p></div>}
-    </div></SheetContent></Sheet>);
+    return (
+      <Sheet open={isOpen} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:max-w-md">
+            <SheetHeader><SheetTitle>Activity Details</SheetTitle><SheetDescription>{isLoading ? "Loading details..." : "Information about the selected event."}</SheetDescription></SheetHeader>
+            <div className="py-4">
+                {isLoading ? (<div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin" /></div>) : activity ? (activity.type === 'flight' ? renderFlightDetails(activity.data) : renderTrainingDetails(activity.data)) : <div className="text-center text-muted-foreground py-10"><p>Could not load activity details.</p></div>}
+            </div>
+        </SheetContent>
+      </Sheet>
+    );
 };
 
 const ActivityCard = ({ activity, onActivityClick }: { activity: UserActivity; onActivityClick: (activity: UserActivity) => void }) => {
@@ -101,14 +122,11 @@ export default function MySchedulePage() {
     const [currentMonth, setCurrentMonth] = React.useState(new Date());
     const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(new Date());
     
-    // State for pre-loaded details
-    const [userMap, setUserMap] = React.useState<Map<string, User>>(new Map());
-    const [flightDetailsMap, setFlightDetailsMap] = React.useState<Map<string, FlightWithCrewDetails>>(new Map());
-    const [trainingDetailsMap, setTrainingDetailsMap] = React.useState<Map<string, TrainingWithAttendeesDetails>>(new Map());
-
     // State for the details sheet
     const [sheetActivity, setSheetActivity] = React.useState<SheetActivityDetails | null>(null);
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+    const [isSheetLoading, setIsSheetLoading] = React.useState(false);
+
 
     const fetchActivities = React.useCallback(async (month: Date) => {
         if (!user) return;
@@ -122,82 +140,46 @@ export default function MySchedulePage() {
             const fetchedActivities = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserActivity));
             fetchedActivities.sort((a, b) => a.date.toMillis() - b.date.toMillis());
             setActivities(fetchedActivities);
-
-            // Now pre-fetch details for all activities in the month
-            const flightIds = new Set(fetchedActivities.filter(a => a.flightId).map(a => a.flightId!));
-            const trainingIds = new Set(fetchedActivities.filter(a => a.trainingSessionId).map(a => a.trainingSessionId!));
-            const allUserIds = new Set<string>();
-
-            const newFlightDetailsMap = new Map<string, FlightWithCrewDetails>();
-            const newTrainingDetailsMap = new Map<string, TrainingWithAttendeesDetails>();
-            
-            const flightPromises = Array.from(flightIds).map(id => getDoc(doc(db, "flights", id)));
-            const trainingPromises = Array.from(trainingIds).map(id => getDoc(doc(db, "trainingSessions", id)));
-            
-            const flightSnaps = await Promise.all(flightPromises);
-            const trainingSnaps = await Promise.all(trainingPromises);
-
-            flightSnaps.forEach(snap => {
-                if(snap.exists()) {
-                    const data = { id: snap.id, ...snap.data() } as StoredFlight;
-                    if (data.allCrewIds) {
-                        data.allCrewIds.forEach(uid => allUserIds.add(uid));
-                    }
-                    newFlightDetailsMap.set(snap.id, data as FlightWithCrewDetails);
-                }
-            });
-            trainingSnaps.forEach(snap => {
-                if(snap.exists()) {
-                    const data = { id: snap.id, ...snap.data() } as StoredTrainingSession;
-                    if (data.attendeeIds) {
-                        data.attendeeIds.forEach(uid => allUserIds.add(uid));
-                    }
-                    newTrainingDetailsMap.set(snap.id, data as TrainingWithAttendeesDetails);
-                }
-            });
-            
-            // Fetch all required users in one go
-            const newUserMap = new Map(userMap);
-            const usersToFetch = Array.from(allUserIds).filter(uid => !newUserMap.has(uid));
-            if (usersToFetch.length > 0) {
-                const userPromises = usersToFetch.map(uid => getDoc(doc(db, "users", uid)));
-                const userSnaps = await Promise.all(userPromises);
-                userSnaps.forEach(snap => {
-                    if(snap.exists()) newUserMap.set(snap.id, {uid: snap.id, ...snap.data()} as User);
-                });
-                setUserMap(newUserMap);
-            }
-            
-            // Populate crew/attendee details
-            newFlightDetailsMap.forEach(flight => {
-                flight.crew = flight.allCrewIds?.map(uid => newUserMap.get(uid)!).filter(Boolean) || [];
-            });
-            newTrainingDetailsMap.forEach(session => {
-                session.attendees = session.attendeeIds?.map(uid => newUserMap.get(uid)!).filter(Boolean) || [];
-            });
-
-            setFlightDetailsMap(newFlightDetailsMap);
-            setTrainingDetailsMap(newTrainingDetailsMap);
-
         } catch (error) {
             console.error("Error fetching schedule:", error);
         } finally {
             setIsLoading(false);
         }
-    }, [user, userMap]);
+    }, [user]);
 
     React.useEffect(() => {
         if (!authLoading && user) fetchActivities(currentMonth);
         else if (!authLoading) router.push('/login');
     }, [user, authLoading, router, fetchActivities, currentMonth]);
 
-    const handleShowActivityDetails = (activity: UserActivity) => {
-        if (activity.flightId && flightDetailsMap.has(activity.flightId)) {
-            setSheetActivity({ type: 'flight', data: flightDetailsMap.get(activity.flightId)! });
-            setIsSheetOpen(true);
-        } else if (activity.trainingSessionId && trainingDetailsMap.has(activity.trainingSessionId)) {
-            setSheetActivity({ type: 'training', data: trainingDetailsMap.get(activity.trainingSessionId)! });
-            setIsSheetOpen(true);
+    const handleShowActivityDetails = async (activity: UserActivity) => {
+        setIsSheetOpen(true);
+        setIsSheetLoading(true);
+        setSheetActivity(null);
+        try {
+            if (activity.flightId) {
+                const flightSnap = await getDoc(doc(db, "flights", activity.flightId));
+                if (!flightSnap.exists()) throw new Error("Flight details not found.");
+                const flight = { id: flightSnap.id, ...flightSnap.data() } as StoredFlight;
+                const crewPromises = flight.allCrewIds.map(uid => getDoc(doc(db, "users", uid)));
+                const crewDocs = await Promise.all(crewPromises);
+                const crew = crewDocs.map(snap => snap.exists() ? { uid: snap.id, ...snap.data() } as User : null).filter(Boolean) as User[];
+                const [depAirport, arrAirport] = await Promise.all([getAirportByCode(flight.departureAirport), getAirportByCode(flight.arrivalAirport)]);
+                setSheetActivity({ type: 'flight', data: { ...flight, departureAirportInfo: depAirport, arrivalAirportInfo: arrAirport, crew } });
+            } else if (activity.trainingSessionId) {
+                const sessionSnap = await getDoc(doc(db, "trainingSessions", activity.trainingSessionId));
+                if (!sessionSnap.exists()) throw new Error("Training session not found.");
+                const session = { id: sessionSnap.id, ...sessionSnap.data() } as StoredTrainingSession;
+                const attendeePromises = session.attendeeIds.map(uid => getDoc(doc(db, "users", uid)));
+                const attendeeDocs = await Promise.all(attendeePromises);
+                const attendees = attendeeDocs.map(snap => snap.exists() ? { uid: snap.id, ...snap.data() } as User : null).filter(Boolean) as User[];
+                setSheetActivity({ type: 'training', data: { ...session, attendees } });
+            }
+        } catch(err) {
+            console.error("Error fetching activity details:", err);
+            setIsSheetOpen(false);
+        } finally {
+            setIsSheetLoading(false);
         }
     };
 
@@ -274,7 +256,7 @@ export default function MySchedulePage() {
                     </div>
                 </div>
             </Card>
-            <ActivityDetailsSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} activity={sheetActivity} />
+            <ActivityDetailsSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} activity={sheetActivity} isLoading={isSheetLoading} authUser={user} />
         </div>
     );
 }
