@@ -21,6 +21,7 @@ export const mainNavConfig = {
       title: "Operations",
       items: [
         { href: "/purser-reports", title: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin', 'instructor'] },
+        { href: "/timeline", title: "Global Timeline", icon: CalendarIcon },
         { href: "/flight-swap", title: "Swap Board", icon: ArrowRightLeft },
         { href: "/my-swaps", title: "My Swaps", icon: Handshake },
         { href: "/my-logbook", title: "My Logbook", icon: NotebookPen },

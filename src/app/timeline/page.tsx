@@ -93,7 +93,7 @@ const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authU
                 <CardHeader className="pb-2"><CardDescription>Training Session</CardDescription><CardTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5"/> {data.title}</CardTitle></CardHeader>
                 <CardContent className="text-sm space-y-1">
                     <p><strong>Location:</strong> {data.location}</p>
-                    <p><strong>Time:</strong> {format(new Date(data.sessionDateTimeUTC), "PPP HH:mm")} UTC</p>
+                    <p><strong>Time:</strong> {format(data.sessionDateTimeUTC.toDate(), "PPP HH:mm")} UTC</p>
                     <p><strong>Description:</strong> {data.description}</p>
                 </CardContent>
             </Card>
@@ -180,7 +180,7 @@ export default function TimelinePage() {
 
         try {
             const flightsQuery = query(collection(db, "flights"), where("scheduledDepartureDateTimeUTC", ">=", start.toISOString()), where("scheduledDepartureDateTimeUTC", "<=", end.toISOString()));
-            const trainingQuery = query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", start.toISOString()), where("sessionDateTimeUTC", "<=", end.toISOString()));
+            const trainingQuery = query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", start), where("sessionDateTimeUTC", "<=", end));
             
             const [flightsSnap, trainingSnap] = await Promise.all([getDocs(flightsQuery), getDocs(trainingQuery)]);
 
@@ -205,7 +205,7 @@ export default function TimelinePage() {
                 return { 
                     id: doc.id, 
                     type: 'training', 
-                    date: Timestamp.fromDate(new Date(data.sessionDateTimeUTC)), 
+                    date: data.sessionDateTimeUTC, 
                     title: `Training: ${data.title}`, 
                     description: `Location: ${data.location}`,
                     details: {
