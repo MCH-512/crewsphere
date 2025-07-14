@@ -67,21 +67,20 @@ const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authU
             </Card>
             <Card>
                 <CardHeader className="pb-2"><CardDescription>Assigned Crew ({data.crew.length})</CardDescription></CardHeader>
-                <CardContent>
-                    {['purser', 'pilote', 'cabin crew', 'instructor', 'stagiaire'].map(role => {
-                        const members = data.crew.filter(c => c.role === role);
-                        if (members.length === 0) return null;
-                        return (
-                            <div key={role}><h4 className="font-semibold capitalize mt-3 mb-2 text-primary">{role}</h4><div className="space-y-2">{members.map(member => (<div key={member.uid} className="flex items-center gap-2 text-sm">
-                                <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
-                                {authUser?.role === 'admin' ? (
-                                    <Link href={`/admin/users/${member.uid}`} className="hover:underline text-primary">{member.displayName}</Link>
-                                ) : (
-                                    <span>{member.displayName}</span>
-                                )}
-                            </div>))}</div></div>
-                        );
-                    })}
+                <CardContent>{['purser', 'pilote', 'cabin crew', 'instructor', 'stagiaire'].map(role => {
+                    const members = data.crew.filter(c => c.role === role);
+                    if (members.length === 0) return null;
+                    return (
+                        <div key={role}><h4 className="font-semibold capitalize mt-3 mb-2 text-primary">{role}</h4><div className="space-y-2">{members.map(member => (<div key={member.uid} className="flex items-center gap-2 text-sm">
+                            <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                            {authUser?.role === 'admin' ? (
+                                <Link href={`/admin/users/${member.uid}`} className="hover:underline text-primary">{member.displayName}</Link>
+                            ) : (
+                                <span>{member.displayName}</span>
+                            )}
+                        </div>))}</div></div>
+                    );
+                })}
                 </CardContent>
             </Card>
         </div>
@@ -263,7 +262,7 @@ export default function TimelinePage() {
         const dayButton = (
             <div className="relative h-full w-full flex items-center justify-center">
                 <p>{format(props.date, 'd')}</p>
-                {dayActivities.length > 0 && <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">{dayActivities.slice(0, 3).map(activity => (<div key={activity.id} className={cn("h-1.5 w-1.5 rounded-full", activityConfig[activity.type]?.dotColor)} />))}</div>}
+                {dayActivities.length > 0 && <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">{Array.from(new Set(dayActivities.map(a => activityConfig[a.type].dotColor))).slice(0, 3).map((color, i) => (<div key={i} className={cn("h-1.5 w-1.5 rounded-full", color)} />))}</div>}
             </div>
         );
         return props.active ? <button type="button" className="w-full h-full">{dayButton}</button> : dayButton;
