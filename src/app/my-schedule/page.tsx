@@ -59,18 +59,25 @@ const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity }: { isOpen: bool
             </Card>
         </div>
     );
-    const renderTrainingDetails = (data: TrainingWithAttendeesDetails) => (
-        <div className="space-y-4">
-            <Card><CardHeader className="pb-2"><CardDescription>Training Session</CardDescription><CardTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5"/> {data.title}</CardTitle></CardHeader>
-                <CardContent className="text-sm space-y-1"><p><strong>Location:</strong> {data.location}</p><p><strong>Time:</strong> {format(data.sessionDateTimeUTC.toDate(), "PPP HH:mm")} UTC</p><p><strong>Description:</strong> {data.description}</p></CardContent>
-            </Card>
-            <Card><CardHeader className="pb-2"><CardDescription>Attendees ({data.attendees.length})</CardDescription></CardHeader>
-                <CardContent><div className="space-y-2 max-h-60 overflow-y-auto">{data.attendees.map(member => (
-                    <div key={member.uid} className="flex items-center gap-2 text-sm"><Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar><span>{member.displayName} ({member.role})</span></div>))}
-                </div></CardContent>
-            </Card>
-        </div>
-    );
+    const renderTrainingDetails = (data: TrainingWithAttendeesDetails) => {
+        const sessionDate = typeof data.sessionDateTimeUTC === 'string'
+            ? new Date(data.sessionDateTimeUTC)
+            : data.sessionDateTimeUTC.toDate();
+            
+        return (
+            <div className="space-y-4">
+                <Card><CardHeader className="pb-2"><CardDescription>Training Session</CardDescription><CardTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5"/> {data.title}</CardTitle></CardHeader>
+                    <CardContent className="text-sm space-y-1"><p><strong>Location:</strong> {data.location}</p><p><strong>Time:</strong> {format(sessionDate, "PPP HH:mm")} UTC</p><p><strong>Description:</strong> {data.description}</p></CardContent>
+                </Card>
+                <Card><CardHeader className="pb-2"><CardDescription>Attendees ({data.attendees.length})</CardDescription></CardHeader>
+                    <CardContent><div className="space-y-2 max-h-60 overflow-y-auto">{data.attendees.map(member => (
+                        <div key={member.uid} className="flex items-center gap-2 text-sm"><Avatar className="h-6 w-6"><AvatarImage src={member.photoURL || undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar><span>{member.displayName} ({member.role})</span></div>))}
+                    </div></CardContent>
+                </Card>
+            </div>
+        );
+    }
+
     return (<Sheet open={isOpen} onOpenChange={onOpenChange}><SheetContent className="w-full sm:max-w-md"><SheetHeader><SheetTitle>Activity Details</SheetTitle><SheetDescription>Information about the selected event.</SheetDescription></SheetHeader><div className="py-4">
         {activity ? (activity.type === 'flight' ? renderFlightDetails(activity.data) : renderTrainingDetails(activity.data)) : <div className="text-center text-muted-foreground py-10"><p>Could not load activity details.</p></div>}
     </div></SheetContent></Sheet>);
