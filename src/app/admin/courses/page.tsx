@@ -429,7 +429,7 @@ export default function AdminCoursesPage() {
                                                         <FormField key={oIndex} control={form.control} name={`questions.${qIndex}.options.${oIndex}`} render={({ field }) => <FormItem><FormLabel>Option {oIndex + 1}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
                                                     ))}
                                                 </div>
-                                                <FormField control={form.control} name={`questions.${qIndex}.correctAnswer`} render={({ field }) => <FormItem><FormLabel>Correct Answer</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select the correct option" /></SelectTrigger></FormControl><SelectContent>{form.watch(`questions.${qIndex}.options`).filter(o => o?.trim() !== "").map((opt, optIndex) => <SelectItem key={optIndex} value={opt}>{opt}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                                <FormField control={form.control} name={`questions.${qIndex}.correctAnswer`} render={({ field }) => <FormItem><FormLabel>Correct Answer</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select the correct option" /></SelectTrigger></FormControl><SelectContent>{form.watch(`questions.${qIndex}.options`).filter(o => o?.trim() !== "").map((opt, optIndex) => <SelectItem key={`${opt}-${optIndex}`} value={opt}>{opt}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                             </div>
                                         ))}
                                         <Button type="button" variant="outline" size="sm" onClick={() => appendQuestion({ questionText: "", options: ["", "", ""], correctAnswer: "" })}>Add Question</Button>
@@ -468,5 +468,3 @@ export default function AdminCoursesPage() {
         </div>
     );
 }
-
-    
