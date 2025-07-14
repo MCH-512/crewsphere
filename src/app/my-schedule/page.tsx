@@ -17,7 +17,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { type StoredFlight } from "@/schemas/flight-schema";
 import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode, type Airport } from "@/services/airport-service";
-import type { DayContentProps } from "react-day-picker";
 import { type UserActivity } from "@/schemas/user-activity-schema";
 
 // --- Data Structures ---
@@ -194,21 +193,40 @@ export default function MySchedulePage() {
             setIsSheetOpen(true);
         }
     };
-    
-    const DayFooter = ({ date }: { date: Date }) => {
-        const dayActivities = activities.filter(a => isSameDay(a.date.toDate(), date));
-        if (dayActivities.length === 0) return null;
-        return (
-            <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">
-                {dayActivities.slice(0, 3).map(activity => (
-                    <div key={activity.id} className={cn("h-1.5 w-1.5 rounded-full", activityConfig[activity.activityType]?.dotColor)} />
-                ))}
-            </div>
-        );
+
+    const selectedDayActivities = activities.filter(activity => selectedDay && isSameDay(activity.date.toDate(), selectedDay));
+
+    const activityModifiers = {
+        hasActivity: activities.map(a => a.date.toDate()),
     };
+    
+    const activityDotStyles = activities.reduce((acc, activity) => {
+        const dateKey = format(activity.date.toDate(), 'yyyy-MM-dd');
+        if (!acc[dateKey]) {
+            acc[dateKey] = new Set();
+        }
+        acc[dateKey].add(activityConfig[activity.activityType].dotColor);
+        return acc;
+    }, {} as Record<string, Set<string>>);
 
-    const selectedDayActivities = activities.filter(activity => selectedDay && activity.date.toDate().toDateString() === selectedDay.toDateString());
 
+    const footer = selectedDay ? (
+        <div className="p-4 pt-0">
+          <h3 className="text-lg font-semibold mb-2 text-center md:text-left">{format(selectedDay, "EEEE, PPP")}</h3>
+          <div className="max-h-48 overflow-y-auto pr-2">
+            {isLoading ? (
+              <div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+            ) : selectedDayActivities.length > 0 ? (
+              selectedDayActivities.map(activity => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} />)
+            ) : (
+              <p className="text-sm text-muted-foreground text-center p-4">No activities scheduled for this day.</p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <p className="p-4 text-center text-sm text-muted-foreground">Please pick a day.</p>
+      );
+    
     if (authLoading || (!user && !authLoading)) { return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>; }
 
     return (
@@ -216,28 +234,39 @@ export default function MySchedulePage() {
             <AnimatedCard>
                 <Card className="shadow-lg"><CardHeader><CardTitle className="text-2xl font-headline flex items-center"><CalendarIcon className="mr-3 h-7 w-7 text-primary" />My Schedule</CardTitle><CardDescription>View your monthly flight, training, and leave schedule. Click on a flight or training for more details.</CardDescription></CardHeader></Card>
             </AnimatedCard>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                <AnimatedCard delay={0.1} className="lg:col-span-3"><Card className="shadow-sm">
-                <Calendar
-                    mode="single"
-                    selected={selectedDay}
-                    onSelect={setSelectedDay}
-                    onMonthChange={setCurrentMonth}
-                    components={{
-                        Day: (props) => (
-                           <div className="relative">
-                             <DayContentProps {...props} />
-                             <DayFooter date={props.date} />
-                           </div>
-                         ),
-                    }}
-                    className="p-2 sm:p-4"
-                />
-                </Card></AnimatedCard>
-                <AnimatedCard delay={0.15} className="lg:col-span-2"><Card className="shadow-sm h-full"><CardHeader><CardTitle className="text-lg">{selectedDay ? format(selectedDay, "EEEE, PPP") : "Select a day"}</CardTitle></CardHeader>
-                    <CardContent>{isLoading ? (<div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>) : selectedDayActivities.length > 0 ? (selectedDayActivities.map(activity => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} />)) : (<p className="text-sm text-muted-foreground text-center p-4">No activities scheduled for this day.</p>)}</CardContent>
-                </Card></AnimatedCard>
-            </div>
+            <Card className="shadow-sm">
+                <div className="grid grid-cols-1 lg:grid-cols-2">
+                    <Calendar
+                        mode="single"
+                        selected={selectedDay}
+                        onSelect={setSelectedDay}
+                        onMonthChange={setCurrentMonth}
+                        modifiers={activityModifiers}
+                        components={{
+                            DayContent: ({ date }) => {
+                                const dateKey = format(date, 'yyyy-MM-dd');
+                                const colors = activityDotStyles[dateKey];
+                                return (
+                                    <div className="relative flex h-full w-full items-center justify-center">
+                                        <span>{format(date, 'd')}</span>
+                                        {colors && (
+                                            <div className="absolute bottom-1.5 flex gap-1">
+                                                {Array.from(colors).slice(0, 3).map((color, i) => (
+                                                    <div key={i} className={cn("h-1.5 w-1.5 rounded-full", color)} />
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            },
+                        }}
+                        className="p-2 sm:p-4 border-b lg:border-r lg:border-b-0"
+                    />
+                    <div className="p-4">
+                        {footer}
+                    </div>
+                </div>
+            </Card>
             <ActivityDetailsSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} activity={sheetActivity} />
         </div>
     );
