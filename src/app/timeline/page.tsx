@@ -130,11 +130,7 @@ const ActivityCard = ({ activity, onActivityClick, authUser }: { activity: Timel
             {activity.details.purserName && (
                 <div className="flex items-center gap-1">
                     Purser:
-                    {authUser?.role === 'admin' ? (
-                        <Link href={`/admin/users/${activity.id}`} onClick={(e) => e.stopPropagation()} className="font-medium text-primary hover:underline">{activity.details.purserName}</Link>
-                    ) : (
-                        <span className="font-medium">{activity.details.purserName}</span>
-                    )}
+                    <span className="font-medium">{activity.details.purserName}</span>
                 </div>
             )}
             {(activity.details.crewCount || activity.details.attendeeCount) && (
