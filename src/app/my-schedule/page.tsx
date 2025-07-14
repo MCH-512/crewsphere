@@ -134,14 +134,18 @@ export default function MySchedulePage() {
             flightSnaps.forEach(snap => {
                 if(snap.exists()) {
                     const data = { id: snap.id, ...snap.data() } as StoredFlight;
-                    data.allCrewIds.forEach(uid => allUserIds.add(uid));
+                    if (data.allCrewIds) {
+                        data.allCrewIds.forEach(uid => allUserIds.add(uid));
+                    }
                     newFlightDetailsMap.set(snap.id, data as FlightWithCrewDetails);
                 }
             });
             trainingSnaps.forEach(snap => {
                 if(snap.exists()) {
                     const data = { id: snap.id, ...snap.data() } as StoredTrainingSession;
-                    data.attendeeIds.forEach(uid => allUserIds.add(uid));
+                    if (data.attendeeIds) {
+                        data.attendeeIds.forEach(uid => allUserIds.add(uid));
+                    }
                     newTrainingDetailsMap.set(snap.id, data as TrainingWithAttendeesDetails);
                 }
             });
@@ -160,10 +164,10 @@ export default function MySchedulePage() {
             
             // Populate crew/attendee details
             newFlightDetailsMap.forEach(flight => {
-                flight.crew = flight.allCrewIds.map(uid => newUserMap.get(uid)!).filter(Boolean);
+                flight.crew = flight.allCrewIds?.map(uid => newUserMap.get(uid)!).filter(Boolean) || [];
             });
             newTrainingDetailsMap.forEach(session => {
-                session.attendees = session.attendeeIds.map(uid => newUserMap.get(uid)!).filter(Boolean);
+                session.attendees = session.attendeeIds?.map(uid => newUserMap.get(uid)!).filter(Boolean) || [];
             });
 
             setFlightDetailsMap(newFlightDetailsMap);
