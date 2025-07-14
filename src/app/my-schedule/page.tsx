@@ -9,7 +9,7 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, Timestamp, doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -195,13 +195,16 @@ export default function MySchedulePage() {
         }
     };
     
-    const ActivityDayContent = (props: DayContentProps) => {
-        const dayActivities = activities.filter(a => a.date.toDate().toDateString() === props.date.toDateString());
-        const dayButton = (<div className="relative h-full w-full flex items-center justify-center"><p>{format(props.date, 'd')}</p>
-            {dayActivities.length > 0 && <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">{dayActivities.slice(0, 3).map(activity => (
-                <div key={activity.id} className={cn("h-1.5 w-1.5 rounded-full", activityConfig[activity.activityType]?.dotColor)} />))}</div>}
-        </div>);
-        return props.active ? <button>{dayButton}</button> : dayButton;
+    const DayFooter = ({ date }: { date: Date }) => {
+        const dayActivities = activities.filter(a => isSameDay(a.date.toDate(), date));
+        if (dayActivities.length === 0) return null;
+        return (
+            <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">
+                {dayActivities.slice(0, 3).map(activity => (
+                    <div key={activity.id} className={cn("h-1.5 w-1.5 rounded-full", activityConfig[activity.activityType]?.dotColor)} />
+                ))}
+            </div>
+        );
     };
 
     const selectedDayActivities = activities.filter(activity => selectedDay && activity.date.toDate().toDateString() === selectedDay.toDateString());
@@ -214,7 +217,23 @@ export default function MySchedulePage() {
                 <Card className="shadow-lg"><CardHeader><CardTitle className="text-2xl font-headline flex items-center"><CalendarIcon className="mr-3 h-7 w-7 text-primary" />My Schedule</CardTitle><CardDescription>View your monthly flight, training, and leave schedule. Click on a flight or training for more details.</CardDescription></CardHeader></Card>
             </AnimatedCard>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                <AnimatedCard delay={0.1} className="lg:col-span-3"><Card className="shadow-sm"><Calendar mode="single" selected={selectedDay} onSelect={setSelectedDay} onMonthChange={setCurrentMonth} components={{ Day: ActivityDayContent }} className="p-2 sm:p-4" /></Card></AnimatedCard>
+                <AnimatedCard delay={0.1} className="lg:col-span-3"><Card className="shadow-sm">
+                <Calendar
+                    mode="single"
+                    selected={selectedDay}
+                    onSelect={setSelectedDay}
+                    onMonthChange={setCurrentMonth}
+                    components={{
+                        Day: (props) => (
+                           <div className="relative">
+                             <DayContentProps {...props} />
+                             <DayFooter date={props.date} />
+                           </div>
+                         ),
+                    }}
+                    className="p-2 sm:p-4"
+                />
+                </Card></AnimatedCard>
                 <AnimatedCard delay={0.15} className="lg:col-span-2"><Card className="shadow-sm h-full"><CardHeader><CardTitle className="text-lg">{selectedDay ? format(selectedDay, "EEEE, PPP") : "Select a day"}</CardTitle></CardHeader>
                     <CardContent>{isLoading ? (<div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>) : selectedDayActivities.length > 0 ? (selectedDayActivities.map(activity => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} />)) : (<p className="text-sm text-muted-foreground text-center p-4">No activities scheduled for this day.</p>)}</CardContent>
                 </Card></AnimatedCard>
