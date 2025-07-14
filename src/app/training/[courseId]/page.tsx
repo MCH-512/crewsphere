@@ -8,12 +8,14 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, AlertTriangle, ArrowLeft, CheckCircle, Clock, BookOpen } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowLeft, CheckCircle, Clock, BookOpen, ListChecks } from "lucide-react";
 import { StoredCourse } from "@/schemas/course-schema";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 export default function CourseDetailPage() {
     const { user, loading: authLoading } = useAuth();
@@ -24,6 +26,7 @@ export default function CourseDetailPage() {
     const [course, setCourse] = React.useState<StoredCourse | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
+    const [readChapters, setReadChapters] = React.useState<string[]>([]);
 
     React.useEffect(() => {
         if (!courseId) return;
@@ -54,6 +57,14 @@ export default function CourseDetailPage() {
         fetchCourse();
     }, [courseId, user, authLoading, router]);
     
+    const handleChapterToggle = (chapterTitle: string) => {
+        setReadChapters(prev => 
+            prev.includes(chapterTitle) 
+                ? prev.filter(title => title !== chapterTitle)
+                : [...prev, chapterTitle]
+        );
+    };
+
     if (authLoading || isLoading) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
@@ -71,6 +82,9 @@ export default function CourseDetailPage() {
     if (!course) {
         return null;
     }
+
+    const allChaptersRead = readChapters.length === course.chapters.length;
+    const chaptersToReadCount = course.chapters.length - readChapters.length;
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
@@ -105,33 +119,44 @@ export default function CourseDetailPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Course Chapters</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><ListChecks className="h-6 w-6 text-primary"/>Course Chapters</CardTitle>
+                    <CardDescription>
+                        Mark each chapter as read to unlock the final quiz. 
+                        {chaptersToReadCount > 0 && ` You have ${chaptersToReadCount} chapter(s) left.`}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ul className="space-y-3">
                         {course.chapters.map((chapter, index) => (
-                            <li key={index} className="flex items-center gap-3 p-3 rounded-md bg-muted/50 border">
-                                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground font-bold text-sm shrink-0">
-                                    {index + 1}
-                                </div>
-                                <p className="font-medium">{chapter.title}</p>
-                            </li>
+                             <div key={index} className="flex items-center space-x-3 p-3 rounded-md border has-[:checked]:bg-green-100/80 dark:has-[:checked]:bg-green-900/30">
+                                <Checkbox 
+                                    id={`chapter-${index}`} 
+                                    onCheckedChange={() => handleChapterToggle(chapter.title)}
+                                    checked={readChapters.includes(chapter.title)}
+                                />
+                                <Label htmlFor={`chapter-${index}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                                   {index + 1}. {chapter.title}
+                                </Label>
+                            </div>
                         ))}
                     </ul>
                 </CardContent>
             </Card>
             
             <div className="flex justify-end">
-                 <Button size="lg" asChild>
+                 <Button size="lg" asChild disabled={!allChaptersRead}>
                     <Link href={`/training/quiz/${course.quizId}`}>
                         <CheckCircle className="mr-2 h-5 w-5" />
                         Start Quiz
                     </Link>
                 </Button>
             </div>
+             {!allChaptersRead && (
+                <p className="text-sm text-right text-muted-foreground -mt-4">
+                    Complete all chapters to enable the quiz.
+                </p>
+            )}
 
         </div>
     );
 }
-
-    
