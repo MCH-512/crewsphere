@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,44 @@ type CourseCategory = StoredCourse["category"];
 type CourseType = StoredCourse["courseType"];
 type StatusFilter = "all" | "published" | "draft";
 
+// A component for managing a single question's options
+const QuestionOptionsManager = ({ control, questionIndex }: { control: any, questionIndex: number }) => {
+    const { fields: optionFields, append: appendOption, remove: removeOption } = useFieldArray({
+        control,
+        name: `questions.${questionIndex}.options`,
+    });
+
+    return (
+        <div className="space-y-3">
+            <FormLabel>Answer Options</FormLabel>
+            <div className="grid md:grid-cols-2 gap-2">
+                {optionFields.map((field, index) => (
+                    <FormField
+                        key={field.id}
+                        control={control}
+                        name={`questions.${questionIndex}.options.${index}`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormControl>
+                                    <div className="flex items-center gap-2">
+                                        <Input {...field} value={field.value || ''} placeholder={`Option ${index + 1}`} />
+                                        {optionFields.length > 2 && (
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                        )}
+                                    </div>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                ))}
+            </div>
+            {optionFields.length < 5 && (
+                <Button type="button" variant="outline" size="sm" onClick={() => appendOption("")}>Add Option</Button>
+            )}
+        </div>
+    );
+}
 
 export default function AdminCoursesPage() {
     const { user, loading: authLoading } = useAuth();
@@ -67,7 +105,7 @@ export default function AdminCoursesPage() {
             referenceBody: "", duration: "", mandatory: true, published: false, imageHint: "",
             chapters: [{ title: "" }], quizTitle: "",
             passingThreshold: 80, certificateExpiryDays: 365,
-            questions: [{ questionText: "", options: ["", "", ""], correctAnswer: "" }]
+            questions: [{ questionText: "", options: ["", "", "", ""], correctAnswer: "" }]
         },
     });
 
@@ -178,7 +216,7 @@ export default function AdminCoursesPage() {
                 referenceBody: "", duration: "", mandatory: true, published: false, imageHint: "",
                 chapters: [{ title: "" }], quizTitle: "",
                 passingThreshold: 80, certificateExpiryDays: 365,
-                questions: [{ questionText: "", options: ["", "", ""], correctAnswer: "" }]
+                questions: [{ questionText: "", options: ["", "", "", ""], correctAnswer: "" }]
             });
         }
         setIsManageDialogOpen(true);
@@ -424,15 +462,13 @@ export default function AdminCoursesPage() {
                                             <div key={questionField.id} className="space-y-3 p-4 border rounded-md relative">
                                                 <Button type="button" variant="destructive" size="icon" className="absolute -top-3 -right-3 h-7 w-7" onClick={() => removeQuestion(qIndex)}><Trash2 className="h-4 w-4" /></Button>
                                                 <FormField control={form.control} name={`questions.${qIndex}.questionText`} render={({ field }) => <FormItem><FormLabel>Question {qIndex + 1}</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>} />
-                                                <div className="grid md:grid-cols-2 gap-2">
-                                                    {[0, 1, 2, 3].map(oIndex => (
-                                                        <FormField key={oIndex} control={form.control} name={`questions.${qIndex}.options.${oIndex}`} render={({ field }) => <FormItem><FormLabel>Option {oIndex + 1}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                                                    ))}
-                                                </div>
-                                                <FormField control={form.control} name={`questions.${qIndex}.correctAnswer`} render={({ field }) => <FormItem><FormLabel>Correct Answer</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select the correct option" /></SelectTrigger></FormControl><SelectContent>{form.watch(`questions.${qIndex}.options`).filter(o => o?.trim() !== "").map((opt, optIndex) => <SelectItem key={`${opt}-${optIndex}`} value={opt}>{opt}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                                
+                                                <QuestionOptionsManager control={form.control} questionIndex={qIndex} />
+
+                                                <FormField control={form.control} name={`questions.${qIndex}.correctAnswer`} render={({ field }) => <FormItem><FormLabel>Correct Answer</FormLabel><Select onValueChange={field.onChange} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select the correct option" /></SelectTrigger></FormControl><SelectContent>{form.watch(`questions.${qIndex}.options`).filter(o => o?.trim() !== "").map((opt, optIndex) => <SelectItem key={`${opt}-${optIndex}`} value={opt}>{opt}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                             </div>
                                         ))}
-                                        <Button type="button" variant="outline" size="sm" onClick={() => appendQuestion({ questionText: "", options: ["", "", ""], correctAnswer: "" })}>Add Question</Button>
+                                        <Button type="button" variant="outline" size="sm" onClick={() => appendQuestion({ questionText: "", options: ["", "", "", ""], correctAnswer: "" })}>Add Question</Button>
                                     </div>
                                     </>}
                                      {isEditMode && (
