@@ -351,7 +351,7 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <Dialog open={isChangePasswordDialogOpen} onOpenChange={(open) => { setIsChangePasswordDialogOpen(open); if(!open) changePasswordForm.reset();}}>
             <DialogTrigger asChild>
-              <Button variant="outline"><KeyRound />Change Password</Button>
+              <Button variant="outline"><KeyRound className="mr-2 h-4 w-4" />Change Password</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
