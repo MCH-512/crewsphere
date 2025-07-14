@@ -9,7 +9,12 @@ export const manualActivityFormSchema = z.object({
     startDate: z.string().refine((val) => val && !isNaN(Date.parse(val)), { message: "Invalid start date." }),
     endDate: z.string().refine((val) => val && !isNaN(Date.parse(val)), { message: "Invalid end date." }),
     comments: z.string().max(200).optional(),
-}).refine(data => new Date(data.endDate) >= new Date(data.startDate), {
+}).refine(data => {
+    if (data.startDate && data.endDate) {
+        return new Date(data.endDate) >= new Date(data.startDate);
+    }
+    return true;
+}, {
     message: "End date cannot be before start date.",
     path: ["endDate"],
 });

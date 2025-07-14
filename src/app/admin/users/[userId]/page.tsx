@@ -120,7 +120,7 @@ const AddManualActivityDialog = ({ userId, onActivityAdded, adminUser }: { userI
             });
 
             await batch.commit();
-            await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email, actionType: 'CREATE_MANUAL_ACTIVITY', entityType: "USER_ACTIVITY", entityId: userId, details: { type: data.activityType, dates: `${data.startDate} to ${data.endDate}` } });
+            await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email || "N/A", actionType: 'CREATE_MANUAL_ACTIVITY', entityType: "USER_ACTIVITY", entityId: userId, details: { type: data.activityType, dates: `${data.startDate} to ${data.endDate}` } });
             toast({ title: "Activity Added", description: `The new activity has been added to the user's schedule.` });
             onActivityAdded();
             setIsOpen(false);
@@ -147,8 +147,8 @@ const AddManualActivityDialog = ({ userId, onActivityAdded, adminUser }: { userI
                         <FormItem><FormLabel>Activity Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{manualActivityTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
                     )}/>
                      <div className="grid grid-cols-2 gap-4">
-                        <FormField control={form.control} name="startDate" render={({ field }) => <FormItem><FormLabel>Start Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
-                        <FormField control={form.control} name="endDate" render={({ field }) => <FormItem><FormLabel>End Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
+                        <FormField control={form.control} name="startDate" render={({ field }) => <FormItem><FormLabel>Start Date</FormLabel><FormControl><Input type="date" {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
+                        <FormField control={form.control} name="endDate" render={({ field }) => <FormItem><FormLabel>End Date</FormLabel><FormControl><Input type="date" {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
                     </div>
                     <FormField control={form.control} name="comments" render={({ field }) => <FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea {...field} placeholder="Add any relevant details..."/></FormControl><FormMessage /></FormItem>} />
                     <DialogFooter>
@@ -214,12 +214,15 @@ export default function UserDetailPage() {
 
 
     React.useEffect(() => {
-        if (!userId || !adminUser || adminUser.role !== 'admin') {
-            if (!authLoading) router.push('/');
-            return;
+        if (!userId) return;
+        if (!authLoading) {
+            if(!adminUser || adminUser.role !== 'admin') {
+                 router.push('/');
+            } else {
+                 fetchUserProfileData();
+            }
         }
-        fetchUserProfileData();
-    }, [userId, adminUser, authLoading, router, toast, fetchUserProfileData]);
+    }, [userId, adminUser, authLoading, router, fetchUserProfileData]);
     
     const formatDateDisplay = (dateString?: string | null) => {
         if (!dateString) return "N/A"; 
@@ -350,5 +353,4 @@ export default function UserDetailPage() {
              </Card>
         </div>
     );
-
-    
+}
