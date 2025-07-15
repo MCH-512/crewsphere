@@ -267,6 +267,7 @@ export default function UserDetailPage() {
                              <span>Joined: <span className="font-semibold">{formatDateDisplay(user.joiningDate)}</span></span>
                         </div>
                     </div>
+                     <Button onClick={() => router.push(`/admin/users`)}>Edit User</Button>
                 </CardHeader>
              </Card>
 

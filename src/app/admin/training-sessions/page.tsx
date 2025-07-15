@@ -198,7 +198,6 @@ export default function AdminTrainingSessionsPage() {
                 sessionToEdit.attendeeIds.map(id => userMap.get(id))
             ).then(users => users.filter(Boolean) as User[]);
             
-            // Convert Firestore Timestamp back to 'yyyy-MM-ddThh:mm' string for the input
             const sessionDate = sessionToEdit.sessionDateTimeUTC.toDate();
             const formattedDate = sessionDate.toISOString().substring(0, 16);
 
@@ -265,7 +264,7 @@ export default function AdminTrainingSessionsPage() {
                 title: data.title,
                 description: data.description,
                 location: data.location,
-                sessionDateTimeUTC: Timestamp.fromDate(new Date(data.sessionDateTimeUTC)), // Convert to Timestamp
+                sessionDateTimeUTC: Timestamp.fromDate(new Date(data.sessionDateTimeUTC)),
                 attendeeIds,
                 activityIds,
                 createdBy: user.uid, 
@@ -334,7 +333,7 @@ export default function AdminTrainingSessionsPage() {
                                 <SortableHeader column="location" label="Location" />
                                 <SortableHeader column="sessionDateTimeUTC" label="Date & Time (UTC)" />
                                 <SortableHeader column="attendeeCount" label="Attendees" />
-                                <TableHead>Actions</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow></TableHeader>
                             <TableBody>
                                 {sortedSessions.map(s => (
@@ -348,7 +347,7 @@ export default function AdminTrainingSessionsPage() {
                                                 {s.attendeeIds.length}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="space-x-1">
+                                        <TableCell className="text-right space-x-1">
                                             <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(s)}><Edit className="h-4 w-4" /></Button>
                                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(s)}><Trash2 className="h-4 w-4" /></Button>
                                         </TableCell>
@@ -415,4 +414,3 @@ export default function AdminTrainingSessionsPage() {
         </div>
     );
 }
-

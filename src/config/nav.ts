@@ -57,6 +57,7 @@ export const adminNavConfig = {
     {
       title: "Management",
       items: [
+        { href: "/admin", title: "Admin Dashboard", icon: LayoutDashboard },
         { href: "/admin/users", title: "User Management", icon: Users },
         { href: "/admin/flights", title: "Flight Management", icon: Plane },
         { href: "/admin/alerts", title: "Alert Management", icon: BellRing },

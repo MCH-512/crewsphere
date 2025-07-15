@@ -7,6 +7,7 @@ import { auth, db, isConfigValid } from "@/lib/firebase";
 import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore"; // Import setDoc for user creation
 import { usePathname, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 // Define a new User type that can include a role and other Firestore fields
 export interface User extends FirebaseUser {
@@ -138,17 +139,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = { user, loading, error, logout };
 
+  // Improved rendering logic to prevent flashes of content
+  const pathIsPublic = PUBLIC_PATHS.includes(pathname);
   if (loading) {
-    return null; 
+      return ( // Return a full-page loader
+          <div className="flex min-h-screen items-center justify-center bg-background">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </div>
+      );
   }
   
-  const pathIsPublic = PUBLIC_PATHS.includes(pathname);
-  if (!pathIsPublic && !user) {
-     return null; 
-  }
-  if (pathIsPublic && user) {
-    return null;
-  }
+  if (!user && !pathIsPublic) return null; // Let the redirect in useEffect handle it
+  if (user && pathIsPublic) return null; // Let the redirect in useEffect handle it
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
