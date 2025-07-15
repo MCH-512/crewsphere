@@ -33,8 +33,8 @@ const tools: Tool[] = [
   },
   {
     icon: Waypoints,
-    title: "Flight Timeline Calculator",
-    description: "Visually plan a duty day by plotting key flight events on a dynamic timeline.",
+    title: "Company Flight Tracker",
+    description: "Get a real-time overview of all company flight operations and their status.",
     href: "/toolbox/flight-timeline",
     delay: 0.18
   },
