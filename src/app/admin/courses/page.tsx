@@ -200,7 +200,7 @@ export default function AdminCoursesPage() {
                     }
                 } catch (imageError) {
                     console.error("AI Image generation/upload failed:", imageError);
-                    toast({ title: "AI Image Failed", description: "Could not generate AI image, continuing without it.", variant: "default" });
+                    toast({ title: "AI Image Skipped", description: "Could not generate AI image. The course will be saved without a new image.", variant: "default" });
                 }
             }
 

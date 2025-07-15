@@ -3,7 +3,7 @@
 
 import { db, isConfigValid } from "@/lib/firebase";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
-import { format } from 'date-fns';
+import { format, eachDayOfInterval, startOfDay, isSameDay } from 'date-fns';
 import { type ActivityType, type UserActivity } from "@/schemas/user-activity-schema";
 
 export interface Conflict {
@@ -30,31 +30,42 @@ export async function checkCrewAvailability(
   }
   
   const warnings: Record<string, Conflict> = {};
+  const dateInterval = eachDayOfInterval({ start: startDate, end: endDate });
 
   for (const userId of crewUserIds) {
       if (warnings[userId]) continue; // Already found a conflict for this user
 
+      // Create a query that covers the entire date range for a user
       const q = query(
           collection(db, "userActivities"),
           where("userId", "==", userId),
-          where("date", ">=", startDate),
-          where("date", "<=", endDate)
+          where("date", ">=", startOfDay(startDate)),
+          where("date", "<=", startOfDay(endDate))
       );
       
       try {
           const querySnapshot = await getDocs(q);
-          const conflictingActivity = querySnapshot.docs.find(doc => {
-              const activity = doc.data() as UserActivity;
-              // Ignore the activity if it's part of the flight we're currently editing
-              return !(flightIdToIgnore && activity.flightId === flightIdToIgnore);
-          });
-          
-          if (conflictingActivity) {
-              const activity = conflictingActivity.data() as UserActivity;
-              warnings[userId] = {
-                  activityType: activity.activityType,
-                  details: activity.comments || `Scheduled for ${activity.activityType} on ${format(activity.date.toDate(), 'PP')}`,
-              };
+
+          // Iterate over each day in the interval to check for conflicts
+          for (const day of dateInterval) {
+            const conflictingActivityDoc = querySnapshot.docs.find(doc => {
+                const activity = doc.data() as UserActivity;
+                // Check if the activity is on the current day of the interval
+                const isOnSameDay = isSameDay(activity.date.toDate(), day);
+                // And ignore the activity if it's part of the flight we're currently editing
+                const isIgnored = flightIdToIgnore && activity.flightId === flightIdToIgnore;
+
+                return isOnSameDay && !isIgnored;
+            });
+
+            if (conflictingActivityDoc) {
+                const activity = conflictingActivityDoc.data() as UserActivity;
+                warnings[userId] = {
+                    activityType: activity.activityType,
+                    details: activity.comments || `Scheduled for ${activity.activityType} on ${format(activity.date.toDate(), 'PP')}`,
+                };
+                break; // Move to the next user once a conflict is found
+            }
           }
       } catch (e) {
           console.error(`Error checking availability for user ${userId}:`, e);

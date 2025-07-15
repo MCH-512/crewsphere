@@ -149,7 +149,7 @@ export default function SubmitPurserReportPage() {
 
   const prevStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => prev - 1);
     }
   };
 
@@ -180,8 +180,7 @@ export default function SubmitPurserReportPage() {
             reportData.aiPotentialRisks = summary.potentialRisks;
       } catch(aiError) {
           console.error("AI summary generation failed during report submission:", aiError);
-          // Don't block submission, just notify
-          toast({ title: "AI Summary Failed", description: "Could not generate AI summary, but your report will still be submitted.", variant: "default" });
+          toast({ title: "AI Summary Skipped", description: "Could not generate AI summary, but your report will still be submitted.", variant: "default" });
       }
 
       batch.set(reportRef, reportData);

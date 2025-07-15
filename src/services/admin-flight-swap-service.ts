@@ -68,9 +68,11 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             }
             
             // --- Update Activities ---
+            // Get original activities for both users for their original flights
             const activity1Id = flight1Data.activityIds?.[swapData.initiatingUserId];
             const activity2Id = flight2Data.activityIds?.[swapData.requestingUserId];
 
+            // Create new activity maps for the flights
             const newActivityIdsF1 = { ...flight1Data.activityIds };
             delete newActivityIdsF1[swapData.initiatingUserId];
             if (activity2Id) newActivityIdsF1[swapData.requestingUserId] = activity2Id;
@@ -81,9 +83,11 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             if (activity1Id) newActivityIdsF2[swapData.initiatingUserId] = activity1Id;
             flight2Update.activityIds = newActivityIdsF2;
 
+            // Update the user activity documents to point to the new flights and DATES
             if (activity1Id) {
                 const activity1Ref = doc(db, "userActivities", activity1Id);
-                transaction.update(activity1Ref, { // This now belongs to user 1 but for flight 2
+                // User 1 (initiator) now gets activity for flight 2
+                transaction.update(activity1Ref, { 
                     flightId: flight2Snap.id,
                     flightNumber: flight2Data.flightNumber,
                     departureAirport: flight2Data.departureAirport,
@@ -94,7 +98,8 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             }
              if (activity2Id) {
                 const activity2Ref = doc(db, "userActivities", activity2Id);
-                transaction.update(activity2Ref, { // This now belongs to user 2 but for flight 1
+                 // User 2 (requestor) now gets activity for flight 1
+                transaction.update(activity2Ref, {
                     flightId: flight1Snap.id,
                     flightNumber: flight1Data.flightNumber,
                     departureAirport: flight1Data.departureAirport,
