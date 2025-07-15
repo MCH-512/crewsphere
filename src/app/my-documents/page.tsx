@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -9,7 +10,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Loader2, AlertTriangle, CalendarX, CalendarClock, CalendarCheck2, PlusCircle, Edit, Trash2 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
-import { StoredUserDocument, UserDocumentStatus, userDocumentFormSchema, userDocumentTypes, type UserDocumentFormValues } from "@/schemas/user-document-schema";
+import { StoredUserDocument, UserDocumentStatus, userDocumentCreateFormSchema, userDocumentUpdateFormSchema, userDocumentTypes, type UserDocumentFormValues } from "@/schemas/user-document-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,7 @@ const ManageDocumentDialog = ({ open, onOpenChange, documentToEdit, onSave }: { 
     const isEditMode = !!documentToEdit;
 
     const form = useForm<UserDocumentFormValues>({
-        resolver: zodResolver(userDocumentFormSchema),
+        resolver: zodResolver(isEditMode ? userDocumentUpdateFormSchema : userDocumentCreateFormSchema),
         defaultValues: {
             documentName: "", documentType: undefined, issueDate: "", expiryDate: "", notes: "", file: undefined
         }
@@ -88,15 +89,19 @@ const ManageDocumentDialog = ({ open, onOpenChange, documentToEdit, onSave }: { 
                 filePath = newFilePath;
             }
 
-            if (!fileURL || !filePath) throw new Error("File information is missing.");
-
+            if (!isEditMode && (!fileURL || !filePath)) {
+                throw new Error("File is required when creating a new document.");
+            }
+            
             const docData = {
                 userId: user.uid, userEmail: user.email,
                 documentName: data.documentName, documentType: data.documentType,
                 issueDate: new Date(data.issueDate), expiryDate: new Date(data.expiryDate),
-                notes: data.notes, fileURL, filePath,
+                notes: data.notes, 
                 status: 'pending-validation' as const, // Always requires validation
                 lastUpdatedAt: serverTimestamp(),
+                ...(fileURL && { fileURL }),
+                ...(filePath && { filePath }),
             };
 
             if (isEditMode && documentToEdit) {
@@ -122,7 +127,7 @@ const ManageDocumentDialog = ({ open, onOpenChange, documentToEdit, onSave }: { 
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{isEditMode ? "Update Document" : "Add New Document"}</DialogTitle>
-                    <DialogDescription>{isEditMode ? "Update the document details and upload a new file." : "Add a new trackable document."}</DialogDescription>
+                    <DialogDescription>{isEditMode ? "Update the document details and upload a new file if needed." : "Add a new trackable document."}</DialogDescription>
                 </DialogHeader>
                 <Form {...form}><form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
                     <FormField control={form.control} name="documentType" render={({ field }) => <FormItem><FormLabel>Document Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{userDocumentTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
@@ -131,7 +136,7 @@ const ManageDocumentDialog = ({ open, onOpenChange, documentToEdit, onSave }: { 
                         <FormField control={form.control} name="issueDate" render={({ field }) => <FormItem><FormLabel>Issue Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
                         <FormField control={form.control} name="expiryDate" render={({ field }) => <FormItem><FormLabel>Expiry Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
                     </div>
-                    <FormField control={form.control} name="file" render={({ field: { value, onChange, ...fieldProps } }) => <FormItem><FormLabel>Upload File {isEditMode && "(Optional)"}</FormLabel><FormControl><Input type="file" {...fieldProps} onChange={e => onChange(e.target.files)} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField control={form.control} name="file" render={({ field: { value, onChange, ...fieldProps } }) => <FormItem><FormLabel>Upload File {isEditMode && "(Optional: only to replace existing file)"}</FormLabel><FormControl><Input type="file" {...fieldProps} onChange={e => onChange(e.target.files)} /></FormControl><FormMessage /></FormItem>} />
                     <FormField control={form.control} name="notes" render={({ field }) => <FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>} />
                     <DialogFooter>
                         <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>

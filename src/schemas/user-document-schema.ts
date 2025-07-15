@@ -26,34 +26,29 @@ const fileSchema = z.any()
       "Only .jpg, .png, and .pdf formats are supported."
     );
 
-export const userDocumentFormSchema = z.object({
+export const baseUserDocumentFormSchema = z.object({
   documentName: z.string().min(3, "Document name is required.").max(100),
   documentType: z.enum(userDocumentTypes, { required_error: "Please select a document type." }),
   issueDate: z.string().refine((val) => val && !isNaN(Date.parse(val)), { message: "Invalid issue date." }),
   expiryDate: z.string().refine((val) => val && !isNaN(Date.parse(val)), { message: "Invalid expiry date." }),
   notes: z.string().max(500).optional(),
-  file: fileSchema.optional(), // Make it optional initially
 }).refine(data => new Date(data.expiryDate) > new Date(data.issueDate), {
     message: "Expiry date must be after the issue date.",
     path: ["expiryDate"],
-}).superRefine((data, ctx) => {
-    // In creation mode, file is required. We can't check if we're in edit mode here,
-    // so this check must happen in the component logic or by using separate schemas.
-    // For a single schema, we can make it optional and check `documentToEdit` in the component.
 });
 
-// A slightly different schema for when a user is creating a document for the first time
-export const userDocumentCreateFormSchema = userDocumentFormSchema.extend({
+// A schema for when a user is creating a document for the first time
+export const userDocumentCreateFormSchema = baseUserDocumentFormSchema.extend({
     file: fileSchema // File is required on creation
 });
 
-// A slightly different schema for when a user is updating a document
-export const userDocumentUpdateFormSchema = userDocumentFormSchema.extend({
+// A schema for when a user is updating a document
+export const userDocumentUpdateFormSchema = baseUserDocumentFormSchema.extend({
     file: fileSchema.optional() // File is optional on update
 });
 
 
-export type UserDocumentFormValues = z.infer<typeof userDocumentFormSchema>;
+export type UserDocumentFormValues = z.infer<typeof userDocumentCreateFormSchema>;
 
 export interface StoredUserDocument {
   id: string;
@@ -66,8 +61,8 @@ export interface StoredUserDocument {
   notes?: string;
   fileURL?: string;
   filePath?: string;
-  status: UserDocumentStatus;
+  status: 'approved' | 'pending-validation'; // Simplified from UserDocumentStatus for storage logic
   lastUpdatedAt: Timestamp;
-  // adminLastUpdatedBy is now optional as users can update
+  createdAt: Timestamp;
   adminLastUpdatedBy?: string; 
 }

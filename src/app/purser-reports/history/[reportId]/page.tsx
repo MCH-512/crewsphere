@@ -14,6 +14,8 @@ import { format, parseISO } from "date-fns";
 import { StoredPurserReport } from "@/schemas/purser-report-schema";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import type { VariantProps } from "class-variance-authority";
+import { alertVariants } from "@/components/ui/alert";
 
 type ReportStatus = "submitted" | "under-review" | "closed";
 
@@ -91,10 +93,10 @@ export default function PurserReportHistoryDetailPage() {
         }
     };
     
-    const getAdminResponseAlertVariant = (status: ReportStatus) => {
+    const getAdminResponseAlertVariant = (status: ReportStatus): VariantProps<typeof alertVariants>["variant"] => {
         switch (status) {
           case "closed": return "success";
-          default: return "default";
+          default: return "info";
         }
     };
 
