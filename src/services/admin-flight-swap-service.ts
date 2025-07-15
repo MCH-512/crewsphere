@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from "@/lib/firebase";
-import { doc, runTransaction, serverTimestamp, Timestamp } from "firebase/firestore";
+import { doc, runTransaction, serverTimestamp, Timestamp, collection, updateDoc } from "firebase/firestore";
 import type { StoredFlight } from "@/schemas/flight-schema";
 import type { StoredFlightSwap } from "@/schemas/flight-swap-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
@@ -18,7 +18,11 @@ const findUserRoleOnFlight = (flight: StoredFlight, userId: string): { role: str
 };
 
 const updateCrewArray = (crewArray: string[], userToRemove: string, userToAdd: string): string[] => {
-    return crewArray.filter(id => id !== userToRemove).concat(userToAdd);
+    const newArray = crewArray.filter(id => id !== userToRemove);
+    if (!newArray.includes(userToAdd)) {
+        newArray.push(userToAdd);
+    }
+    return newArray;
 };
 
 export async function approveFlightSwap(swapId: string, adminId: string, adminEmail: string) {
@@ -38,6 +42,7 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             const flight2Ref = doc(db, "flights", swapData.requestingFlightId);
             const [flight1Snap, flight2Snap] = await Promise.all([transaction.get(flight1Ref), transaction.get(flight2Ref)]);
             if (!flight1Snap.exists() || !flight2Snap.exists()) throw new Error("One or both flights involved in the swap could not be found.");
+            
             const flight1Data = flight1Snap.data() as StoredFlight;
             const flight2Data = flight2Snap.data() as StoredFlight;
 
@@ -68,18 +73,18 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
 
             const newActivityIdsF1 = { ...flight1Data.activityIds };
             delete newActivityIdsF1[swapData.initiatingUserId];
-            newActivityIdsF1[swapData.requestingUserId] = activity2Id!;
+            if (activity2Id) newActivityIdsF1[swapData.requestingUserId] = activity2Id;
             flight1Update.activityIds = newActivityIdsF1;
             
             const newActivityIdsF2 = { ...flight2Data.activityIds };
             delete newActivityIdsF2[swapData.requestingUserId];
-            newActivityIdsF2[swapData.initiatingUserId] = activity1Id!;
+            if (activity1Id) newActivityIdsF2[swapData.initiatingUserId] = activity1Id;
             flight2Update.activityIds = newActivityIdsF2;
 
             if (activity1Id) {
                 const activity1Ref = doc(db, "userActivities", activity1Id);
                 transaction.update(activity1Ref, { // This now belongs to user 1 but for flight 2
-                    flightId: flight2Data.id,
+                    flightId: flight2Snap.id,
                     flightNumber: flight2Data.flightNumber,
                     departureAirport: flight2Data.departureAirport,
                     arrivalAirport: flight2Data.arrivalAirport,
@@ -90,7 +95,7 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
              if (activity2Id) {
                 const activity2Ref = doc(db, "userActivities", activity2Id);
                 transaction.update(activity2Ref, { // This now belongs to user 2 but for flight 1
-                    flightId: flight1Data.id,
+                    flightId: flight1Snap.id,
                     flightNumber: flight1Data.flightNumber,
                     departureAirport: flight1Data.departureAirport,
                     arrivalAirport: flight1Data.arrivalAirport,
