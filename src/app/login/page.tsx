@@ -16,12 +16,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogIn, Loader2, AlertTriangle } from "lucide-react";
+import { LogIn, Loader2, AlertTriangle, Plane } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, isConfigValid } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -91,22 +92,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center">
-          <LogIn className="mx-auto h-10 w-10 text-primary mb-4" />
-          <CardTitle className="text-3xl font-headline">Welcome Back!</CardTitle>
-          <CardDescription>Sign in to access your Crew World dashboard.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <div className="w-full lg:grid lg:min-h-[100vh] lg:grid-cols-2 xl:min-h-[100vh]">
+      <div className="flex items-center justify-center py-12">
+        <div className="mx-auto grid w-[350px] gap-6">
+          <div className="grid gap-2 text-center">
+             <Plane className="mx-auto h-10 w-10 text-primary mb-2" />
+            <h1 className="text-3xl font-bold">Welcome Back</h1>
+            <p className="text-balance text-muted-foreground">
+              Enter your email below to login to your account
+            </p>
+          </div>
+           <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="you@example.com" {...field} />
                     </FormControl>
@@ -134,19 +137,29 @@ export default function LoginPage() {
                     Signing In...
                   </>
                 ) : (
-                  "Sign In"
+                  "Login"
                 )}
               </Button>
             </form>
           </Form>
-          <p className="mt-6 text-center text-sm text-muted-foreground">
+          <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}
-            <Button variant="link" asChild className="p-0 h-auto">
-              <Link href="/signup">Sign Up</Link>
-            </Button>
-          </p>
-        </CardContent>
-      </Card>
+            <Link href="/signup" className="underline">
+              Sign up
+            </Link>
+          </div>
+        </div>
+      </div>
+      <div className="hidden bg-muted lg:block">
+        <Image
+          src="https://images.unsplash.com/photo-1542296332-2e4473faf563?q=80&w=1974&auto=format&fit=crop"
+          alt="Image"
+          data-ai-hint="airplane wing"
+          width="1920"
+          height="1080"
+          className="h-full w-full object-cover dark:brightness-[0.3] dark:grayscale"
+        />
+      </div>
     </div>
   );
 }

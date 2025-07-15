@@ -96,9 +96,9 @@ export default function DashboardPage() {
       <AnimatedCard>
         <Card className="shadow-lg border-none relative overflow-hidden min-h-[220px] flex items-center">
             <Image
-                src="https://images.unsplash.com/photo-1570710891163-6d3b5b47248b?q=80&w=2070&auto=format&fit=crop"
-                alt="Airplane wing in the sky"
-                data-ai-hint="airplane wing"
+                src="https://images.unsplash.com/photo-1610414343130-d373379862b7?q=80&w=2070&auto=format&fit=crop"
+                alt="Airplane cockpit"
+                data-ai-hint="airplane cockpit"
                 fill
                 priority
                 className="object-cover z-0"
