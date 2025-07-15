@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 import type { Timestamp } from 'firebase/firestore';
 import type { VariantProps } from "class-variance-authority";
@@ -83,7 +84,7 @@ export const requestCategoryKeys = Object.keys(requestCategoriesAndTypes) as (ke
 export const allRequestCategories = [...requestCategoryKeys, "General Inquiry", "Other"];
 
 export const requestFormSchema = z.object({
-  requestCategory: z.string({ required_error: "Please select a request category." }),
+  requestCategory: z.string({ required_error: "Please select a request category." }).min(1, "Please select a request category."),
   specificRequestType: z.string().optional(),
   urgencyLevel: z.enum(["Low", "Medium", "High", "Critical"], { required_error: "Please select an urgency level." }),
   subject: z.string().max(100, { message: "Subject must not be longer than 100 characters." }).optional(),

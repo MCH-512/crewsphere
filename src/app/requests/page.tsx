@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -61,18 +62,30 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
   });
 
   const watchedRequestCategory = form.watch("requestCategory");
+  const watchedSpecificRequestType = form.watch("specificRequestType");
   const categoryHasSpecificTypes = !!(watchedRequestCategory && requestCategoriesAndTypes[watchedRequestCategory as keyof typeof requestCategoriesAndTypes]);
   const isLeaveCategory = watchedRequestCategory === "Leave & Absences";
 
   React.useEffect(() => {
     if (categoryHasSpecificTypes) {
       setSpecificTypes(requestCategoriesAndTypes[watchedRequestCategory as keyof typeof requestCategoriesAndTypes]);
+       if (!specificTypes.includes(form.getValues('specificRequestType'))) {
+          form.setValue('specificRequestType', '', { shouldValidate: true });
+      }
     } else {
       setSpecificTypes([]);
+      form.setValue('specificRequestType', '', { shouldValidate: true });
     }
-    form.setValue('specificRequestType', '', { shouldValidate: true });
-    form.setValue('subject', '', { shouldValidate: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedRequestCategory, form, categoryHasSpecificTypes]);
+
+  // Autofill subject when a specific request type is selected
+  React.useEffect(() => {
+    if (watchedSpecificRequestType && categoryHasSpecificTypes) {
+        form.setValue('subject', watchedSpecificRequestType, { shouldValidate: true });
+    }
+  }, [watchedSpecificRequestType, form, categoryHasSpecificTypes]);
+
 
   async function handleFormSubmit(data: RequestFormValues) {
     setFormDataToSubmit(data);
@@ -157,7 +170,7 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
                         <FormControl><SelectTrigger><SelectValue placeholder={specificTypes.length === 0 ? "N/A for selected category" : "Select specific type"} /></SelectTrigger></FormControl>
                         <SelectContent>{specificTypes.map((type) => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent>
                       </Select>
-                      <FormDescription>This will be the subject of your request.</FormDescription>
+                      <FormDescription>This will automatically become the subject of your request.</FormDescription>
                       <FormMessage />
                     </FormItem>
                 )}/>
@@ -196,9 +209,8 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
                       <FormLabel>Urgency Level</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value} disabled={!user || isSubmitting}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select urgency level" /></SelectTrigger></FormControl>
-                        <SelectContent>{urgencyLevels.map(({level}) => (<SelectItem key={level} value={level}>{level}</SelectItem>))}</SelectContent>
+                        <SelectContent>{urgencyLevels.map(({level, description}) => (<SelectItem key={level} value={level}>{level} - <span className="text-muted-foreground text-xs italic ml-2">{description}</span></SelectItem>))}</SelectContent>
                       </Select>
-                      <FormDescription>Please use 'Critical' only for urgent, flight-impacting issues.</FormDescription>
                       <FormMessage />
                     </FormItem>
                 )}/>

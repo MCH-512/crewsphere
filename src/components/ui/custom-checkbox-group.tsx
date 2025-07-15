@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,14 +25,14 @@ export const CheckboxGroup = ({ control, name, label, options }: CheckboxGroupPr
       render={() => (
         <FormItem>
           <FormLabel className="text-base">{label}</FormLabel>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
             {options.map((item) => (
               <FormField
                 key={item}
                 control={control}
                 name={name}
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary transition-colors">
                     <FormControl>
                       <Checkbox
                         checked={field.value?.includes(item)}
@@ -42,7 +43,7 @@ export const CheckboxGroup = ({ control, name, label, options }: CheckboxGroupPr
                         }}
                       />
                     </FormControl>
-                    <FormLabel className="font-normal">{item}</FormLabel>
+                    <FormLabel className="font-normal cursor-pointer w-full">{item}</FormLabel>
                   </FormItem>
                 )}
               />

@@ -149,7 +149,7 @@ export default function SubmitPurserReportPage() {
 
   const prevStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+      setCurrentStep(prev => prev + 1);
     }
   };
 
@@ -296,7 +296,7 @@ export default function SubmitPurserReportPage() {
                             Next <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                     ) : (
-                        <Button type="submit" disabled={isSubmitting} size="lg">
+                        <Button type="submit" disabled={isSubmitting || !form.formState.isValid} size="lg">
                             {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : <><Send className="mr-2 h-4 w-4" /> Submit Report</>}
                         </Button>
                     )}
