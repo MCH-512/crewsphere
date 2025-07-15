@@ -4,7 +4,7 @@ import {
   ClipboardCheck, MessageSquare, Activity, FileSignature, 
   Calendar as CalendarIcon, Library, GraduationCap, CheckSquare, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Wrench, 
-  ArrowRightLeft, Handshake, Inbox, Lightbulb
+  ArrowRightLeft, Handshake, Inbox, Lightbulb, FileCheck2
 } from "lucide-react";
 
 export const mainNavConfig = {
@@ -63,6 +63,7 @@ export const adminNavConfig = {
         { href: "/admin/alerts", title: "Alert Management", icon: BellRing },
         { href: "/admin/flight-swaps", title: "Flight Swaps", icon: Handshake },
         { href: "/admin/expiry-management", title: "Document Expiry", icon: BadgeAlert },
+        { href: "/admin/document-validations", title: "Doc Validations", icon: FileCheck2 },
         { href: "/admin/user-requests", title: "User Requests", icon: ClipboardList },
         { href: "/admin/purser-reports", title: "Purser Reports", icon: FileSignature },
       ]

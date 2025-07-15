@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -20,26 +19,25 @@ import { BadgeAlert, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
 import { logAuditEvent } from "@/lib/audit-logger";
-import { userDocumentFormSchema, userDocumentTypes, type StoredUserDocument, type UserDocumentFormValues } from "@/schemas/user-document-schema";
+import { userDocumentFormSchema, userDocumentTypes, type StoredUserDocument, type UserDocumentFormValues, type UserDocumentStatus } from "@/schemas/user-document-schema";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const EXPIRY_WARNING_DAYS = 30;
 
-type DocumentStatus = 'valid' | 'expiring-soon' | 'expired';
+const getDocumentStatus = (doc: StoredUserDocument): UserDocumentStatus => {
+    if (doc.status === 'pending-validation') return 'pending-validation';
+    const today = new Date();
+    const daysUntilExpiry = differenceInDays(doc.expiryDate.toDate(), today);
+    if (daysUntilExpiry < 0) return 'expired';
+    if (daysUntilExpiry <= EXPIRY_WARNING_DAYS) return 'expiring-soon';
+    return 'approved';
+};
+
 type SortableColumn = 'userEmail' | 'documentName' | 'expiryDate' | 'status' | 'lastUpdatedAt';
 type SortDirection = 'asc' | 'desc';
 
-const getDocumentStatus = (expiryDate: Date): DocumentStatus => {
-    const today = new Date();
-    const daysUntilExpiry = differenceInDays(expiryDate, today);
-
-    if (daysUntilExpiry < 0) return 'expired';
-    if (daysUntilExpiry <= EXPIRY_WARNING_DAYS) return 'expiring-soon';
-    return 'valid';
-};
-
-const statusOrder: Record<DocumentStatus, number> = { 'expired': 0, 'expiring-soon': 1, 'valid': 2 };
+const statusOrder: Record<UserDocumentStatus, number> = { 'expired': 0, 'expiring-soon': 1, 'pending-validation': 2, 'approved': 3 };
 
 export default function AdminExpiryManagementPage() {
     const { user: adminUser, loading: authLoading } = useAuth();
@@ -55,20 +53,13 @@ export default function AdminExpiryManagementPage() {
     const [currentDocument, setCurrentDocument] = React.useState<StoredUserDocument | null>(null);
 
     const [searchTerm, setSearchTerm] = React.useState("");
-    const [statusFilter, setStatusFilter] = React.useState<DocumentStatus | "all">("all");
+    const [statusFilter, setStatusFilter] = React.useState<UserDocumentStatus | "all">("all");
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>('expiryDate');
     const [sortDirection, setSortDirection] = React.useState<SortDirection>('asc');
 
-    const form = useForm<UserDocumentFormValues>({
-        resolver: zodResolver(userDocumentFormSchema),
-        defaultValues: {
-            userId: "",
-            documentName: "",
-            documentType: undefined,
-            issueDate: "",
-            expiryDate: "",
-            notes: ""
-        },
+    const form = useForm<Omit<UserDocumentFormValues, 'file'>>({
+        resolver: zodResolver(userDocumentFormSchema.omit({ file: true })),
+        defaultValues: { userId: "", documentName: "", documentType: undefined, issueDate: "", expiryDate: "", notes: "" },
         mode: "onBlur",
     });
 
@@ -98,7 +89,7 @@ export default function AdminExpiryManagementPage() {
     
     const sortedAndFilteredDocuments = React.useMemo(() => {
         let processedDocs = documents.filter(doc => {
-            const status = getDocumentStatus(doc.expiryDate.toDate());
+            const status = getDocumentStatus(doc);
             if (statusFilter !== 'all' && status !== statusFilter) return false;
             
             if (searchTerm) {
@@ -116,8 +107,8 @@ export default function AdminExpiryManagementPage() {
             let valB: string | number | Date = b[sortColumn];
 
             if (sortColumn === 'status') {
-                valA = statusOrder[getDocumentStatus(a.expiryDate.toDate())];
-                valB = statusOrder[getDocumentStatus(b.expiryDate.toDate())];
+                valA = statusOrder[getDocumentStatus(a)];
+                valB = statusOrder[getDocumentStatus(b)];
             } else if (valA instanceof Timestamp && valB instanceof Timestamp) {
                 valA = valA.toMillis();
                 valB = valB.toMillis();
@@ -177,7 +168,7 @@ export default function AdminExpiryManagementPage() {
         setIsManageDialogOpen(true);
     };
 
-    const handleFormSubmit = async (data: UserDocumentFormValues) => {
+    const handleFormSubmit = async (data: Omit<UserDocumentFormValues, 'file'>) => {
         if (!adminUser) return;
         setIsSubmitting(true);
         try {
@@ -191,6 +182,7 @@ export default function AdminExpiryManagementPage() {
                 userEmail: selectedUser.email,
                 lastUpdatedAt: serverTimestamp(),
                 adminLastUpdatedBy: adminUser.uid,
+                status: 'approved', // Admin actions are auto-approved
             };
 
             if (isEditMode && currentDocument) {
@@ -226,6 +218,20 @@ export default function AdminExpiryManagementPage() {
 
     if (authLoading || isLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
 
+    const getStatusBadgeVariant = (status: UserDocumentStatus) => {
+        if (status === 'approved' || status === 'expiring-soon') return 'success';
+        if (status === 'expired') return 'destructive';
+        if (status === 'pending-validation') return 'outline';
+        return 'secondary';
+    }
+
+    const getStatusRowClass = (status: UserDocumentStatus) => {
+        if (status === 'expired') return 'bg-destructive/10';
+        if (status === 'expiring-soon') return 'bg-yellow-400/10';
+        if (status === 'pending-validation') return 'bg-blue-400/10';
+        return '';
+    }
+
     return (
         <div className="space-y-6">
             <Card className="shadow-lg">
@@ -249,7 +255,8 @@ export default function AdminExpiryManagementPage() {
                             <SelectTrigger className="w-full md:w-[200px]"><Filter className="mr-2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="Filter by status" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Statuses</SelectItem>
-                                <SelectItem value="valid">Valid</SelectItem>
+                                <SelectItem value="approved">Approved</SelectItem>
+                                <SelectItem value="pending-validation">Pending Validation</SelectItem>
                                 <SelectItem value="expiring-soon">Expiring Soon</SelectItem>
                                 <SelectItem value="expired">Expired</SelectItem>
                             </SelectContent>
@@ -268,18 +275,14 @@ export default function AdminExpiryManagementPage() {
                         </TableRow></TableHeader>
                         <TableBody>
                             {sortedAndFilteredDocuments.map(d => {
-                                const expiryDate = d.expiryDate.toDate();
-                                const status = getDocumentStatus(expiryDate);
+                                const status = getDocumentStatus(d);
                                 return (
-                                <TableRow key={d.id} className={cn(
-                                    status === 'expired' && 'bg-destructive/10',
-                                    status === 'expiring-soon' && 'bg-yellow-400/10'
-                                )}>
+                                <TableRow key={d.id} className={getStatusRowClass(status)}>
                                     <TableCell className="font-medium text-xs max-w-xs truncate">{d.userEmail}</TableCell>
                                     <TableCell className="text-xs">{d.documentName} <span className="text-muted-foreground">({d.documentType})</span></TableCell>
-                                    <TableCell className="text-xs font-mono">{format(expiryDate, "PP")}</TableCell>
+                                    <TableCell className="text-xs font-mono">{format(d.expiryDate.toDate(), "PP")}</TableCell>
                                     <TableCell>
-                                        <Badge variant={status === 'expired' ? 'destructive' : status === 'expiring-soon' ? 'warning' : 'success'} className="capitalize">{status.replace('-', ' ')}</Badge>
+                                        <Badge variant={getStatusBadgeVariant(status)} className="capitalize">{status.replace('-', ' ')}</Badge>
                                     </TableCell>
                                     <TableCell className="text-xs">{format(d.lastUpdatedAt.toDate(), "PPp")}</TableCell>
                                     <TableCell className="space-x-1">
@@ -299,7 +302,7 @@ export default function AdminExpiryManagementPage() {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{isEditMode ? "Edit Document" : "Add New Document"}</DialogTitle>
-                        <DialogDescription>{isEditMode ? "Update document details." : "Add a new trackable document for a user."}</DialogDescription>
+                        <DialogDescription>{isEditMode ? "Update document details." : "Add a new trackable document for a user. Files cannot be uploaded from here."}</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
