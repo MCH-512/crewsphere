@@ -85,14 +85,14 @@ export default function AdminConsolePage() {
         const now = new Date();
         const usersSnapPromise = getDocs(collection(db, "users"));
         const flightsSnapPromise = getDocs(collection(db, "flights"));
-        const suggestionsPromise = getDocs(collection(db, "suggestions"));
-        const reportsPromise = getDocs(collection(db, "purserReports"));
+        const suggestionsPromise = getDocs(query(collection(db, "suggestions"), where("status", "==", "new")));
+        const reportsPromise = getDocs(query(collection(db, "purserReports"), where("status", "==", "submitted")));
         const requestsPromise = getDocs(collection(db, "requests"));
         const documentsSnapPromise = getDocs(collection(db, "documents"));
         const coursesSnapPromise = getDocs(collection(db, "courses"));
         const quizzesSnapPromise = getDocs(collection(db, "quizzes"));
         const alertsSnapPromise = getDocs(query(collection(db, "alerts"), where("isActive", "==", true)));
-        const sessionsSnapPromise = getDocs(query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", now.toISOString())));
+        const sessionsSnapPromise = getDocs(query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", Timestamp.now())));
         const swapsSnapPromise = getDocs(query(collection(db, "flightSwaps"), where("status", "==", "pending_approval")));
         const auditLogsPromise = getDocs(query(collection(db, "auditLogs"), orderBy("timestamp", "desc"), limit(5)));
 
@@ -104,15 +104,14 @@ export default function AdminConsolePage() {
             documentsSnapPromise, coursesSnapPromise, quizzesSnapPromise, alertsSnapPromise, sessionsSnapPromise, swapsSnapPromise, auditLogsPromise
         ]);
         
-        const suggestions = suggestionsSnap.docs.map(doc => doc.data());
-        const reports = reportsSnap.docs.map(doc => doc.data());
+        const allSuggestions = (await getDocs(collection(db, "suggestions"))).docs.map(doc => doc.data());
         const requests = requestsSnap.docs.map(doc => doc.data());
 
         setStats({
             users: { value: usersSnap.size, isLoading: false, label: "Total Users" },
             flights: { value: flightsSnap.size, isLoading: false, label: "Total Flights" },
-            suggestions: { value: suggestions.filter(s => s.status === 'new').length, isLoading: false, label: "New Suggestions" },
-            reports: { value: reports.filter((r: any) => r.status === 'submitted').length, isLoading: false, label: "New Reports" },
+            suggestions: { value: suggestionsSnap.size, isLoading: false, label: "New Suggestions" },
+            reports: { value: reportsSnap.size, isLoading: false, label: "New Reports" },
             requests: { value: requests.filter((r: any) => r.status === 'pending').length, isLoading: false, label: "Pending Requests" },
             documents: { value: documentsSnap.size, isLoading: false, label: "Total Documents" },
             courses: { value: coursesSnap.size, isLoading: false, label: "Total Courses" },
@@ -133,7 +132,7 @@ export default function AdminConsolePage() {
             fill: "var(--color-count)",
         })));
 
-        const suggestionsByCategory = suggestions.reduce((acc, sug: any) => {
+        const suggestionsByCategory = allSuggestions.reduce((acc, sug: any) => {
             const category = sug.category || 'Other';
             acc[category] = (acc[category] || 0) + 1;
             return acc;

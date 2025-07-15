@@ -86,7 +86,7 @@ const manageUserFormSchema = z.object({
 type ManageUserFormValues = z.infer<typeof manageUserFormSchema>;
 
 type SortableColumn = "email" | "fullName" | "role" | "accountStatus" | "employeeId" | "joiningDate";
-type SortDirection = "asc" | "desc";
+type SortDirection = "asc" | 'desc';
 
 export default function AdminUsersPage() {
   const { user, loading: authLoading } = useAuth();
