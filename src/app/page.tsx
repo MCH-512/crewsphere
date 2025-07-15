@@ -105,7 +105,7 @@ export default function DashboardPage() {
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent z-10" />
             <CardHeader className="relative z-20 text-white">
-                <CardTitle className="text-4xl font-headline text-primary-foreground">Welcome Back, {userNameForGreeting}!</CardTitle>
+                <CardTitle as="h1" className="text-4xl font-headline text-primary-foreground">Welcome Back, {userNameForGreeting}!</CardTitle>
                 <CardDescription className="text-primary-foreground/80 text-lg">This is your central command for operational tools and communication.</CardDescription>
             </CardHeader>
         </Card>
@@ -126,7 +126,7 @@ export default function DashboardPage() {
         <AnimatedCard delay={0.25} className="lg:col-span-1">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
               <CardHeader>
-                  <CardTitle className="font-headline text-xl">Quick Actions</CardTitle>
+                  <CardTitle as="h2" className="font-headline text-xl">Quick Actions</CardTitle>
                   <CardDescription>Get started with common tasks.</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 gap-4 flex-grow">
@@ -149,7 +149,7 @@ export default function DashboardPage() {
           <AnimatedCard delay={0.3}>
               <Card className="shadow-sm">
                   <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary"/>Mandatory Training Progress</CardTitle>
+                      <CardTitle as="h2" className="flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary"/>Mandatory Training Progress</CardTitle>
                       <CardDescription>An overview of your required e-learning courses.</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -173,7 +173,7 @@ export default function DashboardPage() {
           <AnimatedCard delay={0.35}>
               <Card className="shadow-sm">
                   <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><Inbox className="h-5 w-5 text-primary"/>My Requests Status</CardTitle>
+                      <CardTitle as="h2" className="flex items-center gap-2"><Inbox className="h-5 w-5 text-primary"/>My Requests Status</CardTitle>
                       <CardDescription>A summary of your recent submissions.</CardDescription>
                   </CardHeader>
                   <CardContent>
