@@ -71,7 +71,7 @@ export type SummarizeReportOutput = z.infer<typeof SummarizeReportOutputSchema>;
 
 
 // Firestore document schema
-export interface StoredPurserReport extends PurserReportFormValues {
+export interface StoredPurserReport {
   id: string;
   userId: string;
   userEmail: string;
@@ -81,9 +81,29 @@ export interface StoredPurserReport extends PurserReportFormValues {
   // Overwrite for storage
   departureAirport: string;
   arrivalAirport: string;
-  crewRoster: { uid: string, name: string, role: string }[];
   // AI Summary fields
   aiSummary?: string;
   aiKeyPoints?: string[];
   aiPotentialRisks?: string[];
+  flightId: string;
+  flightNumber: string;
+  flightDate: string;
+  route: string;
+  aircraftType: string;
+  picName: string;
+  foName: string;
+  sccmName: string;
+  cabinCrewOnBoard: string[];
+  positivePoints?: string;
+  improvementPoints?: string;
+  actionRequired: boolean;
+  passengerCount: number;
+  passengersToReport?: string[];
+  technicalIssues?: string[];
+  safetyChecks: string[];
+  safetyAnomalies?: string;
+  servicePassengerFeedback?: string;
+  specificIncident: boolean;
+  incidentTypes?: string[];
+  incidentDetails?: string;
 }

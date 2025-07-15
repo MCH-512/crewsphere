@@ -149,7 +149,7 @@ export default function SubmitPurserReportPage() {
 
   const prevStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => prev - 1);
     }
   };
 
@@ -160,16 +160,19 @@ export default function SubmitPurserReportPage() {
     try {
       const reportRef = doc(collection(db, "purserReports"));
 
-      const crewRoster = flightData.crewMembers.filter(c => data.cabinCrewOnBoard.includes(c.displayName || c.email!)).map(member => ({
-        uid: member.uid, name: member.displayName || member.email!, role: member.role || 'cabin crew',
-      }));
-      
       const reportData: any = { 
-        ...data, userId: user.uid, userEmail: user.email, createdAt: serverTimestamp(), status: 'submitted', adminNotes: '',
-        crewRoster, departureAirport: flightData.departureAirport, arrivalAirport: flightData.arrivalAirport
+        ...data, 
+        userId: user.uid, 
+        userEmail: user.email, 
+        createdAt: serverTimestamp(), 
+        status: 'submitted', 
+        adminNotes: '',
+        departureAirport: flightData.departureAirport, 
+        arrivalAirport: flightData.arrivalAirport,
       };
       
       try {
+            toast({ title: "Generating AI Summary...", description: "Please wait while we analyze your report." });
             const reportContent = `Flight report for ${data.flightNumber} (${data.route}) on ${format(parseISO(data.flightDate), "PPP")}. Passengers: ${data.passengerCount}. Positives: ${data.positivePoints}. Improvements: ${data.improvementPoints}. Passenger notes: ${data.passengersToReport?.join(', ')}. Cabin issues: ${data.technicalIssues?.join(', ')}. Safety anomalies: ${data.safetyAnomalies}. Service feedback: ${data.servicePassengerFeedback}. Incident: ${data.specificIncident ? `Yes, ${data.incidentTypes?.join(', ')} - ${data.incidentDetails}` : 'No'}.`;
             const summary = await summarizeReport({ reportContent });
             reportData.aiSummary = summary.summary;
@@ -177,6 +180,8 @@ export default function SubmitPurserReportPage() {
             reportData.aiPotentialRisks = summary.potentialRisks;
       } catch(aiError) {
           console.error("AI summary generation failed during report submission:", aiError);
+          // Don't block submission, just notify
+          toast({ title: "AI Summary Failed", description: "Could not generate AI summary, but your report will still be submitted.", variant: "default" });
       }
 
       batch.set(reportRef, reportData);
