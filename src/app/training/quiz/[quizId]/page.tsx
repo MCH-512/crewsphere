@@ -228,18 +228,18 @@ export default function QuizPage() {
                 <Card>
                     <CardHeader><CardTitle>Review Your Answers</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        {questions.map((q, index) => {
+                        {questions.map((q, qIndex) => {
                             const userAnswer = userAnswers[q.id];
                             const isCorrect = userAnswer === q.correctAnswer;
                             return (
                                 <div key={q.id} className="p-4 border rounded-md">
-                                    <p className="font-semibold">{index + 1}. {q.questionText}</p>
+                                    <p className="font-semibold">{qIndex + 1}. {q.questionText}</p>
                                     <div className="mt-2 space-y-2 text-sm">
-                                        {q.options.map(opt => {
+                                        {q.options.map((opt, optIndex) => {
                                             const isUserAnswer = userAnswer === opt;
                                             const isCorrectAnswer = q.correctAnswer === opt;
                                             return (
-                                                <div key={opt} className={cn("p-2 rounded-md flex items-center gap-2", 
+                                                <div key={`${q.id}-opt-${optIndex}`} className={cn("p-2 rounded-md flex items-center gap-2", 
                                                     isCorrectAnswer && "bg-green-500/10 text-green-800",
                                                     isUserAnswer && !isCorrectAnswer && "bg-destructive/10 text-destructive-foreground line-through"
                                                 )}>
