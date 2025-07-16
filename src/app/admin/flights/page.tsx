@@ -27,7 +27,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { checkCrewAvailability, type Conflict } from "@/services/user-activity-service";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription as ShadAlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
 
@@ -290,6 +290,10 @@ export default function AdminFlightsPage() {
                 aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: [],
                 instructorIds: [], traineeIds: [],
                 includeReturnFlight: false,
+                returnFlightNumber: "", returnDepartureAirport: "", returnArrivalAirport: "",
+                returnScheduledDepartureDateTimeUTC: "", returnScheduledArrivalDateTimeUTC: "",
+                returnAircraftType: undefined, returnPurserId: "", returnPilotIds: [], returnCabinCrewIds: [],
+                returnInstructorIds: [], returnTraineeIds: [],
             });
         }
         setDepSearch("");
@@ -431,7 +435,6 @@ export default function AdminFlightsPage() {
             const flightRef = doc(db, "flights", flightToDelete.id);
             batch.delete(flightRef);
 
-            // Delete all associated user activities
             if (flightToDelete.activityIds) {
                 for (const activityId of Object.values(flightToDelete.activityIds)) {
                     batch.delete(doc(db, "userActivities", activityId));
@@ -549,7 +552,7 @@ export default function AdminFlightsPage() {
                                             <Alert key={userId} variant="warning">
                                                 <AlertTriangle className="h-4 w-4" />
                                                 <AlertTitle>{userMap.get(userId)?.displayName || 'User'} has a conflict</AlertTitle>
-                                                <AlertDescription>{conflict.details}</AlertDescription>
+                                                <ShadAlertDescription>{conflict.details}</ShadAlertDescription>
                                             </Alert>
                                         ))}
                                     </div>
