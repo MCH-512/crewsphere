@@ -82,6 +82,10 @@ export default function AdminFlightsPage() {
             aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: [],
             instructorIds: [], traineeIds: [],
             includeReturnFlight: false,
+            returnFlightNumber: "", returnDepartureAirport: "", returnArrivalAirport: "",
+            returnScheduledDepartureDateTimeUTC: "", returnScheduledArrivalDateTimeUTC: "",
+            returnAircraftType: undefined, returnPurserId: "", returnPilotIds: [], returnCabinCrewIds: [],
+            returnInstructorIds: [], returnTraineeIds: [],
         },
     });
 
@@ -571,16 +575,16 @@ export default function AdminFlightsPage() {
                                     <div className="space-y-6 p-4 border-l-4 border-primary/50 bg-muted/30 rounded-r-md">
                                         <h3 className="text-lg font-semibold text-primary">Return Flight</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="returnFlightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="returnFlightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
                                             <FormField control={form.control} name="returnAircraftType" render={({ field }) => ( <FormItem><FormLabel>Aircraft Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an aircraft" /></SelectTrigger></FormControl><SelectContent>{aircraftTypes.map(type => ( <SelectItem key={type} value={type}>{type}</SelectItem> ))}</SelectContent></Select><FormMessage /></FormItem> )}/>
                                         </div>
                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="returnDepartureAirport" render={({ field }) => (<FormItem><FormLabel>Departure</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
-                                            <FormField control={form.control} name="returnArrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="returnDepartureAirport" render={({ field }) => (<FormItem><FormLabel>Departure</FormLabel><FormControl><Input {...field} value={field.value || ''} disabled /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="returnArrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival</FormLabel><FormControl><Input {...field} value={field.value || ''} disabled /></FormControl><FormMessage /></FormItem>)} />
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="returnScheduledDepartureDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Departure Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                            <FormField control={form.control} name="returnScheduledArrivalDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Arrival Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="returnScheduledDepartureDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Departure Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="returnScheduledArrivalDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Arrival Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
                                         </div>
                                         <h4 className="text-md font-semibold pt-4">Return Crew Assignment</h4>
                                         <FormField control={form.control} name="returnPurserId" render={({ field }) => (<FormItem><FormLabel>Assign Purser</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a purser" /></SelectTrigger></FormControl><SelectContent>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName} ({p.email})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
