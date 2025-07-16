@@ -26,32 +26,42 @@ const fileSchema = z.any()
       "Only .jpg, .png, and .pdf formats are supported."
     );
 
-export const baseUserDocumentFormSchema = z.object({
+// Define the base object without the refinement.
+const baseUserDocumentObject = z.object({
   documentName: z.string().min(3, "Document name is required.").max(100),
   documentType: z.enum(userDocumentTypes, { required_error: "Please select a document type." }),
   issueDate: z.string().refine((val) => val && !isNaN(Date.parse(val)), { message: "Invalid issue date." }),
   expiryDate: z.string().refine((val) => val && !isNaN(Date.parse(val)), { message: "Invalid expiry date." }),
   notes: z.string().max(500).optional(),
-}).refine(data => new Date(data.expiryDate) > new Date(data.issueDate), {
-    message: "Expiry date must be after the issue date.",
-    path: ["expiryDate"],
 });
 
+// The refine function to apply to all schemas that use dates.
+const dateRefinement = (data: { expiryDate: string, issueDate: string }) => new Date(data.expiryDate) > new Date(data.issueDate);
+
 // Schema for an Admin editing/creating a document for a user (no file upload)
-export const adminUserDocumentFormSchema = baseUserDocumentFormSchema.extend({
+export const adminUserDocumentFormSchema = baseUserDocumentObject.extend({
   userId: z.string().min(1, "A user must be selected."),
+}).refine(dateRefinement, {
+    message: "Expiry date must be after the issue date.",
+    path: ["expiryDate"],
 });
 export type AdminUserDocumentFormValues = z.infer<typeof adminUserDocumentFormSchema>;
 
 
 // A schema for when a user is creating a document for the first time
-export const userDocumentCreateFormSchema = baseUserDocumentFormSchema.extend({
+export const userDocumentCreateFormSchema = baseUserDocumentObject.extend({
     file: fileSchema // File is required on creation
+}).refine(dateRefinement, {
+    message: "Expiry date must be after the issue date.",
+    path: ["expiryDate"],
 });
 
 // A schema for when a user is updating a document
-export const userDocumentUpdateFormSchema = baseUserDocumentFormSchema.extend({
+export const userDocumentUpdateFormSchema = baseUserDocumentObject.extend({
     file: fileSchema.optional() // File is optional on update
+}).refine(dateRefinement, {
+    message: "Expiry date must be after the issue date.",
+    path: ["expiryDate"],
 });
 
 
