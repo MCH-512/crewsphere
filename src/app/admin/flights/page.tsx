@@ -7,7 +7,7 @@ import { useForm, Controller } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as UiDialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -427,6 +427,7 @@ export default function AdminFlightsPage() {
             const flightRef = doc(db, "flights", flightToDelete.id);
             batch.delete(flightRef);
 
+            // Delete all associated user activities
             if (flightToDelete.activityIds) {
                 for (const activityId of Object.values(flightToDelete.activityIds)) {
                     batch.delete(doc(db, "userActivities", activityId));
@@ -504,7 +505,7 @@ export default function AdminFlightsPage() {
                 <DialogContent className="max-w-4xl">
                     <DialogHeader>
                         <DialogTitle>{isEditMode ? "Edit Flight" : "Create New Flight"}</DialogTitle>
-                        <UiDialogDescription>{isEditMode ? "Update the flight details below." : "Fill in the form to schedule a new flight."}</UiDialogDescription>
+                        <DialogDescription>{isEditMode ? "Update the flight details below." : "Fill in the form to schedule a new flight."}</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleFormSubmit)}>
