@@ -17,7 +17,7 @@ import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, server
 import { useRouter } from "next/navigation";
 import { ClipboardCheck, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfDay } from "date-fns";
+import { format, startOfDay, parseISO } from "date-fns";
 import { trainingSessionFormSchema, type TrainingSessionFormValues, type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { CustomMultiSelectAutocomplete } from "@/components/ui/custom-multi-select-autocomplete";
@@ -198,7 +198,10 @@ export default function AdminTrainingSessionsPage() {
                 (sessionToEdit.attendeeIds || []).map(id => userMap.get(id))
             ).then(users => users.filter(Boolean) as User[]);
             
-            const sessionDate = sessionToEdit.sessionDateTimeUTC.toDate();
+            const sessionDate = sessionToEdit.sessionDateTimeUTC instanceof Timestamp 
+                ? sessionToEdit.sessionDateTimeUTC.toDate()
+                : new Date(sessionToEdit.sessionDateTimeUTC as any);
+
             const formattedDate = sessionDate.toISOString().substring(0, 16);
 
             form.reset({
@@ -312,6 +315,17 @@ export default function AdminTrainingSessionsPage() {
 
     if (authLoading || isLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
 
+    const formatDateSafe = (date: Timestamp | string) => {
+        if (!date) return 'N/A';
+        try {
+            const dateObj = date instanceof Timestamp ? date.toDate() : parseISO(date);
+            return format(dateObj, "PPpp");
+        } catch (e) {
+            console.warn("Could not format date:", date);
+            return "Invalid Date";
+        }
+    };
+
     return (
         <div className="space-y-6">
             <Card className="shadow-lg">
@@ -340,7 +354,7 @@ export default function AdminTrainingSessionsPage() {
                                     <TableRow key={s.id}>
                                         <TableCell className="font-medium">{s.title}</TableCell>
                                         <TableCell>{s.location}</TableCell>
-                                        <TableCell>{format(s.sessionDateTimeUTC.toDate(), "PPpp")}</TableCell>
+                                        <TableCell>{formatDateSafe(s.sessionDateTimeUTC)}</TableCell>
                                         <TableCell>
                                             <Badge variant="secondary" className="flex items-center gap-1 w-fit">
                                                 <Users className="h-3 w-3"/>
@@ -382,7 +396,7 @@ export default function AdminTrainingSessionsPage() {
                                      <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                                      <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                                      <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                     <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
 
                                     <Separator />
                                      <h3 className="text-lg font-medium">Attendee Availability</h3>
