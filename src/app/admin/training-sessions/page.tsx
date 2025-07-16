@@ -98,7 +98,7 @@ export default function AdminTrainingSessionsPage() {
                 return { 
                     id: doc.id,
                     ...data,
-                    attendeeCount: data.attendeeIds.length,
+                    attendeeCount: (data.attendeeIds || []).length,
                 }
             }));
 
@@ -195,7 +195,7 @@ export default function AdminTrainingSessionsPage() {
             setCurrentSession(sessionToEdit);
 
             const attendeesData = await Promise.all(
-                sessionToEdit.attendeeIds.map(id => userMap.get(id))
+                (sessionToEdit.attendeeIds || []).map(id => userMap.get(id))
             ).then(users => users.filter(Boolean) as User[]);
             
             const sessionDate = sessionToEdit.sessionDateTimeUTC.toDate();
