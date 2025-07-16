@@ -37,6 +37,13 @@ export const baseUserDocumentFormSchema = z.object({
     path: ["expiryDate"],
 });
 
+// Schema for an Admin editing/creating a document for a user (no file upload)
+export const adminUserDocumentFormSchema = baseUserDocumentFormSchema.extend({
+  userId: z.string().min(1, "A user must be selected."),
+});
+export type AdminUserDocumentFormValues = z.infer<typeof adminUserDocumentFormSchema>;
+
+
 // A schema for when a user is creating a document for the first time
 export const userDocumentCreateFormSchema = baseUserDocumentFormSchema.extend({
     file: fileSchema // File is required on creation

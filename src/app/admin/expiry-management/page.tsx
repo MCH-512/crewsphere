@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -19,7 +20,7 @@ import { BadgeAlert, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
 import { logAuditEvent } from "@/lib/audit-logger";
-import { userDocumentFormSchema, userDocumentTypes, type StoredUserDocument, type UserDocumentFormValues, type UserDocumentStatus } from "@/schemas/user-document-schema";
+import { adminUserDocumentFormSchema, userDocumentTypes, type StoredUserDocument, type UserDocumentStatus, type AdminUserDocumentFormValues } from "@/schemas/user-document-schema";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -57,8 +58,8 @@ export default function AdminExpiryManagementPage() {
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>('expiryDate');
     const [sortDirection, setSortDirection] = React.useState<SortDirection>('asc');
 
-    const form = useForm<Omit<UserDocumentFormValues, 'file'>>({
-        resolver: zodResolver(userDocumentFormSchema.omit({ file: true })),
+    const form = useForm<AdminUserDocumentFormValues>({
+        resolver: zodResolver(adminUserDocumentFormSchema),
         defaultValues: { userId: "", documentName: "", documentType: undefined, issueDate: "", expiryDate: "", notes: "" },
         mode: "onBlur",
     });
@@ -168,7 +169,7 @@ export default function AdminExpiryManagementPage() {
         setIsManageDialogOpen(true);
     };
 
-    const handleFormSubmit = async (data: Omit<UserDocumentFormValues, 'file'>) => {
+    const handleFormSubmit = async (data: AdminUserDocumentFormValues) => {
         if (!adminUser) return;
         setIsSubmitting(true);
         try {
