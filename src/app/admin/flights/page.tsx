@@ -17,7 +17,7 @@ import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, server
 import { useRouter } from "next/navigation";
 import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowUpDown, ArrowRightLeft, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfDay, parseISO } from "date-fns";
+import { format, startOfDay, parseISO, addHours } from "date-fns";
 import { flightFormSchema, type FlightFormValues, type StoredFlight, aircraftTypes } from "@/schemas/flight-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { getAirportByCode, searchAirports, type Airport } from "@/services/airport-service";
@@ -29,6 +29,7 @@ import { Separator } from "@/components/ui/separator";
 import { checkCrewAvailability, type Conflict } from "@/services/user-activity-service";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
+import { Switch } from "@/components/ui/switch";
 
 
 interface FlightForDisplay extends StoredFlight {
@@ -79,9 +80,41 @@ export default function AdminFlightsPage() {
             flightNumber: "", departureAirport: "", arrivalAirport: "",
             scheduledDepartureDateTimeUTC: "", scheduledArrivalDateTimeUTC: "",
             aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: [],
-            instructorIds: [], traineeIds: []
+            instructorIds: [], traineeIds: [],
+            includeReturnFlight: false,
         },
     });
+
+    const watchedFields = form.watch();
+
+    React.useEffect(() => {
+        if(watchedFields.includeReturnFlight) {
+            // Pre-fill return flight data when outbound data changes
+            form.setValue('returnDepartureAirport', watchedFields.arrivalAirport);
+            form.setValue('returnArrivalAirport', watchedFields.departureAirport);
+            form.setValue('returnFlightNumber', watchedFields.flightNumber);
+            form.setValue('returnAircraftType', watchedFields.aircraftType);
+            form.setValue('returnPurserId', watchedFields.purserId);
+            form.setValue('returnPilotIds', watchedFields.pilotIds);
+            form.setValue('returnCabinCrewIds', watchedFields.cabinCrewIds);
+            form.setValue('returnInstructorIds', watchedFields.instructorIds);
+            form.setValue('returnTraineeIds', watchedFields.traineeIds);
+
+            if (watchedFields.scheduledArrivalDateTimeUTC) {
+                try {
+                    const arrivalDate = parseISO(watchedFields.scheduledArrivalDateTimeUTC);
+                    const defaultReturnDeparture = addHours(arrivalDate, 2);
+                    form.setValue('returnScheduledDepartureDateTimeUTC', format(defaultReturnDeparture, "yyyy-MM-dd'T'HH:mm"));
+                } catch(e) {/* ignore invalid date format during input */}
+            }
+        }
+    }, [
+        watchedFields.includeReturnFlight, watchedFields.arrivalAirport, watchedFields.departureAirport,
+        watchedFields.flightNumber, watchedFields.aircraftType, watchedFields.purserId,
+        watchedFields.pilotIds, watchedFields.cabinCrewIds, watchedFields.instructorIds, watchedFields.traineeIds,
+        watchedFields.scheduledArrivalDateTimeUTC, form
+    ]);
+
 
     const fetchPageData = React.useCallback(async () => {
         setIsLoading(true);
@@ -184,15 +217,16 @@ export default function AdminFlightsPage() {
         searchAirports(debouncedArrSearch).then(res => setArrResults(res)).finally(() => setIsSearchingAirports(false));
     }, [debouncedArrSearch]);
 
-    const watchedPurser = form.watch("purserId");
-    const watchedPilots = form.watch("pilotIds");
-    const watchedCabinCrew = form.watch("cabinCrewIds");
-    const watchedInstructors = form.watch("instructorIds");
-    const watchedTrainees = form.watch("traineeIds");
     const debouncedDep = useDebounce(form.watch("scheduledDepartureDateTimeUTC"), 500);
     const debouncedArr = useDebounce(form.watch("scheduledArrivalDateTimeUTC"), 500);
 
     React.useEffect(() => {
+        const watchedPurser = form.watch("purserId");
+        const watchedPilots = form.watch("pilotIds");
+        const watchedCabinCrew = form.watch("cabinCrewIds");
+        const watchedInstructors = form.watch("instructorIds");
+        const watchedTrainees = form.watch("traineeIds");
+
         const allAssignedCrewIds = [...new Set([watchedPurser, ...(watchedPilots || []), ...(watchedCabinCrew || []), ...(watchedInstructors || []), ...(watchedTrainees || [])].filter(Boolean))];
         
         if (allAssignedCrewIds.length === 0 || !debouncedDep || !debouncedArr) {
@@ -219,7 +253,10 @@ export default function AdminFlightsPage() {
 
         check();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [watchedPurser, JSON.stringify(watchedPilots), JSON.stringify(watchedCabinCrew), JSON.stringify(watchedInstructors), JSON.stringify(watchedTrainees), debouncedDep, debouncedArr, toast, currentFlight]);
+    }, [
+        form.watch("purserId"), form.watch("pilotIds"), form.watch("cabinCrewIds"), form.watch("instructorIds"), form.watch("traineeIds"),
+        debouncedDep, debouncedArr, toast, currentFlight
+    ]);
 
 
     const handleOpenDialog = (flightToEdit?: StoredFlight) => {
@@ -238,6 +275,7 @@ export default function AdminFlightsPage() {
                 cabinCrewIds: flightToEdit.cabinCrewIds || [],
                 instructorIds: flightToEdit.instructorIds || [],
                 traineeIds: flightToEdit.traineeIds || [],
+                includeReturnFlight: false,
             });
         } else {
             setIsEditMode(false);
@@ -247,6 +285,7 @@ export default function AdminFlightsPage() {
                 scheduledDepartureDateTimeUTC: "", scheduledArrivalDateTimeUTC: "",
                 aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: [],
                 instructorIds: [], traineeIds: [],
+                includeReturnFlight: false,
             });
         }
         setDepSearch("");
@@ -270,6 +309,7 @@ export default function AdminFlightsPage() {
             cabinCrewIds: flight.cabinCrewIds || [],
             instructorIds: flight.instructorIds || [],
             traineeIds: flight.traineeIds || [],
+            includeReturnFlight: false,
         });
         setDepSearch(flight.arrivalAirportName || flight.arrivalAirport);
         setArrSearch(flight.departureAirportName || flight.departureAirport);
@@ -291,78 +331,82 @@ export default function AdminFlightsPage() {
         let wasSuccessful = false;
         
         try {
-            const allCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || []), ...(data.instructorIds || []), ...(data.traineeIds || [])].filter(Boolean))];
-            
             const batch = writeBatch(db);
 
+            // --- Outbound Flight Logic ---
+            const outboundCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || []), ...(data.instructorIds || []), ...(data.traineeIds || [])].filter(Boolean))];
+            
             if (isEditMode && currentFlight) {
                 // UPDATE logic
                 const flightRef = doc(db, "flights", currentFlight.id);
-
-                // 1. Clean up old activities
                 if (currentFlight.activityIds) {
-                    for (const activityId of Object.values(currentFlight.activityIds)) {
-                        batch.delete(doc(db, "userActivities", activityId));
-                    }
+                    for (const activityId of Object.values(currentFlight.activityIds)) { batch.delete(doc(db, "userActivities", activityId)); }
                 }
                 
-                // 2. Create new activities
                 const activityIds: Record<string, string> = {};
-                for (const crewId of allCrewIds) {
+                for (const crewId of outboundCrewIds) {
                     const activityRef = doc(collection(db, "userActivities"));
-                    batch.set(activityRef, {
-                        userId: crewId, activityType: 'flight' as const, flightId: currentFlight.id,
-                        date: Timestamp.fromDate(startOfDay(new Date(data.scheduledDepartureDateTimeUTC))),
-                        flightNumber: data.flightNumber, departureAirport: data.departureAirport, arrivalAirport: data.arrivalAirport,
-                        comments: `Flight ${data.flightNumber} from ${data.departureAirport} to ${data.arrivalAirport}`,
-                    });
+                    batch.set(activityRef, { userId: crewId, activityType: 'flight' as const, flightId: currentFlight.id, date: Timestamp.fromDate(startOfDay(new Date(data.scheduledDepartureDateTimeUTC))), flightNumber: data.flightNumber, departureAirport: data.departureAirport, arrivalAirport: data.arrivalAirport, comments: `Flight ${data.flightNumber} from ${data.departureAirport} to ${data.arrivalAirport}` });
                     activityIds[crewId] = activityRef.id;
                 }
                 
-                // 3. Update the flight document itself
-                batch.update(flightRef, { ...data, allCrewIds, activityIds, updatedAt: serverTimestamp() });
-                await batch.commit();
-
+                batch.update(flightRef, { ...data, allCrewIds: outboundCrewIds, activityIds, updatedAt: serverTimestamp() });
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityType: "FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
                 toast({ title: "Flight Updated", description: `Flight ${data.flightNumber} has been updated.` });
-                wasSuccessful = true;
             
             } else {
-                // CREATE logic
-                const flightRef = doc(collection(db, "flights"));
+                // CREATE logic for outbound flight
+                const outboundFlightRef = doc(collection(db, "flights"));
                 
-                const activityIds: Record<string, string> = {};
-
-                for (const crewId of allCrewIds) {
+                const outboundActivityIds: Record<string, string> = {};
+                for (const crewId of outboundCrewIds) {
                     const activityRef = doc(collection(db, "userActivities"));
-                    batch.set(activityRef, {
-                        userId: crewId,
-                        activityType: 'flight' as const,
-                        flightId: flightRef.id,
-                        date: Timestamp.fromDate(startOfDay(new Date(data.scheduledDepartureDateTimeUTC))),
-                        flightNumber: data.flightNumber,
-                        departureAirport: data.departureAirport,
-                        arrivalAirport: data.arrivalAirport,
-                        comments: `Flight ${data.flightNumber} from ${data.departureAirport} to ${data.arrivalAirport}`,
-                    });
-                    activityIds[crewId] = activityRef.id;
+                    batch.set(activityRef, { userId: crewId, activityType: 'flight' as const, flightId: outboundFlightRef.id, date: Timestamp.fromDate(startOfDay(new Date(data.scheduledDepartureDateTimeUTC))), flightNumber: data.flightNumber, departureAirport: data.departureAirport, arrivalAirport: data.arrivalAirport, comments: `Flight ${data.flightNumber} from ${data.departureAirport} to ${data.arrivalAirport}` });
+                    outboundActivityIds[crewId] = activityRef.id;
                 }
                 
-                batch.set(flightRef, {
-                    ...data,
-                    allCrewIds,
-                    activityIds,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
-                    purserReportSubmitted: false,
-                });
+                batch.set(outboundFlightRef, { ...data, allCrewIds: outboundCrewIds, activityIds: outboundActivityIds, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), purserReportSubmitted: false });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_FLIGHT", entityType: "FLIGHT", entityId: outboundFlightRef.id, details: { flightNumber: data.flightNumber } });
                 
-                await batch.commit();
+                // --- Return Flight Logic (only on create) ---
+                if (data.includeReturnFlight && data.returnFlightNumber) {
+                    const returnCrewIds = [...new Set([data.returnPurserId!, ...(data.returnPilotIds || []), ...(data.returnCabinCrewIds || []), ...(data.returnInstructorIds || []), ...(data.returnTraineeIds || [])].filter(Boolean))];
+                    const returnFlightRef = doc(collection(db, "flights"));
+                    const returnActivityIds: Record<string, string> = {};
 
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_FLIGHT", entityType: "FLIGHT", entityId: flightRef.id, details: { flightNumber: data.flightNumber } });
-                toast({ title: "Flight Created", description: `Flight ${data.flightNumber} has been scheduled.` });
-                wasSuccessful = true;
+                    for (const crewId of returnCrewIds) {
+                        const activityRef = doc(collection(db, "userActivities"));
+                        batch.set(activityRef, { userId: crewId, activityType: 'flight' as const, flightId: returnFlightRef.id, date: Timestamp.fromDate(startOfDay(new Date(data.returnScheduledDepartureDateTimeUTC!))), flightNumber: data.returnFlightNumber, departureAirport: data.returnDepartureAirport, arrivalAirport: data.returnArrivalAirport, comments: `Flight ${data.returnFlightNumber} from ${data.returnDepartureAirport} to ${data.returnArrivalAirport}` });
+                        returnActivityIds[crewId] = activityRef.id;
+                    }
+
+                    batch.set(returnFlightRef, {
+                        flightNumber: data.returnFlightNumber,
+                        departureAirport: data.returnDepartureAirport,
+                        arrivalAirport: data.returnArrivalAirport,
+                        scheduledDepartureDateTimeUTC: data.returnScheduledDepartureDateTimeUTC,
+                        scheduledArrivalDateTimeUTC: data.returnScheduledArrivalDateTimeUTC,
+                        aircraftType: data.returnAircraftType,
+                        purserId: data.returnPurserId,
+                        pilotIds: data.returnPilotIds,
+                        cabinCrewIds: data.returnCabinCrewIds,
+                        instructorIds: data.returnInstructorIds,
+                        traineeIds: data.returnTraineeIds,
+                        allCrewIds: returnCrewIds,
+                        activityIds: returnActivityIds,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                        purserReportSubmitted: false
+                    });
+                     await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_FLIGHT", entityType: "FLIGHT", entityId: returnFlightRef.id, details: { flightNumber: data.returnFlightNumber, type: "Return" } });
+                }
+
+                toast({ title: "Flight Created", description: `Flight ${data.flightNumber} ${data.includeReturnFlight ? 'and its return leg have' : 'has'} been scheduled.` });
             }
+            
+            await batch.commit();
+            wasSuccessful = true;
+
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
             toast({ title: "Operation Failed", description: errorMessage, variant: "destructive" });
@@ -457,7 +501,7 @@ export default function AdminFlightsPage() {
             </Card>
 
             <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
-                <DialogContent className="max-w-3xl">
+                <DialogContent className="max-w-4xl">
                     <DialogHeader>
                         <DialogTitle>{isEditMode ? "Edit Flight" : "Create New Flight"}</DialogTitle>
                         <DialogDescription>{isEditMode ? "Update the flight details below." : "Fill in the form to schedule a new flight."}</DialogDescription>
@@ -466,26 +510,12 @@ export default function AdminFlightsPage() {
                         <form onSubmit={form.handleSubmit(handleFormSubmit)}>
                         <ScrollArea className="h-[70vh] p-4">
                             <div className="space-y-6">
+                            
+                            {/* Outbound Flight Section */}
+                            <h3 className="text-lg font-semibold text-primary">Outbound Flight</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="aircraftType" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Aircraft Type</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select an aircraft" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {aircraftTypes.map(type => (
-                                                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
+                                <FormField control={form.control} name="aircraftType" render={({ field }) => ( <FormItem><FormLabel>Aircraft Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an aircraft" /></SelectTrigger></FormControl><SelectContent>{aircraftTypes.map(type => ( <SelectItem key={type} value={type}>{type}</SelectItem> ))}</SelectContent></Select><FormMessage /></FormItem> )}/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                <Controller control={form.control} name="departureAirport" render={({ field }) => (<FormItem><FormLabel>Departure</FormLabel><CustomAutocompleteAirport value={field.value} onSelect={(airport) => field.onChange(airport?.icao || "")} airports={depResults} isLoading={isSearchingAirports} onInputChange={setDepSearch} currentSearchTerm={depSearch} placeholder="Search departure..." /><FormMessage /></FormItem>)} />
@@ -521,6 +551,45 @@ export default function AdminFlightsPage() {
                                 ) : (
                                     <p className="text-sm text-muted-foreground">No conflicts detected for the selected crew and dates.</p>
                                 )}
+                            
+                            {/* Return Flight Section */}
+                            {!isEditMode && (
+                                <>
+                                <Separator/>
+                                <FormField control={form.control} name="includeReturnFlight" render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                            <FormLabel className="text-base">Include Return Flight</FormLabel>
+                                            <FormDescription>Automatically create a return flight for this rotation.</FormDescription>
+                                        </div>
+                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    </FormItem>
+                                )} />
+
+                                {watchedFields.includeReturnFlight && (
+                                    <div className="space-y-6 p-4 border-l-4 border-primary/50 bg-muted/30 rounded-r-md">
+                                        <h3 className="text-lg font-semibold text-primary">Return Flight</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="returnFlightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="returnAircraftType" render={({ field }) => ( <FormItem><FormLabel>Aircraft Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an aircraft" /></SelectTrigger></FormControl><SelectContent>{aircraftTypes.map(type => ( <SelectItem key={type} value={type}>{type}</SelectItem> ))}</SelectContent></Select><FormMessage /></FormItem> )}/>
+                                        </div>
+                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="returnDepartureAirport" render={({ field }) => (<FormItem><FormLabel>Departure</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="returnArrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="returnScheduledDepartureDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Departure Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="returnScheduledArrivalDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Arrival Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        </div>
+                                        <h4 className="text-md font-semibold pt-4">Return Crew Assignment</h4>
+                                        <FormField control={form.control} name="returnPurserId" render={({ field }) => (<FormItem><FormLabel>Assign Purser</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a purser" /></SelectTrigger></FormControl><SelectContent>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName} ({p.email})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="returnPilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="returnCabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                    </div>
+                                )}
+                                </>
+                            )}
+
                             </div>
                         </ScrollArea>
                             <DialogFooter className="mt-4 pt-4 border-t">
