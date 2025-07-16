@@ -358,7 +358,7 @@ export default function AdminTrainingSessionsPage() {
                                         <TableCell>
                                             <Badge variant="secondary" className="flex items-center gap-1 w-fit">
                                                 <Users className="h-3 w-3"/>
-                                                {s.attendeeIds.length}
+                                                {(s.attendeeIds || []).length}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right space-x-1">
