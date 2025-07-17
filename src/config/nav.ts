@@ -1,3 +1,4 @@
+
 import {
   LayoutDashboard, Settings, Plane, ServerCog, Users, ClipboardList, 
   ClipboardCheck, MessageSquare, Activity, FileSignature, 
@@ -60,7 +61,6 @@ export const adminNavConfig = {
         { href: "/admin/users", title: "User Management", icon: Users },
         { href: "/admin/flights", title: "Flight Management", icon: Plane },
         { href: "/admin/alerts", title: "Alert Management", icon: BellRing },
-        { href: "/admin/flight-swaps", title: "Flight Swaps", icon: Handshake },
         { href: "/admin/expiry-management", title: "Document Expiry", icon: BadgeAlert },
         { href: "/admin/document-validations", title: "Doc Validations", icon: FileCheck2 },
         { href: "/admin/user-requests", title: "User Requests", icon: ClipboardList },

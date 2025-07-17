@@ -4,7 +4,7 @@
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, Controller } from "react-hook-form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -15,9 +15,9 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, getDoc, deleteDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowUpDown, ArrowRightLeft, ArrowUp, ArrowDown } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowUpDown, ArrowRightLeft, ArrowUp, ArrowDown, Handshake, FileSignature, Calendar as CalendarIcon, List } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfDay, parseISO, addHours } from "date-fns";
+import { format, startOfDay, parseISO, addHours, isSameDay, startOfMonth, endOfMonth } from "date-fns";
 import { flightFormSchema, type FlightFormValues, type StoredFlight, aircraftTypes } from "@/schemas/flight-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { getAirportByCode, searchAirports, type Airport } from "@/services/airport-service";
@@ -30,7 +30,8 @@ import { checkCrewAvailability, type Conflict } from "@/services/user-activity-s
 import { Alert, AlertDescription as ShadAlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
-
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 interface FlightForDisplay extends StoredFlight {
     departureAirportName?: string;
@@ -41,6 +42,7 @@ interface FlightForDisplay extends StoredFlight {
 
 type SortableColumn = 'scheduledDepartureDateTimeUTC' | 'flightNumber' | 'departureAirportName' | 'purserName' | 'aircraftType' | 'crewCount';
 type SortDirection = 'asc' | 'desc';
+type ViewMode = "list" | "calendar";
 
 export default function AdminFlightsPage() {
     const { user, loading: authLoading } = useAuth();
@@ -73,6 +75,7 @@ export default function AdminFlightsPage() {
 
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>('scheduledDepartureDateTimeUTC');
     const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
+    const [viewMode, setViewMode] = React.useState<ViewMode>("list");
 
     const form = useForm<FlightFormValues>({
         resolver: zodResolver(flightFormSchema),
@@ -93,7 +96,6 @@ export default function AdminFlightsPage() {
 
     React.useEffect(() => {
         if(watchedFields.includeReturnFlight) {
-            // Pre-fill return flight data when outbound data changes
             form.setValue('returnDepartureAirport', watchedFields.arrivalAirport);
             form.setValue('returnArrivalAirport', watchedFields.departureAirport);
             form.setValue('returnFlightNumber', watchedFields.flightNumber);
@@ -462,51 +464,62 @@ export default function AdminFlightsPage() {
                         <CardTitle className="text-2xl font-headline flex items-center"><Plane className="mr-3 h-7 w-7 text-primary" />Flight Management</CardTitle>
                         <CardDescription>Schedule new flights and assign crew members.</CardDescription>
                     </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={fetchPageData} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
-                        <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4"/>Create Flight</Button>
+                     <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setViewMode('list')} className={cn(viewMode === 'list' && 'bg-accent text-accent-foreground')}><List className="mr-2 h-4 w-4"/>List</Button>
+                        <Button variant="outline" size="sm" onClick={() => setViewMode('calendar')} className={cn(viewMode === 'calendar' && 'bg-accent text-accent-foreground')}><CalendarIcon className="mr-2 h-4 w-4"/>Calendar</Button>
                     </div>
                 </CardHeader>
-                <CardContent>
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <SortableHeader column="scheduledDepartureDateTimeUTC" label="Date" />
-                                    <SortableHeader column="flightNumber" label="Flight No." />
-                                    <SortableHeader column="departureAirportName" label="Route" />
-                                    <SortableHeader column="purserName" label="Purser" />
-                                    <SortableHeader column="aircraftType" label="Aircraft" />
-                                    <SortableHeader column="crewCount" label="Crew" />
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {sortedFlights.map((f) => (
-                                    <TableRow key={f.id}>
-                                        <TableCell className="font-medium text-xs">{format(new Date(f.scheduledDepartureDateTimeUTC), "PP")}</TableCell>
-                                        <TableCell>{f.flightNumber}</TableCell>
-                                        <TableCell className="text-xs">{f.departureAirportName} → {f.arrivalAirportName}</TableCell>
-                                        <TableCell className="text-xs">
-                                             <Link href={`/admin/users/${f.purserId}`} className="hover:underline text-primary">
-                                                {f.purserName}
-                                            </Link>
-                                        </TableCell>
-                                        <TableCell className="text-xs">{f.aircraftType}</TableCell>
-                                        <TableCell className="text-xs flex items-center gap-1"><Users className="h-3 w-3"/>{f.crewCount}</TableCell>
-                                        <TableCell className="text-right space-x-1">
-                                            <Button variant="ghost" size="icon" onClick={() => handleCreateReturnFlight(f)} title="Create Return Flight"><ArrowRightLeft className="h-4 w-4" /></Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(f)} title="Edit Flight"><Edit className="h-4 w-4" /></Button>
-                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(f)} title="Delete Flight"><Trash2 className="h-4 w-4" /></Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                     {sortedFlights.length === 0 && <p className="text-center text-muted-foreground py-8">No flights found.</p>}
-                </CardContent>
+                <CardFooter className="border-t pt-4 flex-wrap gap-2">
+                     <Button variant="outline" onClick={fetchPageData} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
+                     <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4"/>Create Flight</Button>
+                </CardFooter>
             </Card>
+
+            {viewMode === 'list' ? (
+                <div className="rounded-md border">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <SortableHeader column="scheduledDepartureDateTimeUTC" label="Date" />
+                                <SortableHeader column="flightNumber" label="Flight No." />
+                                <SortableHeader column="departureAirportName" label="Route" />
+                                <SortableHeader column="purserName" label="Purser" />
+                                <SortableHeader column="aircraftType" label="Aircraft" />
+                                <SortableHeader column="crewCount" label="Crew" />
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {sortedFlights.map((f) => (
+                                <TableRow key={f.id}>
+                                    <TableCell className="font-medium text-xs">{format(new Date(f.scheduledDepartureDateTimeUTC), "PP")}</TableCell>
+                                    <TableCell>{f.flightNumber}</TableCell>
+                                    <TableCell className="text-xs">{f.departureAirportName} → {f.arrivalAirportName}</TableCell>
+                                    <TableCell className="text-xs">
+                                            <Link href={`/admin/users/${f.purserId}`} className="hover:underline text-primary">
+                                            {f.purserName}
+                                        </Link>
+                                    </TableCell>
+                                    <TableCell className="text-xs">{f.aircraftType}</TableCell>
+                                    <TableCell className="text-xs flex items-center gap-1"><Users className="h-3 w-3"/>{f.crewCount}</TableCell>
+                                    <TableCell className="text-right space-x-1">
+                                        <Button variant="ghost" size="icon" onClick={() => handleCreateReturnFlight(f)} title="Create Return Flight"><ArrowRightLeft className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(f)} title="Edit Flight"><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(f)} title="Delete Flight"><Trash2 className="h-4 w-4" /></Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    {sortedFlights.length === 0 && <p className="text-center text-muted-foreground py-8">No flights found.</p>}
+                </div>
+            ) : (
+                <Card>
+                    <CardContent className="p-0">
+                         <Calendar className="w-full" />
+                    </CardContent>
+                </Card>
+            )}
 
             <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
                 <DialogContent className="max-w-4xl">
@@ -519,7 +532,6 @@ export default function AdminFlightsPage() {
                         <ScrollArea className="h-[70vh] p-4">
                             <div className="space-y-6">
                             
-                            {/* Outbound Flight Section */}
                             <h3 className="text-lg font-semibold text-primary">Outbound Flight</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -560,7 +572,6 @@ export default function AdminFlightsPage() {
                                     <p className="text-sm text-muted-foreground">No conflicts detected for the selected crew and dates.</p>
                                 )}
                             
-                            {/* Return Flight Section */}
                             {!isEditMode && (
                                 <>
                                 <Separator/>
