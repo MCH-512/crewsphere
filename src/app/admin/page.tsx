@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardList, Library, GraduationCap, CheckSquare, BarChart2, PieChart as PieChartIcon, Compass, Plane, BellRing, BadgeAlert, ClipboardCheck, Handshake } from "lucide-react";
+import { ServerCog, Users, Activity, Settings, Loader2, ArrowRight, MessageSquare, FileSignature, ClipboardList, Library, GraduationCap, CheckSquare, BarChart2, PieChart as PieChartIcon, Compass, Plane, BellRing, BadgeAlert, ClipboardCheck, Handshake, FileCheck2 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -61,6 +61,7 @@ export default function AdminConsolePage() {
       reports: { value: null, isLoading: true, label: "New Reports" },
       requests: { value: null, isLoading: true, label: "Pending Requests" },
       documents: { value: null, isLoading: true, label: "Total Documents" },
+      pendingValidations: { value: null, isLoading: true, label: "Pending Validations" },
       courses: { value: null, isLoading: true, label: "Total Courses" },
       quizzes: { value: null, isLoading: true, label: "Total Quizzes" },
       activeAlerts: { value: null, isLoading: true, label: "Active Alerts" },
@@ -89,6 +90,7 @@ export default function AdminConsolePage() {
         const reportsPromise = getDocs(query(collection(db, "purserReports"), where("status", "==", "submitted")));
         const requestsPromise = getDocs(collection(db, "requests"));
         const documentsSnapPromise = getDocs(collection(db, "documents"));
+        const pendingValidationsPromise = getDocs(query(collection(db, "userDocuments"), where("status", "==", "pending-validation")));
         const coursesSnapPromise = getDocs(collection(db, "courses"));
         const quizzesSnapPromise = getDocs(collection(db, "quizzes"));
         const alertsSnapPromise = getDocs(query(collection(db, "alerts"), where("isActive", "==", true)));
@@ -98,10 +100,10 @@ export default function AdminConsolePage() {
 
         const [
             usersSnap, flightsSnap, suggestionsSnap, reportsSnap, requestsSnap,
-            documentsSnap, coursesSnap, quizzesSnap, alertsSnap, sessionsSnap, swapsSnap, auditLogsSnap
+            documentsSnap, pendingValidationsSnap, coursesSnap, quizzesSnap, alertsSnap, sessionsSnap, swapsSnap, auditLogsSnap
         ] = await Promise.all([
             usersSnapPromise, flightsSnapPromise, suggestionsPromise, reportsPromise, requestsPromise,
-            documentsSnapPromise, coursesSnapPromise, quizzesSnapPromise, alertsSnapPromise, sessionsSnapPromise, swapsSnapPromise, auditLogsPromise
+            documentsSnapPromise, pendingValidationsPromise, coursesSnapPromise, quizzesSnapPromise, alertsSnapPromise, sessionsSnapPromise, swapsSnapPromise, auditLogsPromise
         ]);
         
         const allSuggestions = (await getDocs(collection(db, "suggestions"))).docs.map(doc => doc.data());
@@ -114,6 +116,7 @@ export default function AdminConsolePage() {
             reports: { value: reportsSnap.size, isLoading: false, label: "New Reports" },
             requests: { value: requests.filter((r: any) => r.status === 'pending').length, isLoading: false, label: "Pending Requests" },
             documents: { value: documentsSnap.size, isLoading: false, label: "Total Documents" },
+            pendingValidations: { value: pendingValidationsSnap.size, isLoading: false, label: "Pending Validations" },
             courses: { value: coursesSnap.size, isLoading: false, label: "Total Courses" },
             quizzes: { value: quizzesSnap.size, isLoading: false, label: "Total Quizzes" },
             activeAlerts: { value: alertsSnap.size, isLoading: false, label: "Active Alerts" },
@@ -187,131 +190,63 @@ export default function AdminConsolePage() {
 
   const adminSections: AdminSection[] = [
     { 
-      icon: Users, 
-      title: "User Management", 
-      description: "View, create, and manage user accounts, roles, and permissions.", 
-      buttonText: "Manage Users", 
-      href: "/admin/users",
-      stat: stats.users,
-      delay: 0.1 
+      icon: Users, title: "User Management", description: "View, create, and manage user accounts, roles, and permissions.", buttonText: "Manage Users", href: "/admin/users",
+      stat: stats.users, delay: 0.1 
     },
     { 
-      icon: Plane, 
-      title: "Flight Management", 
-      description: "Schedule new flights, assign pursers, and manage flight details.", 
-      buttonText: "Manage Flights", 
-      href: "/admin/flights",
-      stat: stats.flights,
-      delay: 0.15
+      icon: Plane, title: "Flight Management", description: "Schedule new flights, assign pursers, and manage flight details.", buttonText: "Manage Flights", href: "/admin/flights",
+      stat: stats.flights, delay: 0.15
     },
     { 
-      icon: BellRing, 
-      title: "Alert Management", 
-      description: "Create and broadcast alerts to all or specific groups of users.", 
-      buttonText: "Manage Alerts", 
-      href: "/admin/alerts",
-      stat: stats.activeAlerts,
-      highlightWhen: (value) => value !== null && value > 0,
+      icon: BellRing, title: "Alert Management", description: "Create and broadcast alerts to all or specific groups of users.", buttonText: "Manage Alerts", href: "/admin/alerts",
+      stat: stats.activeAlerts, highlightWhen: (value) => value !== null && value > 0, delay: 0.2
+    },
+    { 
+      icon: Handshake, title: "Flight Swaps", description: "Approve or reject pending flight swap requests from crew members.", buttonText: "Manage Swaps", href: "/admin/flight-swaps",
+      stat: stats.pendingSwaps, highlightWhen: (value) => value !== null && value > 0, delay: 0.28
+    },
+    { 
+      icon: BadgeAlert, title: "Document Expiry", description: "Track and manage expiry dates for all user documents and licenses.", buttonText: "Manage Expiry", href: "/admin/expiry-management",
       delay: 0.2
     },
     { 
-      icon: BadgeAlert, 
-      title: "Document Expiry", 
-      description: "Track and manage expiry dates for all user documents and licenses.", 
-      buttonText: "Manage Expiry", 
-      href: "/admin/expiry-management",
-      delay: 0.2
+      icon: FileCheck2, title: "Document Validations", description: "Review and approve documents updated or submitted by users.", buttonText: "Validate Docs", href: "/admin/document-validations",
+      stat: stats.pendingValidations, highlightWhen: (value) => value !== null && value > 0, delay: 0.22
     },
     { 
-      icon: ClipboardList, 
-      title: "User Requests", 
-      description: "Review and manage all user-submitted requests for leave, roster changes, etc.", 
-      buttonText: "Manage Requests", 
-      href: "/admin/user-requests",
-      stat: stats.requests,
-      highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.25
-    },
-    { 
-      icon: Handshake, 
-      title: "Flight Swap Approvals", 
-      description: "Approve or reject pending flight swap requests from crew members.", 
-      buttonText: "Manage Swaps", 
-      href: "/admin/flight-swaps",
-      stat: stats.pendingSwaps,
-      highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.28
+      icon: ClipboardList, title: "User Requests", description: "Review and manage all user-submitted requests for leave, roster changes, etc.", buttonText: "Manage Requests", href: "/admin/user-requests",
+      stat: stats.requests, highlightWhen: (value) => value !== null && value > 0, delay: 0.25
     },
      { 
-      icon: FileSignature, 
-      title: "Purser Reports", 
-      description: "Review and manage all flight reports submitted by pursers.", 
-      buttonText: "Review Reports", 
-      href: "/admin/purser-reports",
-      stat: stats.reports,
-      highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.31
+      icon: FileSignature, title: "Purser Reports", description: "Review and manage all flight reports submitted by pursers.", buttonText: "Review Reports", href: "/admin/purser-reports",
+      stat: stats.reports, highlightWhen: (value) => value !== null && value > 0, delay: 0.31
     },
      { 
-      icon: ClipboardCheck, 
-      title: "Training Sessions", 
-      description: "Plan and manage in-person training sessions for crew members.", 
-      buttonText: "Manage Sessions", 
-      href: "/admin/training-sessions",
-      stat: stats.upcomingSessions,
-      delay: 0.34
+      icon: ClipboardCheck, title: "Training Sessions", description: "Plan and manage in-person training sessions for crew members.", buttonText: "Manage Sessions", href: "/admin/training-sessions",
+      stat: stats.upcomingSessions, delay: 0.34
     },
     { 
-      icon: GraduationCap, 
-      title: "Course Management", 
-      description: "Create, edit, and publish e-learning courses and their content.", 
-      buttonText: "Manage Courses", 
-      href: "/admin/courses",
-      stat: stats.courses,
-      delay: 0.37
+      icon: GraduationCap, title: "Course Management", description: "Create, edit, and publish e-learning courses and their content.", buttonText: "Manage Courses", href: "/admin/courses",
+      stat: stats.courses, delay: 0.37
     },
     { 
-      icon: CheckSquare, 
-      title: "Quiz Management", 
-      description: "View all quizzes and their associated questions.", 
-      buttonText: "Manage Quizzes", 
-      href: "/admin/quizzes",
-      stat: stats.quizzes,
-      delay: 0.4
+      icon: CheckSquare, title: "Quiz Management", description: "View all quizzes and their associated questions.", buttonText: "Manage Quizzes", href: "/admin/quizzes",
+      stat: stats.quizzes, delay: 0.4
     },
     { 
-      icon: Library, 
-      title: "Document Management", 
-      description: "Upload, manage, and distribute operational manuals and documents.", 
-      buttonText: "Manage Documents", 
-      href: "/admin/documents",
-      stat: stats.documents,
-      delay: 0.43
+      icon: Library, title: "Document Management", description: "Upload, manage, and distribute operational manuals and documents.", buttonText: "Manage Documents", href: "/admin/documents",
+      stat: stats.documents, delay: 0.43
     },
     { 
-      icon: MessageSquare, 
-      title: "Suggestions", 
-      description: "Review and manage all user-submitted suggestions for improvement.", 
-      buttonText: "Manage Suggestions", 
-      href: "/admin/suggestions",
-      stat: stats.suggestions,
-      highlightWhen: (value) => value !== null && value > 0,
-      delay: 0.46
+      icon: MessageSquare, title: "Suggestions", description: "Review and manage all user-submitted suggestions for improvement.", buttonText: "Manage Suggestions", href: "/admin/suggestions",
+      stat: stats.suggestions, highlightWhen: (value) => value !== null && value > 0, delay: 0.46
     },
     { 
-      icon: Settings, 
-      title: "System Settings", 
-      description: "Configure application-wide settings and maintenance mode.", 
-      buttonText: "Configure Settings", 
-      href: "/admin/system-settings", 
+      icon: Settings, title: "System Settings", description: "Configure application-wide settings and maintenance mode.", buttonText: "Configure Settings", href: "/admin/system-settings", 
       delay: 0.49
     },
     { 
-      icon: Activity, 
-      title: "Audit Logs", 
-      description: "Review a detailed, chronological record of system activities and changes.", 
-      buttonText: "View Logs", 
-      href: "/admin/audit-logs", 
+      icon: Activity, title: "Audit Logs", description: "Review a detailed, chronological record of system activities and changes.", buttonText: "View Logs", href: "/admin/audit-logs", 
       delay: 0.52
     },
   ];
@@ -435,9 +370,10 @@ export default function AdminConsolePage() {
 
                       const IconComponent = section.icon;
                       const shouldHighlight = section.highlightWhen?.(section.stat?.value ?? null);
+                      const animationDelay = 0.3 + (adminSections.findIndex(s => s.href === item.href) * 0.05);
 
                       return (
-                          <AnimatedCard key={section.title} delay={0.3 + section.delay}>
+                          <AnimatedCard key={section.title} delay={animationDelay}>
                               <Card className={cn("shadow-sm h-full flex flex-col transition-all hover:shadow-md", shouldHighlight && "ring-2 ring-destructive/50 bg-destructive/5")}>
                                   <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
                                       <div className="flex items-center gap-3">
@@ -448,7 +384,6 @@ export default function AdminConsolePage() {
                                           <div className="flex justify-end">
                                               <Badge variant={shouldHighlight ? "destructive" : "secondary"} className="shrink-0">
                                                   {section.stat.isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : section.stat.value}
-                                                  <span className="ml-1.5 hidden sm:inline">{section.stat.label}</span>
                                               </Badge>
                                           </div>
                                       )}
@@ -461,7 +396,7 @@ export default function AdminConsolePage() {
                                           <Link href={section.href}>
                                               {section.buttonText}
                                               <ArrowRight className="ml-2 h-4 w-4" />
-                                              {shouldHighlight && !section.stat?.isLoading && (
+                                              {shouldHighlight && !section.stat?.isLoading && section.stat?.value && section.stat.value > 0 && (
                                                   <Badge variant="secondary" className="ml-2 px-1.5 py-0.5 text-xs bg-white text-destructive hover:bg-white">{section.stat?.value}</Badge>
                                               )}
                                           </Link>
@@ -477,3 +412,5 @@ export default function AdminConsolePage() {
     </div>
   );
 }
+
+    
