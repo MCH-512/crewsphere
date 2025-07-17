@@ -236,6 +236,13 @@
       ]
     },
     {
+      "collectionGroup": "flights",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "flightSwaps",
       "queryScope": "COLLECTION",
       "fields": [
@@ -264,6 +271,13 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "flights",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
       ]
     }
   ],

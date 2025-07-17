@@ -13,9 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, getDoc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, getDoc, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowUpDown, ArrowRightLeft, ArrowUp, ArrowDown, Handshake, FileSignature, Calendar as CalendarIcon, List } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, ArrowUp, ArrowDown, Handshake, FileSignature, Calendar as CalendarIcon, List, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, parseISO, addHours, isSameDay, startOfMonth, endOfMonth } from "date-fns";
 import { flightFormSchema, type FlightFormValues, type StoredFlight, aircraftTypes } from "@/schemas/flight-schema";
@@ -32,17 +32,107 @@ import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { StoredFlightSwap } from "@/schemas/flight-swap-schema";
+import { approveFlightSwap, rejectFlightSwap } from "@/services/admin-flight-swap-service";
+import { Textarea } from "@/components/ui/textarea";
 
 interface FlightForDisplay extends StoredFlight {
     departureAirportName?: string;
     arrivalAirportName?: string;
     purserName?: string;
     crewCount: number;
+    pendingSwap?: StoredFlightSwap;
 }
 
 type SortableColumn = 'scheduledDepartureDateTimeUTC' | 'flightNumber' | 'departureAirportName' | 'purserName' | 'aircraftType' | 'crewCount';
 type SortDirection = 'asc' | 'desc';
-type ViewMode = "list" | "calendar";
+type ViewMode = "calendar" | "list";
+
+const SwapApprovalDialog = ({ swap, onClose, onAction }: { swap: StoredFlightSwap, onClose: () => void, onAction: () => void }) => {
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [rejectionNotes, setRejectionNotes] = React.useState("");
+    const [isRejecting, setIsRejecting] = React.useState(false);
+
+    const handleApprove = async () => {
+        if (!user) return;
+        setIsSubmitting(true);
+        try {
+            await approveFlightSwap(swap.id, user.uid, user.email || "N/A");
+            toast({ title: "Swap Approved", description: "The flight schedules have been updated." });
+            onAction();
+            onClose();
+        } catch (error: any) {
+            toast({ title: "Approval Failed", description: error.message, variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    const handleReject = async () => {
+        if (!user || !rejectionNotes) {
+            toast({ title: "Rejection requires notes.", variant: "destructive" });
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            await rejectFlightSwap(swap.id, user.uid, user.email || "N/A", rejectionNotes);
+            toast({ title: "Swap Rejected" });
+            onAction();
+            onClose();
+        } catch (error: any) {
+            toast({ title: "Rejection Failed", description: error.message, variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+            setIsRejecting(false);
+        }
+    };
+
+    return (
+        <Dialog open={true} onOpenChange={onClose}>
+            <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Approve Flight Swap Request</DialogTitle>
+                    <DialogDescription>Review the details below and approve or reject the swap.</DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-2 gap-4 py-4 text-sm">
+                    <Card><CardHeader><CardTitle className="text-base">Original Flight (Initiator)</CardTitle><CardDescription>{swap.initiatingUserEmail}</CardDescription></CardHeader>
+                        <CardContent><p><strong>Flight:</strong> {swap.flightInfo.flightNumber}</p><p><strong>Route:</strong> {swap.flightInfo.departureAirport} to {swap.flightInfo.arrivalAirport}</p><p><strong>Date:</strong> {format(parseISO(swap.flightInfo.scheduledDepartureDateTimeUTC), "PPP")}</p></CardContent>
+                    </Card>
+                    <Card><CardHeader><CardTitle className="text-base">Proposed Swap (Requester)</CardTitle><CardDescription>{swap.requestingUserEmail}</CardDescription></CardHeader>
+                        <CardContent><p><strong>Flight:</strong> {swap.requestingFlightInfo?.flightNumber}</p><p><strong>Route:</strong> {swap.requestingFlightInfo?.departureAirport} to {swap.requestingFlightInfo?.arrivalAirport}</p><p><strong>Date:</strong> {format(parseISO(swap.requestingFlightInfo?.scheduledDepartureDateTimeUTC || "1970-01-01"), "PPP")}</p></CardContent>
+                    </Card>
+                </div>
+                 {isRejecting ? (
+                    <div className="space-y-2">
+                        <Label htmlFor="rejection-notes">Reason for Rejection</Label>
+                        <Textarea id="rejection-notes" value={rejectionNotes} onChange={(e) => setRejectionNotes(e.target.value)} placeholder="Provide a brief reason for rejection..." />
+                    </div>
+                ) : null}
+                <DialogFooter>
+                    {isRejecting ? (
+                        <>
+                            <Button variant="ghost" onClick={() => setIsRejecting(false)}>Cancel</Button>
+                            <Button variant="destructive" onClick={handleReject} disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Confirm Rejection
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button variant="outline" onClick={onClose}>Close</Button>
+                            <Button variant="destructive" onClick={() => setIsRejecting(true)}>Reject</Button>
+                            <Button onClick={handleApprove} disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Approve Swap
+                            </Button>
+                        </>
+                    )}
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 export default function AdminFlightsPage() {
     const { user, loading: authLoading } = useAuth();
@@ -75,7 +165,11 @@ export default function AdminFlightsPage() {
 
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>('scheduledDepartureDateTimeUTC');
     const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
-    const [viewMode, setViewMode] = React.useState<ViewMode>("list");
+    const [viewMode, setViewMode] = React.useState<ViewMode>("calendar");
+    const [calendarMonth, setCalendarMonth] = React.useState(new Date());
+
+    const [swapToApprove, setSwapToApprove] = React.useState<StoredFlightSwap | null>(null);
+
 
     const form = useForm<FlightFormValues>({
         resolver: zodResolver(flightFormSchema),
@@ -125,7 +219,6 @@ export default function AdminFlightsPage() {
     const fetchPageData = React.useCallback(async () => {
         setIsLoading(true);
         try {
-            const flightsQuery = query(collection(db, "flights"), orderBy("scheduledDepartureDateTimeUTC", "desc"));
             const usersSnapshot = await getDocs(collection(db, "users"));
             const allUsersData = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
             const userMapData = new Map(allUsersData.map(u => [u.uid, u]));
@@ -138,7 +231,17 @@ export default function AdminFlightsPage() {
             setInstructors(allUsersData.filter(u => u.role === 'instructor'));
             setTrainees(allUsersData.filter(u => u.role === 'stagiaire'));
 
-            const flightsSnapshot = await getDocs(flightsQuery);
+            const start = startOfMonth(calendarMonth);
+            const end = endOfMonth(calendarMonth);
+            
+            const flightsQuery = query(collection(db, "flights"), where("scheduledDepartureDateTimeUTC", ">=", start.toISOString()), where("scheduledDepartureDateTimeUTC", "<=", end.toISOString()));
+            const swapsQuery = query(collection(db, "flightSwaps"), where("status", "==", "pending_approval"));
+            
+            const [flightsSnapshot, swapsSnapshot] = await Promise.all([getDocs(flightsQuery), getDocs(swapsQuery)]);
+
+            const pendingSwaps = swapsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredFlightSwap));
+            const swapsByFlightId = new Map(pendingSwaps.map(s => [s.initiatingFlightId, s]));
+
             const fetchedFlights = await Promise.all(
                 flightsSnapshot.docs.map(async (d) => {
                     const data = { id: d.id, ...d.data() } as StoredFlight;
@@ -153,16 +256,17 @@ export default function AdminFlightsPage() {
                         arrivalAirportName: `${arrAirport?.name} (${arrAirport?.iata})` || data.arrivalAirport,
                         purserName: userMapData.get(data.purserId)?.displayName || 'N/A',
                         crewCount,
+                        pendingSwap: swapsByFlightId.get(d.id),
                     } as FlightForDisplay;
                 })
             );
-            setFlights(fetchedFlights);
+            setFlights(fetchedFlights.sort((a,b) => new Date(b.scheduledDepartureDateTimeUTC).getTime() - new Date(a.scheduledDepartureDateTimeUTC).getTime()));
         } catch (err) {
             toast({ title: "Loading Error", description: "Could not fetch flights and crew data.", variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
-    }, [toast]);
+    }, [toast, calendarMonth]);
     
     const sortedFlights = React.useMemo(() => {
         return [...flights].sort((a, b) => {
@@ -456,6 +560,21 @@ export default function AdminFlightsPage() {
     if (authLoading || isLoading) return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     if (!user || user.role !== 'admin') return <div className="flex flex-col items-center justify-center min-h-screen text-center p-4"><AlertTriangle className="h-16 w-16 text-destructive mb-4" /><CardTitle className="text-2xl mb-2">Access Denied</CardTitle><p className="text-muted-foreground">You do not have permission to view this page.</p><Button onClick={() => router.push('/')} className="mt-6">Go to Dashboard</Button></div>;
 
+    const CalendarDay = ({ date }: { date: Date }) => {
+        const dayFlights = flights.filter(f => isSameDay(parseISO(f.scheduledDepartureDateTimeUTC), date));
+        return (
+            <div className="relative flex h-full w-full items-center justify-center">
+                <p>{format(date, 'd')}</p>
+                {dayFlights.length > 0 && 
+                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-0.5">
+                        <div className={cn("h-1.5 w-1.5 rounded-full", "bg-blue-500")} />
+                        {dayFlights.length > 1 && <span className="text-[9px] text-muted-foreground font-bold">+{dayFlights.length - 1}</span>}
+                    </div>
+                }
+            </div>
+        );
+    };
+
     return (
         <div className="space-y-6">
             <Card className="shadow-lg">
@@ -465,8 +584,8 @@ export default function AdminFlightsPage() {
                         <CardDescription>Schedule new flights and assign crew members.</CardDescription>
                     </div>
                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setViewMode('list')} className={cn(viewMode === 'list' && 'bg-accent text-accent-foreground')}><List className="mr-2 h-4 w-4"/>List</Button>
                         <Button variant="outline" size="sm" onClick={() => setViewMode('calendar')} className={cn(viewMode === 'calendar' && 'bg-accent text-accent-foreground')}><CalendarIcon className="mr-2 h-4 w-4"/>Calendar</Button>
+                        <Button variant="outline" size="sm" onClick={() => setViewMode('list')} className={cn(viewMode === 'list' && 'bg-accent text-accent-foreground')}><List className="mr-2 h-4 w-4"/>List</Button>
                     </div>
                 </CardHeader>
                 <CardFooter className="border-t pt-4 flex-wrap gap-2">
@@ -484,8 +603,7 @@ export default function AdminFlightsPage() {
                                 <SortableHeader column="flightNumber" label="Flight No." />
                                 <SortableHeader column="departureAirportName" label="Route" />
                                 <SortableHeader column="purserName" label="Purser" />
-                                <SortableHeader column="aircraftType" label="Aircraft" />
-                                <SortableHeader column="crewCount" label="Crew" />
+                                <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -500,8 +618,10 @@ export default function AdminFlightsPage() {
                                             {f.purserName}
                                         </Link>
                                     </TableCell>
-                                    <TableCell className="text-xs">{f.aircraftType}</TableCell>
-                                    <TableCell className="text-xs flex items-center gap-1"><Users className="h-3 w-3"/>{f.crewCount}</TableCell>
+                                     <TableCell className="space-x-2">
+                                        {!f.purserReportSubmitted && (<Button variant="outline" size="icon" className="h-7 w-7 border-amber-500/50 text-amber-600" title="Purser Report Pending"><FileSignature className="h-4 w-4" /></Button>)}
+                                        {f.pendingSwap && (<Button variant="outline" size="icon" className="h-7 w-7 border-blue-500/50 text-blue-600 animate-pulse" title="Swap Request Pending" onClick={() => setSwapToApprove(f.pendingSwap!)}><Handshake className="h-4 w-4" /></Button>)}
+                                    </TableCell>
                                     <TableCell className="text-right space-x-1">
                                         <Button variant="ghost" size="icon" onClick={() => handleCreateReturnFlight(f)} title="Create Return Flight"><ArrowRightLeft className="h-4 w-4" /></Button>
                                         <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(f)} title="Edit Flight"><Edit className="h-4 w-4" /></Button>
@@ -514,11 +634,20 @@ export default function AdminFlightsPage() {
                     {sortedFlights.length === 0 && <p className="text-center text-muted-foreground py-8">No flights found.</p>}
                 </div>
             ) : (
-                <Card>
+                 <Card>
                     <CardContent className="p-0">
-                         <Calendar className="w-full" />
+                         <Calendar
+                            month={calendarMonth}
+                            onMonthChange={setCalendarMonth}
+                            className="w-full"
+                            components={{ Day: CalendarDay }}
+                         />
                     </CardContent>
                 </Card>
+            )}
+
+            {swapToApprove && (
+                <SwapApprovalDialog swap={swapToApprove} onClose={() => setSwapToApprove(null)} onAction={fetchPageData} />
             )}
 
             <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
@@ -589,16 +718,16 @@ export default function AdminFlightsPage() {
                                     <div className="space-y-6 p-4 border-l-4 border-primary/50 bg-muted/30 rounded-r-md">
                                         <h3 className="text-lg font-semibold text-primary">Return Flight</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="returnFlightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="returnFlightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                             <FormField control={form.control} name="returnAircraftType" render={({ field }) => ( <FormItem><FormLabel>Aircraft Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an aircraft" /></SelectTrigger></FormControl><SelectContent>{aircraftTypes.map(type => ( <SelectItem key={type} value={type}>{type}</SelectItem> ))}</SelectContent></Select><FormMessage /></FormItem> )}/>
                                         </div>
                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="returnDepartureAirport" render={({ field }) => (<FormItem><FormLabel>Departure</FormLabel><FormControl><Input {...field} value={field.value || ''} disabled /></FormControl><FormMessage /></FormItem>)} />
-                                            <FormField control={form.control} name="returnArrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival</FormLabel><FormControl><Input {...field} value={field.value || ''} disabled /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="returnDepartureAirport" render={({ field }) => (<FormItem><FormLabel>Departure</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="returnArrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="returnScheduledDepartureDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Departure Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
-                                            <FormField control={form.control} name="returnScheduledArrivalDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Arrival Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="returnScheduledDepartureDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Departure Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="returnScheduledArrivalDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Arrival Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         </div>
                                         <h4 className="text-md font-semibold pt-4">Return Crew Assignment</h4>
                                         <FormField control={form.control} name="returnPurserId" render={({ field }) => (<FormItem><FormLabel>Assign Purser</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a purser" /></SelectTrigger></FormControl><SelectContent>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName} ({p.email})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />

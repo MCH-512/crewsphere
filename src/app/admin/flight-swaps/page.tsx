@@ -1,11 +1,6 @@
 
 "use client";
 
-// This page is deprecated and will be removed.
-// The flight swap management functionality has been integrated directly into
-// the main Flight Management page at /admin/flights.
-// Redirecting users to the new, consolidated management hub.
-
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
