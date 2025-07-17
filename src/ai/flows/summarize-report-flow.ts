@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to summarize purser reports.
@@ -35,10 +36,19 @@ const summarizeReportFlow = ai.defineFlow(
     outputSchema: SummarizeReportOutputSchema,
   },
   async (input) => {
-    const {output} = await summarizeReportPrompt(input);
-    if (!output) {
-      throw new Error('The AI model did not return a valid summary.');
+    try {
+        const {output} = await summarizeReportPrompt(input);
+        if (!output) {
+          // This case handles if the model returns nothing, which is different from an error.
+          console.warn('AI summary returned no output.');
+          return { summary: '', keyPoints: [], potentialRisks: [] };
+        }
+        return output;
+    } catch (error) {
+        // This case handles network errors or API failures (like 503).
+        console.error("AI summarization flow failed:", error);
+        // Return an empty valid structure instead of throwing an error
+        return { summary: '', keyPoints: [], potentialRisks: [] };
     }
-    return output;
   }
 );

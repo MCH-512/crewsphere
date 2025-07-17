@@ -149,7 +149,7 @@ export default function SubmitPurserReportPage() {
 
   const prevStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+      setCurrentStep(prev => prev + 1);
     }
   };
 
@@ -171,15 +171,17 @@ export default function SubmitPurserReportPage() {
         arrivalAirport: flightData.arrivalAirport,
       };
       
-      try {
-            toast({ title: "Generating AI Summary...", description: "Please wait while we analyze your report." });
-            const reportContent = `Flight report for ${data.flightNumber} (${data.route}) on ${format(parseISO(data.flightDate), "PPP")}. Passengers: ${data.passengerCount}. Positives: ${data.positivePoints}. Improvements: ${data.improvementPoints}. Passenger notes: ${data.passengersToReport?.join(', ')}. Cabin issues: ${data.technicalIssues?.join(', ')}. Safety anomalies: ${data.safetyAnomalies}. Service feedback: ${data.servicePassengerFeedback}. Incident: ${data.specificIncident ? `Yes, ${data.incidentTypes?.join(', ')} - ${data.incidentDetails}` : 'No'}.`;
-            const summary = await summarizeReport({ reportContent });
-            reportData.aiSummary = summary.summary;
-            reportData.aiKeyPoints = summary.keyPoints;
-            reportData.aiPotentialRisks = summary.potentialRisks;
-      } catch(aiError) {
-          console.error("AI summary generation failed during report submission:", aiError);
+      toast({ title: "Generating AI Summary...", description: "Please wait while we analyze your report." });
+      const reportContent = `Flight report for ${data.flightNumber} (${data.route}) on ${format(parseISO(data.flightDate), "PPP")}. Passengers: ${data.passengerCount}. Positives: ${data.positivePoints}. Improvements: ${data.improvementPoints}. Passenger notes: ${data.passengersToReport?.join(', ')}. Cabin issues: ${data.technicalIssues?.join(', ')}. Safety anomalies: ${data.safetyAnomalies}. Service feedback: ${data.servicePassengerFeedback}. Incident: ${data.specificIncident ? `Yes, ${data.incidentTypes?.join(', ')} - ${data.incidentDetails}` : 'No'}.`;
+      
+      const summaryResult = await summarizeReport({ reportContent });
+
+      if (summaryResult && summaryResult.summary) {
+          reportData.aiSummary = summaryResult.summary;
+          reportData.aiKeyPoints = summaryResult.keyPoints;
+          reportData.aiPotentialRisks = summaryResult.potentialRisks;
+      } else {
+          console.warn("AI summary generation failed or returned empty, submitting report without it.");
           toast({ title: "AI Summary Skipped", description: "Could not generate AI summary, but your report will still be submitted.", variant: "default" });
       }
 
