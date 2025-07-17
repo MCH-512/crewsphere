@@ -40,13 +40,13 @@ body {
     --chart-5: 27 87% 67%;
 
     /* Sidebar specific colors */
-    --sidebar-background: 222 47% 11%;
+    --sidebar-background: 224 71% 10%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 24 94% 60%;
     --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 222 47% 16%;
-    --sidebar-accent-foreground: 24 94% 60%;
-    --sidebar-border: 222 47% 16%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
     --sidebar-ring: 24 94% 70%;
   }
 
@@ -81,12 +81,12 @@ body {
     --chart-5: 27 75% 60%;
 
     /* Sidebar specific colors for dark mode */
-    --sidebar-background: 222 47% 11%;
+    --sidebar-background: 224 71% 10%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 24 94% 60%;
     --sidebar-primary-foreground: 0 0% 0%;
     --sidebar-accent: 217.2 32.6% 17.5%;
-    --sidebar-accent-foreground: 24 94% 60%;
+    --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 24 94% 60%;
   }
