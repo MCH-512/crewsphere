@@ -24,6 +24,13 @@ const tools: Tool[] = [
     href: "/toolbox/weather-decoder",
     delay: 0.1
   },
+   {
+    icon: CloudSun,
+    title: "Airport Weather",
+    description: "Check real-time METAR data for any airport by entering its ICAO code.",
+    href: "/toolbox/airport-weather",
+    delay: 0.1
+  },
   {
     icon: ShieldAlert,
     title: "EASA FTL Calculator",
