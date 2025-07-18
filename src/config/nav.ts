@@ -4,7 +4,7 @@ import {
   ClipboardCheck, MessageSquare, Activity, FileSignature, 
   Calendar as CalendarIcon, Library, GraduationCap, CheckSquare, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Wrench, 
-  ArrowRightLeft, Handshake, Inbox, Lightbulb, FileCheck2, UserRound, Replace, CalendarClock, History, FolderOpen
+  ArrowRightLeft, Handshake, Inbox, Lightbulb, FileCheck2, UserRound, Replace, CalendarClock, History
 } from "lucide-react";
 
 export const mainNavConfig = {
