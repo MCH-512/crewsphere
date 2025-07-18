@@ -137,7 +137,13 @@ function LayoutWithSidebar({
         <SidebarHeader className="h-16 flex items-center justify-center">
            <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
             <div className="w-8 h-8 flex items-center justify-center">
-              <Plane className="w-8 h-8 text-sidebar-primary group-data-[state=expanded]:hidden" />
+              <Image
+                src="/logo.png"
+                alt="Express Airline Logo Icon"
+                width={32}
+                height={32}
+                className="w-full h-auto group-data-[state=expanded]:hidden"
+                />
             </div>
             <div className="w-32 group-data-[state=collapsed]:hidden">
                <Image
