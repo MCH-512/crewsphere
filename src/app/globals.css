@@ -40,13 +40,13 @@ body {
     --chart-5: 27 87% 67%;
 
     /* Sidebar specific colors */
-    --sidebar-background: 222.2 47.4% 11.2%; /* Deep black/blue */
+    --sidebar-background: 120 25% 15%; /* Deep Forest Green */
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: hsl(var(--primary)); /* Red for the logo icon */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 17%; /* Darker accent for sidebar hover */
+    --sidebar-accent: 120 25% 20%; /* Darker accent for sidebar hover */
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 17%;
+    --sidebar-border: 120 25% 20%;
     --sidebar-ring: 0 84.2% 70%;
   }
 
@@ -81,13 +81,13 @@ body {
     --chart-5: 27 75% 60%;
 
     /* Sidebar specific colors for dark mode */
-    --sidebar-background: 224 71% 4%;
+    --sidebar-background: 120 25% 15%; /* Deep Forest Green */
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: hsl(var(--primary)); /* Red for the logo icon */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent: 120 25% 20%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-border: 120 25% 20%;
     --sidebar-ring: 0 72% 51%;
   }
 }
