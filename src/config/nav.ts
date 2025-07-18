@@ -4,47 +4,62 @@ import {
   ClipboardCheck, MessageSquare, Activity, FileSignature, 
   Calendar as CalendarIcon, Library, GraduationCap, CheckSquare, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Wrench, 
-  ArrowRightLeft, Handshake, Inbox, Lightbulb, FileCheck2
+  ArrowRightLeft, Handshake, Inbox, Lightbulb, FileCheck2, UserRound, Replace, CalendarClock, History, FolderOpen
 } from "lucide-react";
 
 export const mainNavConfig = {
   sidebarNav: [
      {
-      title: "My Day",
+      title: "✈️ Flights & Missions",
       items: [
-        { href: "/", title: "Dashboard", icon: LayoutDashboard },
+        { href: "/", title: "My Missions", icon: LayoutDashboard },
         { href: "/my-schedule", title: "My Schedule", icon: CalendarIcon },
-        { href: "/my-documents", title: "My Documents", icon: ShieldCheck },
-      ]
-    },
-    {
-      title: "Operations",
-      items: [
-        { href: "/purser-reports", title: "Purser Reports", icon: FileSignature, roles: ['purser', 'admin', 'instructor'] },
-        { href: "/timeline", title: "Global Timeline", icon: CalendarIcon },
-        { href: "/flight-swap", title: "Swap Board", icon: ArrowRightLeft },
         { href: "/my-swaps", title: "My Swaps", icon: Handshake },
-        { href: "/my-logbook", title: "My Logbook", icon: NotebookPen },
+      ]
+    },
+     {
+      title: "✈️ Swap & Rotation",
+      items: [
+        { href: "/timeline", title: "Global Timeline", icon: CalendarClock },
+        { href: "/flight-swap", title: "Swap Board", icon: Replace },
       ]
     },
     {
-      title: "Development",
+      title: "✈️ Flight Reports",
+      items: [
+        { href: "/purser-reports", title: "Purser Report", icon: FileSignature, roles: ['purser', 'admin', 'instructor'] },
+        { href: "/my-logbook", title: "Personal Logbook", icon: History },
+      ]
+    },
+    {
+      title: "🎓 Training & Development",
       items: [
         { href: "/training", title: "E-Learning", icon: GraduationCap },
-        { href: "/document-library", title: "Document Library", icon: Library },
+      ]
+    },
+    {
+        title: "🧰 Reference Documents",
+        items: [
+            { href: "/document-library", title: "Document Library", icon: Library },
+            { href: "/my-documents", title: "My Documents", icon: ShieldCheck },
+        ]
+    },
+    {
+      title: "🧰 Tools & Forms",
+      items: [
         { href: "/toolbox", title: "Toolbox", icon: Wrench },
       ]
     },
     {
-      title: "Communication & Support",
+      title: "📣 Support & Communication",
       items: [
         { href: "/requests", title: "My Requests", icon: Inbox },
         { href: "/suggestion-box", title: "Suggestion Box", icon: Lightbulb },
-        { href: "/community-hub", title: "Community Hub", icon: Compass },
+        { href: "/community-hub", title: "Crew Hub", icon: Compass },
       ]
     },
      {
-      title: "Admin",
+      title: "🔐 Admin Panel",
       items: [
         { href: "/admin", title: "Admin Console", icon: ServerCog, roles: ['admin'] },
       ]
