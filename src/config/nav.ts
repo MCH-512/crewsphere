@@ -4,7 +4,7 @@ import {
   ClipboardCheck, MessageSquare, Activity, FileSignature, 
   Calendar as CalendarIcon, Library, GraduationCap, CheckSquare, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Wrench, 
-  Replace, Handshake, Inbox, Lightbulb, FileCheck2, CalendarClock, History
+  Replace, Handshake, Inbox, Lightbulb, FileCheck2, CalendarClock, History, Book, Mic, ScrollText, Waypoints, ShieldAlert as FtlIcon, CloudSun
 } from "lucide-react";
 
 export const mainNavConfig = {
@@ -12,23 +12,23 @@ export const mainNavConfig = {
      {
       title: "My Activity",
       items: [
-        { href: "/", title: "My Dashboard", icon: LayoutDashboard },
+        { href: "/", title: "Dashboard", icon: LayoutDashboard },
         { href: "/my-schedule", title: "My Schedule", icon: CalendarIcon },
         { href: "/purser-reports", title: "My Flight Reports", icon: FileSignature, roles: ['purser', 'admin', 'instructor'] },
         { href: "/my-logbook", title: "My Logbook", icon: NotebookPen },
         { href: "/my-documents", title: "My Documents", icon: ShieldCheck },
-        { href: "/my-swaps", title: "My Swaps", icon: Handshake },
       ]
     },
      {
-      title: "Global Operations",
+      title: "Operations",
       items: [
         { href: "/timeline", title: "Global Timeline", icon: CalendarClock },
         { href: "/flight-swap", title: "Swap Board", icon: Replace },
+        { href: "/my-swaps", title: "My Swaps", icon: Handshake },
       ]
     },
     {
-      title: "Support & Resources",
+      title: "Resources",
       items: [
         { href: "/toolbox", title: "Toolbox", icon: Wrench },
         { href: "/document-library", title: "Document Library", icon: Library },

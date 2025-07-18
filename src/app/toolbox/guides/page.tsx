@@ -1,9 +1,11 @@
+
 "use client";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Book, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const guides = [
   {
@@ -64,7 +66,8 @@ export default function GuidesPage() {
         const lowercasedTerm = searchTerm.toLowerCase();
         return guides.filter(guide => 
             guide.title.toLowerCase().includes(lowercasedTerm) ||
-            guide.keywords.toLowerCase().includes(lowercasedTerm)
+            guide.keywords.toLowerCase().includes(lowercasedTerm) ||
+            (guide.content as React.ReactElement).props.children.map((child: any) => typeof child.props.children === 'string' ? child.props.children : '').join(' ').toLowerCase().includes(lowercasedTerm)
         );
       }, [searchTerm]);
 
@@ -97,12 +100,18 @@ export default function GuidesPage() {
         {filteredGuides.length > 0 ? (
             filteredGuides.map(guide => (
                 <Card key={guide.id}>
-                    <CardHeader>
-                        <CardTitle>{guide.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-                        {guide.content}
-                    </CardContent>
+                  <Accordion type="single" collapsible defaultValue="item-1">
+                    <AccordionItem value="item-1">
+                        <AccordionTrigger className="text-lg p-6">
+                           {guide.title}
+                        </AccordionTrigger>
+                        <AccordionContent className="p-6 pt-0">
+                            <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+                                {guide.content}
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                 </Accordion>
                 </Card>
             ))
         ) : (
