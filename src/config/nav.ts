@@ -4,41 +4,41 @@ import {
   ClipboardCheck, MessageSquare, Activity, FileSignature, 
   Calendar as CalendarIcon, Library, GraduationCap, CheckSquare, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Wrench, 
-  ArrowRightLeft, Handshake, Inbox, Lightbulb, FileCheck2, UserRound, Replace, CalendarClock, History, BookUser, HardHat, MessagesSquare as ChatIcon, BookMarked
+  Replace, Handshake, Inbox, Lightbulb, FileCheck2, CalendarClock, History
 } from "lucide-react";
 
 export const mainNavConfig = {
   sidebarNav: [
      {
-      title: "Mon Activité",
+      title: "My Activity",
       items: [
-        { href: "/", title: "Mon Dashboard", icon: LayoutDashboard },
-        { href: "/my-schedule", title: "Mon Planning", icon: CalendarIcon },
-        { href: "/purser-reports", title: "Mes Rapports de Vol", icon: FileSignature, roles: ['purser', 'admin', 'instructor'] },
-        { href: "/my-logbook", title: "Mon Carnet de Vol", icon: NotebookPen },
-        { href: "/my-documents", title: "Mes Documents", icon: ShieldCheck },
+        { href: "/", title: "My Dashboard", icon: LayoutDashboard },
+        { href: "/my-schedule", title: "My Schedule", icon: CalendarIcon },
+        { href: "/purser-reports", title: "My Flight Reports", icon: FileSignature, roles: ['purser', 'admin', 'instructor'] },
+        { href: "/my-logbook", title: "My Logbook", icon: NotebookPen },
+        { href: "/my-documents", title: "My Documents", icon: ShieldCheck },
+        { href: "/my-swaps", title: "My Swaps", icon: Handshake },
       ]
     },
      {
-      title: "Opérations Globales",
+      title: "Global Operations",
       items: [
-        { href: "/timeline", title: "Planning Global", icon: CalendarClock },
-        { href: "/flight-swap", title: "Tableau des Échanges", icon: Replace },
-        { href: "/my-swaps", title: "Mes Échanges", icon: Handshake },
+        { href: "/timeline", title: "Global Timeline", icon: CalendarClock },
+        { href: "/flight-swap", title: "Swap Board", icon: Replace },
       ]
     },
     {
-      title: "Support & Ressources",
+      title: "Support & Resources",
       items: [
-        { href: "/toolbox", title: "Boîte à Outils", icon: Wrench },
-        { href: "/document-library", title: "Bibliothèque Docs", icon: Library },
-        { href: "/community-hub", title: "Hub Communautaire", icon: Compass },
-        { href: "/requests", title: "Mes Demandes", icon: Inbox },
-        { href: "/suggestion-box", title: "Boîte à Idées", icon: Lightbulb },
+        { href: "/toolbox", title: "Toolbox", icon: Wrench },
+        { href: "/document-library", title: "Document Library", icon: Library },
+        { href: "/community-hub", title: "Community Hub", icon: Compass },
+        { href: "/requests", title: "My Requests", icon: Inbox },
+        { href: "/suggestion-box", title: "Suggestion Box", icon: Lightbulb },
       ]
     },
     {
-      title: "Développement",
+      title: "Development",
       items: [
         { href: "/training", title: "E-Learning", icon: GraduationCap },
       ]
@@ -46,7 +46,7 @@ export const mainNavConfig = {
      {
       title: "Admin",
       items: [
-        { href: "/admin", title: "Panel Admin", icon: ServerCog, roles: ['admin'] },
+        { href: "/admin", title: "Admin Panel", icon: ServerCog, roles: ['admin'] },
       ]
     }
   ]
