@@ -26,7 +26,7 @@ const predefinedLabels: { [key: string]: string } = {
   create: "Create",
   edit: "Edit",
   "user-requests": "User Requests",
-  "purser-reports": "My Flight Reports",
+  "purser-reports": "Purser Reports",
   history: "History",
   submit: "Submit",
   settings: "Settings",
