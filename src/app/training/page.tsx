@@ -22,13 +22,13 @@ interface CourseWithProgress extends StoredCourse {
     progress?: StoredUserQuizAttempt;
 }
 
-const CourseProgressCard = ({ course }: { course: CourseWithProgress }) => {
+const CourseProgressCard = ({ course, delay }: { course: CourseWithProgress; delay: number; }) => {
     const status = course.progress?.status;
     const score = course.progress?.score;
     const completedAt = course.progress?.completedAt?.toDate();
 
     return (
-        <AnimatedCard>
+        <AnimatedCard delay={delay}>
              <Card className="shadow-sm h-full flex flex-col hover:shadow-lg transition-shadow overflow-hidden">
                 <div className="relative h-40 w-full">
                     <Image 
@@ -203,7 +203,7 @@ export default function TrainingPage() {
                         {mandatoryCourses.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {mandatoryCourses.map((course, index) => (
-                                    <CourseProgressCard key={course.id} course={course} />
+                                    <CourseProgressCard key={course.id} course={course} delay={0.1 + index * 0.05} />
                                 ))}
                             </div>
                         ) : (
@@ -218,7 +218,7 @@ export default function TrainingPage() {
                              <Separator className="mb-6"/>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {optionalCourses.map((course, index) => (
-                                     <CourseProgressCard key={course.id} course={course} />
+                                     <CourseProgressCard key={course.id} course={course} delay={0.1 + index * 0.05} />
                                 ))}
                             </div>
                         </section>
@@ -228,4 +228,3 @@ export default function TrainingPage() {
         </div>
     );
 }
-    
