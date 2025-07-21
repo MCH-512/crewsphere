@@ -8,7 +8,7 @@ export interface UserActivity {
   date: Timestamp;
   userId: string;
   comments?: string;
-  flightId?: string;
+  flightId?: string | null;
   flightNumber?: string;
   departureAirport?: string;
   arrivalAirport?: string;
