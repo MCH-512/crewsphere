@@ -105,7 +105,7 @@ export default function CertificatePage() {
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
-             <div className="flex justify-between items-center">
+             <div className="flex justify-between items-center print:hidden">
                 <Button variant="outline" onClick={() => router.push('/training')}><ArrowLeft className="mr-2 h-4 w-4"/>Back to E-Learning</Button>
                 <Button onClick={() => window.print()}><Download className="mr-2 h-4 w-4"/>Print Certificate</Button>
             </div>
@@ -128,7 +128,7 @@ export default function CertificatePage() {
 
                     <div className="relative z-10 mt-12 flex justify-between w-full max-w-lg">
                         <div className="text-center text-xs">
-                           <p className="font-serif italic mb-2">Training Department</p>
+                           <p className="font-serif italic mb-2">AirCrew Hub Training Department</p>
                            <hr />
                            <p className="mt-1">Authorized Signature</p>
                         </div>
@@ -149,5 +149,3 @@ export default function CertificatePage() {
         </div>
     );
 }
-
-    
