@@ -25,6 +25,7 @@ import { format, parseISO } from "date-fns";
 import { logAuditEvent } from "@/lib/audit-logger";
 import Link from 'next/link';
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'stagiaire' | 'other';
 type AccountStatus = 'active' | 'inactive';
@@ -87,6 +88,38 @@ type ManageUserFormValues = z.infer<typeof manageUserFormSchema>;
 
 type SortableColumn = "email" | "fullName" | "role" | "accountStatus" | "employeeId" | "joiningDate";
 type SortDirection = "asc" | 'desc';
+
+const UserTableSkeleton = () => (
+    <div className="rounded-md border">
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead><Skeleton className="h-4 w-32" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-40" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-28" /></TableHead>
+                    <TableHead className="text-right"><Skeleton className="h-4 w-16" /></TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {Array.from({ length: 5 }).map((_, index) => (
+                    <TableRow key={index}>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-8 w-16" /></TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    </div>
+);
+
 
 export default function AdminUsersPage() {
   const { user, loading: authLoading } = useAuth();
@@ -442,17 +475,9 @@ export default function AdminUsersPage() {
             </Select>
           </div>
 
-          {isLoading && usersList.length === 0 && (
-             <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="ml-3 text-muted-foreground">Loading user list...</p>
-            </div>
-          )}
-          {!isLoading && filteredAndSortedUsers.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">No users found matching your criteria.</p>
-          )}
-
-          {filteredAndSortedUsers.length > 0 && (
+          {isLoading ? (
+            <UserTableSkeleton />
+          ) : filteredAndSortedUsers.length > 0 ? (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -500,7 +525,10 @@ export default function AdminUsersPage() {
                 </TableBody>
               </Table>
             </div>
+          ) : (
+             <p className="text-muted-foreground text-center py-8">No users found matching your criteria.</p>
           )}
+
         </CardContent>
       </Card>
 

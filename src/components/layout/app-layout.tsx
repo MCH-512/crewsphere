@@ -46,7 +46,6 @@ import { Breadcrumbs } from "./breadcrumbs";
 import { HeaderClocks } from "@/components/features/header-clocks";
 import { mainNavConfig, adminNavConfig } from "@/config/nav";
 import { Separator } from "@/components/ui/separator";
-import Image from "next/image";
 
 const useTheme = () => {
   const [theme, setTheme] = React.useState("light");
@@ -135,25 +134,9 @@ function LayoutWithSidebar({
     <>
       <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r">
         <SidebarHeader className="h-16 flex items-center justify-center">
-           <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
-            <div className="w-8 h-8 flex items-center justify-center">
-              <Image
-                src="/logo.png"
-                alt="Express Airline Logo Icon"
-                width={32}
-                height={32}
-                className="w-full h-auto group-data-[state=expanded]:hidden"
-                />
-            </div>
-            <div className="w-32 group-data-[state=collapsed]:hidden">
-               <Image
-                    src="/logo.png"
-                    alt="Express Airline Logo"
-                    width={150}
-                    height={40}
-                    className="w-full h-auto"
-                />
-            </div>
+          <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
+            <Plane className="w-8 h-8 text-sidebar-primary" />
+            <span className="font-bold text-lg group-data-[state=collapsed]:hidden">Crew World</span>
           </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">
