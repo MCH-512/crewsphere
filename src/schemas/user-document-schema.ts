@@ -83,3 +83,4 @@ export interface StoredUserDocument {
   createdAt: Timestamp;
   adminLastUpdatedBy?: string; 
 }
+
