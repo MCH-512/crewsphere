@@ -43,7 +43,6 @@ import {
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { Breadcrumbs } from "./breadcrumbs";
-import { HeaderClocks } from "@/components/features/header-clocks";
 import { mainNavConfig, adminNavConfig } from "@/config/nav";
 import { Separator } from "@/components/ui/separator";
 
@@ -136,7 +135,7 @@ function LayoutWithSidebar({
         <SidebarHeader className="h-16 flex items-center justify-center">
           <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
             <Plane className="w-8 h-8 text-sidebar-primary" />
-            <span className="font-bold text-lg group-data-[state=collapsed]:hidden">Crew World</span>
+            <span className="font-bold text-lg group-data-[state=collapsed]:hidden">AirCrew Hub</span>
           </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">
@@ -218,7 +217,7 @@ function LayoutWithSidebar({
              <Breadcrumbs />
           </div>
           <div className="flex items-center gap-2">
-            <HeaderClocks />
+            
             <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`} className="h-9 w-9">
               {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             </Button>
