@@ -43,6 +43,7 @@ import {
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { Breadcrumbs } from "./breadcrumbs";
+import { HeaderClocks } from "@/components/features/header-clocks";
 import { mainNavConfig, adminNavConfig } from "@/config/nav";
 import { Separator } from "@/components/ui/separator";
 
@@ -217,7 +218,7 @@ function LayoutWithSidebar({
              <Breadcrumbs />
           </div>
           <div className="flex items-center gap-2">
-            
+            <HeaderClocks />
             <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`} className="h-9 w-9">
               {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             </Button>

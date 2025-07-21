@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/contexts/auth-context';
 
 export const metadata: Metadata = {
-  title: 'Crew World',
+  title: 'AirCrew Hub',
   description: 'A comprehensive portal for airline crew members.',
 };
 
