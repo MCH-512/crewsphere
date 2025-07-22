@@ -33,6 +33,7 @@ import {
     requestFormSchema, type RequestFormValues, allRequestCategories, requestCategoriesAndTypes, urgencyLevels,
     type StoredUserRequest, getStatusBadgeVariant, getUrgencyBadgeVariant, getAdminResponseAlertVariant
 } from "@/schemas/request-schema";
+import { AnimatedCard } from "@/components/motion/animated-card";
 
 
 // --- Form Default Values ---
@@ -293,58 +294,62 @@ const RequestHistoryTab = ({ myRequests, isLoading, error, fetchMyRequests }: { 
     
     if (myRequests.length === 0) {
         return (
-            <Card className="text-center p-6 shadow-md mt-6">
-              <ListTodo className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="font-semibold text-lg text-muted-foreground">No requests submitted yet.</p>
-              <p className="text-sm text-muted-foreground">Use the "Submit New Request" tab to create your first request.</p>
-            </Card>
+            <AnimatedCard>
+                <Card className="text-center p-6 shadow-md mt-6">
+                  <ListTodo className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="font-semibold text-lg text-muted-foreground">No requests submitted yet.</p>
+                  <p className="text-sm text-muted-foreground">Use the "Submit New Request" tab to create your first request.</p>
+                </Card>
+            </AnimatedCard>
         );
     }
     
     return (
         <div className="space-y-4 mt-6">
-          {myRequests.map((request) => (
-            <Card key={request.id} className="shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
-                    <CardTitle className="text-lg font-semibold">{request.subject}</CardTitle>
-                    <Badge variant={getStatusBadgeVariant(request.status)} className="capitalize text-xs h-fit mt-1 sm:mt-0">{request.status.replace('-', ' ')}</Badge>
-                </div>
-                 <div className="text-xs text-muted-foreground space-x-2 flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
-                    <span>Category: <Badge variant="outline" className="px-1.5 py-0.5 text-xs">{request.requestType}</Badge></span>
-                    {request.specificRequestType && <span>| Type: <Badge variant="outline" className="px-1.5 py-0.5 text-xs">{request.specificRequestType}</Badge></span>}
-                    <span>
-                      | Urgency:
-                      <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize px-1.5 py-0.5 text-xs ml-1 flex items-center gap-1">
-                           {request.urgencyLevel === "Critical" && <Zap className="h-3 w-3" />}{request.urgencyLevel || "N/A"}
-                      </Badge>
-                    </span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm text-muted-foreground mb-3">
-                  Submitted: {request.createdAt ? format(request.createdAt.toDate(), "PPp") : 'N/A'}
-                  {request.updatedAt && request.updatedAt.toMillis() !== request.createdAt.toMillis() && (<span className="ml-2 italic">(Last updated: {format(request.updatedAt.toDate(), "PPpp")})</span>)}
-                </div>
+          {myRequests.map((request, index) => (
+            <AnimatedCard key={request.id} delay={0.1 + index * 0.05}>
+                <Card className="shadow-md hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+                        <CardTitle className="text-lg font-semibold">{request.subject}</CardTitle>
+                        <Badge variant={getStatusBadgeVariant(request.status)} className="capitalize text-xs h-fit mt-1 sm:mt-0">{request.status.replace('-', ' ')}</Badge>
+                    </div>
+                     <div className="text-xs text-muted-foreground space-x-2 flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                        <span>Category: <Badge variant="outline" className="px-1.5 py-0.5 text-xs">{request.requestType}</Badge></span>
+                        {request.specificRequestType && <span>| Type: <Badge variant="outline" className="px-1.5 py-0.5 text-xs">{request.specificRequestType}</Badge></span>}
+                        <span>
+                          | Urgency:
+                          <Badge variant={getUrgencyBadgeVariant(request.urgencyLevel)} className="capitalize px-1.5 py-0.5 text-xs ml-1 flex items-center gap-1">
+                               {request.urgencyLevel === "Critical" && <Zap className="h-3 w-3" />}{request.urgencyLevel || "N/A"}
+                          </Badge>
+                        </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-muted-foreground mb-3">
+                      Submitted: {request.createdAt ? format(request.createdAt.toDate(), "PPp") : 'N/A'}
+                      {request.updatedAt && request.updatedAt.toMillis() !== request.createdAt.toMillis() && (<span className="ml-2 italic">(Last updated: {format(request.updatedAt.toDate(), "PPpp")})</span>)}
+                    </div>
 
-                <Accordion type="single" collapsible className="w-full">
-                  <AccordionItem value="details"><AccordionTrigger className="text-sm py-2">View Submitted Details</AccordionTrigger><AccordionContent className="pt-2"><p className="text-sm whitespace-pre-wrap bg-secondary/30 p-3 rounded-md">{request.details}</p></AccordionContent></AccordionItem>
-                  {request.adminResponse && (
-                    <AccordionItem value="response">
-                      <AccordionTrigger className="text-sm py-2 font-medium text-primary"><span className="flex items-center gap-1"><MessageSquareText className="h-4 w-4" />Admin Response</span></AccordionTrigger>
-                      <AccordionContent className="pt-2">
-                        <Alert variant={getAdminResponseAlertVariant(request.status)}>
-                            {request.status === "approved" && <CheckCircle className="h-4 w-4" />}
-                            {request.status === "rejected" && <AlertTriangle className="h-4 w-4" />}
-                            <AlertTitle className="font-semibold">Response from Admin:</AlertTitle>
-                            <ShadAlertDescription className="whitespace-pre-wrap text-foreground/90">{request.adminResponse}</ShadAlertDescription>
-                        </Alert>
-                      </AccordionContent>
-                    </AccordionItem>
-                  )}
-                </Accordion>
-              </CardContent>
-            </Card>
+                    <Accordion type="single" collapsible className="w-full">
+                      <AccordionItem value="details"><AccordionTrigger className="text-sm py-2">View Submitted Details</AccordionTrigger><AccordionContent className="pt-2"><p className="text-sm whitespace-pre-wrap bg-secondary/30 p-3 rounded-md">{request.details}</p></AccordionContent></AccordionItem>
+                      {request.adminResponse && (
+                        <AccordionItem value="response">
+                          <AccordionTrigger className="text-sm py-2 font-medium text-primary"><span className="flex items-center gap-1"><MessageSquareText className="h-4 w-4" />Admin Response</span></AccordionTrigger>
+                          <AccordionContent className="pt-2">
+                            <Alert variant={getAdminResponseAlertVariant(request.status)}>
+                                {request.status === "approved" && <CheckCircle className="h-4 w-4" />}
+                                {request.status === "rejected" && <AlertTriangle className="h-4 w-4" />}
+                                <AlertTitle className="font-semibold">Response from Admin:</AlertTitle>
+                                <ShadAlertDescription className="whitespace-pre-wrap text-foreground/90">{request.adminResponse}</ShadAlertDescription>
+                            </Alert>
+                          </AccordionContent>
+                        </AccordionItem>
+                      )}
+                    </Accordion>
+                  </CardContent>
+                </Card>
+            </AnimatedCard>
           ))}
         </div>
     );
@@ -392,44 +397,46 @@ export default function RequestsPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl font-headline flex items-center">
-            <Inbox className="mr-2 h-6 w-6 text-primary" />
-            My Requests
-          </CardTitle>
-          <CardDescription>
-            Submit new requests and track the status of your previous submissions.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {!user && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Authentication Required</AlertTitle>
-              <ShadAlertDescription>
-                You must be logged in to submit or view requests.
-              </ShadAlertDescription>
-            </Alert>
-          )}
+      <AnimatedCard>
+        <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-2xl font-headline flex items-center">
+                <Inbox className="mr-2 h-6 w-6 text-primary" />
+                My Requests
+              </CardTitle>
+              <CardDescription>
+                Submit new requests and track the status of your previous submissions.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!user && (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Authentication Required</AlertTitle>
+                  <ShadAlertDescription>
+                    You must be logged in to submit or view requests.
+                  </ShadAlertDescription>
+                </Alert>
+              )}
 
-          {user && (
-            <Tabs defaultValue="submit" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="submit">Submit New Request</TabsTrigger>
-                <TabsTrigger value="history">My Submission History</TabsTrigger>
-              </TabsList>
-              <TabsContent value="submit">
-                <SubmitRequestTab refreshHistory={fetchMyRequests} />
-              </TabsContent>
-              <TabsContent value="history">
-                <RequestHistoryTab myRequests={myRequests} isLoading={isLoading} error={error} fetchMyRequests={fetchMyRequests} />
-              </TabsContent>
-            </Tabs>
-          )}
+              {user && (
+                <Tabs defaultValue="submit" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="submit">Submit New Request</TabsTrigger>
+                    <TabsTrigger value="history">My Submission History</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="submit">
+                    <SubmitRequestTab refreshHistory={fetchMyRequests} />
+                  </TabsContent>
+                  <TabsContent value="history">
+                    <RequestHistoryTab myRequests={myRequests} isLoading={isLoading} error={error} fetchMyRequests={fetchMyRequests} />
+                  </TabsContent>
+                </Tabs>
+              )}
 
-        </CardContent>
-      </Card>
+            </CardContent>
+        </Card>
+      </AnimatedCard>
     </div>
   );
 }

@@ -34,7 +34,7 @@ type SheetActivityDetails = { type: 'flight', data: FlightWithCrewDetails } | { 
 
 // --- UI Configuration ---
 const activityConfig: Record<UserActivity['activityType'], { icon: React.ElementType; label: string; className: string; dotColor: string; }> = {
-    flight: { icon: Plane, label: "Flight", className: "border-blue-500", dotColor: "bg-blue-500" },
+    flight: { icon: Plane, label: "Flight", className: "border-primary", dotColor: "bg-primary" },
     leave: { icon: Briefcase, label: "Leave", className: "border-green-500", dotColor: "bg-green-500" },
     training: { icon: GraduationCap, label: "Training", className: "border-yellow-500", dotColor: "bg-yellow-500" },
     'day-off': { icon: Bed, label: "Day Off", className: "border-gray-500", dotColor: "bg-gray-500" },

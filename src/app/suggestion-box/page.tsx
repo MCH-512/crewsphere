@@ -36,10 +36,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { formatDistanceToNowStrict } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { AnimatedCard } from "@/components/motion/animated-card";
 
 
 // Suggestion Card Component
-const SuggestionCard = ({ suggestion, onUpvote, currentUserId }: { suggestion: StoredSuggestion; onUpvote: (id: string) => void; currentUserId: string | null; }) => {
+const SuggestionCard = ({ suggestion, onUpvote, currentUserId, delay }: { suggestion: StoredSuggestion; onUpvote: (id: string) => void; currentUserId: string | null, delay: number }) => {
     const hasUpvoted = currentUserId && suggestion.upvotes.includes(currentUserId);
     const timeAgo = formatDistanceToNowStrict(suggestion.createdAt.toDate(), { addSuffix: true });
 
@@ -55,27 +56,29 @@ const SuggestionCard = ({ suggestion, onUpvote, currentUserId }: { suggestion: S
     };
 
     return (
-        <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                    <CardTitle className="text-md font-semibold">{suggestion.subject}</CardTitle>
-                    <Badge variant={getStatusBadgeVariant(suggestion.status)} className="capitalize text-xs">{suggestion.status.replace('-', ' ')}</Badge>
-                </div>
-                <CardDescription className="text-xs pt-1">
-                    Submitted {timeAgo} by {suggestion.isAnonymous ? "Anonymous User" : suggestion.userEmail}
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-3 mb-4">{suggestion.details}</p>
-                <div className="flex justify-between items-center">
-                    <Badge variant="outline">{suggestion.category}</Badge>
-                    <Button variant={hasUpvoted ? "default" : "outline"} size="sm" onClick={() => onUpvote(suggestion.id)} disabled={!currentUserId}>
-                        <ThumbsUp className="mr-2 h-4 w-4" />
-                        {hasUpvoted ? "Upvoted" : "Upvote"} ({suggestion.upvoteCount})
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
+        <AnimatedCard delay={delay}>
+            <Card className="shadow-sm">
+                <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                        <CardTitle className="text-md font-semibold">{suggestion.subject}</CardTitle>
+                        <Badge variant={getStatusBadgeVariant(suggestion.status)} className="capitalize text-xs">{suggestion.status.replace('-', ' ')}</Badge>
+                    </div>
+                    <CardDescription className="text-xs pt-1">
+                        Submitted {timeAgo} by {suggestion.isAnonymous ? "Anonymous User" : suggestion.userEmail}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground line-clamp-3 mb-4">{suggestion.details}</p>
+                    <div className="flex justify-between items-center">
+                        <Badge variant="outline">{suggestion.category}</Badge>
+                        <Button variant={hasUpvoted ? "default" : "outline"} size="sm" onClick={() => onUpvote(suggestion.id)} disabled={!currentUserId}>
+                            <ThumbsUp className="mr-2 h-4 w-4" />
+                            {hasUpvoted ? "Upvoted" : "Upvote"} ({suggestion.upvoteCount})
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </AnimatedCard>
     );
 };
 
@@ -199,17 +202,19 @@ export default function SuggestionBoxPage() {
 
     return (
         <div className="space-y-6">
-            <Card className="shadow-lg">
-                <CardHeader>
-                    <CardTitle className="text-2xl font-headline flex items-center gap-3">
-                        <Lightbulb className="h-7 w-7 text-primary" />
-                        Suggestion Box
-                    </CardTitle>
-                    <CardDescription>
-                        Share your ideas to improve our operations, well-being, and procedures. All suggestions are valued.
-                    </CardDescription>
-                </CardHeader>
-            </Card>
+            <AnimatedCard>
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-headline flex items-center gap-3">
+                            <Lightbulb className="h-7 w-7 text-primary" />
+                            Suggestion Box
+                        </CardTitle>
+                        <CardDescription>
+                            Share your ideas to improve our operations, well-being, and procedures. All suggestions are valued.
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            </AnimatedCard>
 
             <Tabs defaultValue="browse">
                 <TabsList className="grid w-full grid-cols-2">
@@ -221,47 +226,49 @@ export default function SuggestionBoxPage() {
                         <div className="text-center py-8"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary"/></div>
                     ) : suggestions.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {suggestions.map(s => <SuggestionCard key={s.id} suggestion={s} onUpvote={handleUpvote} currentUserId={user?.uid || null} />)}
+                            {suggestions.map((s, index) => <SuggestionCard key={s.id} suggestion={s} onUpvote={handleUpvote} currentUserId={user?.uid || null} delay={0.1 + index * 0.05} />)}
                         </div>
                     ) : (
                         <p className="text-center text-muted-foreground py-8">No suggestions yet. Be the first!</p>
                     )}
                 </TabsContent>
                 <TabsContent value="submit" className="mt-6">
-                    <Card>
-                        <CardHeader><CardTitle>Submit Your Suggestion</CardTitle></CardHeader>
-                        <CardContent>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                    <FormField control={form.control} name="category" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Category</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
-                                                <SelectContent>{suggestionCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="subject" render={({ field }) => (
-                                        <FormItem><FormLabel>Subject</FormLabel><FormControl><Input placeholder="A short title for your idea" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="details" render={({ field }) => (
-                                        <FormItem><FormLabel>Details</FormLabel><FormControl><Textarea placeholder="Explain your suggestion in detail. What is the problem and what is your proposed solution?" className="min-h-[150px]" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="isAnonymous" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
-                                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                            <div className="space-y-1 leading-none"><FormLabel>Submit Anonymously</FormLabel><FormDescription>If checked, your name and email will not be attached to this suggestion.</FormDescription></div>
-                                        </FormItem>
-                                    )} />
-                                    <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-                                        {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Submitting...</> : <><Send className="mr-2 h-4 w-4"/>Submit Idea</>}
-                                    </Button>
-                                </form>
-                            </Form>
-                        </CardContent>
-                    </Card>
+                    <AnimatedCard>
+                        <Card>
+                            <CardHeader><CardTitle>Submit Your Suggestion</CardTitle></CardHeader>
+                            <CardContent>
+                                <Form {...form}>
+                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                                        <FormField control={form.control} name="category" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Category</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
+                                                    <SelectContent>{suggestionCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="subject" render={({ field }) => (
+                                            <FormItem><FormLabel>Subject</FormLabel><FormControl><Input placeholder="A short title for your idea" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="details" render={({ field }) => (
+                                            <FormItem><FormLabel>Details</FormLabel><FormControl><Textarea placeholder="Explain your suggestion in detail. What is the problem and what is your proposed solution?" className="min-h-[150px]" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="isAnonymous" render={({ field }) => (
+                                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                                                <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                                <div className="space-y-1 leading-none"><FormLabel>Submit Anonymously</FormLabel><FormDescription>If checked, your name and email will not be attached to this suggestion.</FormDescription></div>
+                                            </FormItem>
+                                        )} />
+                                        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                                            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Submitting...</> : <><Send className="mr-2 h-4 w-4"/>Submit Idea</>}
+                                        </Button>
+                                    </form>
+                                </Form>
+                            </CardContent>
+                        </Card>
+                    </AnimatedCard>
                 </TabsContent>
             </Tabs>
         </div>

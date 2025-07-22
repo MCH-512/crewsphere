@@ -115,8 +115,8 @@ export default function PurserReportsHistoryPage() {
                                      <p className="text-xs text-muted-foreground">Submitted: {format(report.createdAt.toDate(), "PPp")}</p>
                                      <Button asChild variant="outline" className="w-full">
                                         <Link href={`/purser-reports/history/${report.id}`}>
-                                            <ArrowRight className="mr-2 h-4 w-4" />
                                             View Details & Response
+                                            <ArrowRight className="ml-auto h-4 w-4" />
                                         </Link>
                                     </Button>
                                 </CardFooter>
