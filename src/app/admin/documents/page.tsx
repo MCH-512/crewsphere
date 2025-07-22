@@ -17,11 +17,12 @@ import { db, storage } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { useRouter } from "next/navigation";
-import { Library, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Download, ArrowUpDown, ArrowUp, ArrowDown, Search, Filter } from "lucide-react";
+import { Library, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Download, ArrowUpDown, ArrowUp, ArrowDown, Search, Filter, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { StoredDocument, documentFormSchema, documentEditFormSchema, documentCategories } from "@/schemas/document-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
+import Link from "next/link";
 
 type ManageDocumentFormValues = z.infer<typeof documentFormSchema>;
 type ManageDocumentEditFormValues = z.infer<typeof documentEditFormSchema>;
@@ -160,7 +161,7 @@ export default function AdminDocumentsPage() {
 
             if (!fileURL || !filePath || !fileName || !fileType) throw new Error("File information is missing.");
 
-            const docData = {
+            const docData: Partial<StoredDocument> = {
                 title: data.title,
                 description: data.description,
                 category: data.category,
@@ -173,14 +174,17 @@ export default function AdminDocumentsPage() {
 
             if (isEditMode && currentDocument) {
                 const docRef = doc(db, "documents", currentDocument.id);
+                // When a file is updated, reset the read acknowledgements
+                if (file) {
+                    docData.readBy = [];
+                }
                 batch.update(docRef, docData);
-                await batch.commit();
-                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_DOCUMENT", entityType: "DOCUMENT", entityId: currentDocument.id, details: { title: data.title } });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_DOCUMENT", entityType: "DOCUMENT", entityId: currentDocument.id, details: { title: data.title } });
             } else {
                 const docRef = doc(collection(db, "documents"));
+                docData.readBy = [];
                 batch.set(docRef, docData);
-                await batch.commit();
-                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_DOCUMENT", entityType: "DOCUMENT", entityId: docRef.id, details: { title: data.title } });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_DOCUMENT", entityType: "DOCUMENT", entityId: docRef.id, details: { title: data.title } });
             }
 
             toast({ title: isEditMode ? "Document Updated" : "Document Added", description: `"${data.title}" has been saved.` });
@@ -274,6 +278,7 @@ export default function AdminDocumentsPage() {
                                         <TableCell>{format(docItem.lastUpdated.toDate(), "PPp")}</TableCell>
                                         <TableCell>{docItem.uploaderEmail}</TableCell>
                                         <TableCell className="text-right space-x-1">
+                                            <Button variant="ghost" size="icon" asChild title="View Read Status"><Link href={`/admin/documents/${docItem.id}`}><Eye className="h-4 w-4"/></Link></Button>
                                             <Button variant="ghost" size="icon" asChild><a href={docItem.fileURL} target="_blank" rel="noopener noreferrer"><Download className="h-4 w-4"/></a></Button>
                                             <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(docItem)}><Edit className="h-4 w-4" /></Button>
                                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(docItem)}><Trash2 className="h-4 w-4" /></Button>

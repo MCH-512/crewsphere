@@ -8,51 +8,54 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Library, Loader2, AlertTriangle, Download, Search, Filter, FileText, LayoutGrid, List } from "lucide-react";
+import { Library, Loader2, AlertTriangle, Download, Search, Filter, FileText, LayoutGrid, List, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { StoredDocument, documentCategories } from "@/schemas/document-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 type SortOption = 'lastUpdated_desc' | 'title_asc' | 'title_desc' | 'category_asc';
 
 export default function DocumentLibraryPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const { toast } = useToast();
     const [allDocuments, setAllDocuments] = React.useState<StoredDocument[]>([]);
     const [filteredDocuments, setFilteredDocuments] = React.useState<StoredDocument[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
+    const [isAcknowledging, setIsAcknowledging] = React.useState<string | null>(null);
     const [searchTerm, setSearchTerm] = React.useState("");
     const [categoryFilter, setCategoryFilter] = React.useState("all");
     const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
     const [sortOption, setSortOption] = React.useState<SortOption>('lastUpdated_desc');
+
+    const fetchDocuments = React.useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc"));
+            const querySnapshot = await getDocs(q);
+            const fetchedDocs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredDocument));
+            setAllDocuments(fetchedDocs);
+        } catch (error) {
+            console.error("Error fetching documents:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
     React.useEffect(() => {
         if (!authLoading && !user) {
             router.push('/login');
             return;
         }
-
-        const fetchDocuments = async () => {
-            setIsLoading(true);
-            try {
-                const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc"));
-                const querySnapshot = await getDocs(q);
-                const fetchedDocs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredDocument));
-                setAllDocuments(fetchedDocs);
-            } catch (error) {
-                console.error("Error fetching documents:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         if (user) fetchDocuments();
-    }, [user, authLoading, router]);
+    }, [user, authLoading, router, fetchDocuments]);
 
     React.useEffect(() => {
         let docs = [...allDocuments];
@@ -87,6 +90,22 @@ export default function DocumentLibraryPage() {
         setFilteredDocuments(docs);
     }, [searchTerm, categoryFilter, allDocuments, sortOption]);
     
+    const handleAcknowledge = async (docId: string) => {
+        if (!user) return;
+        setIsAcknowledging(docId);
+        try {
+            const docRef = doc(db, "documents", docId);
+            await updateDoc(docRef, { readBy: arrayUnion(user.uid) });
+            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'ACKNOWLEDGE_DOCUMENT', entityType: 'DOCUMENT', entityId: docId });
+            toast({ title: "Document Acknowledged", description: "Your read confirmation has been recorded." });
+            fetchDocuments();
+        } catch (error) {
+            toast({ title: "Error", description: "Could not record acknowledgement.", variant: "destructive" });
+        } finally {
+            setIsAcknowledging(null);
+        }
+    };
+
     if (authLoading || isLoading) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
@@ -157,36 +176,49 @@ export default function DocumentLibraryPage() {
             {filteredDocuments.length > 0 ? (
                 viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredDocuments.map((docItem, index) => (
-                        <AnimatedCard key={docItem.id} delay={0.1 + index * 0.05}>
-                            <Card className="shadow-sm h-full flex flex-col hover:shadow-md transition-shadow">
-                                <CardHeader>
-                                    <CardTitle className="text-lg flex items-start gap-3">
-                                        <FileText className="h-5 w-5 mt-1 text-primary"/>
-                                        {docItem.title}
-                                    </CardTitle>
-                                    <CardDescription>Version {docItem.version}</CardDescription>
-                                </CardHeader>
-                                <CardContent className="flex-grow">
-                                    <p className="text-sm text-muted-foreground line-clamp-3">
-                                        {docItem.description}
-                                    </p>
-                                </CardContent>
-                                <CardContent className="flex justify-between items-center text-xs text-muted-foreground">
-                                    <span>{docItem.category}</span>
-                                    <span>Updated: {format(docItem.lastUpdated.toDate(), "PP")}</span>
-                                </CardContent>
-                                <CardContent>
-                                     <Button asChild className="w-full">
-                                        <Link href={docItem.fileURL} target="_blank" rel="noopener noreferrer">
-                                            <Download className="mr-2 h-4 w-4"/>
-                                            Download
-                                        </Link>
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        </AnimatedCard>
-                    ))}
+                    {filteredDocuments.map((docItem, index) => {
+                        const hasRead = docItem.readBy?.includes(user.uid);
+                        return (
+                            <AnimatedCard key={docItem.id} delay={0.1 + index * 0.05}>
+                                <Card className="shadow-sm h-full flex flex-col hover:shadow-md transition-shadow">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg flex items-start gap-3">
+                                            <FileText className="h-5 w-5 mt-1 text-primary"/>
+                                            {docItem.title}
+                                        </CardTitle>
+                                        <CardDescription>Version {docItem.version}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow">
+                                        <p className="text-sm text-muted-foreground line-clamp-3">
+                                            {docItem.description}
+                                        </p>
+                                    </CardContent>
+                                    <CardContent className="flex justify-between items-center text-xs text-muted-foreground">
+                                        <span>{docItem.category}</span>
+                                        <span>Updated: {format(docItem.lastUpdated.toDate(), "PP")}</span>
+                                    </CardContent>
+                                    <CardFooter className="flex flex-col items-stretch gap-2">
+                                        <Button asChild className="w-full" variant="outline">
+                                            <Link href={docItem.fileURL} target="_blank" rel="noopener noreferrer">
+                                                <Download className="mr-2 h-4 w-4"/>
+                                                Download
+                                            </Link>
+                                        </Button>
+                                        {hasRead ? (
+                                            <Button className="w-full" variant="success" disabled>
+                                                <CheckCircle className="mr-2 h-4 w-4"/> Acknowledged
+                                            </Button>
+                                        ) : (
+                                            <Button className="w-full" onClick={() => handleAcknowledge(docItem.id)} disabled={isAcknowledging === docItem.id}>
+                                                {isAcknowledging === docItem.id && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                                Acknowledge Reading
+                                            </Button>
+                                        )}
+                                    </CardFooter>
+                                </Card>
+                            </AnimatedCard>
+                        )
+                    })}
                 </div>
                 ) : (
                 <AnimatedCard delay={0.1}>
@@ -199,25 +231,38 @@ export default function DocumentLibraryPage() {
                                         <TableHead>Category</TableHead>
                                         <TableHead>Version</TableHead>
                                         <TableHead>Last Updated</TableHead>
-                                        <TableHead className="text-right">Download</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredDocuments.map(docItem => (
-                                    <TableRow key={docItem.id}>
-                                        <TableCell className="font-medium">{docItem.title}</TableCell>
-                                        <TableCell>{docItem.category}</TableCell>
-                                        <TableCell>{docItem.version}</TableCell>
-                                        <TableCell>{format(docItem.lastUpdated.toDate(), "PPp")}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" asChild>
-                                                <a href={docItem.fileURL} target="_blank" rel="noopener noreferrer">
-                                                    <Download className="h-4 w-4"/>
-                                                </a>
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                    ))}
+                                    {filteredDocuments.map(docItem => {
+                                        const hasRead = docItem.readBy?.includes(user.uid);
+                                        return (
+                                            <TableRow key={docItem.id}>
+                                                <TableCell className="font-medium">{docItem.title}</TableCell>
+                                                <TableCell>{docItem.category}</TableCell>
+                                                <TableCell>{docItem.version}</TableCell>
+                                                <TableCell>{format(docItem.lastUpdated.toDate(), "PPp")}</TableCell>
+                                                <TableCell className="text-right space-x-2">
+                                                    {hasRead ? (
+                                                        <Button variant="success" size="sm" disabled>
+                                                            <CheckCircle className="mr-2 h-4 w-4"/> Acknowledged
+                                                        </Button>
+                                                    ) : (
+                                                        <Button variant="default" size="sm" onClick={() => handleAcknowledge(docItem.id)} disabled={isAcknowledging === docItem.id}>
+                                                            {isAcknowledging === docItem.id && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                                            Acknowledge
+                                                        </Button>
+                                                    )}
+                                                     <Button variant="ghost" size="icon" asChild>
+                                                        <a href={docItem.fileURL} target="_blank" rel="noopener noreferrer">
+                                                            <Download className="h-4 w-4"/>
+                                                        </a>
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
                                 </TableBody>
                             </Table>
                         </CardContent>

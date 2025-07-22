@@ -48,4 +48,6 @@ export interface StoredDocument {
   uploaderId: string;
   uploaderEmail: string;
   lastUpdated: Timestamp;
+
+  readBy?: string[]; // Array of user UIDs who have acknowledged reading
 }
