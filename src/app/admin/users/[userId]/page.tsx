@@ -354,4 +354,5 @@ export default function UserDetailPage() {
              </Card>
         </div>
     );
-}
+
+    
