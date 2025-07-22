@@ -83,8 +83,8 @@ export default function CourseDetailPage() {
         return null;
     }
 
-    const allChaptersRead = readChapters.length === course.chapters.length;
-    const chaptersToReadCount = course.chapters.length - readChapters.length;
+    const allChaptersRead = course.chapters && readChapters.length === course.chapters.length;
+    const chaptersToReadCount = course.chapters ? course.chapters.length - readChapters.length : 0;
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
@@ -127,7 +127,7 @@ export default function CourseDetailPage() {
                 </CardHeader>
                 <CardContent>
                     <ul className="space-y-3">
-                        {course.chapters.map((chapter, index) => (
+                        {course.chapters && course.chapters.map((chapter, index) => (
                              <div key={index} className="flex items-center space-x-3 p-3 rounded-md border has-[:checked]:bg-green-100/80 dark:has-[:checked]:bg-green-900/30">
                                 <Checkbox 
                                     id={`chapter-${index}`} 
@@ -159,4 +159,5 @@ export default function CourseDetailPage() {
 
         </div>
     );
-}
+
+    
