@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, parseISO } from "date-fns";
 import { trainingSessionFormSchema, type TrainingSessionFormValues, type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
-import { CustomMultiSelectAutocomplete } from "@/components/ui/custom-multi-select-autocomplete";
+import { CustomMultiSelectAutocomplete } from "@/components/custom/custom-multi-select-autocomplete";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useDebounce } from "@/hooks/use-debounce";

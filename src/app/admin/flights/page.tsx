@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -20,8 +21,8 @@ import { format, startOfDay, parseISO, addHours, isSameDay, startOfMonth, endOfM
 import { flightFormSchema, type FlightFormValues, type StoredFlight, aircraftTypes } from "@/schemas/flight-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { getAirportByCode, searchAirports, type Airport } from "@/services/airport-service";
-import { CustomAutocompleteAirport } from "@/components/ui/custom-autocomplete-airport";
-import { CustomMultiSelectAutocomplete } from "@/components/ui/custom-multi-select-autocomplete";
+import { CustomAutocompleteAirport } from "@/components/custom/custom-autocomplete-airport";
+import { CustomMultiSelectAutocomplete } from "@/components/custom/custom-multi-select-autocomplete";
 import { useDebounce } from "@/hooks/use-debounce";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";

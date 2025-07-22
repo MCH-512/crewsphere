@@ -22,7 +22,7 @@ import { logAuditEvent } from "@/lib/audit-logger";
 import { type StoredFlight } from "@/schemas/flight-schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { summarizeReport } from "@/ai/flows/summarize-report-flow";
-import { CheckboxGroup } from "@/components/ui/custom-checkbox-group";
+import { CheckboxGroup } from "@/components/custom/custom-checkbox-group";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
@@ -149,7 +149,7 @@ export default function SubmitPurserReportPage() {
 
   const prevStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+      setCurrentStep(prev => prev + 1);
     }
   };
 

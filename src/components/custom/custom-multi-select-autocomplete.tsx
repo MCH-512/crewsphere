@@ -19,7 +19,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Button } from "./button";
+import { Button } from "../ui/button";
 
 interface Option {
   value: string;
