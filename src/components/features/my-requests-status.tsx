@@ -2,10 +2,6 @@
 "use server";
 
 import * as React from "react";
-import { auth as adminAuth } from "firebase-admin";
-import { getAuth } from "firebase/auth";
-import { cookies } from "next/headers";
-import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, limit, Timestamp } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
