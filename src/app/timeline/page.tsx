@@ -9,7 +9,7 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, Timestamp, doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar";
-import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, parseISO, isSameDay } from "date-fns";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -142,90 +142,76 @@ const ActivityCard = ({ activity, onActivityClick, authUser }: { activity: Timel
     </div></div></button>;
 };
 
-export default function TimelinePage() {
-    const { user, loading: authLoading } = useAuth();
-    const router = useRouter();
-    const [activities, setActivities] = React.useState<TimelineActivity[]>([]);
-    const [isLoading, setIsLoading] = React.useState(true);
+async function getTimelineData(month: Date, userMap: Map<string, User>): Promise<TimelineActivity[]> {
+    if (userMap.size === 0) return [];
+    
+    const start = startOfMonth(month);
+    const end = endOfMonth(month);
+
+    try {
+        const flightsQuery = query(collection(db, "flights"), where("scheduledDepartureDateTimeUTC", ">=", start.toISOString()), where("scheduledDepartureDateTimeUTC", "<=", end.toISOString()));
+        const trainingQuery = query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", start), where("sessionDateTimeUTC", "<=", end));
+        
+        const [flightsSnap, trainingSnap] = await Promise.all([getDocs(flightsQuery), getDocs(trainingQuery)]);
+
+        const flightActivities: TimelineActivity[] = flightsSnap.docs.map(doc => {
+            const data = doc.data() as StoredFlight;
+            const purser = userMap.get(data.purserId);
+            return { 
+                id: doc.id, 
+                type: 'flight', 
+                date: Timestamp.fromDate(new Date(data.scheduledDepartureDateTimeUTC)), 
+                title: `Flight ${data.flightNumber}`, 
+                description: `${data.departureAirport} → ${data.arrivalAirport}`,
+                details: {
+                    purserName: purser?.displayName,
+                    crewCount: data.allCrewIds.length,
+                }
+            };
+        });
+
+        const trainingActivities: TimelineActivity[] = trainingSnap.docs.map(doc => {
+            const data = doc.data() as StoredTrainingSession;
+            return { 
+                id: doc.id, 
+                type: 'training', 
+                date: data.sessionDateTimeUTC, 
+                title: `Training: ${data.title}`, 
+                description: `Location: ${data.location}`,
+                details: {
+                    attendeeCount: data.attendeeIds.length
+                }
+            };
+        });
+        
+        const allActivities = [...flightActivities, ...trainingActivities];
+        allActivities.sort((a, b) => a.date.toMillis() - b.date.toMillis());
+        return allActivities;
+    } catch (error) {
+        console.error("Error fetching timeline data:", error);
+        return [];
+    }
+}
+
+function TimelineClient({ initialActivities, userMap }: { initialActivities: TimelineActivity[], userMap: Map<string, User> }) {
+    const { user } = useAuth();
+    const [activities, setActivities] = React.useState<TimelineActivity[]>(initialActivities);
+    const [isLoading, setIsLoading] = React.useState(false);
     const [currentMonth, setCurrentMonth] = React.useState(new Date());
     const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(new Date());
     
     const [selectedActivity, setSelectedActivity] = React.useState<SheetActivity | null>(null);
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
     const [isSheetLoading, setIsSheetLoading] = React.useState(false);
-    const [userMap, setUserMap] = React.useState<Map<string, User>>(new Map());
 
-    React.useEffect(() => {
-        const fetchAllUsers = async () => {
-            const usersSnapshot = await getDocs(collection(db, "users"));
-            const users = new Map<string, User>();
-            usersSnapshot.forEach(doc => {
-                users.set(doc.id, { uid: doc.id, ...doc.data() } as User);
-            });
-            setUserMap(users);
-        };
-        fetchAllUsers();
-    }, []);
-
-    const fetchTimelineData = React.useCallback(async (month: Date) => {
-        if (!user || userMap.size === 0) return;
+    const handleMonthChange = async (month: Date) => {
         setIsLoading(true);
-        const start = startOfMonth(month);
-        const end = endOfMonth(month);
+        setCurrentMonth(month);
+        const newActivities = await getTimelineData(month, userMap);
+        setActivities(newActivities);
+        setIsLoading(false);
+    };
 
-        try {
-            const flightsQuery = query(collection(db, "flights"), where("scheduledDepartureDateTimeUTC", ">=", start.toISOString()), where("scheduledDepartureDateTimeUTC", "<=", end.toISOString()));
-            const trainingQuery = query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", start), where("sessionDateTimeUTC", "<=", end));
-            
-            const [flightsSnap, trainingSnap] = await Promise.all([getDocs(flightsQuery), getDocs(trainingQuery)]);
-
-            const flightActivities: TimelineActivity[] = flightsSnap.docs.map(doc => {
-                const data = doc.data() as StoredFlight;
-                const purser = userMap.get(data.purserId);
-                return { 
-                    id: doc.id, 
-                    type: 'flight', 
-                    date: Timestamp.fromDate(new Date(data.scheduledDepartureDateTimeUTC)), 
-                    title: `Flight ${data.flightNumber}`, 
-                    description: `${data.departureAirport} → ${data.arrivalAirport}`,
-                    details: {
-                        purserName: purser?.displayName,
-                        crewCount: data.allCrewIds.length,
-                    }
-                };
-            });
-
-            const trainingActivities: TimelineActivity[] = trainingSnap.docs.map(doc => {
-                const data = doc.data() as StoredTrainingSession;
-                return { 
-                    id: doc.id, 
-                    type: 'training', 
-                    date: data.sessionDateTimeUTC, 
-                    title: `Training: ${data.title}`, 
-                    description: `Location: ${data.location}`,
-                    details: {
-                        attendeeCount: data.attendeeIds.length
-                    }
-                };
-            });
-            
-            const allActivities = [...flightActivities, ...trainingActivities];
-            allActivities.sort((a, b) => a.date.toMillis() - b.date.toMillis());
-            setActivities(allActivities);
-        } catch (error) {
-            console.error("Error fetching timeline data:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [user, userMap]);
-
-    React.useEffect(() => {
-        if (!authLoading) {
-            if (!user) router.push('/login');
-            else if (userMap.size > 0) fetchTimelineData(currentMonth);
-        }
-    }, [user, authLoading, router, fetchTimelineData, currentMonth, userMap]);
-    
     const handleShowActivityDetails = async (type: 'flight' | 'training', id: string) => {
         setIsSheetOpen(true);
         setIsSheetLoading(true);
@@ -256,23 +242,29 @@ export default function TimelinePage() {
             setIsSheetLoading(false);
         }
     };
+    
+    const activityDotStyles = activities.reduce((acc, activity) => {
+        const dateKey = format(activity.date.toDate(), 'yyyy-MM-dd');
+        if (!acc[dateKey]) { acc[dateKey] = new Set(); }
+        acc[dateKey].add(activityConfig[activity.type].dotColor);
+        return acc;
+    }, {} as Record<string, Set<string>>);
 
     const ActivityDayContent = (props: DayContentProps) => {
-        const dayActivities = activities.filter(f => f.date.toDate().toDateString() === props.date.toDateString());
-        const dayButton = (
-            <div className="relative h-full w-full flex items-center justify-center">
-                <p>{format(props.date, 'd')}</p>
-                {dayActivities.length > 0 && <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">{Array.from(new Set(dayActivities.map(a => activityConfig[a.type].dotColor))).slice(0, 3).map((color, i) => (<div key={i} className={cn("h-1.5 w-1.5 rounded-full", color)} />))}</div>}
+        const colors = activityDotStyles[format(props.date, 'yyyy-MM-dd')];
+        return (
+            <div className="relative flex h-full w-full items-center justify-center">
+                <span>{format(props.date, 'd')}</span>
+                {colors && (
+                    <div className="absolute bottom-1.5 flex gap-1">
+                        {Array.from(colors).slice(0, 3).map((color, i) => (<div key={i} className={cn("h-1.5 w-1.5 rounded-full", color)} />))}
+                    </div>
+                )}
             </div>
         );
-        return props.active ? <button type="button" className="w-full h-full">{dayButton}</button> : dayButton;
     };
     
-    const selectedDayActivities = activities.filter(activity => selectedDay && activity.date.toDate().toDateString() === selectedDay.toDateString());
-    
-    if (authLoading || (!user && !authLoading) || userMap.size === 0) {
-      return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
-    }
+    const selectedDayActivities = activities.filter(activity => selectedDay && isSameDay(activity.date.toDate(), selectedDay));
 
     return (
         <div className="space-y-6">
@@ -281,7 +273,17 @@ export default function TimelinePage() {
             </AnimatedCard>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 <AnimatedCard delay={0.1} className="lg:col-span-3">
-                    <Card className="shadow-sm"><Calendar mode="single" selected={selectedDay} onSelect={setSelectedDay} onMonthChange={setCurrentMonth} components={{ DayContent: ActivityDayContent }} className="p-2 sm:p-4" /></Card>
+                    <Card className="shadow-sm">
+                        <Calendar 
+                          mode="single" 
+                          selected={selectedDay} 
+                          onSelect={setSelectedDay} 
+                          month={currentMonth}
+                          onMonthChange={handleMonthChange}
+                          components={{ DayContent: ActivityDayContent }} 
+                          className="p-2 sm:p-4" 
+                        />
+                    </Card>
                 </AnimatedCard>
                 <AnimatedCard delay={0.15} className="lg:col-span-2">
                     <Card className="shadow-sm h-full">
@@ -294,3 +296,18 @@ export default function TimelinePage() {
         </div>
     );
 }
+
+// Main Server Component
+export default async function TimelinePage() {
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    const userMap = new Map<string, User>();
+    usersSnapshot.forEach(doc => {
+        userMap.set(doc.id, { uid: doc.id, ...doc.data() } as User);
+    });
+
+    const initialActivities = await getTimelineData(new Date(), userMap);
+
+    return <TimelineClient initialActivities={initialActivities} userMap={userMap} />;
+}
+
+    
