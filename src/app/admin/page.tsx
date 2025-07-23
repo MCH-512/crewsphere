@@ -27,8 +27,7 @@ interface DisplayAuditLog extends AuditLogData {
 }
 
 interface Stat {
-  value: number | null;
-  isLoading: boolean;
+  value: number;
   label: string;
 }
 
@@ -40,7 +39,7 @@ interface AdminSection {
   href: string;
   delay: number;
   stat?: Stat;
-  highlightWhen?: (value: number | null) => boolean;
+  highlightWhen?: (value: number) => boolean;
 }
 
 const requestsChartConfig = {
@@ -50,144 +49,111 @@ const requestsChartConfig = {
   },
 } satisfies ChartConfig
 
-export default function AdminConsolePage() {
-  const { user } = useAuth();
-  const { toast } = useToast();
+async function getDashboardData() {
+    const usersSnapPromise = getDocs(collection(db, "users"));
+    const flightsSnapPromise = getDocs(collection(db, "flights"));
+    const suggestionsPromise = getDocs(query(collection(db, "suggestions"), where("status", "==", "new")));
+    const reportsPromise = getDocs(query(collection(db, "purserReports"), where("status", "==", "submitted")));
+    const requestsPromise = getDocs(collection(db, "requests"));
+    const documentsSnapPromise = getDocs(collection(db, "documents"));
+    const pendingValidationsPromise = getDocs(query(collection(db, "userDocuments"), where("status", "==", "pending-validation")));
+    const coursesSnapPromise = getDocs(collection(db, "courses"));
+    const quizzesSnapPromise = getDocs(collection(db, "quizzes"));
+    const alertsSnapPromise = getDocs(query(collection(db, "alerts"), where("isActive", "==", true)));
+    const sessionsSnapPromise = getDocs(query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", Timestamp.now())));
+    const swapsSnapPromise = getDocs(query(collection(db, "flightSwaps"), where("status", "==", "pending_approval")));
+    const auditLogsPromise = getDocs(query(collection(db, "auditLogs"), orderBy("timestamp", "desc"), limit(5)));
+    const allSuggestionsPromise = getDocs(collection(db, "suggestions"));
+
+    const [
+        usersSnap, flightsSnap, suggestionsSnap, reportsSnap, requestsSnap,
+        documentsSnap, pendingValidationsSnap, coursesSnap, quizzesSnap, alertsSnap, sessionsSnap, swapsSnap, auditLogsSnap, allSuggestionsSnap
+    ] = await Promise.all([
+        usersSnapPromise, flightsSnapPromise, suggestionsPromise, reportsPromise, requestsPromise,
+        documentsSnapPromise, pendingValidationsPromise, coursesSnapPromise, quizzesSnapPromise, alertsSnapPromise, sessionsSnapPromise, swapsSnapPromise, auditLogsPromise, allSuggestionsPromise
+    ]);
+    
+    const allSuggestions = allSuggestionsSnap.docs.map(doc => doc.data());
+    const requests = requestsSnap.docs.map(doc => doc.data());
+
+    const stats = {
+        users: { value: usersSnap.size, label: "Total Users" },
+        flights: { value: flightsSnap.size, label: "Total Flights" },
+        suggestions: { value: suggestionsSnap.size, label: "New Suggestions" },
+        reports: { value: reportsSnap.size, label: "New Reports" },
+        requests: { value: requests.filter((r: any) => r.status === 'pending').length, label: "Pending Requests" },
+        documents: { value: documentsSnap.size, label: "Total Documents" },
+        pendingValidations: { value: pendingValidationsSnap.size, label: "Pending Validations" },
+        courses: { value: coursesSnap.size, label: "Total Courses" },
+        quizzes: { value: quizzesSnap.size, label: "Total Quizzes" },
+        activeAlerts: { value: alertsSnap.size, label: "Active Alerts" },
+        upcomingSessions: { value: sessionsSnap.size, label: "Upcoming Sessions"},
+        pendingSwaps: { value: swapsSnap.size, label: "Pending Swaps" },
+    };
+
+    const requestsByStatus = requests.reduce((acc, req: any) => {
+        const status = req.status || 'unknown';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+    const requestsChartData = Object.entries(requestsByStatus).map(([status, count]) => ({
+        status: status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' '),
+        count,
+        fill: "var(--color-count)",
+    }));
+
+    const suggestionsByCategory = allSuggestions.reduce((acc, sug: any) => {
+        const category = sug.category || 'Other';
+        acc[category] = (acc[category] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    const suggestionCategories = Object.keys(suggestionsByCategory);
+    const suggestionsChartConfig = suggestionCategories.reduce((acc, category, index) => {
+        acc[category] = { label: category, color: `hsl(var(--chart-${(index % 5) + 1}))` };
+        return acc;
+    }, { count: { label: "Count" } } as ChartConfig);
+
+    const suggestionsChartData = suggestionCategories.map((name) => ({
+        name,
+        count: suggestionsByCategory[name],
+        fill: `var(--color-${name})`
+    }));
+    
+    const usersData = usersSnap.docs.map(doc => doc.data());
+    const rolesDistribution = usersData.reduce((acc, u: any) => {
+        const role = u.role || 'Other';
+        acc[role] = (acc[role] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    const userRoles = Object.keys(rolesDistribution);
+    const userRolesChartConfig = userRoles.reduce((acc, role, index) => {
+        acc[role] = { label: role.charAt(0).toUpperCase() + role.slice(1), color: `hsl(var(--chart-${(index % 5) + 1}))` };
+        return acc;
+    }, { count: { label: "Count" } } as ChartConfig);
+
+    const userRolesChartData = userRoles.map((name) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        count: rolesDistribution[name],
+        fill: `var(--color-${name})`
+    }));
+    
+    const recentLogs = auditLogsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as DisplayAuditLog));
+    
+    return {
+        stats, requestsChartData, suggestionsChartData, suggestionsChartConfig,
+        userRolesChartData, userRolesChartConfig, recentLogs
+    };
+}
+
+
+export default async function AdminConsolePage() {
+  const { 
+    stats, requestsChartData, suggestionsChartData, suggestionsChartConfig,
+    userRolesChartData, userRolesChartConfig, recentLogs 
+  } = await getDashboardData();
   
-  const [stats, setStats] = React.useState<Record<string, Stat>>({
-      users: { value: null, isLoading: true, label: "Total Users" },
-      flights: { value: null, isLoading: true, label: "Total Flights" },
-      suggestions: { value: null, isLoading: true, label: "New Suggestions" },
-      reports: { value: null, isLoading: true, label: "New Reports" },
-      requests: { value: null, isLoading: true, label: "Pending Requests" },
-      documents: { value: null, isLoading: true, label: "Total Documents" },
-      pendingValidations: { value: null, isLoading: true, label: "Pending Validations" },
-      courses: { value: null, isLoading: true, label: "Total Courses" },
-      quizzes: { value: null, isLoading: true, label: "Total Quizzes" },
-      activeAlerts: { value: null, isLoading: true, label: "Active Alerts" },
-      upcomingSessions: { value: null, isLoading: true, label: "Upcoming Sessions"},
-      pendingSwaps: { value: null, isLoading: true, label: "Pending Swaps" },
-  });
-
-  const [requestsChartData, setRequestsChartData] = React.useState<any[]>([]);
-  const [suggestionsChartData, setSuggestionsChartData] = React.useState<any[]>([]);
-  const [userRolesChartData, setUserRolesChartData] = React.useState<any[]>([]);
-  const [recentLogs, setRecentLogs] = React.useState<DisplayAuditLog[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  
-  const [suggestionsChartConfig, setSuggestionsChartConfig] = React.useState<ChartConfig>({});
-  const [userRolesChartConfig, setUserRolesChartConfig] = React.useState<ChartConfig>({});
-
-
-  const fetchDashboardData = React.useCallback(async () => {
-    if (!user) return;
-    setIsLoading(true);
-    try {
-        const now = new Date();
-        const usersSnapPromise = getDocs(collection(db, "users"));
-        const flightsSnapPromise = getDocs(collection(db, "flights"));
-        const suggestionsPromise = getDocs(query(collection(db, "suggestions"), where("status", "==", "new")));
-        const reportsPromise = getDocs(query(collection(db, "purserReports"), where("status", "==", "submitted")));
-        const requestsPromise = getDocs(collection(db, "requests"));
-        const documentsSnapPromise = getDocs(collection(db, "documents"));
-        const pendingValidationsPromise = getDocs(query(collection(db, "userDocuments"), where("status", "==", "pending-validation")));
-        const coursesSnapPromise = getDocs(collection(db, "courses"));
-        const quizzesSnapPromise = getDocs(collection(db, "quizzes"));
-        const alertsSnapPromise = getDocs(query(collection(db, "alerts"), where("isActive", "==", true)));
-        const sessionsSnapPromise = getDocs(query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", Timestamp.now())));
-        const swapsSnapPromise = getDocs(query(collection(db, "flightSwaps"), where("status", "==", "pending_approval")));
-        const auditLogsPromise = getDocs(query(collection(db, "auditLogs"), orderBy("timestamp", "desc"), limit(5)));
-
-        const [
-            usersSnap, flightsSnap, suggestionsSnap, reportsSnap, requestsSnap,
-            documentsSnap, pendingValidationsSnap, coursesSnap, quizzesSnap, alertsSnap, sessionsSnap, swapsSnap, auditLogsSnap
-        ] = await Promise.all([
-            usersSnapPromise, flightsSnapPromise, suggestionsPromise, reportsPromise, requestsPromise,
-            documentsSnapPromise, pendingValidationsPromise, coursesSnapPromise, quizzesSnapPromise, alertsSnapPromise, sessionsSnapPromise, swapsSnapPromise, auditLogsPromise
-        ]);
-        
-        const allSuggestions = (await getDocs(collection(db, "suggestions"))).docs.map(doc => doc.data());
-        const requests = requestsSnap.docs.map(doc => doc.data());
-
-        setStats({
-            users: { value: usersSnap.size, isLoading: false, label: "Total Users" },
-            flights: { value: flightsSnap.size, isLoading: false, label: "Total Flights" },
-            suggestions: { value: suggestionsSnap.size, isLoading: false, label: "New Suggestions" },
-            reports: { value: reportsSnap.size, isLoading: false, label: "New Reports" },
-            requests: { value: requests.filter((r: any) => r.status === 'pending').length, isLoading: false, label: "Pending Requests" },
-            documents: { value: documentsSnap.size, isLoading: false, label: "Total Documents" },
-            pendingValidations: { value: pendingValidationsSnap.size, isLoading: false, label: "Pending Validations" },
-            courses: { value: coursesSnap.size, isLoading: false, label: "Total Courses" },
-            quizzes: { value: quizzesSnap.size, isLoading: false, label: "Total Quizzes" },
-            activeAlerts: { value: alertsSnap.size, isLoading: false, label: "Active Alerts" },
-            upcomingSessions: { value: sessionsSnap.size, isLoading: false, label: "Upcoming Sessions"},
-            pendingSwaps: { value: swapsSnap.size, isLoading: false, label: "Pending Swaps" },
-        });
-
-        const requestsByStatus = requests.reduce((acc, req: any) => {
-            const status = req.status || 'unknown';
-            acc[status] = (acc[status] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-        setRequestsChartData(Object.entries(requestsByStatus).map(([status, count]) => ({
-            status: status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' '),
-            count,
-            fill: "var(--color-count)",
-        })));
-
-        const suggestionsByCategory = allSuggestions.reduce((acc, sug: any) => {
-            const category = sug.category || 'Other';
-            acc[category] = (acc[category] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-
-        const suggestionCategories = Object.keys(suggestionsByCategory);
-        const sChartConfig = suggestionCategories.reduce((acc, category, index) => {
-            acc[category] = { label: category, color: `hsl(var(--chart-${(index % 5) + 1}))` };
-            return acc;
-        }, { count: { label: "Count" } } as ChartConfig);
-        setSuggestionsChartConfig(sChartConfig);
-
-        setSuggestionsChartData(suggestionCategories.map((name) => ({
-            name,
-            count: suggestionsByCategory[name],
-            fill: `var(--color-${name})`
-        })));
-        
-        const usersData = usersSnap.docs.map(doc => doc.data());
-        const rolesDistribution = usersData.reduce((acc, u: any) => {
-            const role = u.role || 'Other';
-            acc[role] = (acc[role] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-
-        const userRoles = Object.keys(rolesDistribution);
-        const uChartConfig = userRoles.reduce((acc, role, index) => {
-            acc[role] = { label: role.charAt(0).toUpperCase() + role.slice(1), color: `hsl(var(--chart-${(index % 5) + 1}))` };
-            return acc;
-        }, { count: { label: "Count" } } as ChartConfig);
-        setUserRolesChartConfig(uChartConfig);
-
-        setUserRolesChartData(userRoles.map((name) => ({
-            name: name.charAt(0).toUpperCase() + name.slice(1),
-            count: rolesDistribution[name],
-            fill: `var(--color-${name})`
-        })));
-        
-        setRecentLogs(auditLogsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as DisplayAuditLog)));
-
-    } catch (error) {
-        console.error(`Error fetching dashboard data:`, error);
-        toast({ title: "Error", description: `Could not fetch dashboard data.`, variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, toast]);
-
-  React.useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
-
   const adminSections: AdminSection[] = [
     { 
       icon: Users, title: "User Management", description: "View, create, and manage user accounts, roles, and permissions.", buttonText: "Manage Users", href: "/admin/users",
@@ -199,11 +165,11 @@ export default function AdminConsolePage() {
     },
     { 
       icon: BellRing, title: "Alert Management", description: "Create and broadcast alerts to all or specific groups of users.", buttonText: "Manage Alerts", href: "/admin/alerts",
-      stat: stats.activeAlerts, highlightWhen: (value) => value !== null && value > 0, delay: 0.2
+      stat: stats.activeAlerts, highlightWhen: (value) => value > 0, delay: 0.2
     },
     { 
       icon: Handshake, title: "Flight Swaps", description: "Approve or reject pending flight swap requests from crew members.", buttonText: "Manage Swaps", href: "/admin/flight-swaps",
-      stat: stats.pendingSwaps, highlightWhen: (value) => value !== null && value > 0, delay: 0.28
+      stat: stats.pendingSwaps, highlightWhen: (value) => value > 0, delay: 0.28
     },
     { 
       icon: BadgeAlert, title: "Document Expiry", description: "Track and manage expiry dates for all user documents and licenses.", buttonText: "Manage Expiry", href: "/admin/expiry-management",
@@ -211,15 +177,15 @@ export default function AdminConsolePage() {
     },
     { 
       icon: FileCheck2, title: "Document Validations", description: "Review and approve documents updated or submitted by users.", buttonText: "Validate Docs", href: "/admin/document-validations",
-      stat: stats.pendingValidations, highlightWhen: (value) => value !== null && value > 0, delay: 0.22
+      stat: stats.pendingValidations, highlightWhen: (value) => value > 0, delay: 0.22
     },
     { 
       icon: ClipboardList, title: "User Requests", description: "Review and manage all user-submitted requests for leave, roster changes, etc.", buttonText: "Manage Requests", href: "/admin/user-requests",
-      stat: stats.requests, highlightWhen: (value) => value !== null && value > 0, delay: 0.25
+      stat: stats.requests, highlightWhen: (value) => value > 0, delay: 0.25
     },
      { 
       icon: FileSignature, title: "Purser Reports", description: "Review and manage all flight reports submitted by pursers.", buttonText: "Review Reports", href: "/admin/purser-reports",
-      stat: stats.reports, highlightWhen: (value) => value !== null && value > 0, delay: 0.31
+      stat: stats.reports, highlightWhen: (value) => value > 0, delay: 0.31
     },
      { 
       icon: ClipboardCheck, title: "Training Sessions", description: "Plan and manage in-person training sessions for crew members.", buttonText: "Manage Sessions", href: "/admin/training-sessions",
@@ -239,7 +205,7 @@ export default function AdminConsolePage() {
     },
     { 
       icon: MessageSquare, title: "Suggestions", description: "Review and manage all user-submitted suggestions for improvement.", buttonText: "Manage Suggestions", href: "/admin/suggestions",
-      stat: stats.suggestions, highlightWhen: (value) => value !== null && value > 0, delay: 0.46
+      stat: stats.suggestions, highlightWhen: (value) => value > 0, delay: 0.46
     },
     { 
       icon: Settings, title: "System Settings", description: "Configure application-wide settings and maintenance mode.", buttonText: "Configure Settings", href: "/admin/system-settings", 
@@ -330,9 +296,7 @@ export default function AdminConsolePage() {
             <CardDescription>A log of the last 5 important actions performed in the admin console.</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin"/></div>
-            ) : recentLogs.length > 0 ? (
+            {recentLogs.length > 0 ? (
               <div className="space-y-4">
                 {recentLogs.map((log, index) => (
                   <React.Fragment key={log.id}>
@@ -369,7 +333,7 @@ export default function AdminConsolePage() {
                       if (!section) return null;
 
                       const IconComponent = section.icon;
-                      const shouldHighlight = section.highlightWhen?.(section.stat?.value ?? null);
+                      const shouldHighlight = section.highlightWhen?.(section.stat?.value ?? 0);
                       const animationDelay = 0.3 + (adminSections.findIndex(s => s.href === item.href) * 0.05);
 
                       return (
@@ -383,7 +347,7 @@ export default function AdminConsolePage() {
                                       {section.stat && (
                                           <div className="flex justify-end">
                                               <Badge variant={shouldHighlight ? "destructive" : "secondary"} className="shrink-0">
-                                                  {section.stat.isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : section.stat.value}
+                                                  {section.stat.value}
                                               </Badge>
                                           </div>
                                       )}
@@ -396,7 +360,7 @@ export default function AdminConsolePage() {
                                           <Link href={section.href}>
                                               {section.buttonText}
                                               <ArrowRight className="ml-2 h-4 w-4" />
-                                              {shouldHighlight && !section.stat?.isLoading && section.stat?.value && section.stat.value > 0 && (
+                                              {shouldHighlight && section.stat?.value && section.stat.value > 0 && (
                                                   <Badge variant="secondary" className="ml-2 px-1.5 py-0.5 text-xs bg-white text-destructive hover:bg-white">{section.stat?.value}</Badge>
                                               )}
                                           </Link>
@@ -412,5 +376,3 @@ export default function AdminConsolePage() {
     </div>
   );
 }
-
-    
