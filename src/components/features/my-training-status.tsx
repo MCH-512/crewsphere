@@ -1,58 +1,43 @@
 
-"use client";
+"use server";
 
 import * as React from "react";
-import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader2, GraduationCap, AlertTriangle, CheckCircle, ArrowRight } from "lucide-react";
+import { GraduationCap, AlertTriangle, CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { StoredCourse } from "@/schemas/course-schema";
 import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
+import { getCurrentUser } from "@/lib/session";
 
-export function MyTrainingStatusCard() {
-    const { user } = useAuth();
-    const [stats, setStats] = React.useState<{ totalMandatory: number; completed: number; nextCourseId?: string; }>({ totalMandatory: 0, completed: 0 });
-    const [isLoading, setIsLoading] = React.useState(true);
-
-    React.useEffect(() => {
-        if (!user) {
-            setIsLoading(false);
-            return;
-        }
-
-        const fetchTrainingStatus = async () => {
-            setIsLoading(true);
-            try {
-                const coursesQuery = query(collection(db, "courses"), where("published", "==", true), where("mandatory", "==", true));
-                const attemptsQuery = query(collection(db, "userQuizAttempts"), where("userId", "==", user.uid), where("status", "==", "passed"));
-
-                const [coursesSnapshot, attemptsSnapshot] = await Promise.all([getDocs(coursesQuery), getDocs(attemptsQuery)]);
-
-                const mandatoryCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCourse));
-                const passedCourseIds = new Set(attemptsSnapshot.docs.map(doc => (doc.data() as StoredUserQuizAttempt).courseId));
-                
-                const completedCount = mandatoryCourses.filter(c => passedCourseIds.has(c.id)).length;
-                const outstandingCourses = mandatoryCourses.filter(c => !passedCourseIds.has(c.id));
-
-                setStats({
-                    totalMandatory: mandatoryCourses.length,
-                    completed: completedCount,
-                    nextCourseId: outstandingCourses.length > 0 ? outstandingCourses[0].id : undefined
-                });
-
-            } catch (error) {
-                console.error("Error fetching training status:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchTrainingStatus();
-    }, [user]);
+async function getTrainingStatus(userId: string | undefined): Promise<{ totalMandatory: number; completed: number; nextCourseId?: string; }> {
+    if (!userId) {
+        return { totalMandatory: 0, completed: 0 };
+    }
     
+    const coursesQuery = query(collection(db, "courses"), where("published", "==", true), where("mandatory", "==", true));
+    const attemptsQuery = query(collection(db, "userQuizAttempts"), where("userId", "==", userId), where("status", "==", "passed"));
+    const [coursesSnapshot, attemptsSnapshot] = await Promise.all([getDocs(coursesQuery), getDocs(attemptsQuery)]);
+
+    const mandatoryCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCourse));
+    const passedCourseIds = new Set(attemptsSnapshot.docs.map(doc => (doc.data() as StoredUserQuizAttempt).courseId));
+    
+    const completedCount = mandatoryCourses.filter(c => passedCourseIds.has(c.id)).length;
+    const outstandingCourses = mandatoryCourses.filter(c => !passedCourseIds.has(c.id));
+    
+    return {
+        totalMandatory: mandatoryCourses.length,
+        completed: completedCount,
+        nextCourseId: outstandingCourses.length > 0 ? outstandingCourses[0].id : undefined
+    };
+}
+
+
+export async function MyTrainingStatusCard() {
+    const user = await getCurrentUser();
+    const stats = await getTrainingStatus(user?.uid);
     const coursesToDo = stats.totalMandatory - stats.completed;
 
     return (
@@ -65,9 +50,7 @@ export function MyTrainingStatusCard() {
                  <CardDescription>Your mandatory training progress.</CardDescription>
             </CardHeader>
             <CardContent>
-                {isLoading ? (
-                     <div className="flex items-center justify-center h-24"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-                ) : coursesToDo > 0 ? (
+                {coursesToDo > 0 ? (
                     <div className="flex items-start gap-4">
                         <AlertTriangle className="h-8 w-8 text-yellow-500 mt-1" />
                         <div>

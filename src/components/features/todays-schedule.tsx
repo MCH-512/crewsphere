@@ -1,15 +1,14 @@
 
-"use client";
+"use server";
 
 import * as React from "react";
-import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, Timestamp, limit } from "firebase/firestore";
+import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, CalendarCheck, Plane, Briefcase, GraduationCap, Bed, Anchor } from "lucide-react";
+import { CalendarCheck, Plane, Briefcase, GraduationCap, Bed, Anchor } from "lucide-react";
 import { format, startOfDay, endOfDay } from "date-fns";
+import { getCurrentUser } from "@/lib/session";
 
-// Simplified activity type for this component
 interface TodayActivity {
   activityType: 'flight' | 'leave' | 'training' | 'standby' | 'day-off';
   comments?: string;
@@ -26,55 +25,37 @@ const activityConfig: Record<TodayActivity['activityType'], { icon: React.Elemen
     standby: { icon: Anchor, label: "Standby" },
 };
 
-export function TodaysScheduleCard() {
-    const { user } = useAuth();
-    const [activities, setActivities] = React.useState<TodayActivity[]>([]);
-    const [isLoading, setIsLoading] = React.useState(true);
+async function getTodayActivities(userId: string | undefined): Promise<TodayActivity[]> {
+    if (!userId) {
+        return [];
+    }
+    const todayStart = startOfDay(new Date());
+    const todayEnd = endOfDay(new Date());
 
-    React.useEffect(() => {
-        if (!user) {
-            setIsLoading(false);
-            return;
+    try {
+        const q = query(
+            collection(db, "userActivities"),
+            where("userId", "==", userId),
+            where("date", ">=", todayStart),
+            where("date", "<=", todayEnd)
+        );
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            return querySnapshot.docs.map(doc => doc.data() as TodayActivity);
         }
+        return [];
+    } catch (error) {
+        console.error("Error fetching today's schedule:", error);
+        return [];
+    }
+}
 
-        const fetchTodayActivity = async () => {
-            setIsLoading(true);
-            const todayStart = startOfDay(new Date());
-            const todayEnd = endOfDay(new Date());
 
-            try {
-                const q = query(
-                    collection(db, "userActivities"),
-                    where("userId", "==", user.uid),
-                    where("date", ">=", todayStart),
-                    where("date", "<=", todayEnd)
-                );
-                const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
-                    setActivities(querySnapshot.docs.map(doc => doc.data() as TodayActivity));
-                } else {
-                    setActivities([]);
-                }
-            } catch (error) {
-                console.error("Error fetching today's schedule:", error);
-                setActivities([]); // Or some error state
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchTodayActivity();
-    }, [user]);
+export async function TodaysScheduleCard() {
+    const user = await getCurrentUser();
+    const activities = await getTodayActivities(user?.uid);
 
     const renderContent = () => {
-        if (isLoading) {
-            return (
-                <div className="flex items-center justify-center h-24">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                </div>
-            );
-        }
-
         if (activities.length === 0) {
             return (
                  <div className="flex items-start gap-4">

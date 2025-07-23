@@ -30,6 +30,18 @@ const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 // Define public paths that do not require authentication
 const PUBLIC_PATHS = ['/login', '/signup'];
 
+// A simple client-side function to set a cookie.
+// NOTE: This is for demonstration. In a real app, the server should set a secure, httpOnly cookie.
+const setSessionCookie = (uid: string | null) => {
+    if (typeof window !== 'undefined') {
+        if (uid) {
+            document.cookie = `firebase-session-uid=${uid}; path=/; max-age=2592000; SameSite=Lax`; // 30 days
+        } else {
+            document.cookie = 'firebase-session-uid=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        }
+    }
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<User | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -70,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   accountStatus: userData.accountStatus,
                 };
                 setUser(enhancedUser);
+                setSessionCookie(enhancedUser.uid);
             } else {
                 // User exists in Auth but not in Firestore, create a basic profile
                 const basicProfile = {
@@ -83,17 +96,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 await setDoc(userDocRef, basicProfile);
                 const enhancedUser: User = { ...currentUser, ...basicProfile, email: currentUser.email || '' };
                 setUser(enhancedUser);
+                setSessionCookie(enhancedUser.uid);
             }
 
           } catch (firestoreError) {
             console.error("Error fetching or creating user details in Firestore:", firestoreError);
             setError(firestoreError instanceof Error ? firestoreError : new Error("Error managing user profile"));
-            // Set user with Firebase Auth data as a fallback
             const basicUser: User = { ...currentUser, email: currentUser.email || '', displayName: currentUser.displayName || '' };
             setUser(basicUser);
+            setSessionCookie(basicUser.uid);
           }
         } else {
           setUser(null);
+          setSessionCookie(null);
         }
         setLoading(false);
       },
@@ -122,11 +137,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth) {
         console.warn("Logout skipped: Firebase Auth not initialized.");
         setUser(null);
+        setSessionCookie(null);
         return;
     }
     try {
       await firebaseSignOut(auth);
       setUser(null); 
+      setSessionCookie(null);
     } catch (err) {
       if (err instanceof Error) {
         setError(err);
@@ -139,18 +156,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = { user, loading, error, logout };
 
-  // Improved rendering logic to prevent flashes of content
   const pathIsPublic = PUBLIC_PATHS.includes(pathname);
   if (loading) {
-      return ( // Return a full-page loader
+      return (
           <div className="flex min-h-screen items-center justify-center bg-background">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
           </div>
       );
   }
   
-  if (!user && !pathIsPublic) return null; // Let the redirect in useEffect handle it
-  if (user && pathIsPublic) return null; // Let the redirect in useEffect handle it
+  if (!user && !pathIsPublic) return null;
+  if (user && pathIsPublic) return null;
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

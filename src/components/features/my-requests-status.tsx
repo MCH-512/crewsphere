@@ -1,7 +1,10 @@
 
-"use client";
+"use server";
 
 import * as React from "react";
+import { auth as adminAuth } from "firebase-admin";
+import { getAuth } from "firebase/auth";
+import { cookies } from "next/headers";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, limit, Timestamp } from "firebase/firestore";
@@ -12,6 +15,7 @@ import Link from "next/link";
 import { Badge } from "../ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import { badgeVariants } from "../ui/badge";
+import { getCurrentUser } from "@/lib/session";
 
 interface RequestSummary {
   subject: string;
@@ -28,38 +32,25 @@ const getStatusBadgeVariant = (status: RequestSummary["status"]): VariantProps<t
     }
 };
 
-export function MyRequestsStatusCard() {
-    const { user } = useAuth();
-    const [stats, setStats] = React.useState<{ pendingCount: number; latestRequest: RequestSummary | null }>({ pendingCount: 0, latestRequest: null });
-    const [isLoading, setIsLoading] = React.useState(true);
+async function getRequestsStatus(userId: string | undefined): Promise<{ pendingCount: number; latestRequest: RequestSummary | null }> {
+    if (!userId) {
+        return { pendingCount: 0, latestRequest: null };
+    }
+    
+    const requestsQuery = query(collection(db, "requests"), where("userId", "==", userId), orderBy("createdAt", "desc"));
+    const querySnapshot = await getDocs(requestsQuery);
+    const allUserRequests = querySnapshot.docs.map(doc => doc.data() as RequestSummary);
+    
+    const pendingCount = allUserRequests.filter(r => r.status === 'pending').length;
+    const latestRequest = allUserRequests.length > 0 ? allUserRequests[0] : null;
 
-    React.useEffect(() => {
-        if (!user) {
-            setIsLoading(false);
-            return;
-        }
+    return { pendingCount, latestRequest };
+}
 
-        const fetchRequestStatus = async () => {
-            setIsLoading(true);
-            try {
-                const requestsQuery = query(collection(db, "requests"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
-                const querySnapshot = await getDocs(requestsQuery);
-                const allUserRequests = querySnapshot.docs.map(doc => doc.data() as RequestSummary);
-                
-                const pendingCount = allUserRequests.filter(r => r.status === 'pending').length;
-                const latestRequest = allUserRequests.length > 0 ? allUserRequests[0] : null;
-
-                setStats({ pendingCount, latestRequest });
-            } catch (error) {
-                console.error("Error fetching request status:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchRequestStatus();
-    }, [user]);
-
+export async function MyRequestsStatusCard() {
+    const user = await getCurrentUser();
+    const stats = await getRequestsStatus(user?.uid);
+    
     return (
         <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
@@ -70,9 +61,7 @@ export function MyRequestsStatusCard() {
                 <CardDescription>A summary of your submitted requests.</CardDescription>
             </CardHeader>
             <CardContent>
-                 {isLoading ? (
-                     <div className="flex items-center justify-center h-24"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-                ) : stats.pendingCount > 0 ? (
+                 {stats.pendingCount > 0 ? (
                     <div className="space-y-3">
                         <div className="flex items-center gap-2">
                             <AlertTriangle className="h-5 w-5 text-yellow-500" />

@@ -19,6 +19,7 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import type { StoredCourse } from "@/schemas/course-schema";
 import type { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const trainingChartConfig = {
   count: { label: "Courses" },
@@ -91,6 +92,27 @@ export default function DashboardPage() {
     { href: "/toolbox", label: "Open Toolbox", icon: Wrench },
   ];
 
+  const WidgetSkeleton = () => (
+    <Card className="h-full shadow-md">
+      <CardHeader>
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-4 w-48 mt-1" />
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-start gap-4">
+          <Skeleton className="h-8 w-8" />
+          <div className="w-full space-y-2">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Skeleton className="h-10 w-full" />
+      </CardFooter>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
       <AnimatedCard>
@@ -115,13 +137,19 @@ export default function DashboardPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AnimatedCard delay={0.1} className="lg:col-span-1">
-          <TodaysScheduleCard />
+          <React.Suspense fallback={<WidgetSkeleton />}>
+            <TodaysScheduleCard />
+          </React.Suspense>
         </AnimatedCard>
         <AnimatedCard delay={0.15} className="lg:col-span-1">
-           <MyTrainingStatusCard />
+           <React.Suspense fallback={<WidgetSkeleton />}>
+            <MyTrainingStatusCard />
+          </React.Suspense>
         </AnimatedCard>
         <AnimatedCard delay={0.2} className="lg:col-span-1">
-            <MyRequestsStatusCard />
+            <React.Suspense fallback={<WidgetSkeleton />}>
+              <MyRequestsStatusCard />
+            </React.Suspense>
         </AnimatedCard>
         <AnimatedCard delay={0.25} className="lg:col-span-1">
           <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
