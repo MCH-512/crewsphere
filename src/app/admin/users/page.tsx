@@ -120,13 +120,29 @@ const UserTableSkeleton = () => (
     </div>
 );
 
+// This is now a server-side data fetching function
+async function getUsers() {
+    const q = query(collection(db, "users"), orderBy("email", "asc"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+        uid: doc.id,
+        ...doc.data(),
+    } as UserDocument));
+}
 
-export default function AdminUsersPage() {
+export default async function AdminUsersPage() {
+    const initialUsers = await getUsers();
+
+    return <AdminUsersClient initialUsers={initialUsers} />
+}
+
+
+function AdminUsersClient({ initialUsers }: { initialUsers: UserDocument[] }) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [usersList, setUsersList] = React.useState<UserDocument[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [usersList, setUsersList] = React.useState<UserDocument[]>(initialUsers);
+  const [isLoading, setIsLoading] = React.useState(false); // Used for refresh action
   const [error, setError] = React.useState<string | null>(null);
 
   const [isManageUserDialogOpen, setIsManageUserDialogOpen] = React.useState(false);
@@ -160,12 +176,7 @@ export default function AdminUsersPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const q = query(collection(db, "users"), orderBy("email", "asc"));
-      const querySnapshot = await getDocs(q);
-      const fetchedUsers = querySnapshot.docs.map(doc => ({
-        uid: doc.id,
-        ...doc.data(),
-      } as UserDocument));
+      const fetchedUsers = await getUsers();
       setUsersList(fetchedUsers);
     } catch (err) {
       console.error("Error fetching users:", err);
@@ -175,16 +186,6 @@ export default function AdminUsersPage() {
       setIsLoading(false);
     }
   }, [toast]);
-
-  React.useEffect(() => {
-    if (!authLoading) {
-      if (!user || user.role !== 'admin') {
-        router.push('/');
-      } else {
-        fetchUsers();
-      }
-    }
-  }, [user, authLoading, router, fetchUsers]);
 
   const filteredAndSortedUsers = React.useMemo(() => {
     let filtered = usersList
@@ -395,7 +396,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  if (authLoading || (isLoading && usersList.length === 0 && !user)) {
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -475,9 +476,7 @@ export default function AdminUsersPage() {
             </Select>
           </div>
 
-          {isLoading ? (
-            <UserTableSkeleton />
-          ) : filteredAndSortedUsers.length > 0 ? (
+          {filteredAndSortedUsers.length > 0 ? (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -606,3 +605,5 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+
+    
