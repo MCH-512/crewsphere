@@ -22,13 +22,23 @@ import { logAuditEvent } from "@/lib/audit-logger";
 
 type SortOption = 'lastUpdated_desc' | 'title_asc' | 'title_desc' | 'category_asc';
 
-export default function DocumentLibraryPage() {
+async function getDocuments() {
+    const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredDocument));
+}
+
+export default async function DocumentLibraryServerPage() {
+    const initialDocuments = await getDocuments();
+    return <DocumentLibraryClient initialDocuments={initialDocuments} />;
+}
+
+function DocumentLibraryClient({ initialDocuments }: { initialDocuments: StoredDocument[] }) {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
-    const [allDocuments, setAllDocuments] = React.useState<StoredDocument[]>([]);
-    const [filteredDocuments, setFilteredDocuments] = React.useState<StoredDocument[]>([]);
-    const [isLoading, setIsLoading] = React.useState(true);
+    const [allDocuments, setAllDocuments] = React.useState<StoredDocument[]>(initialDocuments);
+    const [filteredDocuments, setFilteredDocuments] = React.useState<StoredDocument[]>(initialDocuments);
     const [isAcknowledging, setIsAcknowledging] = React.useState<string | null>(null);
     const [searchTerm, setSearchTerm] = React.useState("");
     const [categoryFilter, setCategoryFilter] = React.useState("all");
@@ -36,26 +46,15 @@ export default function DocumentLibraryPage() {
     const [sortOption, setSortOption] = React.useState<SortOption>('lastUpdated_desc');
 
     const fetchDocuments = React.useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc"));
-            const querySnapshot = await getDocs(q);
-            const fetchedDocs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredDocument));
-            setAllDocuments(fetchedDocs);
-        } catch (error) {
-            console.error("Error fetching documents:", error);
-        } finally {
-            setIsLoading(false);
-        }
+        const fetchedDocs = await getDocuments();
+        setAllDocuments(fetchedDocs);
     }, []);
 
     React.useEffect(() => {
         if (!authLoading && !user) {
             router.push('/login');
-            return;
         }
-        if (user) fetchDocuments();
-    }, [user, authLoading, router, fetchDocuments]);
+    }, [user, authLoading, router]);
 
     React.useEffect(() => {
         let docs = [...allDocuments];
@@ -96,7 +95,7 @@ export default function DocumentLibraryPage() {
         try {
             const docRef = doc(db, "documents", docId);
             await updateDoc(docRef, { readBy: arrayUnion(user.uid) });
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'ACKNOWLEDGE_DOCUMENT', entityType: 'DOCUMENT', entityId: docId });
+            await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: 'ACKNOWLEDGE_DOCUMENT', entityType: 'DOCUMENT', entityId: docId });
             toast({ title: "Document Acknowledged", description: "Your read confirmation has been recorded." });
             fetchDocuments();
         } catch (error) {
@@ -106,7 +105,7 @@ export default function DocumentLibraryPage() {
         }
     };
 
-    if (authLoading || isLoading) {
+    if (authLoading) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
 
