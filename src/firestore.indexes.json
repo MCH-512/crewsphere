@@ -80,6 +80,13 @@
       ]
     },
     {
+      "collectionGroup": "flights",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "purserReports",
       "queryScope": "COLLECTION",
       "fields": [
@@ -220,63 +227,12 @@
         { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
       ]
     },
-     {
-      "collectionGroup": "flights",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "allCrewIds", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "flights",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "flights",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
-      ]
-    },
-     {
-      "collectionGroup": "flights",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "flights",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
-      ]
-    },
     {
       "collectionGroup": "flightSwaps",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "flightSwaps",
-      "queryScope": "COLLECTION",
-      "fields": [
         { "fieldPath": "initiatingUserId", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    },
-     {
-      "collectionGroup": "flightSwaps",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "requestingUserId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     }
