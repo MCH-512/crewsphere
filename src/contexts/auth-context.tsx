@@ -6,7 +6,7 @@ import type { User as FirebaseUser } from "firebase/auth";
 import { auth, db, isConfigValid } from "@/lib/firebase"; 
 import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore"; // Import setDoc for user creation
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 // Define a new User type that can include a role and other Firestore fields
@@ -27,9 +27,6 @@ interface AuthContextType {
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
-// Define public paths that do not require authentication
-const PUBLIC_PATHS = ['/login', '/signup'];
-
 // A simple client-side function to set a cookie.
 // NOTE: This is for demonstration. In a real app, the server should set a secure, httpOnly cookie.
 const setSessionCookie = (uid: string | null) => {
@@ -46,8 +43,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<User | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
-  const router = useRouter();
-  const pathname = usePathname();
 
   React.useEffect(() => {
     // If config is invalid, don't even try to set up the listener
@@ -120,19 +115,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  React.useEffect(() => {
-    if (loading) return; 
-
-    const pathIsPublic = PUBLIC_PATHS.includes(pathname);
-
-    if (!user && !pathIsPublic) {
-      router.push('/login');
-    } else if (user && pathIsPublic) {
-      router.push('/');
-    }
-  }, [user, loading, pathname, router]);
-
-
   const logout = async () => {
     if (!auth) {
         console.warn("Logout skipped: Firebase Auth not initialized.");
@@ -155,18 +137,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value = { user, loading, error, logout };
-
-  const pathIsPublic = PUBLIC_PATHS.includes(pathname);
-  if (loading) {
-      return (
-          <div className="flex min-h-screen items-center justify-center bg-background">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          </div>
-      );
-  }
-  
-  if (!user && !pathIsPublic) return null;
-  if (user && pathIsPublic) return null;
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

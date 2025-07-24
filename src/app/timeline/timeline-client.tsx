@@ -20,7 +20,7 @@ import { getAirportByCode, type Airport } from "@/services/airport-service";
 import type { DayContentProps } from "react-day-picker";
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
-import type { TimelineActivity } from "./page";
+import { type TimelineActivity, getTimelineData } from "@/services/timeline-service"; // Import from service
 
 interface FlightWithCrewDetails extends StoredFlight {
     departureAirportInfo?: Airport | null;
@@ -107,7 +107,7 @@ const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authU
     );
 };
 
-const ActivityCard = ({ activity, onActivityClick, authUser }: { activity: TimelineActivity; onActivityClick: (type: 'flight' | 'training', id: string) => void, authUser: User | null; }) => {
+const ActivityCard = ({ activity, onActivityClick }: { activity: TimelineActivity; onActivityClick: (type: 'flight' | 'training', id: string) => void }) => {
     const config = activityConfig[activity.type];
     const Icon = config.icon;
     return <button className="w-full text-left mb-2" onClick={() => onActivityClick(activity.type, activity.id)}><div className={cn('p-3 w-full border-l-4 rounded-r-md flex items-start gap-4 bg-muted/30 hover:bg-muted/50 transition-colors', config.className)}><Icon className="h-5 w-5 mt-1 text-muted-foreground" /><div className="flex-grow text-left">
@@ -131,7 +131,7 @@ const ActivityCard = ({ activity, onActivityClick, authUser }: { activity: Timel
 };
 
 export function TimelineClient({ initialActivities, userMap }: { initialActivities: TimelineActivity[], userMap: Map<string, User> }) {
-    const { user, loading: authLoading, logout } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const [activities, setActivities] = React.useState<TimelineActivity[]>(initialActivities);
     const [isLoading, setIsLoading] = React.useState(false);
@@ -145,8 +145,8 @@ export function TimelineClient({ initialActivities, userMap }: { initialActiviti
     const handleMonthChange = async (month: Date) => {
         setIsLoading(true);
         setCurrentMonth(month);
-        // This would need a server action or API route to re-fetch data for the new month
-        // For now, we'll just show the initial data for any month
+        const newActivities = await getTimelineData(month, userMap);
+        setActivities(newActivities);
         setIsLoading(false);
     };
 
@@ -159,18 +159,14 @@ export function TimelineClient({ initialActivities, userMap }: { initialActiviti
                 const flightSnap = await getDoc(doc(db, "flights", id));
                 if (!flightSnap.exists()) throw new Error("Flight details not found.");
                 const flight = { id: flightSnap.id, ...flightSnap.data() } as StoredFlight;
-                const crewPromises = flight.allCrewIds.map(uid => getDoc(doc(db, "users", uid)));
-                const crewDocs = await Promise.all(crewPromises);
-                const crew = crewDocs.map(snap => snap.exists() ? { uid: snap.id, ...snap.data() } as User : null).filter(Boolean) as User[];
+                const crew = flight.allCrewIds.map(uid => userMap.get(uid)).filter(Boolean) as User[];
                 const [depAirport, arrAirport] = await Promise.all([getAirportByCode(flight.departureAirport), getAirportByCode(flight.arrivalAirport)]);
                 setSelectedActivity({ type: 'flight', data: { ...flight, departureAirportInfo: depAirport, arrivalAirportInfo: arrAirport, crew } });
             } else {
                 const sessionSnap = await getDoc(doc(db, "trainingSessions", id));
                 if (!sessionSnap.exists()) throw new Error("Training session not found.");
                 const session = { id: sessionSnap.id, ...sessionSnap.data() } as StoredTrainingSession;
-                const attendeePromises = session.attendeeIds.map(uid => getDoc(doc(db, "users", uid)));
-                const attendeeDocs = await Promise.all(attendeePromises);
-                const attendees = attendeeDocs.map(snap => snap.exists() ? { uid: snap.id, ...snap.data() } as User : null).filter(Boolean) as User[];
+                const attendees = session.attendeeIds.map(uid => userMap.get(uid)).filter(Boolean) as User[];
                 setSelectedActivity({ type: 'training', data: { ...session, attendees } });
             }
         } catch (err) {
@@ -235,7 +231,7 @@ export function TimelineClient({ initialActivities, userMap }: { initialActiviti
                 <AnimatedCard delay={0.15} className="lg:col-span-2">
                     <Card className="shadow-sm h-full">
                         <CardHeader><CardTitle className="text-lg">{selectedDay ? format(selectedDay, "EEEE, PPP") : "Select a day"}</CardTitle></CardHeader>
-                        <CardContent>{isLoading ? (<div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>) : selectedDayActivities.length > 0 ? (selectedDayActivities.map(activity => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} authUser={user} />)) : (<p className="text-sm text-muted-foreground text-center p-4">No activities scheduled for this day.</p>)}</CardContent>
+                        <CardContent>{isLoading ? (<div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>) : selectedDayActivities.length > 0 ? (selectedDayActivities.map(activity => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} />)) : (<p className="text-sm text-muted-foreground text-center p-4">No activities scheduled for this day.</p>)}</CardContent>
                     </Card>
                 </AnimatedCard>
             </div>
