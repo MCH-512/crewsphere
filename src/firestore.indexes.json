@@ -80,13 +80,6 @@
       ]
     },
     {
-      "collectionGroup": "flights",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "purserReports",
       "queryScope": "COLLECTION",
       "fields": [
@@ -236,6 +229,20 @@
       ]
     },
     {
+      "collectionGroup": "flights",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "flights",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
+      ]
+    },
+     {
       "collectionGroup": "flights",
       "queryScope": "COLLECTION",
       "fields": [
