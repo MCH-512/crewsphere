@@ -16,16 +16,44 @@ export async function getMySwaps(userId: string): Promise<StoredFlightSwap[]> {
     }
 
     try {
-        const swapsQuery = query(
+        const initiatedSwapsQuery = query(
             collection(db, "flightSwaps"),
             where("initiatingUserId", "==", userId),
             orderBy("createdAt", "desc")
         );
-        const querySnapshot = await getDocs(swapsQuery);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredFlightSwap));
+        
+        const requestedSwapsQuery = query(
+            collection(db, "flightSwaps"),
+            where("requestingUserId", "==", userId),
+            orderBy("createdAt", "desc")
+        );
+
+        const [initiatedSnapshot, requestedSnapshot] = await Promise.all([
+            getDocs(initiatedSwapsQuery),
+            getDocs(requestedSwapsQuery)
+        ]);
+        
+        const swapsMap = new Map<string, StoredFlightSwap>();
+
+        initiatedSnapshot.docs.forEach(doc => {
+            swapsMap.set(doc.id, { id: doc.id, ...doc.data() } as StoredFlightSwap);
+        });
+
+        requestedSnapshot.docs.forEach(doc => {
+            // Avoid duplicates if a user somehow swapped with themselves
+            if (!swapsMap.has(doc.id)) {
+                swapsMap.set(doc.id, { id: doc.id, ...doc.data() } as StoredFlightSwap);
+            }
+        });
+
+        const allSwaps = Array.from(swapsMap.values());
+        allSwaps.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+        
+        return allSwaps;
+
     } catch (error) {
         console.error("Error fetching user's flight swaps:", error);
         // In a real app, you might want to handle this error more gracefully
-        return [];
+        throw new Error("Could not retrieve your flight swap history.");
     }
 }
