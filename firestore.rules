@@ -3,132 +3,133 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // --- Helper Functions ---
-    function isUserAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
+  
+    // Helper function to check for admin role
     function isAdmin() {
-      return isUserAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // --- User Profiles ---
+    // Rules for the 'users' collection
     match /users/{userId} {
-      allow read: if isUserAuthenticated(); // Any logged-in user can read basic profile info for crew lists, etc.
-      allow create: if isUserAuthenticated(); // Allows user creation on first login.
-      allow update: if isAdmin() || isOwner(userId); // Users can update their own profile, admins can update any.
+      // Admins can read/write any user. Users can only read/update their own data.
+      allow read: if request.auth != null;
+      allow update: if isAdmin() || request.auth.uid == userId;
+      // Creation is handled by server-side logic (auth trigger or admin panel)
+      allow create: if isAdmin();
       allow delete: if isAdmin();
     }
     
-    // --- System & Admin ---
-    match /systemConfiguration/{docId} {
-      allow read: if isUserAuthenticated();
+    // Rules for 'systemConfiguration'
+    match /systemConfiguration/{configId} {
+      allow read: if request.auth != null;
       allow write: if isAdmin();
     }
 
+    // Rules for 'auditLogs'
     match /auditLogs/{logId} {
-      allow read: if isAdmin();
-      allow create: if isUserAuthenticated(); // Any authenticated action can create a log
-      allow write: if false; // Logs are immutable
+      allow read, write: if isAdmin();
+    }
+    
+    // Rules for 'documents' (library)
+    match /documents/{docId} {
+      // Any authenticated user can read library documents. Admins can manage them.
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+      // Users can update the 'readBy' array for acknowledgement
+      allow update: if request.auth != null && 'readBy' in request.resource.data && !(request.resource.data.diff(resource.data).affectedKeys().hasAny(['title', 'description', 'fileURL']));
     }
 
-    match /alerts/{alertId} {
-      allow read: if isUserAuthenticated();
-      allow create, update, delete: if isAdmin();
+    // Rules for 'courses', 'quizzes', 'questions', 'certificateRules'
+    match /courses/{courseId} {
+      allow read: if request.auth.uid != null;
+      allow write: if isAdmin();
+    }
+    match /quizzes/{quizId} {
+      allow read: if request.auth.uid != null;
+      allow write: if isAdmin();
+    }
+     match /questions/{questionId} {
+      allow read: if request.auth.uid != null;
+      allow write: if isAdmin();
+    }
+    match /certificateRules/{ruleId} {
+      allow read: if request.auth.uid != null;
+      allow write: if isAdmin();
+    }
+    
+    // Rules for user-specific data
+    match /userQuizAttempts/{attemptId} {
+      // Users can create their own attempts.
+      allow create: if request.auth.uid == request.resource.data.userId;
+      // Users can read their own attempts, Admins can read any.
+      allow read: if isAdmin() || request.auth.uid == resource.data.userId;
+      // Nobody can update/delete attempts.
+      allow update, delete: if false;
     }
 
-    // --- Core Features ---
+    match /userDocuments/{docId} {
+        allow create: if request.auth.uid == request.resource.data.userId;
+        allow read, update: if isAdmin() || request.auth.uid == resource.data.userId;
+        allow delete: if isAdmin();
+    }
+
+    match /requests/{reqId} {
+       allow create: if request.auth.uid == request.resource.data.userId;
+       allow read, update: if isAdmin() || request.auth.uid == resource.data.userId;
+       allow delete: if false; // Requests should be archived, not deleted
+    }
+
+    match /suggestions/{sugId} {
+       allow create: if request.auth != null;
+       allow read: if request.auth != null;
+       // Only admins can update status/notes. Users can update upvotes.
+       allow update: if isAdmin() || (request.auth.uid != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes', 'upvoteCount']));
+       allow delete: if isAdmin();
+    }
+    
+     match /purserReports/{reportId} {
+       allow create: if request.auth.uid == request.resource.data.userId;
+       allow read, update: if isAdmin() || request.auth.uid == resource.data.userId;
+       allow delete: if isAdmin();
+    }
+
+    match /communityPosts/{postId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth.uid == request.resource.data.authorId;
+        allow update: if (isAdmin() || request.auth.uid == resource.data.authorId) || (request.auth.uid != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likeCount']));
+        allow delete: if isAdmin() || request.auth.uid == resource.data.authorId;
+    }
+    
+    // Open read access for Flights and Training sessions for the timeline
     match /flights/{flightId} {
-        allow read: if isUserAuthenticated();
+        allow read: if request.auth != null;
+        allow create, update, delete: if isAdmin();
+    }
+    
+    match /trainingSessions/{sessionId} {
+        allow read: if request.auth != null;
         allow create, update, delete: if isAdmin();
     }
     
     match /userActivities/{activityId} {
-      allow read: if isAdmin() || isOwner(resource.data.userId);
-      allow create, update, delete: if isAdmin() || isOwner(resource.data.userId);
-    }
-    
-    match /purserReports/{reportId} {
-        allow read: if isAdmin() || isOwner(resource.data.userId);
-        allow create: if isUserAuthenticated();
-        allow update: if isAdmin() || isOwner(resource.data.userId); // Allow user to update if needed, but primarily admin
-        allow delete: if isAdmin();
-    }
-    
-    match /requests/{requestId} {
-        allow read: if isAdmin() || isOwner(resource.data.userId);
-        allow create: if isUserAuthenticated();
-        allow update, delete: if isAdmin() || isOwner(resource.data.userId);
-    }
-
-    match /suggestions/{suggestionId} {
-        allow read: if isUserAuthenticated();
-        allow create: if isUserAuthenticated();
-        allow update: if isAdmin() || isOwner(resource.data.userId); // Allow creator to update (e.g., withdraw), and admin to manage
-        allow delete: if isAdmin();
-    }
-    
-    match /communityPosts/{postId} {
-        allow read: if isUserAuthenticated();
-        allow create: if isUserAuthenticated();
-        allow update: if isOwner(resource.data.authorId); // Only author can edit/update
-        allow delete: if isAdmin() || isOwner(resource.data.authorId);
-    }
-
-    // --- Document Library ---
-    match /documents/{documentId} {
-      allow read: if isUserAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /userDocuments/{userDocId} {
-      allow read: if isAdmin() || isOwner(resource.data.userId);
-      allow create, update, delete: if isAdmin() || isOwner(resource.data.userId);
-    }
-
-    // --- Training & Quizzes ---
-    match /courses/{courseId} {
-      allow read: if isUserAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    match /quizzes/{quizId} {
-       allow read: if isUserAuthenticated();
-       allow create, update, delete: if isAdmin();
-    }
-    
-    match /questions/{questionId} {
-        allow read: if isUserAuthenticated();
+        allow read: if isAdmin() || request.auth.uid == resource.data.userId;
         allow create, update, delete: if isAdmin();
     }
 
-    match /certificateRules/{ruleId} {
-        allow read: if isUserAuthenticated();
-        allow create, update, delete: if isAdmin();
+    match /alerts/{alertId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
 
-    match /userQuizAttempts/{attemptId} {
-        allow read: if isAdmin() || isOwner(resource.data.userId);
-        allow create: if isUserAuthenticated();
-        allow update, delete: if isAdmin(); // Only admins can alter attempts
-    }
-    
-    match /trainingSessions/{sessionId} {
-      allow read: if isUserAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    // --- Flight Swaps ---
     match /flightSwaps/{swapId} {
-        allow read: if isUserAuthenticated();
-        allow create: if isUserAuthenticated();
-        allow update: if isUserAuthenticated(); // Any user can update to request, or admin to resolve
-        allow delete: if isAdmin() || isOwner(resource.data.initiatingUserId);
+      // Any authenticated user can read swap posts to browse the board.
+      allow read: if request.auth != null;
+      // Creating is posting your own flight, so userId must match.
+      allow create: if request.auth.uid == request.resource.data.initiatingUserId;
+      // Updating is for requesting a swap or for an admin to resolve it.
+      allow update: if (isAdmin()) || (request.auth.uid == request.resource.data.requestingUserId) || (request.auth.uid == resource.data.initiatingUserId);
+      allow delete: if false; // Swaps should be cancelled/rejected, not deleted.
     }
+
   }
 }
