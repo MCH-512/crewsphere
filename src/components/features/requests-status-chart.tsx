@@ -2,19 +2,14 @@
 import "server-only";
 
 import * as React from "react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Inbox } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { getCurrentUser } from "@/lib/session";
+import { RequestsStatusBarChart, type RequestsChartDataPoint } from "./charts/requests-status-bar-chart";
 
-const requestsChartConfig = {
-  count: { label: "Count", color: "hsl(var(--chart-1))" },
-}
-
-async function getRequestsChartData(userId: string | undefined): Promise<any[]> {
+async function getRequestsChartData(userId: string | undefined): Promise<RequestsChartDataPoint[]> {
     if (!userId) return [];
     
     try {
@@ -29,7 +24,6 @@ async function getRequestsChartData(userId: string | undefined): Promise<any[]> 
         return Object.entries(requestsByStatus).map(([status, count]) => ({
             status: status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' '),
             count,
-            fill: "var(--color-count)",
         }));
     } catch (error) {
         console.error("Error fetching requests chart data:", error);
@@ -48,21 +42,7 @@ export async function RequestsStatusChart() {
                 <CardDescription>A summary of your recent submissions.</CardDescription>
             </CardHeader>
             <CardContent>
-                {requestsChartData.length > 0 ? (
-                    <ChartContainer config={requestsChartConfig} className="min-h-[250px] w-full">
-                        <BarChart accessibilityLayer data={requestsChartData}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis dataKey="status" tickLine={false} tickMargin={10} axisLine={false} fontSize={12} />
-                            <YAxis tickLine={false} axisLine={false} fontSize={12} allowDecimals={false} />
-                            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                            <Bar dataKey="count" radius={8} />
-                        </BarChart>
-                    </ChartContainer>
-                ) : (
-                    <div className="flex items-center justify-center h-[250px]">
-                        <p className="text-muted-foreground">No request data to display.</p>
-                    </div>
-                )}
+                <RequestsStatusBarChart data={requestsChartData} />
             </CardContent>
         </Card>
     );

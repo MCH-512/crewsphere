@@ -2,22 +2,15 @@
 import "server-only";
 
 import * as React from "react";
-import { Pie, PieChart, Cell } from "recharts"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GraduationCap } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import type { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
 import { getCurrentUser } from "@/lib/session";
+import { TrainingProgressPieChart, type TrainingChartDataPoint } from "@/components/features/charts/training-progress-pie-chart";
 
-const trainingChartConfig = {
-  count: { label: "Courses" },
-  completed: { label: "Completed", color: "hsl(var(--chart-2))" },
-  pending: { label: "Pending", color: "hsl(var(--chart-5))" },
-} satisfies ChartConfig
-
-async function getTrainingChartData(userId: string | undefined): Promise<any[]> {
+async function getTrainingChartData(userId: string | undefined): Promise<TrainingChartDataPoint[]> {
     if (!userId) return [];
 
     try {
@@ -51,24 +44,8 @@ export async function TrainingProgressChart() {
                 <CardDescription>An overview of your required e-learning courses.</CardDescription>
             </CardHeader>
             <CardContent>
-                {trainingChartData.some(d => d.count > 0) ? (
-                    <ChartContainer config={trainingChartConfig} className="min-h-[250px] w-full">
-                        <PieChart>
-                            <ChartTooltip content={<ChartTooltipContent nameKey="count" />} />
-                            <Pie data={trainingChartData} dataKey="count" nameKey="name" innerRadius={60} strokeWidth={5}>
-                                <Cell key="cell-0" fill="var(--color-completed)" />
-                                <Cell key="cell-1" fill="var(--color-pending)" />
-                            </Pie>
-                            <ChartLegend content={<ChartLegendContent nameKey="name" />} />
-                        </PieChart>
-                    </ChartContainer>
-                ) : (
-                    <div className="flex items-center justify-center h-[250px]">
-                        <p className="text-muted-foreground">No mandatory training data available.</p>
-                    </div>
-                )}
+                <TrainingProgressPieChart data={trainingChartData} />
             </CardContent>
         </Card>
     );
 }
-
