@@ -34,6 +34,13 @@
       ]
     },
     {
+      "collectionGroup": "userActivities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "requestId", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "requests",
       "queryScope": "COLLECTION",
       "fields": [
