@@ -605,5 +605,3 @@ function AdminUsersClient({ initialUsers }: { initialUsers: UserDocument[] }) {
     </div>
   );
 }
-
-    

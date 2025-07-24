@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { StoredDocument, documentFormSchema, documentEditFormSchema, documentCategories } from "@/schemas/document-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import Link from "next/link";
+import { z } from "zod";
 
 type ManageDocumentFormValues = z.infer<typeof documentFormSchema>;
 type ManageDocumentEditFormValues = z.infer<typeof documentEditFormSchema>;
@@ -139,7 +140,6 @@ export default function AdminDocumentsPage() {
         if (!user) return;
         setIsSubmitting(true);
         try {
-            const batch = writeBatch(db);
             let fileURL = currentDocument?.fileURL;
             let filePath = currentDocument?.filePath;
             let fileName = currentDocument?.fileName;
@@ -171,19 +171,19 @@ export default function AdminDocumentsPage() {
                 uploaderEmail: user.email || "N/A",
                 lastUpdated: serverTimestamp(),
             };
-
+            
             if (isEditMode && currentDocument) {
                 const docRef = doc(db, "documents", currentDocument.id);
                 // When a file is updated, reset the read acknowledgements
                 if (file) {
                     docData.readBy = [];
                 }
-                batch.update(docRef, docData);
+                await updateDoc(docRef, docData);
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_DOCUMENT", entityType: "DOCUMENT", entityId: currentDocument.id, details: { title: data.title } });
             } else {
                 const docRef = doc(collection(db, "documents"));
                 docData.readBy = [];
-                batch.set(docRef, docData);
+                await setDoc(docRef, docData);
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_DOCUMENT", entityType: "DOCUMENT", entityId: docRef.id, details: { title: data.title } });
             }
 
@@ -322,5 +322,3 @@ export default function AdminDocumentsPage() {
         </div>
     );
 }
-
-    
