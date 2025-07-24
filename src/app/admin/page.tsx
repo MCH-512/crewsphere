@@ -31,16 +31,22 @@ interface Stat {
   label: string;
 }
 
-interface AdminSection {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  buttonText: string;
-  href: string;
-  delay: number;
-  stat?: Stat;
-  highlightWhen?: (value: number) => boolean;
+interface AdminDashboardStats {
+    users: Stat;
+    flights: Stat;
+    suggestions: Stat;
+    reports: Stat;
+    requests: Stat;
+    documents: Stat;
+    pendingValidations: Stat;
+    courses: Stat;
+    quizzes: Stat;
+    activeAlerts: Stat;
+    upcomingSessions: Stat;
+    pendingSwaps: Stat;
+    [key: string]: Stat; // Index signature
 }
+
 
 const requestsChartConfig = {
   count: {
@@ -76,7 +82,7 @@ async function getDashboardData() {
     const allSuggestions = allSuggestionsSnap.docs.map(doc => doc.data());
     const requests = requestsSnap.docs.map(doc => doc.data());
 
-    const stats = {
+    const stats: AdminDashboardStats = {
         users: { value: usersSnap.size, label: "Total Users" },
         flights: { value: flightsSnap.size, label: "Total Flights" },
         suggestions: { value: suggestionsSnap.size, label: "New Suggestions" },
@@ -154,69 +160,6 @@ export default async function AdminConsolePage() {
     userRolesChartData, userRolesChartConfig, recentLogs 
   } = await getDashboardData();
   
-  const adminSections: AdminSection[] = [
-    { 
-      icon: Users, title: "User Management", description: "View, create, and manage user accounts, roles, and permissions.", buttonText: "Manage Users", href: "/admin/users",
-      stat: stats.users, delay: 0.1 
-    },
-    { 
-      icon: Plane, title: "Flight Management", description: "Schedule new flights, assign pursers, and manage flight details.", buttonText: "Manage Flights", href: "/admin/flights",
-      stat: stats.flights, delay: 0.15
-    },
-    { 
-      icon: BellRing, title: "Alert Management", description: "Create and broadcast alerts to all or specific groups of users.", buttonText: "Manage Alerts", href: "/admin/alerts",
-      stat: stats.activeAlerts, highlightWhen: (value) => value > 0, delay: 0.2
-    },
-    { 
-      icon: Handshake, title: "Flight Swaps", description: "Approve or reject pending flight swap requests from crew members.", buttonText: "Manage Swaps", href: "/admin/flight-swaps",
-      stat: stats.pendingSwaps, highlightWhen: (value) => value > 0, delay: 0.28
-    },
-    { 
-      icon: BadgeAlert, title: "Document Expiry", description: "Track and manage expiry dates for all user documents and licenses.", buttonText: "Manage Expiry", href: "/admin/expiry-management",
-      delay: 0.2
-    },
-    { 
-      icon: FileCheck2, title: "Document Validations", description: "Review and approve documents updated or submitted by users.", buttonText: "Validate Docs", href: "/admin/document-validations",
-      stat: stats.pendingValidations, highlightWhen: (value) => value > 0, delay: 0.22
-    },
-    { 
-      icon: ClipboardList, title: "User Requests", description: "Review and manage all user-submitted requests for leave, roster changes, etc.", buttonText: "Manage Requests", href: "/admin/user-requests",
-      stat: stats.requests, highlightWhen: (value) => value > 0, delay: 0.25
-    },
-     { 
-      icon: FileSignature, title: "Purser Reports", description: "Review and manage all flight reports submitted by pursers.", buttonText: "Review Reports", href: "/admin/purser-reports",
-      stat: stats.reports, highlightWhen: (value) => value > 0, delay: 0.31
-    },
-     { 
-      icon: ClipboardCheck, title: "Training Sessions", description: "Plan and manage in-person training sessions for crew members.", buttonText: "Manage Sessions", href: "/admin/training-sessions",
-      stat: stats.upcomingSessions, delay: 0.34
-    },
-    { 
-      icon: GraduationCap, title: "Course Management", description: "Create, edit, and publish e-learning courses and their content.", buttonText: "Manage Courses", href: "/admin/courses",
-      stat: stats.courses, delay: 0.37
-    },
-    { 
-      icon: CheckSquare, title: "Quiz Management", description: "View all quizzes and their associated questions.", buttonText: "Manage Quizzes", href: "/admin/quizzes",
-      stat: stats.quizzes, delay: 0.4
-    },
-    { 
-      icon: Library, title: "Document Management", description: "Upload, manage, and distribute operational manuals and documents.", buttonText: "Manage Documents", href: "/admin/documents",
-      stat: stats.documents, delay: 0.43
-    },
-    { 
-      icon: MessageSquare, title: "Suggestions", description: "Review and manage all user-submitted suggestions for improvement.", buttonText: "Manage Suggestions", href: "/admin/suggestions",
-      stat: stats.suggestions, highlightWhen: (value) => value > 0, delay: 0.46
-    },
-    { 
-      icon: Settings, title: "System Settings", description: "Configure application-wide settings and maintenance mode.", buttonText: "Configure Settings", href: "/admin/system-settings", 
-      delay: 0.49
-    },
-    { 
-      icon: Activity, title: "Audit Logs", description: "Review a detailed, chronological record of system activities and changes.", buttonText: "View Logs", href: "/admin/audit-logs", 
-      delay: 0.52
-    },
-  ];
-
   return (
     <div className="space-y-8">
       <AnimatedCard>
@@ -328,40 +271,38 @@ export default async function AdminConsolePage() {
           <section key={groupIndex}>
               <h2 className="text-2xl font-bold tracking-tight mb-4">{group.title}</h2>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {group.items.map(item => {
-                      const section = adminSections.find(s => s.href === item.href);
-                      if (!section) return null;
-
-                      const IconComponent = section.icon;
-                      const shouldHighlight = section.highlightWhen?.(section.stat?.value ?? 0);
-                      const animationDelay = 0.3 + (adminSections.findIndex(s => s.href === item.href) * 0.05);
+                  {group.items.map((item, itemIndex) => {
+                      const IconComponent = item.icon;
+                      const stat = item.statKey ? stats[item.statKey] : undefined;
+                      const shouldHighlight = stat && item.highlightWhen?.(stat.value);
+                      const animationDelay = 0.3 + (itemIndex * 0.05);
 
                       return (
-                          <AnimatedCard key={section.title} delay={animationDelay}>
+                          <AnimatedCard key={item.href} delay={animationDelay}>
                               <Card className={cn("shadow-sm h-full flex flex-col transition-all hover:shadow-md", shouldHighlight && "ring-2 ring-destructive/50 bg-destructive/5")}>
                                   <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
                                       <div className="flex items-center gap-3">
                                           <IconComponent className="h-6 w-6 text-primary" />
-                                          <CardTitle className="text-lg">{section.title}</CardTitle>
+                                          <CardTitle className="text-lg">{item.title}</CardTitle>
                                       </div>
-                                      {section.stat && (
+                                      {stat && (
                                           <div className="flex justify-end">
                                               <Badge variant={shouldHighlight ? "destructive" : "secondary"} className="shrink-0">
-                                                  {section.stat.value}
+                                                  {stat.value}
                                               </Badge>
                                           </div>
                                       )}
                                   </CardHeader>
                                   <CardContent className="flex-grow">
-                                      <p className="text-sm text-muted-foreground">{section.description}</p>
+                                      <p className="text-sm text-muted-foreground">{item.description}</p>
                                   </CardContent>
                                   <CardFooter>
                                       <Button asChild className="w-full mt-auto">
-                                          <Link href={section.href}>
-                                              {section.buttonText}
+                                          <Link href={item.href}>
+                                              {item.buttonText || 'Manage'}
                                               <ArrowRight className="ml-2 h-4 w-4" />
-                                              {shouldHighlight && section.stat?.value && section.stat.value > 0 && (
-                                                  <Badge variant="secondary" className="ml-2 px-1.5 py-0.5 text-xs bg-white text-destructive hover:bg-white">{section.stat?.value}</Badge>
+                                              {shouldHighlight && stat?.value && stat.value > 0 && (
+                                                  <Badge variant="secondary" className="ml-2 px-1.5 py-0.5 text-xs bg-white text-destructive hover:bg-white">{stat?.value}</Badge>
                                               )}
                                           </Link>
                                       </Button>
