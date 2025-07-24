@@ -23,16 +23,20 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 const PostCard = ({ post, onLike, currentUserId }: { post: StoredCommunityPost; onLike: (id: string) => void; currentUserId: string | null; }) => {
     const hasLiked = currentUserId && post.likes.includes(currentUserId);
     const timeAgo = post.createdAt ? formatDistanceToNowStrict(post.createdAt.toDate(), { addSuffix: true }) : "just now";
+    
+    // Safely get author name and fallback for avatar
+    const authorName = post.authorName || post.authorEmail || "Anonymous";
+    const avatarFallback = (authorName || "AN").substring(0, 2).toUpperCase();
 
     return (
         <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-start gap-4 pb-4">
                 <Avatar>
                     <AvatarImage src={post.authorPhotoURL || undefined} data-ai-hint="user portrait" />
-                    <AvatarFallback>{post.authorName.substring(0, 2).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{avatarFallback}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                    <p className="font-semibold">{post.authorName}</p>
+                    <p className="font-semibold">{authorName}</p>
                     <p className="text-xs text-muted-foreground capitalize">{post.authorRole || 'Crew Member'} • {timeAgo}</p>
                 </div>
             </CardHeader>
@@ -100,6 +104,7 @@ export default function CommunityHubPage() {
                 content: data.content,
                 authorId: user.uid,
                 authorName: user.displayName || user.email,
+                authorEmail: user.email, // Add email field for fallback
                 authorRole: user.role || null,
                 authorPhotoURL: user.photoURL || null,
                 createdAt: serverTimestamp(),

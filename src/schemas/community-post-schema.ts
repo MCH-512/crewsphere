@@ -13,7 +13,8 @@ export interface StoredCommunityPost {
   id: string;
   content: string;
   authorId: string;
-  authorName: string; // User's displayName
+  authorName?: string | null; // Make optional to handle old data
+  authorEmail?: string | null; // Add for fallback
   authorRole: User['role'];
   authorPhotoURL?: string | null;
   createdAt: Timestamp;
