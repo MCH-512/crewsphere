@@ -154,11 +154,64 @@ async function getDashboardData() {
 }
 
 
-export default async function AdminConsolePage() {
-  const { 
-    stats, requestsChartData, suggestionsChartData, suggestionsChartConfig,
-    userRolesChartData, userRolesChartConfig, recentLogs 
-  } = await getDashboardData();
+export default function AdminConsolePage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const [stats, setStats] = React.useState<AdminDashboardStats | null>(null);
+  const [requestsChartData, setRequestsChartData] = React.useState<any[]>([]);
+  const [suggestionsChartData, setSuggestionsChartData] = React.useState<any[]>([]);
+  const [suggestionsChartConfig, setSuggestionsChartConfig] = React.useState<ChartConfig>({});
+  const [userRolesChartData, setUserRolesChartData] = React.useState<any[]>([]);
+  const [userRolesChartConfig, setUserRolesChartConfig] = React.useState<ChartConfig>({});
+  const [recentLogs, setRecentLogs] = React.useState<DisplayAuditLog[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (loading) return;
+    if (!user || user.role !== 'admin') {
+      router.push('/');
+      return;
+    }
+    
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            const data = await getDashboardData();
+            setStats(data.stats);
+            setRequestsChartData(data.requestsChartData);
+            setSuggestionsChartData(data.suggestionsChartData);
+            setSuggestionsChartConfig(data.suggestionsChartConfig);
+            setUserRolesChartData(data.userRolesChartData);
+            setUserRolesChartConfig(data.userRolesChartConfig);
+            setRecentLogs(data.recentLogs);
+        } catch (error) {
+            console.error("Error fetching admin dashboard data:", error);
+            toast({ title: "Error", description: "Could not load dashboard statistics.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    fetchData();
+  }, [user, loading, router, toast]);
+
+  if (isLoading || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!stats) {
+      return (
+        <div className="flex flex-col items-center justify-center text-center p-8">
+           <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+           <p className="text-muted-foreground mb-4">Could not load dashboard data.</p>
+         </div>
+       );
+  }
   
   return (
     <div className="space-y-8">
