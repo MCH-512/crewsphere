@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -157,20 +158,36 @@ export default function TimelinePage() {
     const handleMonthChange = React.useCallback(async (month: Date) => {
         setIsLoading(true);
         setCurrentMonth(month);
-        if (userMap.size > 0) {
-           const newActivities = await getTimelineData(month, userMap);
-           setActivities(newActivities);
-        }
+        const rawActivities = await getTimelineData(month);
+
+        // Enrich the data on the client side
+        const enrichedActivities = rawActivities.map(activity => {
+            if (activity.type === 'flight') {
+                const purser = userMap.get(activity.purserId);
+                return {
+                    ...activity,
+                    details: {
+                        ...activity.details,
+                        purserName: purser?.displayName
+                    }
+                }
+            }
+            return activity;
+        });
+
+        setActivities(enrichedActivities);
         setIsLoading(false);
     }, [userMap]);
 
     React.useEffect(() => {
         if (!authLoading && user) {
-            handleMonthChange(currentMonth);
+            if (userMap.size > 0) {
+                handleMonthChange(currentMonth);
+            }
         } else if (!authLoading && !user) {
             router.push('/login');
         }
-    }, [user, authLoading, router, handleMonthChange, currentMonth]);
+    }, [user, authLoading, router, handleMonthChange, currentMonth, userMap]);
 
 
     const handleShowActivityDetails = async (type: 'flight' | 'training', id: string) => {
@@ -223,7 +240,7 @@ export default function TimelinePage() {
     
     const selectedDayActivities = activities.filter(activity => selectedDay && isSameDay(activity.date.toDate(), selectedDay));
     
-    if (authLoading || isLoading && activities.length === 0) {
+    if (authLoading || (isLoading && activities.length === 0)) {
       return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
     }
 

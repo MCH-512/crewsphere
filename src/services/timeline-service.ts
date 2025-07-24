@@ -1,9 +1,9 @@
+
 'use server';
 
 import { collection, getDocs, query, where, orderBy, Timestamp } from "firebase/firestore";
 import { startOfMonth, endOfMonth } from "date-fns";
 import { db } from "@/lib/firebase";
-import { type User } from "@/contexts/auth-context";
 import { type StoredFlight } from "@/schemas/flight-schema";
 import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 
@@ -13,16 +13,14 @@ export interface TimelineActivity {
   date: Timestamp;
   title: string;
   description: string;
+  purserId: string; // Keep purserId for client-side enrichment
   details: {
-    purserName?: string;
     crewCount?: number;
     attendeeCount?: number;
   }
 }
 
-export async function getTimelineData(month: Date, userMap: Map<string, User>): Promise<TimelineActivity[]> {
-    if (userMap.size === 0) return [];
-    
+export async function getTimelineData(month: Date): Promise<TimelineActivity[]> {
     const start = startOfMonth(month);
     const end = endOfMonth(month);
 
@@ -34,15 +32,14 @@ export async function getTimelineData(month: Date, userMap: Map<string, User>): 
 
         const flightActivities: TimelineActivity[] = flightsSnap.docs.map(doc => {
             const data = doc.data() as StoredFlight;
-            const purser = userMap.get(data.purserId);
             return { 
                 id: doc.id, 
                 type: 'flight', 
                 date: Timestamp.fromDate(new Date(data.scheduledDepartureDateTimeUTC)), 
                 title: `Flight ${data.flightNumber}`, 
                 description: `${data.departureAirport} → ${data.arrivalAirport}`,
+                purserId: data.purserId,
                 details: {
-                    purserName: purser?.displayName,
                     crewCount: data.allCrewIds.length,
                 }
             };
@@ -56,6 +53,7 @@ export async function getTimelineData(month: Date, userMap: Map<string, User>): 
                 date: data.sessionDateTimeUTC, 
                 title: `Training: ${data.title}`, 
                 description: `Location: ${data.location}`,
+                purserId: data.createdBy, // Placeholder, as training doesn't have a purser
                 details: {
                     attendeeCount: data.attendeeIds.length
                 }
