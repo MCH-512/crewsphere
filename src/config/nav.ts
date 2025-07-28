@@ -4,7 +4,7 @@ import {
   ClipboardCheck, MessageSquare, Activity, FileSignature, 
   Calendar as CalendarIcon, Library, GraduationCap, CheckSquare, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Wrench, 
-  Replace, Handshake, Inbox, Lightbulb, FileCheck2
+  Replace, Handshake, Inbox, Lightbulb, FileCheck2, History
 } from "lucide-react";
 import type { ElementType } from 'react';
 
@@ -39,8 +39,8 @@ export const mainNavConfig: { sidebarNav: NavGroup[] } = {
      {
       title: "Operations",
       items: [
-        { href: "/flight-swap", title: "Swap Board", icon: Replace },
-        { href: "/my-swaps", title: "My Swaps", icon: Handshake },
+        { href: "/flight-swap", title: "Swap Board", icon: Handshake },
+        { href: "/my-swaps", title: "My Swaps", icon: History },
       ]
     },
     {
