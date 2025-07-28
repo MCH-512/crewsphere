@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Sidebar,
   SidebarHeader,
@@ -47,6 +47,8 @@ import { HeaderClocks } from "@/components/features/header-clocks";
 import { mainNavConfig, adminNavConfig } from "@/config/nav";
 import { Separator } from "@/components/ui/separator";
 
+const PUBLIC_PATHS = ['/login', '/signup'];
+
 const useTheme = () => {
   const [theme, setTheme] = React.useState("light");
   React.useEffect(() => {
@@ -70,6 +72,7 @@ const useTheme = () => {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { user, loading, logout } = useAuth();
   const { toast } = useToast();
@@ -78,27 +81,38 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     try {
       await logout();
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
+      router.push('/login');
     } catch (error) {
       console.error("Logout failed:", error);
       toast({ title: "Logout Failed", description: "Could not log you out. Please try again.", variant: "destructive" });
     }
   };
 
-  if (pathname === "/login" || pathname === "/signup") {
+  const isPublicPath = PUBLIC_PATHS.includes(pathname);
+
+  React.useEffect(() => {
+    if (loading) return;
+
+    if (!user && !isPublicPath) {
+      router.replace('/login');
+    }
+    if (user && isPublicPath) {
+      router.replace('/');
+    }
+  }, [user, loading, isPublicPath, router]);
+
+
+  if (loading || (!user && !isPublicPath) || (user && isPublicPath)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" aria-label="Loading application state" />
+      </div>
+    );
+  }
+  
+  if (isPublicPath) {
     return <>{children}</>;
   }
-  
-  const pathIsPublic = PUBLIC_PATHS.includes(pathname);
-  if (loading) {
-      return (
-          <div className="flex min-h-screen items-center justify-center bg-background">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          </div>
-      );
-  }
-  
-  if (!user && !pathIsPublic) return null;
-  if (user && pathIsPublic) return null;
 
   return (
     <SidebarProvider defaultOpen>
@@ -283,5 +297,3 @@ function LayoutWithSidebar({
     </>
   );
 }
-
-const PUBLIC_PATHS = ['/login', '/signup'];

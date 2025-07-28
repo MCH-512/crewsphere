@@ -16,12 +16,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserPlus, Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, isConfigValid } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AuthLayout } from "@/components/layout/auth-layout";
 
 const signupFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -81,7 +82,7 @@ export default function SignupPage() {
       await createUserWithEmailAndPassword(auth, data.email, data.password);
       toast({
         title: "Account Created",
-        description: "Welcome to Crew World! You are now signed in.",
+        description: "Welcome to AirCrew Hub! You are now signed in.",
       });
       router.push("/"); // Redirect to dashboard
     } catch (error: any) {
@@ -97,22 +98,20 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center">
-          <UserPlus className="mx-auto h-10 w-10 text-primary mb-4" />
-          <CardTitle className="text-3xl font-headline">Create Your Account</CardTitle>
-          <CardDescription>Join Crew World to streamline your operations.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <AuthLayout
+        title="Create an Account"
+        description="Join AirCrew Hub to streamline your operations."
+        imageUrl="https://images.unsplash.com/photo-1436891620584-46f6e5398dd8?q=80&w=2070&auto=format&fit=crop"
+        imageHint="airplane tail"
+    >
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="you@example.com" {...field} />
                     </FormControl>
@@ -133,7 +132,7 @@ export default function SignupPage() {
                   </FormItem>
                 )}
               />
-              <FormField
+               <FormField
                 control={form.control}
                 name="confirmPassword"
                 render={({ field }) => (
@@ -157,15 +156,13 @@ export default function SignupPage() {
                 )}
               </Button>
             </form>
-          </Form>
-          <p className="mt-6 text-center text-sm text-muted-foreground">
+        </Form>
+        <div className="mt-4 text-center text-sm">
             Already have an account?{" "}
-            <Button variant="link" asChild className="p-0 h-auto">
-              <Link href="/login">Sign In</Link>
-            </Button>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+            <Link href="/login" className="underline">
+              Sign In
+            </Link>
+        </div>
+    </AuthLayout>
   );
 }
