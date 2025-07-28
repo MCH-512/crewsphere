@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query as firestoreQuery, orderBy, Timestamp, doc, updateDoc, serverTimestamp, writeBatch, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, ArrowUpDown, Info, MessageSquareText, CheckCircle } from "lucide-react";
+import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, Info, MessageSquareText, CheckCircle } from "lucide-react";
 import { format, eachDayOfInterval, startOfDay } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -29,6 +29,7 @@ import {
     getStatusBadgeVariant,
     getUrgencyBadgeVariant,
 } from "@/schemas/request-schema";
+import { SortableHeader } from "@/components/custom/custom-sortable-header";
 
 
 type SortableColumn = "createdAt" | "status" | "urgencyLevel";
@@ -208,18 +209,6 @@ export default function AdminUserRequestsPage() {
     }
   };
 
-  const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
-    <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50 transition-colors">
-      <div className="flex items-center gap-1">
-        {label}
-        {sortColumn === column && (
-          <ArrowUpDown className={`h-3 w-3 ${sortDirection === 'desc' ? '' : 'rotate-180'}`} />
-        )}
-      </div>
-    </TableHead>
-  );
-
-
   if (authLoading || (isLoading && filteredAndSortedRequests.length === 0 && !user)) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -302,12 +291,12 @@ export default function AdminUserRequestsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <SortableHeader column="createdAt" label="Submitted" />
+                    <SortableHeader<SortableColumn> column="createdAt" label="Submitted" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                     <TableHead>User Email</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Subject</TableHead>
-                    <SortableHeader column="urgencyLevel" label="Urgency" />
-                    <SortableHeader column="status" label="Status" />
+                    <SortableHeader<SortableColumn> column="urgencyLevel" label="Urgency" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <SortableHeader<SortableColumn> column="status" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>

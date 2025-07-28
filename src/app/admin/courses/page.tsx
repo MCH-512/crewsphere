@@ -18,7 +18,7 @@ import { db, storage } from "@/lib/firebase";
 import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { collection, getDocs, query, orderBy, writeBatch, doc, serverTimestamp, where, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion, ArrowUpDown, ArrowUp, ArrowDown, Search, Filter } from "lucide-react";
+import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion, Search, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { courseFormSchema, CourseFormValues, courseCategories, courseTypes } from "@/schemas/course-schema";
 import { StoredCourse } from "@/schemas/course-schema";
@@ -30,6 +30,7 @@ import Link from "next/link";
 import { StoredQuiz, StoredCertificateRule } from "@/schemas/course-schema";
 import { generateCourseImage } from "@/ai/flows/generate-course-image-flow";
 import { Badge } from "@/components/ui/badge";
+import { SortableHeader } from "@/components/custom/custom-sortable-header";
 
 type SortableColumn = 'title' | 'category' | 'courseType' | 'published';
 type SortDirection = 'asc' | 'desc';
@@ -126,19 +127,6 @@ export default function AdminCoursesPage() {
             setSortDirection('asc');
         }
     };
-    
-    const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
-        <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
-            <div className="flex items-center gap-2">
-                {label}
-                {sortColumn === column ? (
-                    sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-                ) : (
-                    <ArrowUpDown className="h-4 w-4 opacity-50" />
-                )}
-            </div>
-        </TableHead>
-    );
 
     const handleOpenDialog = async (courseToEdit?: StoredCourse) => {
         if (courseToEdit) {
@@ -327,10 +315,10 @@ export default function AdminCoursesPage() {
                     </div>
                     <Table>
                         <TableHeader><TableRow>
-                            <SortableHeader column="title" label="Title" />
-                            <SortableHeader column="category" label="Category" />
-                            <SortableHeader column="courseType" label="Type" />
-                            <SortableHeader column="published" label="Status" />
+                            <SortableHeader<SortableColumn> column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader<SortableColumn> column="category" label="Category" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader<SortableColumn> column="courseType" label="Type" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader<SortableColumn> column="published" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                             <TableHead>Actions</TableHead>
                         </TableRow></TableHeader>
                         <TableBody>
