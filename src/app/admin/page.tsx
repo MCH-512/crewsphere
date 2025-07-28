@@ -171,7 +171,12 @@ export default function AdminConsolePage() {
 
   React.useEffect(() => {
     if (loading) return;
-    if (!user || user.role !== 'admin') {
+    if (!user) {
+        router.push('/login');
+        return;
+    }
+    if (user.role !== 'admin') {
+      // No toast needed, the UI will show access denied.
       router.push('/');
       return;
     }
@@ -197,12 +202,23 @@ export default function AdminConsolePage() {
     fetchData();
   }, [user, loading, router, toast]);
 
-  if (isLoading || loading) {
+  if (loading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if (!user || user.role !== 'admin') {
+      return (
+         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center p-4">
+            <AlertTriangle className="h-16 w-16 text-destructive mb-4" />
+            <CardTitle className="text-2xl mb-2">Access Denied</CardTitle>
+            <p className="text-muted-foreground">You do not have permission to view this page.</p>
+            <Button onClick={() => router.push('/')} className="mt-6">Go to Dashboard</Button>
+        </div>
+      );
   }
 
   if (!stats) {
