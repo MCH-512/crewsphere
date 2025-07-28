@@ -71,14 +71,14 @@ const FlightMarkers = ({ flights }: { flights: any[] }) => {
     );
 };
 
-const MapComponent = ({ flights }: { flights: any[] }) => {
+const MapWrapper = React.memo(({ flights, center, zoom }: { flights: any[], center: L.LatLngExpression, zoom: number }) => {
     return (
         <MapContainer 
-          center={[40, 0]} 
-          zoom={3} 
-          scrollWheelZoom={true} 
-          style={{ height: '100%', width: '100%' }} 
-          className="rounded-lg z-0"
+            center={center}
+            zoom={zoom}
+            scrollWheelZoom={true} 
+            style={{ height: '100%', width: '100%' }} 
+            className="rounded-lg z-0"
         >
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -86,8 +86,9 @@ const MapComponent = ({ flights }: { flights: any[] }) => {
             />
             <FlightMarkers flights={flights} />
         </MapContainer>
-    )
-}
+    );
+});
+MapWrapper.displayName = 'MapWrapper';
 
 
 const LiveMap = () => {
@@ -95,10 +96,13 @@ const LiveMap = () => {
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
+    const [mapState, setMapState] = React.useState({ center: [40, 0] as L.LatLngExpression, zoom: 3, key: Date.now() });
 
-    const fetchFlights = React.useCallback(async () => {
+    const fetchFlights = React.useCallback(async (isManualRefresh = false) => {
         setIsLoading(true);
-        setError(null);
+        if(isManualRefresh) {
+            setError(null);
+        }
         try {
             const response = await fetch('https://opensky-network.org/api/states/all');
             if (!response.ok) {
@@ -106,10 +110,11 @@ const LiveMap = () => {
             }
             const data = await response.json();
             const positionedFlights = data.states
-              .filter((s: any) => s[LONGITUDE] !== null && s[LATITUDE] !== null)
-              .slice(0, 300); // Limit to 300 for performance
+              ?.filter((s: any) => s[LONGITUDE] !== null && s[LATITUDE] !== null)
+              .slice(0, 300) || []; // Limit for performance and handle null states
             setFlights(positionedFlights);
             setLastUpdated(new Date());
+            setError(null); // Clear previous errors on successful fetch
         } catch (err: any) {
             setError(err.message || "An unknown error occurred.");
         } finally {
@@ -119,22 +124,28 @@ const LiveMap = () => {
 
     React.useEffect(() => {
         fetchFlights();
-        const interval = setInterval(fetchFlights, 60000); // Refresh every minute
+        const interval = setInterval(() => fetchFlights(false), 60000); // Refresh every minute
         return () => clearInterval(interval);
     }, [fetchFlights]);
+    
+    const handleManualRefresh = () => {
+        // Change key to force remount of map component if there was an error
+        if (error) {
+            setMapState(prev => ({ ...prev, key: Date.now() }));
+        }
+        fetchFlights(true);
+    }
 
     return (
       <div className="h-full w-full relative">
-        {/* Controls Overlay */}
         <div className="absolute top-2 right-2 z-[1000] bg-background/80 p-1.5 rounded-md flex items-center gap-2">
            {lastUpdated && !isLoading && !error && <p className="text-xs text-muted-foreground">Updated: {lastUpdated.toLocaleTimeString()}</p>}
-           <Button variant="outline" size="sm" onClick={fetchFlights} disabled={isLoading}>
+           <Button variant="outline" size="sm" onClick={handleManualRefresh} disabled={isLoading}>
                 <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                 {isLoading ? 'Refreshing...' : 'Refresh'}
             </Button>
         </div>
 
-        {/* Error Overlay */}
         {error && (
              <div className="absolute inset-0 z-[1000] bg-muted/80 rounded-lg flex flex-col items-center justify-center text-destructive backdrop-blur-sm">
                 <AlertTriangle className="h-10 w-10 mb-4"/>
@@ -143,15 +154,14 @@ const LiveMap = () => {
             </div>
         )}
 
-        {/* Loading Overlay (only shown on initial load) */}
-        {isLoading && flights.length === 0 && (
+        {isLoading && flights.length === 0 && !error && (
              <div className="absolute inset-0 z-[1000] bg-muted/80 rounded-lg flex flex-col items-center justify-center backdrop-blur-sm">
                 <Loader2 className="h-8 w-8 animate-spin" />
                 <p className="mt-2">Loading live flight data...</p>
             </div>
         )}
 
-        <MapComponent flights={flights} />
+        <MapWrapper key={mapState.key} flights={flights} center={mapState.center} zoom={mapState.zoom} />
       </div>
     );
 };
