@@ -235,6 +235,14 @@
         { "fieldPath": "initiatingUserId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "flightSwaps",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "requestingUserId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
