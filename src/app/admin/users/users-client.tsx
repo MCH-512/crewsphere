@@ -86,7 +86,7 @@ const manageUserFormSchema = z.object({
 
 type ManageUserFormValues = z.infer<typeof manageUserFormSchema>;
 
-type SortableColumn = "email" | "fullName" | "role" | "accountStatus" | "employeeId" | "joiningDate";
+type SortableColumn = "fullName" | "role" | "accountStatus" | "employeeId";
 type SortDirection = "asc" | 'desc';
 
 export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) {
@@ -165,13 +165,9 @@ export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) 
         const valA = a[sortColumn];
         const valB = b[sortColumn];
         let comparison = 0;
-        if (sortColumn === 'joiningDate') {
-            const dateA = valA ? parseISO(valA).getTime() : 0;
-            const dateB = valB ? parseISO(valB).getTime() : 0;
-            comparison = dateA - dateB;
-        } else {
-            comparison = String(valA || '').localeCompare(String(valB || ''));
-        }
+        
+        comparison = String(valA || '').localeCompare(String(valB || ''));
+        
         return sortDirection === 'asc' ? comparison : -comparison;
     });
   }, [usersList, searchTerm, roleFilter, statusFilter, sortColumn, sortDirection]);
@@ -426,7 +422,7 @@ export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) 
                 <TableHeader>
                   <TableRow>
                     <SortableHeader column="fullName" label="Full Name" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                    <SortableHeader column="email" label="Email" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <TableHead>Email</TableHead>
                     <SortableHeader column="role" label="Role" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                     <SortableHeader column="accountStatus" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                     <SortableHeader column="employeeId" label="Employee ID" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
@@ -495,11 +491,11 @@ export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) 
                  )}
                   <h4 className="text-base font-semibold text-muted-foreground">Personal & Professional Info</h4>
                   <div className="space-y-4">
-                     {!isCreateMode && <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} disabled /></FormControl><FormMessage /></FormItem>)}/>}
+                     {!isCreateMode && <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" value={form.getValues("email")} disabled /></FormControl></FormItem>}
                      <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Full Name{isCreateMode ? "*" : ""}</FormLabel><FormControl><Input placeholder="e.g., Johnathan Doe" {...field} /></FormControl><FormDescription>The user's full legal name.</FormDescription><FormMessage /></FormItem>)}/>
                      <FormField control={form.control} name="displayName" render={({ field }) => (<FormItem><FormLabel>Display Name{isCreateMode ? "*" : ""}</FormLabel><FormControl><Input placeholder="e.g., John D." {...field} /></FormControl><FormDescription>This name will be shown publicly and in greetings.</FormDescription><FormMessage /></FormItem>)}/>
                      <FormField control={form.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>Employee ID{isCreateMode ? "*" : ""}</FormLabel><FormControl><Input placeholder="e.g., EMP12345" {...field} /></FormControl><FormDescription>Unique company identifier for the employee.</FormDescription><FormMessage /></FormItem>)}/>
-                     <FormField control={form.control} name="joiningDate" render={({ field }) => (<FormItem><FormLabel>Joining Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormDescription>Optional. When the user joined the company.</FormDescription><FormMessage /></FormItem>)}/>
+                     <FormField control={form.control} name="joiningDate" render={({ field }) => (<FormItem><FormLabel>Joining Date</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Optional. When the user joined the company.</FormDescription><FormMessage /></FormItem>)}/>
                   </div>
 
                   <Separator />
