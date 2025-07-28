@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -16,13 +15,14 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp, doc, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { BadgeAlert, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Search, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { BadgeAlert, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Search, Filter, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { adminUserDocumentFormSchema, userDocumentTypes, type StoredUserDocument, type UserDocumentStatus, type AdminUserDocumentFormValues } from "@/schemas/user-document-schema";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { SortableHeader } from "@/components/custom/custom-sortable-header";
 
 const EXPIRY_WARNING_DAYS = 30;
 
@@ -135,19 +135,6 @@ export default function AdminExpiryManagementPage() {
             setSortDirection(column === 'expiryDate' ? 'asc' : 'desc');
         }
     };
-    
-    const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
-        <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
-            <div className="flex items-center gap-2">
-                {label}
-                {sortColumn === column ? (
-                    sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-                ) : (
-                    <ArrowUpDown className="h-4 w-4 opacity-50" />
-                )}
-            </div>
-        </TableHead>
-    );
 
     const handleOpenDialog = (docToEdit?: StoredUserDocument) => {
         if (docToEdit) {
@@ -267,11 +254,11 @@ export default function AdminExpiryManagementPage() {
                     <div className="rounded-md border">
                     <Table>
                         <TableHeader><TableRow>
-                            <SortableHeader column="userEmail" label="User" />
-                            <SortableHeader column="documentName" label="Document" />
-                            <SortableHeader column="expiryDate" label="Expires On" />
-                            <SortableHeader column="status" label="Status" />
-                            <SortableHeader column="lastUpdatedAt" label="Last Updated" />
+                            <SortableHeader column="userEmail" label="User" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader column="documentName" label="Document" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader column="expiryDate" label="Expires On" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader column="status" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader column="lastUpdatedAt" label="Last Updated" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                             <TableHead>Actions</TableHead>
                         </TableRow></TableHeader>
                         <TableBody>
