@@ -75,7 +75,7 @@ export const adminNavConfig: { sidebarNav: NavGroup[] } = {
       items: [
         { href: "/admin", title: "Admin Dashboard", icon: LayoutDashboard, description: "Central hub for managing application settings and data.", buttonText: "View Dashboard" },
         { href: "/admin/users", title: "User Management", icon: Users, description: "View, create, and manage user accounts, roles, and permissions.", buttonText: "Manage Users", statKey: "users" },
-        { href: "/admin/flights", title: "Flight Management", icon: Plane, description: "Schedule new flights, assign crew, and manage flight details.", buttonText: "Manage Flights", statKey: "flights", highlightWhen: v => v > 0 },
+        { href: "/admin/flights", title: "Flight Management", icon: Plane, description: "Schedule new flights, assign crew, and manage flight details.", buttonText: "Manage Flights", statKey: "pendingSwaps", highlightWhen: v => v > 0 },
         { href: "/admin/alerts", title: "Alert Management", icon: BellRing, description: "Create and broadcast alerts to all or specific groups of users.", buttonText: "Manage Alerts", statKey: "activeAlerts", highlightWhen: v => v > 0 },
         { href: "/admin/expiry-management", title: "Document Expiry", icon: BadgeAlert, description: "Track and manage expiry dates for all user documents and licenses.", buttonText: "Manage Expiry" },
         { href: "/admin/document-validations", title: "Doc Validations", icon: FileCheck2, description: "Review and approve documents updated or submitted by users.", buttonText: "Validate Docs", statKey: "pendingValidations", highlightWhen: v => v > 0 },

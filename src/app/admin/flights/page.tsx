@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -14,7 +15,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, getDoc, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, Handshake, FileSignature, Calendar as CalendarIcon, List } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, Handshake, FileSignature, Calendar as CalendarIcon, List, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, parseISO, addHours, isSameDay, startOfMonth, endOfMonth } from "date-fns";
 import { flightFormSchema, type FlightFormValues, type StoredFlight, aircraftTypes } from "@/schemas/flight-schema";
@@ -35,6 +36,7 @@ import { StoredFlightSwap } from "@/schemas/flight-swap-schema";
 import { approveFlightSwap, rejectFlightSwap } from "@/services/admin-flight-swap-service";
 import { Textarea } from "@/components/ui/textarea";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
+import { Label } from "@/components/ui/label";
 
 interface FlightForDisplay extends StoredFlight {
     departureAirportName?: string;
@@ -106,7 +108,7 @@ const SwapApprovalDialog = ({ swap, onClose, onAction }: { swap: StoredFlightSwa
                 </div>
                  {isRejecting ? (
                     <div className="space-y-2">
-                        <FormLabel htmlFor="rejection-notes">Reason for Rejection</FormLabel>
+                        <Label htmlFor="rejection-notes">Reason for Rejection</Label>
                         <Textarea id="rejection-notes" value={rejectionNotes} onChange={(e) => setRejectionNotes(e.target.value)} placeholder="Provide a brief reason for rejection..." />
                     </div>
                 ) : null}
@@ -169,6 +171,7 @@ export default function AdminFlightsPage() {
     const [calendarMonth, setCalendarMonth] = React.useState(new Date());
 
     const [swapToApprove, setSwapToApprove] = React.useState<StoredFlightSwap | null>(null);
+    const [showPendingSwapsOnly, setShowPendingSwapsOnly] = React.useState(false);
 
 
     const form = useForm<FlightFormValues>({
@@ -268,8 +271,14 @@ export default function AdminFlightsPage() {
         }
     }, [toast, calendarMonth]);
     
-    const sortedFlights = React.useMemo(() => {
-        return [...flights].sort((a, b) => {
+    const sortedAndFilteredFlights = React.useMemo(() => {
+        let displayFlights = [...flights];
+
+        if (showPendingSwapsOnly) {
+            displayFlights = displayFlights.filter(f => f.pendingSwap);
+        }
+
+        return displayFlights.sort((a, b) => {
             const valA = a[sortColumn];
             const valB = b[sortColumn];
             let comparison = 0;
@@ -284,7 +293,7 @@ export default function AdminFlightsPage() {
 
             return sortDirection === 'asc' ? comparison : -comparison;
         });
-    }, [flights, sortColumn, sortDirection]);
+    }, [flights, sortColumn, sortDirection, showPendingSwapsOnly]);
 
     const handleSort = (column: SortableColumn) => {
         if (sortColumn === column) {
@@ -575,10 +584,16 @@ export default function AdminFlightsPage() {
                         <Button variant="outline" size="sm" onClick={() => setViewMode('list')} className={cn(viewMode === 'list' && 'bg-accent text-accent-foreground')}><List className="mr-2 h-4 w-4"/>List</Button>
                     </div>
                 </CardHeader>
-                <CardFooter className="border-t pt-4 flex-wrap gap-2">
-                     <Button variant="outline" onClick={fetchPageData} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
-                     <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4"/>Create Flight</Button>
-                </CardFooter>
+                <CardContent>
+                    <div className="flex flex-wrap items-center gap-4">
+                        <Button variant="outline" onClick={fetchPageData} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
+                        <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4"/>Create Flight</Button>
+                        <div className="flex items-center space-x-2 ml-auto">
+                            <Label htmlFor="pending-swaps-filter" className="flex items-center gap-1 text-sm"><Filter className="h-4 w-4"/>Pending Swaps Only</Label>
+                            <Switch id="pending-swaps-filter" checked={showPendingSwapsOnly} onCheckedChange={setShowPendingSwapsOnly} />
+                        </div>
+                    </div>
+                </CardContent>
             </Card>
 
             {viewMode === 'list' ? (
@@ -595,7 +610,7 @@ export default function AdminFlightsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {sortedFlights.map((f) => (
+                            {sortedAndFilteredFlights.map((f) => (
                                 <TableRow key={f.id}>
                                     <TableCell className="font-medium text-xs">{format(new Date(f.scheduledDepartureDateTimeUTC), "PP")}</TableCell>
                                     <TableCell>{f.flightNumber}</TableCell>
@@ -618,7 +633,7 @@ export default function AdminFlightsPage() {
                             ))}
                         </TableBody>
                     </Table>
-                    {sortedFlights.length === 0 && <p className="text-center text-muted-foreground py-8">No flights found.</p>}
+                    {sortedAndFilteredFlights.length === 0 && <p className="text-center text-muted-foreground py-8">No flights found matching criteria.</p>}
                 </div>
             ) : (
                  <Card>
