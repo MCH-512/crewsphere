@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -26,6 +27,8 @@ import Link from 'next/link';
 import { Separator } from "@/components/ui/separator";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
 import type { User, SpecificRole, AccountStatus } from "@/schemas/user-schema";
+import { getRoleBadgeVariant, getStatusBadgeVariant } from "@/schemas/user-schema";
+
 
 const availableRoles: SpecificRole[] = ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'stagiaire', 'other'];
 const NO_ROLE_SENTINEL = "_NONE_"; 
@@ -287,27 +290,6 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
             setIsSubmitting(false);
         }
     };
-
-  const getRoleBadgeVariant = (role?: SpecificRole | null) => {
-    switch (role) {
-      case "admin": return "destructive";
-      case "purser": return "default"; 
-      case "cabin crew": return "secondary";
-      case "instructor": return "default"; 
-      case "pilote": return "default";    
-      case "stagiaire": return "outline";
-      case "other": return "outline";
-      default: return "outline";
-    }
-  };
-
-  const getStatusBadgeVariant = (status?: AccountStatus | null) => {
-    switch (status) {
-        case "active": return "success";
-        case "inactive": return "destructive";
-        default: return "outline";
-    }
-  };
   
   const formatDateDisplay = (dateString?: string | null) => {
     if (!dateString) return "N/A"; 
