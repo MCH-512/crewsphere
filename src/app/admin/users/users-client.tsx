@@ -340,7 +340,7 @@ export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) 
     }
   };
 
-  if (authLoading) {
+  if (authLoading && !initialUsers.length) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />

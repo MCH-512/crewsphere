@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -5,10 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
-import { NotebookPen, Loader2, AlertTriangle, Sigma, Hourglass, Plane, UserSquare } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { NotebookPen, Loader2, AlertTriangle, Sigma, Hourglass, Plane, UserSquare, RefreshCw } from "lucide-react";
+import { format, parseISO, differenceInMinutes } from "date-fns";
 import { StoredFlight } from "@/schemas/flight-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
+import { getLogbookEntries } from "@/services/logbook-service";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 export interface LogbookEntry extends StoredFlight {
     flightDurationMinutes: number;
@@ -28,6 +32,21 @@ export function MyLogbookClient({ initialEntries }: { initialEntries: LogbookEnt
     const [logbookEntries, setLogbookEntries] = React.useState<LogbookEntry[]>(initialEntries);
     const [isLoading, setIsLoading] = React.useState(false); // Used for subsequent fetches, not initial load
     const [error, setError] = React.useState<string | null>(null);
+
+    const fetchEntries = React.useCallback(async () => {
+        if (!user) return;
+        setIsLoading(true);
+        try {
+            const entries = await getLogbookEntries(user.uid);
+            setLogbookEntries(entries);
+            toast({ title: "Logbook Refreshed", description: "Your flight log has been updated."});
+        } catch(err) {
+            setError("Could not refresh logbook entries.");
+            toast({ title: "Error", description: "Could not refresh logbook entries.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [user]);
 
     React.useEffect(() => {
         if (!authLoading && !user) {
@@ -61,7 +80,7 @@ export function MyLogbookClient({ initialEntries }: { initialEntries: LogbookEnt
         };
     }, [logbookEntries]);
     
-    if (authLoading) {
+    if (authLoading && initialEntries.length === 0) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
 
@@ -80,14 +99,20 @@ export function MyLogbookClient({ initialEntries }: { initialEntries: LogbookEnt
         <div className="space-y-6">
             <AnimatedCard>
                 <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="text-2xl font-headline flex items-center">
-                            <NotebookPen className="mr-3 h-7 w-7 text-primary" />
-                            My Flight Logbook
-                        </CardTitle>
-                        <CardDescription>
-                            A synchronized record of all your completed flights with detailed statistics.
-                        </CardDescription>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle className="text-2xl font-headline flex items-center">
+                                <NotebookPen className="mr-3 h-7 w-7 text-primary" />
+                                My Flight Logbook
+                            </CardTitle>
+                            <CardDescription>
+                                A synchronized record of all your completed flights with detailed statistics.
+                            </CardDescription>
+                        </div>
+                        <Button variant="outline" onClick={fetchEntries} disabled={isLoading}>
+                            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </Button>
                     </CardHeader>
                 </Card>
             </AnimatedCard>

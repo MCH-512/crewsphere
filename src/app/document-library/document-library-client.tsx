@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -9,7 +10,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Library, Loader2, AlertTriangle, Download, Search, Filter, FileText, LayoutGrid, List, CheckCircle } from "lucide-react";
+import { Library, Loader2, AlertTriangle, Download, Search, Filter, FileText, LayoutGrid, List, CheckCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { StoredDocument, documentCategories } from "@/schemas/document-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
@@ -32,7 +33,7 @@ export function DocumentLibraryClient({ initialDocuments }: { initialDocuments: 
     const router = useRouter();
     const { toast } = useToast();
     const [allDocuments, setAllDocuments] = React.useState<StoredDocument[]>(initialDocuments);
-    const [filteredDocuments, setFilteredDocuments] = React.useState<StoredDocument[]>(initialDocuments);
+    const [isLoading, setIsLoading] = React.useState(false);
     const [isAcknowledging, setIsAcknowledging] = React.useState<string | null>(null);
     const [searchTerm, setSearchTerm] = React.useState("");
     const [categoryFilter, setCategoryFilter] = React.useState("all");
@@ -40,9 +41,17 @@ export function DocumentLibraryClient({ initialDocuments }: { initialDocuments: 
     const [sortOption, setSortOption] = React.useState<SortOption>('lastUpdated_desc');
 
     const fetchDocuments = React.useCallback(async () => {
-        const fetchedDocs = await getDocuments();
-        setAllDocuments(fetchedDocs);
-    }, []);
+        setIsLoading(true);
+        try {
+            const fetchedDocs = await getDocuments();
+            setAllDocuments(fetchedDocs);
+            toast({ title: "Documents Refreshed", description: "The library has been updated with the latest documents." });
+        } catch (error) {
+            toast({ title: "Error", description: "Could not refresh documents.", variant: "destructive"});
+        } finally {
+            setIsLoading(false);
+        }
+    }, [toast]);
 
     React.useEffect(() => {
         if (!authLoading && !user) {
@@ -50,7 +59,7 @@ export function DocumentLibraryClient({ initialDocuments }: { initialDocuments: 
         }
     }, [user, authLoading, router]);
 
-    React.useEffect(() => {
+    const filteredDocuments = React.useMemo(() => {
         let docs = [...allDocuments];
         
         // Filtering
@@ -80,7 +89,7 @@ export function DocumentLibraryClient({ initialDocuments }: { initialDocuments: 
             return direction === 'asc' ? comparison : -comparison;
         });
 
-        setFilteredDocuments(docs);
+        return docs;
     }, [searchTerm, categoryFilter, allDocuments, sortOption]);
     
     const handleAcknowledge = async (docId: string) => {
@@ -91,7 +100,14 @@ export function DocumentLibraryClient({ initialDocuments }: { initialDocuments: 
             await updateDoc(docRef, { readBy: arrayUnion(user.uid) });
             await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: 'ACKNOWLEDGE_DOCUMENT', entityType: 'DOCUMENT', entityId: docId });
             toast({ title: "Document Acknowledged", description: "Your read confirmation has been recorded." });
-            fetchDocuments();
+            
+            // Optimistic update of local state
+            setAllDocuments(prevDocs => 
+                prevDocs.map(d => 
+                    d.id === docId ? { ...d, readBy: [...(d.readBy || []), user.uid] } : d
+                )
+            );
+
         } catch (error) {
             toast({ title: "Error", description: "Could not record acknowledgement.", variant: "destructive" });
         } finally {
@@ -99,7 +115,7 @@ export function DocumentLibraryClient({ initialDocuments }: { initialDocuments: 
         }
     };
 
-    if (authLoading) {
+    if (authLoading && initialDocuments.length === 0) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
 
@@ -160,6 +176,7 @@ export function DocumentLibraryClient({ initialDocuments }: { initialDocuments: 
                             <div className="flex items-center justify-end gap-2">
                                 <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('grid')}><LayoutGrid className="h-4 w-4" /></Button>
                                 <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('list')}><List className="h-4 w-4" /></Button>
+                                <Button variant="outline" size="icon" onClick={fetchDocuments} disabled={isLoading}><RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} /></Button>
                             </div>
                         </div>
                     </CardContent>
