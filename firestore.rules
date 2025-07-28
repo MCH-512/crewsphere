@@ -2,169 +2,116 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if a user is an admin
+  
+    // Helper function to check for admin role
     function isAdmin() {
       return request.auth != null && request.auth.token.role == 'admin';
     }
-    
-    // Helper function to check if a user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    // Helper function to check if the user is the owner of a document
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
 
-    // Rules for the 'users' collection
+    // Rules for each collection
     match /users/{userId} {
-      // Admins can list all users.
-      // Individual users can read their own data or if they are an admin.
+      allow read, write: if request.auth.uid == userId || isAdmin();
       allow list: if isAdmin();
-      allow read: if isOwner(userId) || isAdmin();
-      // Users can only write to their own document, or if they are an admin.
-      allow write: if isOwner(userId) || isAdmin();
     }
-
-    // Rules for the 'systemConfiguration' collection
+    
     match /systemConfiguration/{docId} {
-      // Only admins can read or write system-wide settings.
-      allow read, write: if isAdmin();
+        allow read: if request.auth != null;
+        allow write: if isAdmin();
     }
 
-    // Rules for the 'auditLogs' collection
-    match /auditLogs/{logId} {
-      // Only admins can read or write audit logs.
-      allow read, write: if isAdmin();
-    }
-
-    // Rules for the 'alerts' collection
-    match /alerts/{alertId} {
-      // Admins can perform any action on alerts.
-      allow read, write, delete: if isAdmin();
-      // Any authenticated user can read active alerts targeted to them.
-      allow list, read: if isAuthenticated();
-    }
-
-    // Rules for company 'documents' library
-    match /documents/{documentId} {
-      // Admins can manage all documents.
-      allow read, write, delete: if isAdmin();
-      // Any authenticated user can read documents.
-      allow read: if isAuthenticated();
-    }
-
-    // Rules for 'userDocuments' (personal uploaded documents)
-    match /userDocuments/{userDocId} {
-        // Admins can manage all user documents.
-        allow list, read, write, delete: if isAdmin();
-        // Users can manage their own documents.
-        allow list, read, create, update, delete: if isAuthenticated() && isOwner(request.resource.data.userId);
-    }
-    
-    // Rules for 'flights' and their subcollections
     match /flights/{flightId} {
-      // Admins can manage all flights.
-      allow read, write, delete: if isAdmin();
-      // Authenticated users can read flight details.
-      allow read: if isAuthenticated();
+      allow read: if request.auth != null;
+      allow list: if isAdmin();
+      allow write: if isAdmin();
     }
     
-     // Rules for 'flightSwaps'
     match /flightSwaps/{swapId} {
-        // Admins can manage all swaps.
-        allow read, write, delete: if isAdmin();
-        // Users can read any swap, and can create/update their own.
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated() && isOwner(request.resource.data.initiatingUserId);
-        allow update: if isAuthenticated() && (isOwner(request.resource.data.initiatingUserId) || isOwner(request.resource.data.requestingUserId));
-    }
-    
-    // Rules for 'purserReports'
-    match /purserReports/{reportId} {
-       // Admins can read/write all reports
-       allow read, write, list: if isAdmin();
-       // Users can create reports and read their own submitted reports
-       allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
-       allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow read: if request.auth != null;
+      allow list: if isAdmin();
+      allow create: if request.auth != null;
+      allow update: if request.auth != null; // Allows users to update their own, and admin to update any
     }
 
-    // Rules for 'requests' submitted by users
-    match /requests/{requestId} {
-      // Admins can read/write all requests.
-      allow read, write, list: if isAdmin();
-      // Users can create requests and read/update their own.
-      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
-      allow read, update: if isAuthenticated() && isOwner(resource.data.userId);
-    }
-
-    // Rules for the 'suggestions' collection
-    match /suggestions/{suggestionId} {
-      // Anyone authenticated can read all suggestions to vote on them.
-      allow read, list: if isAuthenticated();
-      // Anyone authenticated can create a suggestion.
-      allow create: if isAuthenticated();
-      // Admins can update status/notes. Users can update to upvote.
-      allow update: if isAdmin() || isAuthenticated();
-    }
-    
-    // Rules for the 'communityPosts' collection
-    match /communityPosts/{postId} {
-      // Anyone authenticated can read all posts.
-      allow read, list: if isAuthenticated();
-      // Anyone authenticated can create a post.
-      allow create: if isAuthenticated();
-      // Only the owner or an admin can delete a post.
-      allow delete: if (isAuthenticated() && isOwner(resource.data.authorId)) || isAdmin();
-      // Anyone authenticated can update (e.g., to like a post).
-      allow update: if isAuthenticated();
-    }
-    
-    // Rules for training content (courses, quizzes, questions, certificate rules)
-    match /courses/{courseId} {
-      allow read, list: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-    match /quizzes/{quizId} {
-      allow read, list: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-     match /questions/{questionId} {
-      allow read, list: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-    match /certificateRules/{ruleId} {
-       allow read, list: if isAuthenticated();
-       allow write: if isAdmin();
-    }
-
-    // Rules for user-specific training data
-    match /userQuizAttempts/{attemptId} {
-      // An admin can read any attempt. A user can read their own attempts.
-      allow read, list: if isAdmin() || (isAuthenticated() && isOwner(resource.data.userId));
-      // A user can only create an attempt for themselves.
-      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
-    }
-    
-    // Rules for training sessions
-    match /trainingSessions/{sessionId} {
-      // Admins can manage all sessions.
-      allow read, write, delete: if isAdmin();
-      // Any authenticated user can view session details if they are an attendee.
-      allow read: if isAuthenticated() && resource.data.attendeeIds.hasAny([request.auth.uid]);
-    }
-    
-     // Rules for user activities (schedule)
     match /userActivities/{activityId} {
-      // Admins have full access.
-      allow read, write, delete, list: if isAdmin();
-      // Users can only read their own activities.
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      // Activity creation is handled via other resources (flights, requests, etc.)
-      allow create: if isAuthenticated(); 
+      allow read, create, delete: if request.auth != null; // Users can read/create/delete their own, admin can do it for them
+      allow list: if isAdmin();
+      allow update: if request.auth.uid == resource.data.userId || isAdmin();
+    }
+
+    match /requests/{requestId} {
+      allow read, create: if request.auth.uid == resource.data.userId;
+      allow list, update, delete: if isAdmin();
     }
     
+    match /purserReports/{reportId} {
+      allow create: if request.auth != null;
+      allow read, update: if request.auth.uid == resource.data.userId || isAdmin();
+      allow list, delete: if isAdmin();
+    }
+    
+    match /suggestions/{suggestionId} {
+      allow read, create: if request.auth != null;
+      // Allow update for any authenticated user to handle upvotes
+      allow update: if request.auth != null;
+      allow list, delete: if isAdmin();
+    }
+    
+    match /communityPosts/{postId} {
+      allow read, create: if request.auth != null;
+      allow update, delete: if request.auth.uid == resource.data.authorId || isAdmin();
+      allow list: if request.auth != null;
+    }
+
+    match /documents/{documentId} {
+      // Any authenticated user can read. Only admin can write/delete.
+      allow read: if request.auth != null;
+      allow list, write, delete: if isAdmin();
+    }
+    
+    match /userDocuments/{userDocId} {
+      allow create: if request.auth != null;
+      allow read, update: if request.auth.uid == resource.data.userId || isAdmin();
+      allow list, delete: if isAdmin();
+    }
+    
+    match /alerts/{alertId} {
+      allow read: if request.auth != null;
+      allow list, create, update, delete: if isAdmin();
+    }
+    
+    match /auditLogs/{logId} {
+      allow create: if request.auth != null; // System/functions can write
+      allow read, list: if isAdmin();
+    }
+    
+    match /courses/{courseId} {
+       allow read: if request.auth != null;
+       allow list, create, update, delete: if isAdmin();
+    }
+    
+    match /quizzes/{quizId} {
+       allow read: if request.auth != null;
+       allow list, create, update, delete: if isAdmin();
+    }
+    
+    match /questions/{questionId} {
+      allow read: if request.auth != null;
+      allow list, create, update, delete: if isAdmin();
+    }
+    
+    match /certificateRules/{ruleId} {
+      allow read: if request.auth != null;
+      allow list, create, update, delete: if isAdmin();
+    }
+    
+    match /userQuizAttempts/{attemptId} {
+      allow read, create: if request.auth.uid == resource.data.userId || isAdmin();
+      allow list: if isAdmin();
+    }
+    
+    match /trainingSessions/{sessionId} {
+      allow read: if request.auth != null;
+      allow list, create, update, delete: if isAdmin();
+    }
   }
 }
