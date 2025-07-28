@@ -178,6 +178,6 @@ export const getAdminResponseAlertVariant = (status: RequestStatus): VariantProp
     switch (status) {
       case "approved": return "success";
       case "rejected": return "destructive";
-      default: return "default";
+      default: return "info";
     }
 };

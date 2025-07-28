@@ -9,8 +9,8 @@ import { collection, getDocs, query, where, orderBy, doc, addDoc, updateDoc, ser
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Loader2, AlertTriangle, CalendarX, CalendarClock, CalendarCheck2, PlusCircle, Edit, Trash2 } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
-import { StoredUserDocument, UserDocumentStatus, userDocumentCreateFormSchema, userDocumentUpdateFormSchema, userDocumentTypes, type UserDocumentFormValues } from "@/schemas/user-document-schema";
+import { format } from "date-fns";
+import { StoredUserDocument, userDocumentCreateFormSchema, userDocumentUpdateFormSchema, userDocumentTypes, type UserDocumentFormValues, getDocumentStatus, statusConfig } from "@/schemas/user-document-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,22 +25,6 @@ import { useToast } from "@/hooks/use-toast";
 import { logAuditEvent } from "@/lib/audit-logger";
 
 const EXPIRY_WARNING_DAYS = 30;
-
-const getDocumentStatus = (doc: StoredUserDocument): UserDocumentStatus => {
-    if (doc.status === 'pending-validation') return 'pending-validation';
-    const today = new Date();
-    const daysUntilExpiry = differenceInDays(doc.expiryDate.toDate(), today);
-    if (daysUntilExpiry < 0) return 'expired';
-    if (daysUntilExpiry <= EXPIRY_WARNING_DAYS) return 'expiring-soon';
-    return 'approved';
-};
-
-const statusConfig: Record<UserDocumentStatus, { icon: React.ElementType, color: string, label: string }> = {
-    'pending-validation': { icon: CalendarClock, color: "text-blue-600", label: "Pending Validation" },
-    expired: { icon: CalendarX, color: "text-destructive", label: "Expired" },
-    'expiring-soon': { icon: CalendarClock, color: "text-yellow-600", label: "Expiring Soon" },
-    approved: { icon: CalendarCheck2, color: "text-green-600", label: "Approved" },
-};
 
 const ManageDocumentDialog = ({ open, onOpenChange, documentToEdit, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, documentToEdit: StoredUserDocument | null, onSave: () => void }) => {
     const { user } = useAuth();
@@ -207,7 +191,7 @@ export default function MyDocumentsPage() {
             {documents.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {documents.map((docItem, index) => {
-                        const status = getDocumentStatus(docItem);
+                        const status = getDocumentStatus(docItem, EXPIRY_WARNING_DAYS);
                         const config = statusConfig[status];
                         const Icon = config.icon;
                         

@@ -1,6 +1,8 @@
 
 import { z } from "zod";
 import type { Timestamp } from 'firebase/firestore';
+import { differenceInDays } from "date-fns";
+import { CalendarX, CalendarClock, CalendarCheck2 } from "lucide-react";
 
 export const userDocumentTypes = [
     "Medical Certificate",
@@ -82,4 +84,44 @@ export interface StoredUserDocument {
   lastUpdatedAt: Timestamp;
   createdAt: Timestamp;
   adminLastUpdatedBy?: string; 
+}
+
+
+// --- UI Helper Functions ---
+
+/**
+ * Determines the status of a user document based on its expiry date and validation status.
+ * @param doc The user document object from Firestore.
+ * @param warningDays The number of days before expiry to show a warning.
+ * @returns The calculated UserDocumentStatus.
+ */
+export const getDocumentStatus = (doc: StoredUserDocument, warningDays: number): UserDocumentStatus => {
+    if (doc.status === 'pending-validation') return 'pending-validation';
+    const today = new Date();
+    const daysUntilExpiry = differenceInDays(doc.expiryDate.toDate(), today);
+    if (daysUntilExpiry < 0) return 'expired';
+    if (daysUntilExpiry <= warningDays) return 'expiring-soon';
+    return 'approved';
+};
+
+/**
+ * Configuration for displaying document statuses.
+ */
+export const statusConfig: Record<UserDocumentStatus, { icon: React.ElementType, color: string, label: string }> = {
+    'pending-validation': { icon: CalendarClock, color: "text-blue-600", label: "Pending Validation" },
+    expired: { icon: CalendarX, color: "text-destructive", label: "Expired" },
+    'expiring-soon': { icon: CalendarClock, color: "text-yellow-600", label: "Expiring Soon" },
+    approved: { icon: CalendarCheck2, color: "text-green-600", label: "Approved" },
+};
+
+/**
+ * Returns the appropriate badge variant for a given document status.
+ * @param status The status of the document.
+ * @returns The corresponding badge variant.
+ */
+export const getStatusBadgeVariant = (status: UserDocumentStatus) => {
+    if (status === 'approved' || status === 'expiring-soon') return 'success';
+    if (status === 'expired') return 'destructive';
+    if (status === 'pending-validation') return 'outline';
+    return 'secondary';
 }

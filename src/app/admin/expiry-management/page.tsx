@@ -18,23 +18,14 @@ import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, serv
 import { useRouter } from "next/navigation";
 import { BadgeAlert, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Search, Filter, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, differenceInDays } from "date-fns";
+import { format } from "date-fns";
 import { logAuditEvent } from "@/lib/audit-logger";
-import { adminUserDocumentFormSchema, userDocumentTypes, type StoredUserDocument, type UserDocumentStatus, type AdminUserDocumentFormValues } from "@/schemas/user-document-schema";
+import { adminUserDocumentFormSchema, userDocumentTypes, type StoredUserDocument, type UserDocumentStatus, type AdminUserDocumentFormValues, getDocumentStatus, getStatusBadgeVariant } from "@/schemas/user-document-schema";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
 
 const EXPIRY_WARNING_DAYS = 30;
-
-const getDocumentStatus = (doc: StoredUserDocument): UserDocumentStatus => {
-    if (doc.status === 'pending-validation') return 'pending-validation';
-    const today = new Date();
-    const daysUntilExpiry = differenceInDays(doc.expiryDate.toDate(), today);
-    if (daysUntilExpiry < 0) return 'expired';
-    if (daysUntilExpiry <= EXPIRY_WARNING_DAYS) return 'expiring-soon';
-    return 'approved';
-};
 
 type SortableColumn = 'userEmail' | 'documentName' | 'expiryDate' | 'status' | 'lastUpdatedAt';
 type SortDirection = 'asc' | 'desc';
@@ -91,7 +82,7 @@ export default function AdminExpiryManagementPage() {
     
     const sortedAndFilteredDocuments = React.useMemo(() => {
         let processedDocs = documents.filter(doc => {
-            const status = getDocumentStatus(doc);
+            const status = getDocumentStatus(doc, EXPIRY_WARNING_DAYS);
             if (statusFilter !== 'all' && status !== statusFilter) return false;
             
             if (searchTerm) {
@@ -109,8 +100,8 @@ export default function AdminExpiryManagementPage() {
             let valB: string | number | Date = b[sortColumn];
 
             if (sortColumn === 'status') {
-                valA = statusOrder[getDocumentStatus(a)];
-                valB = statusOrder[getDocumentStatus(b)];
+                valA = statusOrder[getDocumentStatus(a, EXPIRY_WARNING_DAYS)];
+                valB = statusOrder[getDocumentStatus(b, EXPIRY_WARNING_DAYS)];
             } else if (valA instanceof Timestamp && valB instanceof Timestamp) {
                 valA = valA.toMillis();
                 valB = valB.toMillis();
@@ -207,13 +198,6 @@ export default function AdminExpiryManagementPage() {
 
     if (authLoading || isLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
 
-    const getStatusBadgeVariant = (status: UserDocumentStatus) => {
-        if (status === 'approved' || status === 'expiring-soon') return 'success';
-        if (status === 'expired') return 'destructive';
-        if (status === 'pending-validation') return 'outline';
-        return 'secondary';
-    }
-
     const getStatusRowClass = (status: UserDocumentStatus) => {
         if (status === 'expired') return 'bg-destructive/10';
         if (status === 'expiring-soon') return 'bg-yellow-400/10';
@@ -264,7 +248,7 @@ export default function AdminExpiryManagementPage() {
                         </TableRow></TableHeader>
                         <TableBody>
                             {sortedAndFilteredDocuments.map(d => {
-                                const status = getDocumentStatus(d);
+                                const status = getDocumentStatus(d, EXPIRY_WARNING_DAYS);
                                 return (
                                 <TableRow key={d.id} className={getStatusRowClass(status)}>
                                     <TableCell className="font-medium text-xs max-w-xs truncate">{d.userEmail}</TableCell>
