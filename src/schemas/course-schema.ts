@@ -24,6 +24,7 @@ export const courseTypes = [
 
 export const chapterSchema = z.object({
   title: z.string().min(1, "Chapter title cannot be empty."),
+  content: z.string().min(10, "Chapter content must be at least 10 characters."),
 });
 
 export const courseFormSchema = z.object({
@@ -45,7 +46,7 @@ export const courseFormSchema = z.object({
 });
 
 export type CourseFormValues = z.infer<typeof courseFormSchema>;
-export type Chapter = z.infer<typeof chapterSchema> & { id: string };
+export type Chapter = z.infer<typeof chapterSchema>;
 
 export interface StoredCourse {
   id: string;
@@ -59,7 +60,7 @@ export interface StoredCourse {
   published: boolean;
   imageHint?: string;
   imageUrl?: string;
-  chapters: Omit<Chapter, 'id'>[];
+  chapters: Chapter[];
   quizId: string;
   certificateRuleId: string;
   createdAt: Timestamp;
@@ -91,3 +92,4 @@ export const GenerateCourseImageOutputSchema = z.object({
   imageDataUri: z.string().describe("The generated image as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
 });
 export type GenerateCourseImageOutput = z.infer<typeof GenerateCourseImageOutputSchema>;
+

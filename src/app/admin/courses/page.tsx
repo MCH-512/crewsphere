@@ -63,7 +63,7 @@ export default function AdminCoursesPage() {
         defaultValues: {
             title: "", description: "", category: undefined, courseType: undefined,
             referenceBody: "", duration: "", mandatory: true, published: false, imageHint: "",
-            chapters: [{ title: "" }], quizTitle: "",
+            chapters: [{ title: "", content: "" }], quizTitle: "",
             passingThreshold: 80, certificateExpiryDays: 365
         },
     });
@@ -159,7 +159,7 @@ export default function AdminCoursesPage() {
                     quizTitle: quizData.title,
                     passingThreshold: certRuleData.passingThreshold,
                     certificateExpiryDays: certRuleData.expiryDurationDays,
-                    chapters: courseToEdit.chapters,
+                    chapters: courseToEdit.chapters.map(c => ({ title: c.title, content: c.content || "" })),
                 });
             } catch (error) {
                 toast({ title: "Error", description: "Could not load course data for editing.", variant: "destructive"});
@@ -171,7 +171,7 @@ export default function AdminCoursesPage() {
             form.reset({
                 title: "", description: "", category: undefined, courseType: undefined,
                 referenceBody: "", duration: "", mandatory: true, published: false, imageHint: "",
-                chapters: [{ title: "" }], quizTitle: "",
+                chapters: [{ title: "", content: "" }], quizTitle: "",
                 passingThreshold: 80, certificateExpiryDays: 365,
             });
         }
@@ -385,11 +385,39 @@ export default function AdminCoursesPage() {
                                     <div className="space-y-4">
                                         <FormLabel className="font-semibold text-base flex items-center gap-2"><ListOrdered/>Chapters</FormLabel>
                                         {chapterFields.map((field, index) => (
-                                            <FormField key={field.id} control={form.control} name={`chapters.${index}.title`} render={({ field }) => (
-                                                <FormItem className="flex items-center gap-2"><FormControl><Input {...field} placeholder={`Chapter ${index + 1} title`} /></FormControl><Button type="button" variant="ghost" size="icon" onClick={() => removeChapter(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button><FormMessage /></FormItem>
-                                            )}/>
+                                            <div key={field.id} className="p-4 border rounded-lg space-y-4 relative">
+                                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeChapter(index)}>
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                                <FormField
+                                                  control={form.control}
+                                                  name={`chapters.${index}.title`}
+                                                  render={({ field }) => (
+                                                    <FormItem>
+                                                      <FormLabel>Chapter {index + 1} Title</FormLabel>
+                                                      <FormControl>
+                                                        <Input {...field} placeholder={`Title for chapter ${index + 1}`} />
+                                                      </FormControl>
+                                                      <FormMessage />
+                                                    </FormItem>
+                                                  )}
+                                                />
+                                                <FormField
+                                                  control={form.control}
+                                                  name={`chapters.${index}.content`}
+                                                  render={({ field }) => (
+                                                    <FormItem>
+                                                      <FormLabel>Chapter {index + 1} Content</FormLabel>
+                                                      <FormControl>
+                                                        <Textarea {...field} placeholder="Write the chapter content here..." className="min-h-[120px]" />
+                                                      </FormControl>
+                                                      <FormMessage />
+                                                    </FormItem>
+                                                  )}
+                                                />
+                                            </div>
                                         ))}
-                                        <Button type="button" variant="outline" size="sm" onClick={() => appendChapter({ title: "" })}>Add Chapter</Button>
+                                        <Button type="button" variant="outline" size="sm" onClick={() => appendChapter({ title: "", content: "" })}>Add Chapter</Button>
                                     </div>
                                     
                                     <Separator />
@@ -433,3 +461,4 @@ export default function AdminCoursesPage() {
         </div>
     );
 }
+

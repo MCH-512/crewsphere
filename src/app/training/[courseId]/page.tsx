@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function CourseDetailPage() {
     const { user, loading: authLoading } = useAuth();
@@ -119,27 +120,38 @@ export default function CourseDetailPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><ListChecks className="h-6 w-6 text-primary"/>Course Chapters</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><ListChecks className="h-6 w-6 text-primary"/>Course Content & Chapters</CardTitle>
                     <CardDescription>
-                        Mark each chapter as read to unlock the final quiz. 
+                        Read each chapter, then mark it as complete to unlock the final quiz. 
                         {chaptersToReadCount > 0 && ` You have ${chaptersToReadCount} chapter(s) left.`}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ul className="space-y-3">
-                        {course.chapters && course.chapters.map((chapter, index) => (
-                             <div key={index} className="flex items-center space-x-3 p-3 rounded-md border has-[:checked]:bg-green-100/80 dark:has-[:checked]:bg-green-900/30">
-                                <Checkbox 
-                                    id={`chapter-${index}`} 
-                                    onCheckedChange={() => handleChapterToggle(chapter.title)}
-                                    checked={readChapters.includes(chapter.title)}
-                                />
-                                <Label htmlFor={`chapter-${index}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
-                                   {index + 1}. {chapter.title}
-                                </Label>
-                            </div>
-                        ))}
-                    </ul>
+                   <Accordion type="multiple" className="w-full">
+                    {course.chapters && course.chapters.map((chapter, index) => (
+                        <AccordionItem value={`item-${index}`} key={index}>
+                            <AccordionTrigger>
+                               <div className="flex items-center space-x-3">
+                                   <Checkbox 
+                                        id={`chapter-${index}`} 
+                                        onCheckedChange={(checked) => {
+                                            // Prevent unchecking for simplicity, or handle state if needed
+                                            if(checked) handleChapterToggle(chapter.title)
+                                        }}
+                                        checked={readChapters.includes(chapter.title)}
+                                        onClick={(e) => e.stopPropagation()} // Prevent trigger from firing on checkbox click
+                                    />
+                                    <Label htmlFor={`chapter-${index}`} className="text-base font-medium cursor-pointer">
+                                       {index + 1}. {chapter.title}
+                                    </Label>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground pl-12 py-4">
+                               <p>{chapter.content}</p>
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                   </Accordion>
                 </CardContent>
             </Card>
             
@@ -161,3 +173,4 @@ export default function CourseDetailPage() {
     );
 
     
+}
