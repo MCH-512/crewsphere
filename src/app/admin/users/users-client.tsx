@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge"; 
-import { format, parseISO } from "date-fns"; 
+import { format } from "date-fns"; 
 import { logAuditEvent } from "@/lib/audit-logger";
 import Link from 'next/link';
 import { Separator } from "@/components/ui/separator";
@@ -291,17 +291,6 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
         }
     };
   
-  const formatDateDisplay = (dateString?: string | null) => {
-    if (!dateString) return "N/A"; 
-    try {
-        const dateObj = new Date(dateString);
-        if (isNaN(dateObj.getTime())) return "Invalid Date";
-        return format(dateObj, "MMM d, yyyy"); 
-    } catch (e) {
-        return dateString; 
-    }
-  };
-
   if (authLoading && !initialUsers.length) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">

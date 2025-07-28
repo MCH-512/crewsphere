@@ -10,7 +10,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Loader2, AlertTriangle, CalendarX, CalendarClock, CalendarCheck2, PlusCircle, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
-import { StoredUserDocument, userDocumentCreateFormSchema, userDocumentUpdateFormSchema, userDocumentTypes, type UserDocumentFormValues, getDocumentStatus, statusConfig } from "@/schemas/user-document-schema";
+import { StoredUserDocument, userDocumentCreateFormSchema, userDocumentUpdateFormSchema, userDocumentTypes, getDocumentStatus, getStatusBadgeVariant } from "@/schemas/user-document-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,8 +23,17 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { logAuditEvent } from "@/lib/audit-logger";
+import { UserDocumentFormValues } from "@/schemas/user-document-schema";
 
 const EXPIRY_WARNING_DAYS = 30;
+
+const statusConfig: Record<UserDocumentStatus, { icon: React.ElementType, color: string, label: string }> = {
+    'pending-validation': { icon: CalendarClock, color: "text-blue-600", label: "Pending Validation" },
+    expired: { icon: CalendarX, color: "text-destructive", label: "Expired" },
+    'expiring-soon': { icon: CalendarClock, color: "text-yellow-600", label: "Expiring Soon" },
+    approved: { icon: CalendarCheck2, color: "text-green-600", label: "Approved" },
+};
+
 
 const ManageDocumentDialog = ({ open, onOpenChange, documentToEdit, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, documentToEdit: StoredUserDocument | null, onSave: () => void }) => {
     const { user } = useAuth();

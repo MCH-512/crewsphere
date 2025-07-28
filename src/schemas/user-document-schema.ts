@@ -2,7 +2,8 @@
 import { z } from "zod";
 import type { Timestamp } from 'firebase/firestore';
 import { differenceInDays } from "date-fns";
-import { CalendarX, CalendarClock, CalendarCheck2 } from "lucide-react";
+import type { VariantProps } from "class-variance-authority";
+import { badgeVariants } from "@/components/ui/badge";
 
 export const userDocumentTypes = [
     "Medical Certificate",
@@ -105,23 +106,13 @@ export const getDocumentStatus = (doc: StoredUserDocument, warningDays: number):
 };
 
 /**
- * Configuration for displaying document statuses.
- */
-export const statusConfig: Record<UserDocumentStatus, { icon: React.ElementType, color: string, label: string }> = {
-    'pending-validation': { icon: CalendarClock, color: "text-blue-600", label: "Pending Validation" },
-    expired: { icon: CalendarX, color: "text-destructive", label: "Expired" },
-    'expiring-soon': { icon: CalendarClock, color: "text-yellow-600", label: "Expiring Soon" },
-    approved: { icon: CalendarCheck2, color: "text-green-600", label: "Approved" },
-};
-
-/**
  * Returns the appropriate badge variant for a given document status.
  * @param status The status of the document.
  * @returns The corresponding badge variant.
  */
-export const getStatusBadgeVariant = (status: UserDocumentStatus) => {
+export const getStatusBadgeVariant = (status: UserDocumentStatus): VariantProps<typeof badgeVariants>["variant"] => {
     if (status === 'approved' || status === 'expiring-soon') return 'success';
     if (status === 'expired') return 'destructive';
     if (status === 'pending-validation') return 'outline';
     return 'secondary';
-}
+};
