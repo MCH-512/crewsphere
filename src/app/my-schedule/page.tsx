@@ -108,9 +108,24 @@ const ActivityCard = ({ activity, onActivityClick }: { activity: UserActivity; o
     const config = activityConfig[activity.activityType];
     const Icon = config.icon;
     const isClickable = activity.activityType === 'flight' || activity.activityType === 'training';
-    const content = (<div className={cn('p-3 w-full border-l-4 rounded-r-md flex items-start gap-4 bg-muted/30', config.className, isClickable && 'hover:bg-muted/50 transition-colors')}><Icon className="h-5 w-5 mt-1 text-muted-foreground" /><div className="flex-grow text-left"><p className="font-semibold">{config.label}</p><div className="text-sm text-muted-foreground">{activity.activityType === 'flight' && `Flight ${activity.flightNumber || 'N/A'}: ${activity.departureAirport || 'N/A'} → ${activity.arrivalAirport || 'N/A'}`}{activity.comments && <p>{activity.comments}</p>}</div></div></div>);
-    if (isClickable) { return <button className="w-full text-left mb-2" onClick={() => onActivityClick(activity)}>{content}</button>; }
-    return <div className="mb-2">{content}</div>;
+    
+    const content = (
+        <div className={cn('p-3 w-full border-l-4 rounded-r-md flex items-start gap-4 bg-muted/30 mb-2', config.className, isClickable ? 'hover:bg-muted/50 transition-colors' : 'cursor-default')}>
+            <Icon className="h-5 w-5 mt-1 text-muted-foreground" />
+            <div className="flex-grow text-left">
+                <p className="font-semibold">{config.label}</p>
+                <div className="text-sm text-muted-foreground">
+                    {activity.activityType === 'flight' && `Flight ${activity.flightNumber || 'N/A'}: ${activity.departureAirport || 'N/A'} → ${activity.arrivalAirport || 'N/A'}`}
+                    {activity.comments && <p>{activity.comments}</p>}
+                </div>
+            </div>
+        </div>
+    );
+
+    if (isClickable) {
+        return <button className="w-full text-left" onClick={() => onActivityClick(activity)}>{content}</button>;
+    }
+    return content;
 };
 
 // --- Main Page Component ---
