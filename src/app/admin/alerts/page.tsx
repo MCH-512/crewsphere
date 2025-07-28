@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { BellRing, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { BellRing, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { VariantProps } from "class-variance-authority";
@@ -24,6 +24,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { Switch } from "@/components/ui/switch";
 import { StoredAlert, alertFormSchema, AlertFormValues, alertTypes, alertAudiences } from "@/schemas/alert-schema";
+import { SortableHeader } from "@/components/custom/custom-sortable-header";
 
 type SortableColumn = 'title' | 'type' | 'targetAudience' | 'isActive' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
@@ -162,19 +163,6 @@ export default function AdminAlertsPage() {
         }
     };
 
-    const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
-        <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
-            <div className="flex items-center gap-2">
-                {label}
-                {sortColumn === column ? (
-                    sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-                ) : (
-                    <ArrowUpDown className="h-4 w-4 opacity-50" />
-                )}
-            </div>
-        </TableHead>
-    );
-
     if (authLoading || isLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
 
     return (
@@ -193,11 +181,11 @@ export default function AdminAlertsPage() {
                 <CardContent>
                     <Table>
                         <TableHeader><TableRow>
-                            <SortableHeader column="title" label="Title"/>
-                            <SortableHeader column="type" label="Type"/>
-                            <SortableHeader column="targetAudience" label="Audience"/>
-                            <SortableHeader column="isActive" label="Status"/>
-                            <SortableHeader column="createdAt" label="Created"/>
+                            <SortableHeader column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="type" label="Type" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="targetAudience" label="Audience" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="isActive" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="createdAt" label="Created" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
                             <TableHead>Actions</TableHead>
                         </TableRow></TableHeader>
                         <TableBody>

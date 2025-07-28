@@ -15,7 +15,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardCheck, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ClipboardCheck, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, parseISO } from "date-fns";
 import { trainingSessionFormSchema, type TrainingSessionFormValues, type StoredTrainingSession } from "@/schemas/training-session-schema";
@@ -27,7 +27,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { checkCrewAvailability, type Conflict } from "@/services/user-activity-service";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-
+import { SortableHeader } from "@/components/custom/custom-sortable-header";
 
 type SortableColumn = 'title' | 'location' | 'sessionDateTimeUTC' | 'attendeeCount';
 type SortDirection = 'asc' | 'desc';
@@ -136,19 +136,6 @@ export default function AdminTrainingSessionsPage() {
             setSortDirection(column === 'sessionDateTimeUTC' ? 'desc' : 'asc');
         }
     };
-    
-    const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
-        <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
-            <div className="flex items-center gap-2">
-                {label}
-                {sortColumn === column ? (
-                    sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-                ) : (
-                    <ArrowUpDown className="h-4 w-4 opacity-50" />
-                )}
-            </div>
-        </TableHead>
-    );
 
     React.useEffect(() => {
         if (!authLoading) {
@@ -343,10 +330,10 @@ export default function AdminTrainingSessionsPage() {
                     <div className="rounded-md border">
                         <Table>
                             <TableHeader><TableRow>
-                                <SortableHeader column="title" label="Title" />
-                                <SortableHeader column="location" label="Location" />
-                                <SortableHeader column="sessionDateTimeUTC" label="Date & Time (UTC)" />
-                                <SortableHeader column="attendeeCount" label="Attendees" />
+                                <SortableHeader column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                <SortableHeader column="location" label="Location" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                <SortableHeader column="sessionDateTimeUTC" label="Date & Time (UTC)" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                <SortableHeader column="attendeeCount" label="Attendees" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow></TableHeader>
                             <TableBody>
@@ -394,9 +381,9 @@ export default function AdminTrainingSessionsPage() {
                                     <h3 className="text-lg font-medium">Assign Attendees</h3>
                                      <FormField control={form.control} name="purserIds" render={({ field }) => (<FormItem><FormLabel>Assign Pursers</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pursers..." options={pursers.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                                      <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                     <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                     <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                     <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
 
                                     <Separator />
                                      <h3 className="text-lg font-medium">Attendee Availability</h3>

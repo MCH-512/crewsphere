@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { MessageSquare, Loader2, AlertTriangle, RefreshCw, Edit, ThumbsUp, ArrowUpDown, Filter, Search, ArrowUp, ArrowDown } from "lucide-react";
+import { MessageSquare, Loader2, AlertTriangle, RefreshCw, Edit, ThumbsUp, Filter, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { StoredSuggestion, suggestionCategories, suggestionStatuses } from "@/schemas/suggestion-schema";
@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { logAuditEvent } from "@/lib/audit-logger";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { SortableHeader } from "@/components/custom/custom-sortable-header";
 
 type SortableColumn = 'createdAt' | 'userEmail' | 'subject' | 'category' | 'upvoteCount' | 'status';
 type SortDirection = 'asc' | 'desc';
@@ -99,19 +100,6 @@ export default function AdminSuggestionsPage() {
             setSortDirection(column === 'createdAt' || column === 'upvoteCount' ? 'desc' : 'asc');
         }
     };
-
-    const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
-        <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
-            <div className="flex items-center gap-2">
-                {label}
-                {sortColumn === column ? (
-                    sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-                ) : (
-                    <ArrowUpDown className="h-4 w-4 opacity-50" />
-                )}
-            </div>
-        </TableHead>
-    );
 
     React.useEffect(() => {
         if (!authLoading) {
@@ -234,12 +222,12 @@ export default function AdminSuggestionsPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <SortableHeader column="createdAt" label="Submitted"/>
-                                        <SortableHeader column="userEmail" label="User"/>
-                                        <SortableHeader column="subject" label="Subject"/>
-                                        <SortableHeader column="category" label="Category"/>
-                                        <SortableHeader column="upvoteCount" label="Upvotes"/>
-                                        <SortableHeader column="status" label="Status"/>
+                                        <SortableHeader column="createdAt" label="Submitted" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                                        <SortableHeader column="userEmail" label="User" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                                        <SortableHeader column="subject" label="Subject" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                                        <SortableHeader column="category" label="Category" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                                        <SortableHeader column="upvoteCount" label="Upvotes" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                                        <SortableHeader column="status" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>

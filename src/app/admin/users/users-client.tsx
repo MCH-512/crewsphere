@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -17,13 +18,14 @@ import { db, auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"; 
+import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge"; 
 import { format, parseISO } from "date-fns"; 
 import { logAuditEvent } from "@/lib/audit-logger";
 import Link from 'next/link';
 import { Separator } from "@/components/ui/separator";
+import { SortableHeader } from "@/components/custom/custom-sortable-header";
 
 type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'stagiaire' | 'other';
 type AccountStatus = 'active' | 'inactive';
@@ -182,19 +184,6 @@ export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) 
       setSortDirection('asc');
     }
   };
-
-  const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
-    <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
-        <div className="flex items-center gap-2">
-            {label}
-            {sortColumn === column ? (
-                sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-            ) : (
-                <ArrowUpDown className="h-4 w-4 opacity-50" />
-            )}
-        </div>
-    </TableHead>
-  );
 
   const handleOpenCreateUserDialog = () => {
     setIsCreateMode(true);
@@ -436,12 +425,12 @@ export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) 
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <SortableHeader column="fullName" label="Full Name"/>
-                    <SortableHeader column="email" label="Email"/>
-                    <SortableHeader column="role" label="Role"/>
-                    <SortableHeader column="accountStatus" label="Status"/>
-                    <SortableHeader column="employeeId" label="Employee ID"/>
-                    <SortableHeader column="joiningDate" label="Joining Date"/>
+                    <SortableHeader column="fullName" label="Full Name" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <SortableHeader column="email" label="Email" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <SortableHeader column="role" label="Role" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <SortableHeader column="accountStatus" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <SortableHeader column="employeeId" label="Employee ID" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <SortableHeader column="joiningDate" label="Joining Date" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>

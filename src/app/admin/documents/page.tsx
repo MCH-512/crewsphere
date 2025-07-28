@@ -14,16 +14,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { useRouter } from "next/navigation";
-import { Library, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Download, ArrowUpDown, ArrowUp, ArrowDown, Search, Filter, Eye } from "lucide-react";
+import { Library, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Download, Search, Filter, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { StoredDocument, documentFormSchema, documentEditFormSchema, documentCategories } from "@/schemas/document-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import Link from "next/link";
 import { z } from "zod";
+import { SortableHeader } from "@/components/custom/custom-sortable-header";
 
 type ManageDocumentFormValues = z.infer<typeof documentFormSchema>;
 type ManageDocumentEditFormValues = z.infer<typeof documentEditFormSchema>;
@@ -103,19 +104,6 @@ export default function AdminDocumentsPage() {
             setSortDirection('asc');
         }
     };
-    
-    const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
-        <TableHead onClick={() => handleSort(column)} className="cursor-pointer hover:bg-muted/50">
-            <div className="flex items-center gap-2">
-                {label}
-                {sortColumn === column ? (
-                    sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-                ) : (
-                    <ArrowUpDown className="h-4 w-4 opacity-50" />
-                )}
-            </div>
-        </TableHead>
-    );
 
     const handleOpenDialog = (docToEdit?: StoredDocument) => {
         if (docToEdit) {
@@ -261,11 +249,11 @@ export default function AdminDocumentsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <SortableHeader column="title" label="Title" />
-                                    <SortableHeader column="category" label="Category" />
-                                    <SortableHeader column="version" label="Version" />
-                                    <SortableHeader column="lastUpdated" label="Last Updated" />
-                                    <SortableHeader column="uploaderEmail" label="Uploaded By" />
+                                    <SortableHeader column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader column="category" label="Category" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader column="version" label="Version" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader column="lastUpdated" label="Last Updated" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader column="uploaderEmail" label="Uploaded By" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
