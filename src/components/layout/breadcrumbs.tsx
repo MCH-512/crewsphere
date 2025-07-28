@@ -93,6 +93,13 @@ export function Breadcrumbs() {
           if (segments[index-1] === 'users' && formatSegment(segment) === 'Details') {
             label = "User Details";
           }
+           if (segments[index-1] === 'purser-reports' && segments[index-2] === 'history') {
+             label = "Report Details";
+           }
+            if (segments[index-1] === 'quizzes' && formatSegment(segment) === 'Details') {
+            label = "Quiz Details";
+          }
+
 
           return (
             <React.Fragment key={currentPath}>

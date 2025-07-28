@@ -106,7 +106,7 @@ export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) 
   const [roleFilter, setRoleFilter] = React.useState<SpecificRole | "all">("all");
   const [statusFilter, setStatusFilter] = React.useState<AccountStatus | "all">("all");
 
-  const [sortColumn, setSortColumn] = React.useState<SortableColumn>("email");
+  const [sortColumn, setSortColumn] = React.useState<SortableColumn>("fullName");
   const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc");
 
   const form = useForm<ManageUserFormValues>({
@@ -430,7 +430,6 @@ export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) 
                     <SortableHeader column="role" label="Role" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                     <SortableHeader column="accountStatus" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                     <SortableHeader column="employeeId" label="Employee ID" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                    <SortableHeader column="joiningDate" label="Joining Date" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -454,7 +453,6 @@ export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) 
                         </Badge>
                       </TableCell>
                       <TableCell>{u.employeeId || 'N/A'}</TableCell>
-                      <TableCell>{formatDateDisplay(u.joiningDate)}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button variant="ghost" size="icon" title="View User Details" asChild>
                           <Link href={`/admin/users/${u.uid}`}><Eye /></Link>
