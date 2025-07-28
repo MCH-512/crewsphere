@@ -1,179 +1,76 @@
 
-"use client";
+import { z } from "zod";
+import type { Timestamp } from 'firebase/firestore';
 
-import * as React from "react";
-import * as LabelPrimitive from "@radix-ui/react-label"
-import { Slot } from "@radix-ui/react-slot"
-import {
-  Controller,
-  FormProvider,
-  useFormContext,
-  type ControllerProps,
-  type FieldPath,
-  type FieldValues,
-} from "react-hook-form"
+export const courseCategories = ["Regulations & Compliance", "Safety & Emergency", "Customer Service", "Technical Knowledge", "Health & First Aid"] as const;
+export const courseTypes = ["Initial Training", "Recurrent Training", "Conversion Course", "Refresher"] as const;
 
-import { cn } from "@/lib/utils"
-import { Label } from "@/components/ui/label"
+// Chapter schema now includes content
+export const chapterSchema = z.object({
+  title: z.string().min(1, "Chapter title cannot be empty."),
+  content: z.string().min(10, "Chapter content must have at least 10 characters.").max(10000, "Chapter content is too long."),
+});
 
-const Form = FormProvider
+export const courseFormSchema = z.object({
+  title: z.string().min(5, "Title must be at least 5 characters.").max(100),
+  description: z.string().min(10, "Description must be at least 10 characters.").max(2000),
+  category: z.enum(courseCategories),
+  courseType: z.enum(courseTypes),
+  referenceBody: z.string().max(100).optional(),
+  duration: z.string().max(50).optional(),
+  mandatory: z.boolean().default(true),
+  published: z.boolean().default(false),
+  imageHint: z.string().max(100).optional(),
+  chapters: z.array(chapterSchema).min(1, "At least one chapter is required."),
+  quizTitle: z.string().min(5, "Quiz title is required.").max(150),
+  passingThreshold: z.number().min(0).max(100),
+  certificateExpiryDays: z.number().min(0),
+});
 
-type FormFieldContextValue<
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
-> = {
-  name: TName
+export type CourseFormValues = z.infer<typeof courseFormSchema>;
+export type Chapter = z.infer<typeof chapterSchema>;
+
+export interface StoredCourse {
+  id: string;
+  title: string;
+  description: string;
+  category: typeof courseCategories[number];
+  courseType: typeof courseTypes[number];
+  referenceBody?: string;
+  duration?: string;
+  mandatory: boolean;
+  published: boolean;
+  imageUrl?: string;
+  imageHint?: string;
+  chapters: Chapter[];
+  quizId: string;
+  certificateRuleId: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
-const FormFieldContext = React.createContext<FormFieldContextValue>(
-  {} as FormFieldContextValue
-)
-
-const FormField = <
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
->({
-  ...props
-}: ControllerProps<TFieldValues, TName>) => {
-  return (
-    <FormFieldContext.Provider value={{ name: props.name }}>
-      <Controller {...props} />
-    </FormFieldContext.Provider>
-  )
+export interface StoredQuiz {
+  id: string;
+  courseId: string;
+  title: string;
+  createdAt: Timestamp;
 }
 
-const useFormField = () => {
-  const fieldContext = React.useContext(FormFieldContext)
-  const itemContext = React.useContext(FormItemContext)
-  const { getFieldState, formState } = useFormContext()
-
-  const fieldState = getFieldState(fieldContext.name, formState)
-
-  if (!fieldContext) {
-    throw new Error("useFormField should be used within <FormField>")
-  }
-
-  const { id } = itemContext
-
-  return {
-    id,
-    name: fieldContext.name,
-    formItemId: `${id}-form-item`,
-    formDescriptionId: `${id}-form-item-description`,
-    formMessageId: `${id}-form-item-message`,
-    ...fieldState,
-  }
+export interface StoredCertificateRule {
+  id: string;
+  courseId: string;
+  passingThreshold: number;
+  expiryDurationDays: number; // 0 for no expiry
+  createdAt: Timestamp;
 }
 
-type FormItemContextValue = {
-  id: string
-}
+// AI Image Generation Schemas
+export const GenerateCourseImageInputSchema = z.object({
+    prompt: z.string().min(3, "Image prompt must be at least 3 characters.").describe("A short hint or topic for the course image, e.g., 'cockpit controls' or 'safety manual'."),
+});
+export type GenerateCourseImageInput = z.infer<typeof GenerateCourseImageInputSchema>;
 
-const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue
-)
-
-const FormItem = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
-  const id = React.useId()
-
-  return (
-    <FormItemContext.Provider value={{ id }}>
-      <div ref={ref} className={cn("space-y-2", className)} {...props} />
-    </FormItemContext.Provider>
-  )
-})
-FormItem.displayName = "FormItem"
-
-const FormLabel = React.forwardRef<
-  React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
->(({ className, ...props }, ref) => {
-  const { error, formItemId } = useFormField()
-
-  return (
-    <Label
-      ref={ref}
-      className={cn(error && "text-destructive", className)}
-      htmlFor={formItemId}
-      {...props}
-    />
-  )
-})
-FormLabel.displayName = "FormLabel"
-
-const FormControl = React.forwardRef<
-  React.ElementRef<typeof Slot>,
-  React.ComponentPropsWithoutRef<typeof Slot>
->(({ ...props }, ref) => {
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
-
-  return (
-    <Slot
-      ref={ref}
-      id={formItemId}
-      aria-describedby={
-        !error
-          ? `${formDescriptionId}`
-          : `${formDescriptionId} ${formMessageId}`
-      }
-      aria-invalid={!!error}
-      {...props}
-    />
-  )
-})
-FormControl.displayName = "FormControl"
-
-const FormDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => {
-  const { formDescriptionId } = useFormField()
-
-  return (
-    <p
-      ref={ref}
-      id={formDescriptionId}
-      className={cn("text-sm text-muted-foreground", className)}
-      {...props}
-    />
-  )
-})
-FormDescription.displayName = "FormDescription"
-
-const FormMessage = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, children, ...props }, ref) => {
-  const { error, formMessageId } = useFormField()
-  const body = error ? String(error?.message ?? "") : children
-
-  if (!body) {
-    return null
-  }
-
-  return (
-    <p
-      ref={ref}
-      id={formMessageId}
-      className={cn("text-sm font-medium text-destructive", className)}
-      {...props}
-    >
-      {body}
-    </p>
-  )
-})
-FormMessage.displayName = "FormMessage"
-
-export {
-  useFormField,
-  Form,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormDescription,
-  FormMessage,
-  FormField,
-}
+export const GenerateCourseImageOutputSchema = z.object({
+    imageDataUri: z.string().describe("The generated image as a Base64 encoded data URI."),
+});
+export type GenerateCourseImageOutput = z.infer<typeof GenerateCourseImageOutputSchema>;
