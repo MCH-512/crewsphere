@@ -13,8 +13,7 @@ import { type StoredFlightSwap } from "@/schemas/flight-swap-schema";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { Badge } from "@/components/ui/badge";
-import { getMySwaps } from "@/services/my-swaps-service";
-import { cancelMySwap } from "@/services/flight-swap-service";
+import { getMySwaps, cancelMySwap } from "@/services/flight-swap-service";
 
 
 export default function MySwapsPage() {

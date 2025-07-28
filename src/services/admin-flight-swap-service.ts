@@ -68,11 +68,9 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             }
             
             // --- Update Activities ---
-            // Get original activities for both users for their original flights
             const activity1Id = flight1Data.activityIds?.[swapData.initiatingUserId];
             const activity2Id = flight2Data.activityIds?.[swapData.requestingUserId];
 
-            // Create new activity maps for the flights
             const newActivityIdsF1 = { ...flight1Data.activityIds };
             delete newActivityIdsF1[swapData.initiatingUserId];
             if (activity2Id) newActivityIdsF1[swapData.requestingUserId] = activity2Id;
@@ -83,10 +81,8 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             if (activity1Id) newActivityIdsF2[swapData.initiatingUserId] = activity1Id;
             flight2Update.activityIds = newActivityIdsF2;
 
-            // Update the user activity documents to point to the new flights and DATES
             if (activity1Id) {
                 const activity1Ref = doc(db, "userActivities", activity1Id);
-                // User 1 (initiator) now gets activity for flight 2
                 transaction.update(activity1Ref, { 
                     flightId: flight2Snap.id,
                     flightNumber: flight2Data.flightNumber,
@@ -98,7 +94,6 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             }
              if (activity2Id) {
                 const activity2Ref = doc(db, "userActivities", activity2Id);
-                 // User 2 (requestor) now gets activity for flight 1
                 transaction.update(activity2Ref, {
                     flightId: flight1Snap.id,
                     flightNumber: flight1Data.flightNumber,
@@ -111,16 +106,14 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             
             transaction.update(flight1Ref, flight1Update);
             transaction.update(flight2Ref, flight2Update);
-
-            // --- Update Swap Request ---
+            
             transaction.update(swapRef, {
                 status: 'approved',
                 resolvedBy: adminId,
                 updatedAt: serverTimestamp()
             });
         });
-
-        // --- Log Audit Event (outside transaction) ---
+        
         await logAuditEvent({
             userId: adminId, userEmail: adminEmail,
             actionType: 'APPROVE_FLIGHT_SWAP', entityType: 'FLIGHT_SWAP',

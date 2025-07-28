@@ -2,10 +2,12 @@
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
-import { collection, doc, getDoc, updateDoc, writeBatch, serverTimestamp, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, updateDoc, writeBatch, serverTimestamp, deleteDoc, query, where, orderBy } from "firebase/firestore";
 import { StoredFlight } from "@/schemas/flight-schema";
 import { User } from "@/contexts/auth-context";
 import { logAuditEvent } from "@/lib/audit-logger";
+import type { StoredFlightSwap } from "@/schemas/flight-swap-schema";
+
 
 /**
  * Creates a request to swap a flight.
@@ -91,5 +93,58 @@ export async function cancelMySwap(swapId: string, userId: string): Promise<void
             throw error;
         }
         throw new Error("Could not cancel your swap post.");
+    }
+}
+
+
+export async function getMySwaps(userId: string): Promise<StoredFlightSwap[]> {
+    if (!isConfigValid || !db) {
+        console.error("Firebase is not configured. Cannot fetch swaps.");
+        return [];
+    }
+
+    if (!userId) {
+        return [];
+    }
+
+    try {
+        const initiatedSwapsQuery = query(
+            collection(db, "flightSwaps"),
+            where("initiatingUserId", "==", userId),
+            orderBy("createdAt", "desc")
+        );
+        
+        const requestedSwapsQuery = query(
+            collection(db, "flightSwaps"),
+            where("requestingUserId", "==", userId),
+            orderBy("createdAt", "desc")
+        );
+
+        const [initiatedSnapshot, requestedSnapshot] = await Promise.all([
+            getDocs(initiatedSwapsQuery),
+            getDocs(requestedSwapsQuery)
+        ]);
+        
+        const swapsMap = new Map<string, StoredFlightSwap>();
+
+        initiatedSnapshot.docs.forEach(doc => {
+            swapsMap.set(doc.id, { id: doc.id, ...doc.data() } as StoredFlightSwap);
+        });
+
+        requestedSnapshot.docs.forEach(doc => {
+            // Avoid duplicates if a user somehow swapped with themselves
+            if (!swapsMap.has(doc.id)) {
+                swapsMap.set(doc.id, { id: doc.id, ...doc.data() } as StoredFlightSwap);
+            }
+        });
+
+        const allSwaps = Array.from(swapsMap.values());
+        allSwaps.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+        
+        return allSwaps;
+
+    } catch (error) {
+        console.error("Error fetching user's flight swaps:", error);
+        throw new Error("Could not retrieve your flight swap history.");
     }
 }
