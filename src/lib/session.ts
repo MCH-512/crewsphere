@@ -8,7 +8,7 @@ import type { User } from '@/contexts/auth-context'
 // This is a placeholder for a secure, server-side session management solution.
 // In a real production app, this would involve verifying a session cookie
 // against a session store (e.g., Redis, or a session management service)
-// or decoding a secure, HTTP-only cookie containing JWT claims.
+// or decoding a secure, HTTP-only cookie containing a JWT.
 // For this project, we'll simulate this by reading a "pseudo-session" cookie
 // that simply contains the user's UID.
 
