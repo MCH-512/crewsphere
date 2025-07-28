@@ -71,6 +71,24 @@ const FlightMarkers = ({ flights }: { flights: any[] }) => {
     );
 };
 
+const MapComponent = ({ flights }: { flights: any[] }) => {
+    return (
+        <MapContainer 
+          center={[40, 0]} 
+          zoom={3} 
+          scrollWheelZoom={true} 
+          style={{ height: '100%', width: '100%' }} 
+          className="rounded-lg z-0"
+        >
+            <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <FlightMarkers flights={flights} />
+        </MapContainer>
+    )
+}
+
 
 const LiveMap = () => {
     const [flights, setFlights] = React.useState<any[]>([]);
@@ -133,19 +151,7 @@ const LiveMap = () => {
             </div>
         )}
 
-        <MapContainer 
-          center={[40, 0]} 
-          zoom={3} 
-          scrollWheelZoom={true} 
-          style={{ height: '100%', width: '100%' }} 
-          className="rounded-lg z-0"
-        >
-            <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <FlightMarkers flights={flights} />
-        </MapContainer>
+        <MapComponent flights={flights} />
       </div>
     );
 };
