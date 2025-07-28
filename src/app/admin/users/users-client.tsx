@@ -26,22 +26,7 @@ import { logAuditEvent } from "@/lib/audit-logger";
 import Link from 'next/link';
 import { Separator } from "@/components/ui/separator";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
-
-type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'stagiaire' | 'other';
-type AccountStatus = 'active' | 'inactive';
-
-export interface UserDocument {
-  uid: string;
-  email?: string;
-  role?: SpecificRole | null; 
-  displayName?: string;
-  fullName?: string;
-  employeeId?: string;
-  joiningDate?: string | null; 
-  lastLogin?: Timestamp;
-  createdAt?: Timestamp;
-  accountStatus?: AccountStatus; 
-}
+import type { User, SpecificRole, AccountStatus } from "@/schemas/user-schema";
 
 const availableRoles: SpecificRole[] = ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'stagiaire', 'other'];
 const NO_ROLE_SENTINEL = "_NONE_"; 
@@ -89,17 +74,17 @@ type ManageUserFormValues = z.infer<typeof manageUserFormSchema>;
 type SortableColumn = "fullName" | "role" | "accountStatus" | "employeeId";
 type SortDirection = "asc" | 'desc';
 
-export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) {
+export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [usersList, setUsersList] = React.useState<UserDocument[]>(initialUsers);
+  const [usersList, setUsersList] = React.useState<User[]>(initialUsers);
   const [isLoading, setIsLoading] = React.useState(false); // Used for refresh action
   const [error, setError] = React.useState<string | null>(null);
 
   const [isManageUserDialogOpen, setIsManageUserDialogOpen] = React.useState(false);
   const [isCreateMode, setIsCreateMode] = React.useState(false);
-  const [currentUserToManage, setCurrentUserToManage] = React.useState<UserDocument | null>(null);
+  const [currentUserToManage, setCurrentUserToManage] = React.useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -133,7 +118,7 @@ export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) 
       const fetchedUsers = querySnapshot.docs.map(doc => ({
           uid: doc.id,
           ...doc.data(),
-      } as UserDocument));
+      } as User));
       setUsersList(fetchedUsers);
     } catch (err) {
       console.error("Error fetching users:", err);
@@ -198,7 +183,7 @@ export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) 
     setIsManageUserDialogOpen(true);
   };
 
-  const handleOpenEditUserDialog = (userToEdit: UserDocument) => {
+  const handleOpenEditUserDialog = (userToEdit: User) => {
     setIsCreateMode(false);
     setCurrentUserToManage(userToEdit);
     
@@ -261,7 +246,7 @@ export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) 
 
                 await logAuditEvent({
                     userId: user.uid,
-                    userEmail: user.email,
+                    userEmail: user.email || 'N/A',
                     actionType: "CREATE_USER",
                     entityType: "USER",
                     entityId: newUid,
@@ -283,7 +268,7 @@ export function UsersClient({ initialUsers }: { initialUsers: UserDocument[] }) 
                 
                 await logAuditEvent({
                     userId: user.uid,
-                    userEmail: user.email,
+                    userEmail: user.email || 'N/A',
                     actionType: "UPDATE_USER",
                     entityType: "USER",
                     entityId: currentUserToManage.uid,

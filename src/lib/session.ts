@@ -3,7 +3,7 @@ import 'server-only'
 import { cookies } from 'next/headers'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from './firebase'
-import type { User } from '@/contexts/auth-context'
+import type { User } from '@/schemas/user-schema'
  
 // This is a placeholder for a secure, server-side session management solution.
 // In a real production app, this would involve verifying a session cookie
@@ -27,13 +27,17 @@ export async function getCurrentUser(): Promise<User | null> {
 
     if (userDocSnap.exists()) {
         const userData = userDocSnap.data();
+        // Construct the full User object, matching the type definition
         return {
           uid: userDocSnap.id,
           email: userData.email,
           displayName: userData.displayName,
           role: userData.role,
           photoURL: userData.photoURL,
-          // Add other user fields as needed
+          fullName: userData.fullName,
+          employeeId: userData.employeeId,
+          joiningDate: userData.joiningDate,
+          accountStatus: userData.accountStatus,
         } as User;
     }
     return null;

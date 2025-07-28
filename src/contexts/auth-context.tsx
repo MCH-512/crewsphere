@@ -5,18 +5,11 @@ import * as React from "react";
 import type { User as FirebaseUser } from "firebase/auth";
 import { auth, db, isConfigValid } from "@/lib/firebase"; 
 import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore"; // Import setDoc for user creation
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import type { User } from "@/schemas/user-schema";
 
-// Define a new User type that can include a role and other Firestore fields
-export interface User extends FirebaseUser {
-  role?: 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'stagiaire' | 'other' | null;
-  fullName?: string;
-  employeeId?: string;
-  joiningDate?: string | null;
-  accountStatus?: 'active' | 'inactive';
-}
 
 interface AuthContextType {
   user: User | null;
@@ -68,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 const enhancedUser: User = {
                   ...currentUser,
+                  uid: currentUser.uid,
                   email: currentUser.email || '', 
                   displayName: firestoreDisplayName,
                   role: userRole,
@@ -75,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   employeeId: userData.employeeId,
                   joiningDate: userData.joiningDate,
                   accountStatus: userData.accountStatus,
+                  photoURL: currentUser.photoURL,
                 };
                 setUser(enhancedUser);
                 setSessionCookie(enhancedUser.uid);
@@ -84,9 +79,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     uid: currentUser.uid,
                     email: currentUser.email || '',
                     displayName: currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'New User'),
-                    role: 'other', // Default role
+                    role: 'other' as const, // Default role
                     createdAt: new Date(), // Use JS date, Firestore will convert
-                    accountStatus: 'active',
+                    accountStatus: 'active' as const,
+                    photoURL: currentUser.photoURL,
                 };
                 await setDoc(userDocRef, basicProfile);
                 const enhancedUser: User = { ...currentUser, ...basicProfile, email: currentUser.email || '' };
@@ -97,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch (firestoreError) {
             console.error("Error fetching or creating user details in Firestore:", firestoreError);
             setError(firestoreError instanceof Error ? firestoreError : new Error("Error managing user profile"));
-            const basicUser: User = { ...currentUser, email: currentUser.email || '', displayName: currentUser.displayName || '' };
+            const basicUser: User = { ...currentUser, uid: currentUser.uid, email: currentUser.email || '', displayName: currentUser.displayName || '', photoURL: currentUser.photoURL };
             setUser(basicUser);
             setSessionCookie(basicUser.uid);
           }

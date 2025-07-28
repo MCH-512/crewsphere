@@ -5,10 +5,11 @@ import * as React from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle, alertVariants } from "@/components/ui/alert";
 import { Loader2, Info, AlertTriangle, BellRing, X } from "lucide-react";
 import type { StoredAlert } from "@/schemas/alert-schema";
 import { Button } from "../ui/button";
+import type { VariantProps } from "class-variance-authority";
 
 const DISMISSED_ALERTS_KEY = "dismissedAlerts";
 
@@ -83,7 +84,7 @@ export function ActiveAlerts() {
         return null;
     }
 
-    const getAlertVariant = (type: StoredAlert['type']): 'default' | 'destructive' | 'warning' | 'info' => {
+    const getAlertVariant = (type: StoredAlert['type']): VariantProps<typeof alertVariants>["variant"] => {
         switch (type) {
             case 'critical': return 'destructive';
             case 'warning': return 'warning';
