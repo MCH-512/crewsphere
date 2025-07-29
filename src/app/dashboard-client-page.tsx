@@ -34,17 +34,17 @@ export default function DashboardClientPage({ children }: { children: React.Reac
   return (
     <div className="space-y-6">
       <AnimatedCard>
-        <Card className="shadow-lg border-none relative overflow-hidden min-h-[220px] flex items-center">
+        <Card className="shadow-lg border-none relative overflow-hidden min-h-[220px] flex items-end">
             <Image
-                src="https://images.unsplash.com/photo-1610414343130-d373379862b7?q=80&w=2070&auto=format&fit=crop"
-                alt="Airplane cockpit"
+                src="https://images.unsplash.com/photo-1544016149-1b895b5206d5?q=80&w=2070&auto=format&fit=crop"
+                alt="Airplane cockpit at sunset"
                 data-ai-hint="airplane cockpit"
                 fill
                 priority
                 className="object-cover z-0"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent z-10" />
-            <CardHeader className="relative z-20 text-white">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
+            <CardHeader className="relative z-20 text-white w-full">
                 <CardTitle as="h1" className="text-4xl font-headline text-primary-foreground">Welcome Back, {userNameForGreeting}!</CardTitle>
                 <CardDescription className="text-primary-foreground/80 text-lg">This is your central command for operational tools and communication.</CardDescription>
             </CardHeader>
