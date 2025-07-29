@@ -30,25 +30,22 @@ export default function DashboardPage() {
     
   return (
     <DashboardClientPage>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Suspense fallback={<WidgetSkeleton />}>
-            <TodaysScheduleCard />
-        </Suspense>
-        <Suspense fallback={<WidgetSkeleton />}>
-            <MyTrainingStatusCard />
-        </Suspense>
-        <Suspense fallback={<WidgetSkeleton />}>
-            <MyRequestsStatusCard />
-        </Suspense>
-      </div>
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-        <Suspense fallback={<ChartSkeleton />}>
-          <TrainingProgressChart />
-        </Suspense>
-        <Suspense fallback={<ChartSkeleton />}>
-          <RequestsStatusChart />
-        </Suspense>
-      </div>
+      {/* The order of these children matters for the new layout */}
+      <Suspense fallback={<WidgetSkeleton />}>
+          <TodaysScheduleCard />
+      </Suspense>
+      <Suspense fallback={<WidgetSkeleton />}>
+          <MyTrainingStatusCard />
+      </Suspense>
+      <Suspense fallback={<WidgetSkeleton />}>
+          <MyRequestsStatusCard />
+      </Suspense>
+      <Suspense fallback={<ChartSkeleton />}>
+        <TrainingProgressChart />
+      </Suspense>
+      <Suspense fallback={<ChartSkeleton />}>
+        <RequestsStatusChart />
+      </Suspense>
     </DashboardClientPage>
   );
 }

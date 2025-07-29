@@ -40,8 +40,8 @@ export async function TrainingProgressChart() {
     return (
         <Card className="shadow-sm">
             <CardHeader>
-                <CardTitle as="h2" className="flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary"/>Mandatory Training Progress</CardTitle>
-                <CardDescription>An overview of your required e-learning courses.</CardDescription>
+                <CardTitle as="h2" className="flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary"/>Mandatory Training Overview</CardTitle>
+                <CardDescription>A summary of your required e-learning courses.</CardDescription>
             </CardHeader>
             <CardContent>
                 <TrainingProgressPieChart data={trainingChartData} />

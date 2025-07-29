@@ -29,12 +29,12 @@ export default function DashboardClientPage({ children }: { children: React.Reac
     { href: "/toolbox", label: "Open Toolbox", icon: Wrench },
   ];
 
-  const [widgets, charts] = React.Children.toArray(children);
+  const [scheduleWidget, trainingWidget, requestsWidget, trainingChart, requestsChart] = React.Children.toArray(children);
 
   return (
     <div className="space-y-6">
       <AnimatedCard>
-        <Card className="shadow-lg border-none relative overflow-hidden min-h-[220px] flex items-end">
+        <Card className="shadow-lg border-none relative overflow-hidden min-h-[220px] flex flex-col justify-between p-6">
             <Image
                 src="https://images.unsplash.com/photo-1542296332-2e4473faf563?q=80&w=1974&auto=format&fit=crop"
                 alt="Airplane on the tarmac at sunset"
@@ -44,10 +44,12 @@ export default function DashboardClientPage({ children }: { children: React.Reac
                 className="object-cover z-0"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
-            <CardHeader className="relative z-20 text-white w-full">
-                <CardTitle as="h1" className="text-4xl font-headline text-primary-foreground">Welcome Back, {userNameForGreeting}!</CardTitle>
-                <CardDescription className="text-primary-foreground/80 text-lg">This is your central command for operational tools and communication.</CardDescription>
-            </CardHeader>
+            <div className="relative z-20 text-white w-full flex justify-between items-end">
+                 <div>
+                    <CardTitle as="h1" className="text-4xl font-headline text-primary-foreground">Welcome Back, {userNameForGreeting}!</CardTitle>
+                    <CardDescription className="text-primary-foreground/80 text-lg mt-1">This is your central command for operational tools and communication.</CardDescription>
+                </div>
+            </div>
         </Card>
       </AnimatedCard>
 
@@ -55,17 +57,26 @@ export default function DashboardClientPage({ children }: { children: React.Reac
         <ActiveAlerts />
       </Suspense>
       
+       <AnimatedCard delay={0.1} className="lg:col-span-1">
+          {scheduleWidget}
+       </AnimatedCard>
+       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AnimatedCard delay={0.1} className="lg:col-span-1">
-          {widgets}
+        <AnimatedCard delay={0.15}>
+          {trainingWidget}
         </AnimatedCard>
-        <AnimatedCard delay={0.25} className="lg:col-span-1">
-          <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
+        <AnimatedCard delay={0.2}>
+          {requestsWidget}
+        </AnimatedCard>
+      </div>
+      
+       <AnimatedCard delay={0.25}>
+           <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
               <CardHeader>
-                  <CardTitle as="h2" className="font-headline text-xl">Quick Actions</CardTitle>
-                  <CardDescription>Get started with common tasks.</CardDescription>
+                  <CardTitle as="h2" className="font-headline text-xl">Resources & Actions</CardTitle>
+                  <CardDescription>Quick access to common tools and communication channels.</CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-4 flex-grow">
+              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow">
                   {quickActions.map((action, index) => (
                     <Button key={index} variant="outline" className="w-full justify-start py-6 text-base" asChild>
                       <Link href={action.href}>
@@ -77,10 +88,17 @@ export default function DashboardClientPage({ children }: { children: React.Reac
                   ))}
               </CardContent>
           </Card>
+      </AnimatedCard>
+
+
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+         <AnimatedCard delay={0.3}>
+           {trainingChart}
+        </AnimatedCard>
+         <AnimatedCard delay={0.35}>
+           {requestsChart}
         </AnimatedCard>
       </div>
-
-      {charts}
     </div>
   );
 }

@@ -38,8 +38,8 @@ export async function RequestsStatusChart() {
     return (
         <Card className="shadow-sm">
             <CardHeader>
-                <CardTitle as="h2" className="flex items-center gap-2"><Inbox className="h-5 w-5 text-primary"/>My Requests Status</CardTitle>
-                <CardDescription>A summary of your recent submissions.</CardDescription>
+                <CardTitle as="h2" className="flex items-center gap-2"><Inbox className="h-5 w-5 text-primary"/>Summary of My Requests</CardTitle>
+                <CardDescription>A breakdown of your submissions by their current status.</CardDescription>
             </CardHeader>
             <CardContent>
                 <RequestsStatusBarChart data={requestsChartData} />
