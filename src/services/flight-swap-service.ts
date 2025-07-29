@@ -108,6 +108,8 @@ export async function getMySwaps(userId: string): Promise<StoredFlightSwap[]> {
     }
 
     try {
+        // Query for swaps either initiated by the user OR requested by the user.
+        // This is a more robust way to handle this without requiring multiple complex indexes.
         const initiatedSwapsQuery = query(
             collection(db, "flightSwaps"),
             where("initiatingUserId", "==", userId),
@@ -119,27 +121,31 @@ export async function getMySwaps(userId: string): Promise<StoredFlightSwap[]> {
             where("requestingUserId", "==", userId),
             orderBy("createdAt", "desc")
         );
-
+        
+        // Firestore doesn't support OR queries on different fields, so we fetch both and merge.
         const [initiatedSnapshot, requestedSnapshot] = await Promise.all([
             getDocs(initiatedSwapsQuery),
             getDocs(requestedSwapsQuery)
         ]);
-        
-        const swapsMap = new Map<string, StoredFlightSwap>();
 
-        initiatedSnapshot.docs.forEach(doc => {
+        const swapsMap = new Map<string, StoredFlightSwap>();
+        
+        initiatedSnapshot.forEach(doc => {
             swapsMap.set(doc.id, { id: doc.id, ...doc.data() } as StoredFlightSwap);
         });
-
-        requestedSnapshot.docs.forEach(doc => {
+        
+        requestedSnapshot.forEach(doc => {
+            // Avoid duplicates if a user somehow swaps with themselves (shouldn't happen)
             if (!swapsMap.has(doc.id)) {
                 swapsMap.set(doc.id, { id: doc.id, ...doc.data() } as StoredFlightSwap);
             }
         });
 
         const allSwaps = Array.from(swapsMap.values());
-        allSwaps.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
         
+        // Sort the merged results by creation date
+        allSwaps.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
         return allSwaps;
 
     } catch (error) {
