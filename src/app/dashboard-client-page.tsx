@@ -36,7 +36,7 @@ export default function DashboardClientPage({ children }: { children: React.Reac
       <AnimatedCard>
         <Card className="shadow-lg border-none relative overflow-hidden min-h-[220px] flex items-end">
             <Image
-                src="https://images.unsplash.com/photo-1544016149-1b895b5206d5?q=80&w=2070&auto=format&fit=crop"
+                src="https://images.unsplash.com/photo-1542296332-2e4473faf563?q=80&w=1974&auto=format&fit=crop"
                 alt="Airplane cockpit at sunset"
                 data-ai-hint="airplane cockpit"
                 fill
