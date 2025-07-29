@@ -132,7 +132,6 @@ export async function getMySwaps(userId: string): Promise<StoredFlightSwap[]> {
         });
 
         requestedSnapshot.docs.forEach(doc => {
-            // Avoid duplicates if a user somehow swapped with themselves
             if (!swapsMap.has(doc.id)) {
                 swapsMap.set(doc.id, { id: doc.id, ...doc.data() } as StoredFlightSwap);
             }
