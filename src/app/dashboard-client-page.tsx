@@ -7,18 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ArrowRight, SendHorizonal, Lightbulb, Wrench } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuth, type User } from "@/contexts/auth-context";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { ActiveAlerts } from "@/components/features/active-alerts";
 import { Suspense } from "react";
 
 export default function DashboardClientPage({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user } = useAuth() as { user: User };
   const [userNameForGreeting, setUserNameForGreeting] = React.useState<string>("User");
 
   React.useEffect(() => {
     if (user) {
-      const name = user.displayName || (user.email ? user.email.split('@')[0] : "Crew Member");
+      const name = user.fullName || user.displayName || (user.email ? user.email.split('@')[0] : "Crew Member");
       setUserNameForGreeting(name.charAt(0).toUpperCase() + name.slice(1));
     }
   }, [user]);
