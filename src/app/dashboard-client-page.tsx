@@ -47,7 +47,7 @@ export default function DashboardClientPage({ children }: { children: React.Reac
             <div className="relative z-20 text-white w-full flex justify-between items-end">
                  <div>
                     <CardTitle as="h1" className="text-4xl font-headline text-primary-foreground">Welcome Back, {userNameForGreeting}!</CardTitle>
-                    <CardDescription className="text-primary-foreground/80 text-lg mt-1">This is your central command for operational tools and communication.</CardDescription>
+                    <CardDescription className="text-primary-foreground/80 text-lg mt-1 max-w-4xl">Your unified dashboard for real-time schedule updates, essential alerts, and direct access to training modules and operational resources. Stay informed, compliant, and connected with everything you need for your duty period.</CardDescription>
                 </div>
             </div>
         </Card>
