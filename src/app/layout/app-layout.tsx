@@ -167,17 +167,14 @@ function LayoutWithSidebar({
                   const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
                   return (
                      <SidebarMenuItem key={item.href}>
-                       <Link href={item.href!} passHref legacyBehavior>
+                       <Link href={item.href!} passHref>
                          <SidebarMenuButton
-                            asChild
                             variant={isActive ? "active" : "ghost"}
                             tooltip={{ children: item.title, side: "right", align: "center" }}
                             className="h-9 w-full justify-start"
                          >
-                            <a>
-                               <item.icon className="w-4 h-4" />
-                               <span className="group-data-[state=collapsed]:hidden">{item.title}</span>
-                            </a>
+                           <item.icon className="w-4 h-4" />
+                           <span className="group-data-[state=collapsed]:hidden">{item.title}</span>
                          </SidebarMenuButton>
                        </Link>
                      </SidebarMenuItem>
@@ -191,17 +188,14 @@ function LayoutWithSidebar({
                 <Separator className="my-2 bg-sidebar-border"/>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <Link href="/" passHref legacyBehavior>
+                        <Link href="/" passHref>
                           <SidebarMenuButton
-                              asChild
                               variant="ghost"
                               tooltip={{ children: "Exit Admin", side: "right", align: "center" }}
                               className="h-9 w-full justify-start"
                           >
-                              <a>
-                                  <ServerCog className="w-4 h-4 text-destructive" />
-                                  <span className="group-data-[state=collapsed]:hidden">Exit Admin</span>
-                              </a>
+                              <ServerCog className="w-4 h-4 text-destructive" />
+                              <span className="group-data-[state=collapsed]:hidden">Exit Admin</span>
                           </SidebarMenuButton>
                         </Link>
                     </SidebarMenuItem>
@@ -212,16 +206,13 @@ function LayoutWithSidebar({
         <SidebarFooter className="p-2">
           <SidebarMenu>
             <SidebarMenuItem>
-               <Link href="/settings" passHref legacyBehavior>
+               <Link href="/settings" passHref>
                 <SidebarMenuButton
-                  asChild
                   variant={pathname === "/settings" ? "active" : "border"}
                   tooltip={{ children: "Settings", side: "right", align: "center" }}
                 >
-                  <a>
-                    <Settings className="w-5 h-5" />
-                    <span className="group-data-[state=collapsed]:hidden">Settings</span>
-                  </a>
+                  <Settings className="w-5 h-5" />
+                  <span className="group-data-[state=collapsed]:hidden">Settings</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
