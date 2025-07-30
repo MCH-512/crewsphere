@@ -33,7 +33,7 @@
         { "fieldPath": "date", "order": "DESCENDING" }
       ]
     },
-     {
+    {
       "collectionGroup": "userActivities",
       "queryScope": "COLLECTION",
       "fields": [

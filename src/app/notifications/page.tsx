@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { BellRing, Loader2, AlertTriangle, Info } from "lucide-react";
 import { format } from "date-fns";
@@ -27,15 +27,18 @@ export default function NotificationsPage() {
         if (!user) return;
         setIsLoading(true);
         try {
-            const userRoles = ["all", user.role].filter(Boolean);
-            const q = query(
-                collection(db, "alerts"),
-                where("targetAudience", "in", userRoles),
-                orderBy("createdAt", "desc")
-            );
+            // Fetch all alerts, ordered by creation date.
+            const q = query(collection(db, "alerts"), orderBy("createdAt", "desc"));
             const querySnapshot = await getDocs(q);
-            const fetchedAlerts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAlert));
-            setAlerts(fetchedAlerts);
+            const allAlerts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAlert));
+
+            // Filter alerts on the client side.
+            const userRoles = ["all", user.role].filter(Boolean);
+            const userAlerts = allAlerts.filter(alert => 
+                userRoles.includes(alert.targetAudience)
+            );
+            
+            setAlerts(userAlerts);
         } catch (err) {
             console.error("Error fetching alerts:", err);
             toast({ title: "Loading Error", description: "Could not fetch your notifications.", variant: "destructive" });

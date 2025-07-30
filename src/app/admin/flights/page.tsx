@@ -572,7 +572,7 @@ export default function AdminFlightsPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div> className="space-y-6">
             <Card className="shadow-lg">
                 <CardHeader className="flex flex-row justify-between items-start">
                     <div>
