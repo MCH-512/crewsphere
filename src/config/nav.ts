@@ -4,7 +4,7 @@ import {
   ClipboardCheck, MessageSquare, Activity, FileSignature, 
   Calendar as CalendarIcon, Library, GraduationCap, CheckSquare, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Wrench, 
-  Replace, Handshake, Inbox, Lightbulb, FileCheck2, History
+  Handshake, Inbox, Lightbulb, FileCheck2, History
 } from "lucide-react";
 import type { ElementType } from 'react';
 
@@ -31,6 +31,7 @@ export const mainNavConfig: { sidebarNav: NavGroup[] } = {
       items: [
         { href: "/", title: "Dashboard", icon: LayoutDashboard },
         { href: "/my-schedule", title: "My Schedule", icon: CalendarIcon },
+        { href: "/notifications", title: "Notifications", icon: BellRing },
         { href: "/purser-reports", title: "My Flight Reports", icon: FileSignature, roles: ['purser', 'admin', 'instructor'] },
         { href: "/my-logbook", title: "My Logbook", icon: NotebookPen },
         { href: "/my-documents", title: "My Documents", icon: ShieldCheck },

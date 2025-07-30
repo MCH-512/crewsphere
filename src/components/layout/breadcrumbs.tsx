@@ -58,6 +58,7 @@ const predefinedLabels: { [key: string]: string } = {
   "flight-timeline": "Global Timeline",
   timeline: "Global Timeline",
   alerts: "Alert Management",
+  notifications: "Notifications",
   "expiry-management": "Expiry Management",
   "training-sessions": "Training Sessions",
   "document-validations": "Document Validations",
