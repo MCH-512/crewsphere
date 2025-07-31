@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -36,6 +37,7 @@ import { approveFlightSwap, rejectFlightSwap } from "@/services/admin-flight-swa
 import { Textarea } from "@/components/ui/textarea";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
 import { Label } from "@/components/ui/label";
+import type { DayContentProps } from "react-day-picker";
 
 interface FlightForDisplay extends StoredFlight {
     departureAirportName?: string;
@@ -170,6 +172,7 @@ export default function AdminFlightsPage() {
     const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
     const [viewMode, setViewMode] = React.useState<ViewMode>("calendar");
     const [calendarMonth, setCalendarMonth] = React.useState(new Date());
+    const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(new Date());
 
     const [swapToApprove, setSwapToApprove] = React.useState<StoredFlightSwap | null>(null);
     const [showPendingSwapsOnly, setShowPendingSwapsOnly] = React.useState(false);
@@ -351,7 +354,7 @@ export default function AdminFlightsPage() {
             const endDate = startOfDay(new Date(debouncedArr));
             if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return;
 
-            const warnings = await checkCrewAvailability(allAssignedCrewIds, startDate, endDate, currentFlight?.id);
+            const warnings = await checkCrewAvailability(allAssignedCrewIds, startDate, endDate, isEditMode ? currentFlight?.id : undefined);
             setCrewWarnings(warnings);
           } catch (e) {
             console.error("Failed to check crew availability", e);
@@ -365,7 +368,7 @@ export default function AdminFlightsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         form.watch("purserId"), form.watch("pilotIds"), form.watch("cabinCrewIds"), form.watch("instructorIds"), form.watch("traineeIds"),
-        debouncedDep, debouncedArr, toast, currentFlight
+        debouncedDep, debouncedArr, toast, currentFlight, isEditMode
     ]);
 
 
@@ -547,15 +550,17 @@ export default function AdminFlightsPage() {
     if (authLoading || isLoading) return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     if (!user || user.role !== 'admin') return <div className="flex flex-col items-center justify-center min-h-screen text-center p-4"><AlertTriangle className="h-16 w-16 text-destructive mb-4" /><CardTitle className="text-2xl mb-2">Access Denied</CardTitle><p className="text-muted-foreground">You do not have permission to view this page.</p><Button onClick={() => router.push('/')} className="mt-6">Go to Dashboard</Button></div>;
 
-    const CalendarDay = ({ date }: { date: Date }) => {
-        const dayFlights = flights.filter(f => isSameDay(parseISO(f.scheduledDepartureDateTimeUTC), date));
+    const selectedDayFlights = flights.filter(f => selectedDay && isSameDay(parseISO(f.scheduledDepartureDateTimeUTC), selectedDay));
+    const dayHasFlights = (date: Date) => flights.some(f => isSameDay(parseISO(f.scheduledDepartureDateTimeUTC), date));
+
+    const CalendarDay = (props: DayContentProps) => {
+        const hasFlights = dayHasFlights(props.date);
         return (
             <div className="relative flex h-full w-full items-center justify-center">
-                <p>{format(date, 'd')}</p>
-                {dayFlights.length > 0 && 
+                <p>{format(props.date, 'd')}</p>
+                {hasFlights &&
                     <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-0.5">
-                        <div className={cn("h-1.5 w-1.5 rounded-full", "bg-blue-500")} />
-                        {dayFlights.length > 1 && <span className="text-[9px] text-muted-foreground font-bold">+{dayFlights.length - 1}</span>}
+                        <div className={cn("h-1.5 w-1.5 rounded-full", "bg-primary")} />
                     </div>
                 }
             </div>
@@ -627,16 +632,49 @@ export default function AdminFlightsPage() {
                     {sortedAndFilteredFlights.length === 0 && <p className="text-center text-muted-foreground py-8">No flights found matching criteria.</p>}
                 </div>
             ) : (
-                 <Card>
-                    <CardContent className="p-0">
-                         <Calendar
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                        <Calendar
+                            mode="single"
+                            selected={selectedDay}
+                            onSelect={setSelectedDay}
                             month={calendarMonth}
                             onMonthChange={setCalendarMonth}
-                            className="w-full"
+                            className="w-full p-2"
                             components={{ Day: CalendarDay }}
-                         />
-                    </CardContent>
-                </Card>
+                        />
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Flights on {selectedDay ? format(selectedDay, 'PPP') : '...'}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {selectedDayFlights.length > 0 ? (
+                                <ScrollArea className="h-72">
+                                    <div className="space-y-4 pr-4">
+                                    {selectedDayFlights.map(f => (
+                                        <div key={f.id} className="p-3 border rounded-md">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <p className="font-semibold">{f.flightNumber}</p>
+                                                    <p className="text-xs text-muted-foreground">{f.departureAirportName} → {f.arrivalAirportName}</p>
+                                                </div>
+                                                <div className="flex gap-1">
+                                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenDialog(f)} title="Edit Flight"><Edit className="h-4 w-4" /></Button>
+                                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(f)} title="Delete Flight"><Trash2 className="h-4 w-4" /></Button>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs mt-2">Purser: <Link href={`/admin/users/${f.purserId}`} className="hover:underline text-primary">{f.purserName}</Link></p>
+                                        </div>
+                                    ))}
+                                    </div>
+                                </ScrollArea>
+                            ) : (
+                                <p className="text-center text-muted-foreground py-8">No flights scheduled for this day.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
             )}
 
             {swapToApprove && (
