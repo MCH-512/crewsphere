@@ -31,6 +31,12 @@ export const flightFormSchema = z.object({
   returnInstructorIds: z.array(z.string()).optional(),
   returnTraineeIds: z.array(z.string()).optional(),
 
+  // Recurrence fields
+  enableRecurrence: z.boolean().optional(),
+  recurrenceType: z.enum(["Daily", "Weekly"]).optional(),
+  recurrenceCount: z.number().min(1).max(52).optional(),
+
+
 }).refine(data => new Date(data.scheduledArrivalDateTimeUTC) > new Date(data.scheduledDepartureDateTimeUTC), {
     message: "Arrival time must be after departure time.",
     path: ["scheduledArrivalDateTimeUTC"],

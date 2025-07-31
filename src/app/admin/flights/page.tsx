@@ -15,9 +15,9 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, getDoc, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, Handshake, FileSignature, Calendar as CalendarIcon, List, Filter } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, Handshake, FileSignature, Calendar as CalendarIcon, List, Filter, Repeat } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfDay, parseISO, addHours, isSameDay, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfDay, parseISO, addHours, isSameDay, startOfMonth, endOfMonth, addDays, addWeeks, differenceInMinutes } from "date-fns";
 import { flightFormSchema, type FlightFormValues, type StoredFlight, aircraftTypes } from "@/schemas/flight-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { getAirportByCode, searchAirports, type Airport } from "@/services/airport-service";
@@ -186,6 +186,9 @@ export default function AdminFlightsPage() {
             returnScheduledDepartureDateTimeUTC: "", returnScheduledArrivalDateTimeUTC: "",
             returnAircraftType: undefined, returnPurserId: "", returnPilotIds: [], returnCabinCrewIds: [],
             returnInstructorIds: [], returnTraineeIds: [],
+            enableRecurrence: false,
+            recurrenceType: "Daily",
+            recurrenceCount: 1,
         },
     });
 
@@ -382,6 +385,7 @@ export default function AdminFlightsPage() {
                 instructorIds: flightToEdit.instructorIds || [],
                 traineeIds: flightToEdit.traineeIds || [],
                 includeReturnFlight: false,
+                enableRecurrence: false, // recurrence disabled for editing
             });
         } else {
             setIsEditMode(false);
@@ -396,6 +400,9 @@ export default function AdminFlightsPage() {
                 returnScheduledDepartureDateTimeUTC: "", returnScheduledArrivalDateTimeUTC: "",
                 returnAircraftType: undefined, returnPurserId: "", returnPilotIds: [], returnCabinCrewIds: [],
                 returnInstructorIds: [], returnTraineeIds: [],
+                enableRecurrence: false,
+                recurrenceType: "Daily",
+                recurrenceCount: 1,
             });
         }
         setDepSearch("");
@@ -420,6 +427,7 @@ export default function AdminFlightsPage() {
             instructorIds: flight.instructorIds || [],
             traineeIds: flight.traineeIds || [],
             includeReturnFlight: false,
+            enableRecurrence: false, // recurrence disabled
         });
         setDepSearch(flight.arrivalAirportName || flight.arrivalAirport);
         setArrSearch(flight.departureAirportName || flight.departureAirport);
@@ -443,11 +451,9 @@ export default function AdminFlightsPage() {
         try {
             const batch = writeBatch(db);
 
-            // --- Outbound Flight Logic ---
-            const outboundCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || []), ...(data.instructorIds || []), ...(data.traineeIds || [])].filter(Boolean))];
-            
             if (isEditMode && currentFlight) {
-                // UPDATE logic
+                // UPDATE logic for a single flight
+                const outboundCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || []), ...(data.instructorIds || []), ...(data.traineeIds || [])].filter(Boolean))];
                 const flightRef = doc(db, "flights", currentFlight.id);
                 if (currentFlight.activityIds) {
                     for (const activityId of Object.values(currentFlight.activityIds)) { batch.delete(doc(db, "userActivities", activityId)); }
@@ -465,53 +471,37 @@ export default function AdminFlightsPage() {
                 toast({ title: "Flight Updated", description: `Flight ${data.flightNumber} has been updated.` });
             
             } else {
-                // CREATE logic for outbound flight
-                const outboundFlightRef = doc(collection(db, "flights"));
-                
-                const outboundActivityIds: Record<string, string> = {};
-                for (const crewId of outboundCrewIds) {
-                    const activityRef = doc(collection(db, "userActivities"));
-                    batch.set(activityRef, { userId: crewId, activityType: 'flight' as const, flightId: outboundFlightRef.id, date: Timestamp.fromDate(startOfDay(new Date(data.scheduledDepartureDateTimeUTC))), flightNumber: data.flightNumber, departureAirport: data.departureAirport, arrivalAirport: data.arrivalAirport, comments: `Flight ${data.flightNumber} from ${data.departureAirport} to ${data.arrivalAirport}` });
-                    outboundActivityIds[crewId] = activityRef.id;
-                }
-                
-                batch.set(outboundFlightRef, { ...data, allCrewIds: outboundCrewIds, activityIds: outboundActivityIds, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), purserReportSubmitted: false });
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_FLIGHT", entityType: "FLIGHT", entityId: outboundFlightRef.id, details: { flightNumber: data.flightNumber } });
-                
-                // --- Return Flight Logic (only on create) ---
-                if (data.includeReturnFlight && data.returnFlightNumber) {
-                    const returnCrewIds = [...new Set([data.returnPurserId!, ...(data.returnPilotIds || []), ...(data.returnCabinCrewIds || []), ...(data.returnInstructorIds || []), ...(data.returnTraineeIds || [])].filter(Boolean))];
-                    const returnFlightRef = doc(collection(db, "flights"));
-                    const returnActivityIds: Record<string, string> = {};
+                // CREATE logic for one or more flights
+                const initialDepartureDate = parseISO(data.scheduledDepartureDateTimeUTC);
+                const initialArrivalDate = parseISO(data.scheduledArrivalDateTimeUTC);
+                const flightDurationMinutes = differenceInMinutes(initialArrivalDate, initialDepartureDate);
+                const recurrenceCount = data.enableRecurrence ? data.recurrenceCount || 1 : 1;
 
-                    for (const crewId of returnCrewIds) {
+                for (let i = 0; i < recurrenceCount; i++) {
+                    const dateOffsetFn = data.recurrenceType === 'Daily' ? (d: Date) => addDays(d, i) : (d: Date) => addWeeks(d, i);
+                    
+                    const currentDepartureDate = dateOffsetFn(initialDepartureDate);
+                    const currentArrivalDate = addMinutes(currentDepartureDate, flightDurationMinutes);
+                    const currentData = {
+                        ...data,
+                        scheduledDepartureDateTimeUTC: currentDepartureDate.toISOString(),
+                        scheduledArrivalDateTimeUTC: currentArrivalDate.toISOString(),
+                    };
+
+                    const outboundCrewIds = [...new Set([currentData.purserId, ...(currentData.pilotIds || []), ...(currentData.cabinCrewIds || []), ...(currentData.instructorIds || []), ...(currentData.traineeIds || [])].filter(Boolean))];
+                    const outboundFlightRef = doc(collection(db, "flights"));
+                    const outboundActivityIds: Record<string, string> = {};
+                    for (const crewId of outboundCrewIds) {
                         const activityRef = doc(collection(db, "userActivities"));
-                        batch.set(activityRef, { userId: crewId, activityType: 'flight' as const, flightId: returnFlightRef.id, date: Timestamp.fromDate(startOfDay(new Date(data.returnScheduledDepartureDateTimeUTC!))), flightNumber: data.returnFlightNumber, departureAirport: data.returnDepartureAirport, arrivalAirport: data.returnArrivalAirport, comments: `Flight ${data.returnFlightNumber} from ${data.returnDepartureAirport} to ${data.returnArrivalAirport}` });
-                        returnActivityIds[crewId] = activityRef.id;
+                        batch.set(activityRef, { userId: crewId, activityType: 'flight' as const, flightId: outboundFlightRef.id, date: Timestamp.fromDate(startOfDay(currentDepartureDate)), flightNumber: currentData.flightNumber, departureAirport: currentData.departureAirport, arrivalAirport: currentData.arrivalAirport, comments: `Flight ${currentData.flightNumber} from ${currentData.departureAirport} to ${currentData.arrivalAirport}` });
+                        outboundActivityIds[crewId] = activityRef.id;
                     }
-
-                    batch.set(returnFlightRef, {
-                        flightNumber: data.returnFlightNumber,
-                        departureAirport: data.returnDepartureAirport,
-                        arrivalAirport: data.returnArrivalAirport,
-                        scheduledDepartureDateTimeUTC: data.returnScheduledDepartureDateTimeUTC,
-                        scheduledArrivalDateTimeUTC: data.returnScheduledArrivalDateTimeUTC,
-                        aircraftType: data.returnAircraftType,
-                        purserId: data.returnPurserId,
-                        pilotIds: data.returnPilotIds,
-                        cabinCrewIds: data.returnCabinCrewIds,
-                        instructorIds: data.returnInstructorIds,
-                        traineeIds: data.returnTraineeIds,
-                        allCrewIds: returnCrewIds,
-                        activityIds: returnActivityIds,
-                        createdAt: serverTimestamp(),
-                        updatedAt: serverTimestamp(),
-                        purserReportSubmitted: false
-                    });
-                     await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_FLIGHT", entityType: "FLIGHT", entityId: returnFlightRef.id, details: { flightNumber: data.returnFlightNumber, type: "Return" } });
+                    batch.set(outboundFlightRef, { ...currentData, allCrewIds: outboundCrewIds, activityIds: outboundActivityIds, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), purserReportSubmitted: false });
                 }
-
-                toast({ title: "Flight Created", description: `Flight ${data.flightNumber} ${data.includeReturnFlight ? 'and its return leg have' : 'has'} been scheduled.` });
+                
+                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_RECURRING_FLIGHTS", entityType: "FLIGHT", details: { flightNumber: data.flightNumber, count: recurrenceCount, type: data.recurrenceType } });
+                
+                toast({ title: "Flights Created", description: `${recurrenceCount} flight(s) for ${data.flightNumber} have been scheduled.` });
             }
             
             await batch.commit();
@@ -737,6 +727,51 @@ export default function AdminFlightsPage() {
                                         <FormField control={form.control} name="returnCabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                                     </div>
                                 )}
+
+                                <Separator/>
+                                <FormField control={form.control} name="enableRecurrence" render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                            <FormLabel className="text-base">Enable Recurrence</FormLabel>
+                                            <FormDescription>Create this flight on a recurring schedule.</FormDescription>
+                                        </div>
+                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                    </FormItem>
+                                )} />
+                                {watchedFields.enableRecurrence && (
+                                    <div className="space-y-6 p-4 border-l-4 border-primary/50 bg-muted/30 rounded-r-md">
+                                        <h3 className="text-lg font-semibold text-primary flex items-center gap-2"><Repeat/>Recurrence Details</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                             <FormField control={form.control} name="recurrenceType" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Frequency</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="Daily">Daily</SelectItem>
+                                                            <SelectItem value="Weekly">Weekly</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                             <FormField control={form.control} name="recurrenceCount" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Number of Occurrences</FormLabel>
+                                                    <FormControl><Input type="number" min="1" max="52" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
+                                        <Alert variant="info">
+                                            <Info className="h-4 w-4" />
+                                            <AlertTitle>Heads Up!</AlertTitle>
+                                            <ShadAlertDescription>
+                                                This will create {watchedFields.recurrenceCount || 1} separate flight(s) with the same crew. Return flights and availability conflicts are not checked for recurring flights.
+                                            </ShadAlertDescription>
+                                        </Alert>
+                                    </div>
+                                )}
                                 </>
                             )}
 
@@ -744,7 +779,7 @@ export default function AdminFlightsPage() {
                         </ScrollArea>
                             <DialogFooter className="mt-4 pt-4 border-t">
                                 <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                                <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}{isEditMode ? "Save Changes" : "Create Flight"}</Button>
+                                <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}{isEditMode ? "Save Changes" : "Create Flight(s)"}</Button>
                             </DialogFooter>
                         </form>
                     </Form>
@@ -753,3 +788,4 @@ export default function AdminFlightsPage() {
         </div>
     );
 }
+
