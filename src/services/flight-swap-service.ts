@@ -99,33 +99,48 @@ export async function cancelMySwap(swapId: string, userId: string): Promise<void
 
 /**
  * Fetches all flight swaps relevant to a specific user (initiated or requested by them).
- * This function now fetches all swaps and filters client-side to ensure robustness
- * and avoid complex index-dependent queries that can fail.
  * @param userId The UID of the user whose swaps to fetch.
  * @returns A promise that resolves to an array of StoredFlightSwap.
  */
 export async function getMySwaps(userId: string): Promise<StoredFlightSwap[]> {
-    if (!isConfigValid || !db) {
-        console.error("Firebase is not configured. Cannot fetch swaps.");
-        return [];
-    }
-
-    if (!userId) {
+    if (!isConfigValid || !db || !userId) {
         return [];
     }
 
     try {
-        // Fetch ALL swaps. This is a robust query that doesn't need a special index.
-        const allSwapsQuery = query(collection(db, "flightSwaps"), orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(allSwapsQuery);
-        const allSwaps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredFlightSwap));
-
-        // Filter on the client-side. This is more reliable.
-        const userSwaps = allSwaps.filter(swap => 
-            swap.initiatingUserId === userId || swap.requestingUserId === userId
+        // Query for swaps initiated by the user
+        const initiatedQuery = query(
+            collection(db, "flightSwaps"),
+            where("initiatingUserId", "==", userId),
+            orderBy("createdAt", "desc")
         );
         
-        return userSwaps;
+        // Query for swaps requested by the user
+        const requestedQuery = query(
+            collection(db, "flightSwaps"),
+            where("requestingUserId", "==", userId),
+            orderBy("createdAt", "desc")
+        );
+
+        const [initiatedSnapshot, requestedSnapshot] = await Promise.all([
+            getDocs(initiatedQuery),
+            getDocs(requestedQuery)
+        ]);
+        
+        const initiatedSwaps = initiatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredFlightSwap));
+        const requestedSwaps = requestedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredFlightSwap));
+
+        // Combine and deduplicate results
+        const allUserSwaps = new Map<string, StoredFlightSwap>();
+        [...initiatedSwaps, ...requestedSwaps].forEach(swap => {
+            allUserSwaps.set(swap.id, swap);
+        });
+
+        const sortedSwaps = Array.from(allUserSwaps.values()).sort((a, b) => 
+            b.createdAt.toMillis() - a.createdAt.toMillis()
+        );
+        
+        return sortedSwaps;
 
     } catch (error) {
         console.error("Error fetching user's flight swaps:", error);
