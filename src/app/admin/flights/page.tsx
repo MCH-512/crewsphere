@@ -99,7 +99,7 @@ const SwapApprovalDialog = ({ swap, onClose, onAction }: { swap: StoredFlightSwa
                     <DialogTitle>Approve Flight Swap Request</DialogTitle>
                     <DialogDescription>Review the details below and approve or reject the swap.</DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-2 gap-4 py-4 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 text-sm">
                     <Card><CardHeader><CardTitle className="text-base">Original Flight (Initiator)</CardTitle><CardDescription>{swap.initiatingUserEmail}</CardDescription></CardHeader>
                         <CardContent><p><strong>Flight:</strong> {swap.flightInfo.flightNumber}</p><p><strong>Route:</strong> {swap.flightInfo.departureAirport} to {swap.flightInfo.arrivalAirport}</p><p><strong>Date:</strong> {format(parseISO(swap.flightInfo.scheduledDepartureDateTimeUTC), "PPP")}</p></CardContent>
                     </Card>
