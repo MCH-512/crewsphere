@@ -1,6 +1,7 @@
 
 import { z } from "zod";
 import type { Timestamp } from 'firebase/firestore';
+import { questionFormSchema } from "./quiz-question-schema";
 
 export const courseCategories = ["Regulations & Compliance", "Safety & Emergency", "Customer Service", "Technical Knowledge", "Health & First Aid"] as const;
 export const courseTypes = ["Initial Training", "Recurrent Training", "Conversion Course", "Refresher"] as const;
@@ -23,6 +24,7 @@ export const courseFormSchema = z.object({
   imageHint: z.string().max(100).optional(),
   chapters: z.array(chapterSchema).min(1, "At least one chapter is required."),
   quizTitle: z.string().min(5, "Quiz title is required.").max(150),
+  questions: z.array(questionFormSchema).min(1, "At least one quiz question is required."),
   passingThreshold: z.number().min(0).max(100),
   certificateExpiryDays: z.number().min(0),
 });

@@ -58,11 +58,11 @@ export default function CourseDetailPage() {
         fetchCourse();
     }, [courseId, user, authLoading, router]);
     
-    const handleChapterToggle = (chapterTitle: string) => {
+    const handleChapterToggle = (chapterTitle: string, isChecked: boolean) => {
         setReadChapters(prev => 
-            prev.includes(chapterTitle) 
-                ? prev.filter(title => title !== chapterTitle)
-                : [...prev, chapterTitle]
+            isChecked 
+                ? [...prev, chapterTitle]
+                : prev.filter(title => title !== chapterTitle)
         );
     };
 
@@ -134,10 +134,7 @@ export default function CourseDetailPage() {
                                <div className="flex items-center space-x-3">
                                    <Checkbox 
                                         id={`chapter-${index}`} 
-                                        onCheckedChange={(checked) => {
-                                            // Prevent unchecking for simplicity, or handle state if needed
-                                            if(checked) handleChapterToggle(chapter.title)
-                                        }}
+                                        onCheckedChange={(checked) => handleChapterToggle(chapter.title, !!checked)}
                                         checked={readChapters.includes(chapter.title)}
                                         onClick={(e) => e.stopPropagation()} // Prevent trigger from firing on checkbox click
                                     />

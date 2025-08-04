@@ -185,7 +185,7 @@ export default function QuizPage() {
                         className="space-y-3"
                     >
                         {currentQuestion.options.map((option, index) => (
-                            <div key={index} className="flex items-center space-x-3 border rounded-md p-3 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                            <div key={index} className="flex items-center space-x-3 border rounded-md p-3 has-[:checked]:bg-primary/10 has-[:checked]:border-primary transition-colors">
                                 <RadioGroupItem value={option} id={`${currentQuestion.id}-opt-${index}`} />
                                 <Label htmlFor={`${currentQuestion.id}-opt-${index}`} className="flex-1 cursor-pointer">{option}</Label>
                             </div>
@@ -195,9 +195,9 @@ export default function QuizPage() {
                 <CardFooter className="flex justify-between">
                     <Button variant="outline" onClick={() => setCurrentQuestionIndex(prev => prev - 1)} disabled={currentQuestionIndex === 0}>Previous</Button>
                     {currentQuestionIndex < questions.length - 1 ? (
-                        <Button onClick={() => setCurrentQuestionIndex(prev => prev + 1)}>Next</Button>
+                        <Button onClick={() => setCurrentQuestionIndex(prev => prev + 1)} disabled={!userAnswers[currentQuestion.id]}>Next</Button>
                     ) : (
-                        <Button onClick={handleSubmitQuiz} className="bg-green-600 hover:bg-green-700"><Send className="mr-2 h-4 w-4"/>Submit Quiz</Button>
+                        <Button onClick={handleSubmitQuiz} className="bg-green-600 hover:bg-green-700" disabled={!userAnswers[currentQuestion.id]}><Send className="mr-2 h-4 w-4"/>Submit Quiz</Button>
                     )}
                 </CardFooter>
             </Card>
@@ -212,7 +212,7 @@ export default function QuizPage() {
                     <CardHeader className="text-center">
                         {passed ? <CheckCircle className="mx-auto h-16 w-16 text-green-600" /> : <XCircle className="mx-auto h-16 w-16 text-destructive" />}
                         <CardTitle className="text-3xl mt-4">{passed ? "Congratulations, You Passed!" : "Quiz Failed"}</CardTitle>
-                        <CardDescription className={cn("text-lg", passed ? "text-green-700" : "text-destructive-foreground")}>Your score: <strong>{score.toFixed(2)}%</strong> (Required: {certRule.passingThreshold}%)</CardDescription>
+                        <CardDescription className={cn("text-lg", passed ? "text-green-700" : "text-destructive-foreground")}>Your score: <strong>{score.toFixed(0)}%</strong> (Required: {certRule.passingThreshold}%)</CardDescription>
                     </CardHeader>
                     <CardFooter className="justify-center gap-4">
                         <Button onClick={() => router.push('/training')}>Return to E-Learning Center</Button>
@@ -240,8 +240,8 @@ export default function QuizPage() {
                                             const isCorrectAnswer = q.correctAnswer === opt;
                                             return (
                                                 <div key={`${q.id}-opt-${optIndex}`} className={cn("p-2 rounded-md flex items-center gap-2", 
-                                                    isCorrectAnswer && "bg-green-500/10 text-green-800",
-                                                    isUserAnswer && !isCorrectAnswer && "bg-destructive/10 text-destructive-foreground line-through"
+                                                    isCorrectAnswer && "bg-green-500/10 text-green-800 font-semibold",
+                                                    isUserAnswer && !isCorrectAnswer && "bg-destructive/10 text-destructive line-through"
                                                 )}>
                                                     {isCorrectAnswer ? <CheckCircle className="h-4 w-4 text-green-600"/> : isUserAnswer ? <XCircle className="h-4 w-4 text-destructive"/> : <div className="h-4 w-4"/>}
                                                     {opt}

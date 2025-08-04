@@ -31,6 +31,7 @@ import { StoredQuiz, StoredCertificateRule } from "@/schemas/course-schema";
 import { generateCourseImage } from "@/ai/flows/generate-course-image-flow";
 import { Badge } from "@/components/ui/badge";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
+import { StoredQuestion } from "@/schemas/quiz-question-schema";
 
 type SortableColumn = 'title' | 'category' | 'courseType' | 'published';
 type SortDirection = 'asc' | 'desc';
@@ -64,12 +65,14 @@ export default function AdminCoursesPage() {
         defaultValues: {
             title: "", description: "", category: undefined, courseType: undefined,
             referenceBody: "", duration: "", mandatory: true, published: false, imageHint: "",
-            chapters: [{ title: "", content: "" }], quizTitle: "",
-            passingThreshold: 80, certificateExpiryDays: 365
+            chapters: [{ title: "", content: "" }],
+            questions: [{ questionText: "", options: ["", "", "", ""], correctAnswer: "" }],
+            quizTitle: "", passingThreshold: 80, certificateExpiryDays: 365
         },
     });
 
     const { fields: chapterFields, append: appendChapter, remove: removeChapter } = useFieldArray({ control: form.control, name: "chapters" });
+    const { fields: questionFields, append: appendQuestion, remove: removeQuestion } = useFieldArray({ control: form.control, name: "questions" });
 
     const fetchCourses = React.useCallback(async () => {
         setIsLoading(true);
@@ -135,8 +138,12 @@ export default function AdminCoursesPage() {
             try {
                 const quizSnap = await getDoc(doc(db, "quizzes", courseToEdit.quizId));
                 const certRuleSnap = await getDoc(doc(db, "certificateRules", courseToEdit.certificateRuleId));
+                const questionsQuery = query(collection(db, "questions"), where("quizId", "==", courseToEdit.quizId));
+                const questionsSnapshot = await getDocs(questionsQuery);
+
                 const quizData = quizSnap.data() as StoredQuiz;
                 const certRuleData = certRuleSnap.data() as StoredCertificateRule;
+                const questionsData = questionsSnapshot.docs.map(d => d.data() as StoredQuestion);
 
                 form.reset({
                     title: courseToEdit.title, description: courseToEdit.description,
@@ -148,6 +155,7 @@ export default function AdminCoursesPage() {
                     passingThreshold: certRuleData.passingThreshold,
                     certificateExpiryDays: certRuleData.expiryDurationDays,
                     chapters: courseToEdit.chapters.map(c => ({ title: c.title, content: c.content || "" })),
+                    questions: questionsData.map(q => ({ questionText: q.questionText, options: q.options, correctAnswer: q.correctAnswer })),
                 });
             } catch (error) {
                 toast({ title: "Error", description: "Could not load course data for editing.", variant: "destructive"});
@@ -159,8 +167,9 @@ export default function AdminCoursesPage() {
             form.reset({
                 title: "", description: "", category: undefined, courseType: undefined,
                 referenceBody: "", duration: "", mandatory: true, published: false, imageHint: "",
-                chapters: [{ title: "", content: "" }], quizTitle: "",
-                passingThreshold: 80, certificateExpiryDays: 365,
+                chapters: [{ title: "", content: "" }],
+                questions: [{ questionText: "", options: ["", "", "", ""], correctAnswer: "" }],
+                quizTitle: "", passingThreshold: 80, certificateExpiryDays: 365,
             });
         }
         setIsManageDialogOpen(true);
@@ -176,7 +185,7 @@ export default function AdminCoursesPage() {
 
             const courseRef = isEditMode && currentCourse ? doc(db, "courses", currentCourse.id) : doc(collection(db, "courses"));
             
-            if (data.imageHint && storage) {
+            if (data.imageHint && (!currentCourse?.imageUrl || data.imageHint !== currentCourse.imageHint)) {
                 try {
                     toast({ title: "Generating AI Image...", description: "This may take a moment. Please wait." });
                     const result = await generateCourseImage({ prompt: data.imageHint });
@@ -192,10 +201,22 @@ export default function AdminCoursesPage() {
                 }
             }
 
+            const quizRef = isEditMode && currentCourse ? doc(db, "quizzes", currentCourse.quizId) : doc(collection(db, "quizzes"));
+            const certRuleRef = isEditMode && currentCourse ? doc(db, "certificateRules", currentCourse.certificateRuleId) : doc(collection(db, "certificateRules"));
+
+            // Handle questions: delete old ones, add new ones
             if (isEditMode && currentCourse) {
-                const quizRef = doc(db, "quizzes", currentCourse.quizId);
-                const certRuleRef = doc(db, "certificateRules", currentCourse.certificateRuleId);
-                
+                 const questionsQuery = query(collection(db, "questions"), where("quizId", "==", currentCourse.quizId));
+                 const questionsSnapshot = await getDocs(questionsQuery);
+                 questionsSnapshot.forEach(doc => batch.delete(doc.ref));
+            }
+            data.questions.forEach(q => {
+                const questionRef = doc(collection(db, "questions"));
+                batch.set(questionRef, { ...q, quizId: quizRef.id, questionType: 'mcq', createdAt: serverTimestamp() });
+            });
+
+
+            if (isEditMode && currentCourse) {
                 const updateData: Partial<StoredCourse> = {
                     title: data.title, description: data.description, category: data.category,
                     courseType: data.courseType, referenceBody: data.referenceBody, duration: data.duration,
@@ -203,23 +224,15 @@ export default function AdminCoursesPage() {
                     chapters: data.chapters.filter(c => c.title.trim() !== ""),
                     updatedAt: serverTimestamp(),
                 };
-
-                if (imageUrl) {
-                    updateData.imageUrl = imageUrl;
-                }
+                if (imageUrl) updateData.imageUrl = imageUrl;
 
                 batch.update(courseRef, updateData);
                 batch.update(quizRef, { title: data.quizTitle });
                 batch.update(certRuleRef, { passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays });
-
-                await batch.commit();
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'UPDATE_COURSE', entityType: "COURSE", entityId: currentCourse.id, details: { title: data.title }});
                 toast({ title: "Course Updated", description: `"${data.title}" has been updated successfully.` });
             
             } else {
-                const quizRef = doc(collection(db, "quizzes"));
-                const certRuleRef = doc(collection(db, "certificateRules"));
-
                 batch.set(courseRef, {
                     title: data.title, description: data.description, category: data.category,
                     courseType: data.courseType, referenceBody: data.referenceBody, duration: data.duration,
@@ -232,11 +245,11 @@ export default function AdminCoursesPage() {
 
                 batch.set(quizRef, { courseId: courseRef.id, title: data.quizTitle, createdAt: serverTimestamp() });
                 batch.set(certRuleRef, { courseId: courseRef.id, passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays, createdAt: serverTimestamp() });
-                
-                await batch.commit();
                 await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'CREATE_COURSE', entityType: "COURSE", entityId: courseRef.id, details: { title: data.title }});
-                toast({ title: "Course Created", description: `"${data.title}" has been saved. You can now add questions in Quiz Management.` });
+                toast({ title: "Course Created", description: `"${data.title}" has been saved.` });
             }
+            
+            await batch.commit();
 
             fetchCourses();
             setIsManageDialogOpen(false);
@@ -334,7 +347,6 @@ export default function AdminCoursesPage() {
                                     </TableCell>
                                     <TableCell className="space-x-1">
                                         <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(course)} title="Edit Course Details"><Edit className="h-4 w-4" /></Button>
-                                        <Button variant="ghost" size="icon" asChild title="Manage Quiz Questions"><Link href={`/admin/quizzes/${course.quizId}`}><FileQuestion className="h-4 w-4"/></Link></Button>
                                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title="Delete Course" onClick={() => { setCourseToDelete(course); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                                     </TableCell>
                                 </TableRow>
@@ -349,7 +361,7 @@ export default function AdminCoursesPage() {
                 <DialogContent className="max-w-4xl">
                     <DialogHeader>
                         <DialogTitle>{isEditMode ? "Edit Course" : "Create New Course"}</DialogTitle>
-                        <DialogDescription>{isEditMode ? "Update course details below." : "Fill out the details for the new course, chapters, and quiz."}</DialogDescription>
+                        <DialogDescription>{isEditMode ? "Update course details, chapters, and quiz questions below." : "Fill out all details for the new course."}</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleFormSubmit)}>
@@ -374,35 +386,9 @@ export default function AdminCoursesPage() {
                                         <FormLabel className="font-semibold text-base flex items-center gap-2"><ListOrdered/>Chapters</FormLabel>
                                         {chapterFields.map((field, index) => (
                                             <div key={field.id} className="p-4 border rounded-lg space-y-4 relative">
-                                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeChapter(index)}>
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                </Button>
-                                                <FormField
-                                                  control={form.control}
-                                                  name={`chapters.${index}.title`}
-                                                  render={({ field }) => (
-                                                    <FormItem>
-                                                      <FormLabel>Chapter {index + 1} Title</FormLabel>
-                                                      <FormControl>
-                                                        <Input {...field} placeholder={`Title for chapter ${index + 1}`} />
-                                                      </FormControl>
-                                                      <FormMessage />
-                                                    </FormItem>
-                                                  )}
-                                                />
-                                                <FormField
-                                                  control={form.control}
-                                                  name={`chapters.${index}.content`}
-                                                  render={({ field }) => (
-                                                    <FormItem>
-                                                      <FormLabel>Chapter {index + 1} Content</FormLabel>
-                                                      <FormControl>
-                                                        <Textarea {...field} placeholder="Write the chapter content here..." className="min-h-[120px]" />
-                                                      </FormControl>
-                                                      <FormMessage />
-                                                    </FormItem>
-                                                  )}
-                                                />
+                                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeChapter(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                                <FormField control={form.control} name={`chapters.${index}.title`} render={({ field }) => (<FormItem><FormLabel>Chapter {index + 1} Title</FormLabel><FormControl><Input {...field} placeholder={`Title for chapter ${index + 1}`} /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={form.control} name={`chapters.${index}.content`} render={({ field }) => (<FormItem><FormLabel>Chapter {index + 1} Content</FormLabel><FormControl><Textarea {...field} placeholder="Write the chapter content here..." className="min-h-[120px]" /></FormControl><FormMessage /></FormItem>)} />
                                             </div>
                                         ))}
                                         <Button type="button" variant="outline" size="sm" onClick={() => appendChapter({ title: "", content: "" })}>Add Chapter</Button>
@@ -417,9 +403,32 @@ export default function AdminCoursesPage() {
                                             <FormField control={form.control} name="certificateExpiryDays" render={({ field }) => <FormItem><FormLabel>Certificate Expiry (Days)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl><FormMessage /></FormItem>} />
                                          </div>
                                     </div>
-                                    
-                                    <div className="p-3 bg-muted/50 rounded-md text-sm text-muted-foreground">
-                                       Quiz questions are managed separately after course creation. Go to the <Link href={`/admin/quizzes`} className="text-primary underline">Quiz Management</Link> page to add questions to this course's quiz.
+
+                                    <Separator />
+                                    <div className="space-y-4">
+                                        <FormLabel className="font-semibold text-base flex items-center gap-2"><FileQuestion/>Quiz Questions</FormLabel>
+                                        {questionFields.map((field, index) => {
+                                            const options = form.watch(`questions.${index}.options`);
+                                            return (
+                                                <div key={field.id} className="p-4 border rounded-lg space-y-4 relative bg-muted/30">
+                                                    <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeQuestion(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                                    <FormField control={form.control} name={`questions.${index}.questionText`} render={({ field }) => (<FormItem><FormLabel>Question {index + 1}</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <FormField control={form.control} name={`questions.${index}.options.0`} render={({ field }) => (<FormItem><FormLabel>Option A</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                        <FormField control={form.control} name={`questions.${index}.options.1`} render={({ field }) => (<FormItem><FormLabel>Option B</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                        <FormField control={form.control} name={`questions.${index}.options.2`} render={({ field }) => (<FormItem><FormLabel>Option C</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                        <FormField control={form.control} name={`questions.${index}.options.3`} render={({ field }) => (<FormItem><FormLabel>Option D</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                    </div>
+                                                     <FormField control={form.control} name={`questions.${index}.correctAnswer`} render={({ field }) => (
+                                                        <FormItem><FormLabel>Correct Answer</FormLabel>
+                                                        <Select onValueChange={field.onChange} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select the correct option" /></SelectTrigger></FormControl>
+                                                            <SelectContent>{options.filter(opt => opt?.trim()).map((opt, i) => (<SelectItem key={i} value={opt}>{opt}</SelectItem>))}</SelectContent>
+                                                        </Select><FormMessage /></FormItem>
+                                                    )}/>
+                                                </div>
+                                            )
+                                        })}
+                                        <Button type="button" variant="outline" size="sm" onClick={() => appendQuestion({ questionText: "", options: ["", "", "", ""], correctAnswer: "" })}>Add Question</Button>
                                     </div>
                                 </div>
                             </ScrollArea>
@@ -449,4 +458,3 @@ export default function AdminCoursesPage() {
         </div>
     );
 }
-

@@ -45,7 +45,7 @@ const CourseProgressCard = ({ course, delay }: { course: CourseWithProgress; del
                      )}
                 </div>
                 <CardHeader>
-                    <Badge variant={course.mandatory ? "destructive" : "secondary"} className="mb-2 w-fit">
+                    <Badge variant={course.mandatory ? "default" : "secondary"} className="mb-2 w-fit">
                         {course.mandatory ? "Mandatory" : "Optional"}
                     </Badge>
                     <CardTitle className="text-lg">{course.title}</CardTitle>
@@ -129,7 +129,7 @@ export default function TrainingPage() {
 
                 const [coursesSnapshot, attemptsSnapshot] = await Promise.all([
                     getDocs(coursesQuery),
-                    getDocs(attemptsQuery)
+                    getDocs(attemptsSnapshot)
                 ]);
 
                 const fetchedCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCourse));
