@@ -1,13 +1,13 @@
 
-"use server";
+"use client";
 
 import * as React from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarCheck, Plane, Briefcase, GraduationCap, Bed, Anchor } from "lucide-react";
+import { CalendarCheck, Plane, Briefcase, GraduationCap, Bed, Anchor, Loader2 } from "lucide-react";
 import { format, startOfDay, endOfDay } from "date-fns";
-import { getCurrentUser } from "@/lib/session";
+import { useAuth } from "@/contexts/auth-context";
 
 interface TodayActivity {
   activityType: 'flight' | 'leave' | 'training' | 'standby' | 'day-off';
@@ -25,37 +25,58 @@ const activityConfig: Record<TodayActivity['activityType'], { icon: React.Elemen
     standby: { icon: Anchor, label: "Standby" },
 };
 
-async function getTodayActivities(userId: string | undefined): Promise<TodayActivity[]> {
-    if (!userId) {
-        return [];
-    }
-    const todayStart = startOfDay(new Date());
-    const todayEnd = endOfDay(new Date());
+export function TodaysScheduleCard() {
+    const { user } = useAuth();
+    const [activities, setActivities] = React.useState<TodayActivity[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
 
-    try {
-        const q = query(
-            collection(db, "userActivities"),
-            where("userId", "==", userId),
-            where("date", ">=", todayStart),
-            where("date", "<=", todayEnd)
-        );
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            return querySnapshot.docs.map(doc => doc.data() as TodayActivity);
+    React.useEffect(() => {
+        if (!user) {
+            setIsLoading(false);
+            return;
         }
-        return [];
-    } catch (error) {
-        console.error("Error fetching today's schedule:", error);
-        return [];
-    }
-}
 
+        const getTodayActivities = async () => {
+            const todayStart = startOfDay(new Date());
+            const todayEnd = endOfDay(new Date());
+            
+            try {
+                const q = query(
+                    collection(db, "userActivities"),
+                    where("userId", "==", user.uid),
+                    where("date", ">=", todayStart),
+                    where("date", "<=", todayEnd)
+                );
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    setActivities(querySnapshot.docs.map(doc => doc.data() as TodayActivity));
+                }
+            } catch (error) {
+                console.error("Error fetching today's schedule:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-export async function TodaysScheduleCard() {
-    const user = await getCurrentUser();
-    const activities = await getTodayActivities(user?.uid);
+        getTodayActivities();
+
+    }, [user]);
 
     const renderContent = () => {
+        if (isLoading) {
+            return (
+                <div className="flex items-start gap-4">
+                    <Loader2 className="h-6 w-6 text-muted-foreground animate-spin mt-1" />
+                    <div>
+                        <p className="font-semibold">Loading Schedule...</p>
+                        <div className="text-sm text-muted-foreground">
+                            <p>Checking your agenda for today.</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
         if (activities.length === 0) {
             return (
                  <div className="flex items-start gap-4">
@@ -93,7 +114,7 @@ export async function TodaysScheduleCard() {
     };
 
     return (
-        <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
+        <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
             <CardHeader>
                 <CardTitle className="font-headline text-xl flex items-center gap-2">
                     <CalendarCheck className="h-5 w-5" />
@@ -101,7 +122,7 @@ export async function TodaysScheduleCard() {
                 </CardTitle>
                 <CardDescription>{format(new Date(), "EEEE, PPP")}</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-grow">
                 {renderContent()}
             </CardContent>
         </Card>

@@ -1,5 +1,5 @@
 
-"use server";
+"use client";
 
 import * as React from "react";
 import { db } from "@/lib/firebase";
@@ -11,7 +11,7 @@ import Link from "next/link";
 import { Badge } from "../ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import { badgeVariants } from "../ui/badge";
-import { getCurrentUser } from "@/lib/session";
+import { useAuth } from "@/contexts/auth-context";
 
 interface RequestSummary {
   subject: string;
@@ -28,27 +28,36 @@ const getStatusBadgeVariant = (status: RequestSummary["status"]): VariantProps<t
     }
 };
 
-async function getRequestsStatus(userId: string | undefined): Promise<{ pendingCount: number; latestRequest: RequestSummary | null }> {
-    if (!userId) {
-        return { pendingCount: 0, latestRequest: null };
-    }
-    
-    const requestsQuery = query(collection(db, "requests"), where("userId", "==", userId), orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(requestsQuery);
-    const allUserRequests = querySnapshot.docs.map(doc => doc.data() as RequestSummary);
-    
-    const pendingCount = allUserRequests.filter(r => r.status === 'pending').length;
-    const latestRequest = allUserRequests.length > 0 ? allUserRequests[0] : null;
+export function MyRequestsStatusCard() {
+    const { user } = useAuth();
+    const [stats, setStats] = React.useState<{ pendingCount: number; latestRequest: RequestSummary | null } | null>(null);
+    const [isLoading, setIsLoading] = React.useState(true);
 
-    return { pendingCount, latestRequest };
-}
+    React.useEffect(() => {
+        if (!user) {
+            setIsLoading(false);
+            return;
+        }
 
-export async function MyRequestsStatusCard() {
-    const user = await getCurrentUser();
-    const stats = await getRequestsStatus(user?.uid);
+        const getRequestsStatus = async () => {
+            setIsLoading(true);
+            const requestsQuery = query(collection(db, "requests"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
+            const querySnapshot = await getDocs(requestsQuery);
+            const allUserRequests = querySnapshot.docs.map(doc => doc.data() as RequestSummary);
+            
+            const pendingCount = allUserRequests.filter(r => r.status === 'pending').length;
+            const latestRequest = allUserRequests.length > 0 ? allUserRequests[0] : null;
+
+            setStats({ pendingCount, latestRequest });
+            setIsLoading(false);
+        }
+
+        getRequestsStatus();
+
+    }, [user]);
     
     return (
-        <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
+        <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
             <CardHeader>
                 <CardTitle className="font-headline text-xl flex items-center gap-2">
                     <Inbox className="h-5 w-5" />
@@ -56,8 +65,18 @@ export async function MyRequestsStatusCard() {
                 </CardTitle>
                 <CardDescription>A summary of your submitted requests.</CardDescription>
             </CardHeader>
-            <CardContent>
-                 {stats.pendingCount > 0 ? (
+            <CardContent className="flex-grow">
+                 {isLoading ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span>Loading status...</span>
+                    </div>
+                 ) : !stats ? (
+                     <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                        <p>Could not load request status.</p>
+                    </div>
+                 ) : stats.pendingCount > 0 ? (
                     <div className="space-y-3">
                         <div className="flex items-center gap-2">
                             <AlertTriangle className="h-5 w-5 text-yellow-500" />

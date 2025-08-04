@@ -11,6 +11,36 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { ActiveAlerts } from "@/components/features/active-alerts";
 import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const WidgetSkeleton = () => (
+    <Card className="h-full shadow-md">
+      <CardHeader>
+        <Skeleton className="h-5 w-2/4 mb-2" />
+        <Skeleton className="h-4 w-3/4" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-10 w-full" />
+      </CardContent>
+       <CardFooter>
+         <Skeleton className="h-9 w-full" />
+      </CardFooter>
+    </Card>
+);
+
+const ChartSkeleton = () => (
+    <Card className="h-full shadow-sm">
+        <CardHeader>
+            <Skeleton className="h-5 w-3/4 mb-2" />
+            <Skeleton className="h-4 w-1/2" />
+        </CardHeader>
+        <CardContent>
+            <div className="flex items-center justify-center h-[250px]">
+                <Skeleton className="h-48 w-48 rounded-full" />
+            </div>
+        </CardContent>
+    </Card>
+);
 
 export default function DashboardClientPage({ children }: { children: React.ReactNode }) {
   const { user } = useAuth() as { user: User };
@@ -58,15 +88,21 @@ export default function DashboardClientPage({ children }: { children: React.Reac
       </Suspense>
       
        <AnimatedCard delay={0.1} className="lg:col-span-1">
-          {scheduleWidget}
+          <Suspense fallback={<WidgetSkeleton />}>
+            {scheduleWidget}
+          </Suspense>
        </AnimatedCard>
        
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AnimatedCard delay={0.15}>
-          {trainingWidget}
+          <Suspense fallback={<WidgetSkeleton />}>
+            {trainingWidget}
+          </Suspense>
         </AnimatedCard>
         <AnimatedCard delay={0.2}>
-          {requestsWidget}
+          <Suspense fallback={<WidgetSkeleton />}>
+            {requestsWidget}
+          </Suspense>
         </AnimatedCard>
       </div>
       
@@ -93,10 +129,14 @@ export default function DashboardClientPage({ children }: { children: React.Reac
 
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
          <AnimatedCard delay={0.3}>
-           {trainingChart}
+           <Suspense fallback={<ChartSkeleton />}>
+            {trainingChart}
+          </Suspense>
         </AnimatedCard>
          <AnimatedCard delay={0.35}>
-           {requestsChart}
+           <Suspense fallback={<ChartSkeleton />}>
+            {requestsChart}
+          </Suspense>
         </AnimatedCard>
       </div>
     </div>
