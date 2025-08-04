@@ -4,7 +4,6 @@
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"; 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; 
@@ -26,52 +25,10 @@ import { logAuditEvent } from "@/lib/audit-logger";
 import Link from 'next/link';
 import { Separator } from "@/components/ui/separator";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
-import type { User, SpecificRole, AccountStatus } from "@/schemas/user-schema";
-import { getRoleBadgeVariant, getStatusBadgeVariant } from "@/schemas/user-schema";
+import type { User, SpecificRole, AccountStatus, ManageUserFormValues } from "@/schemas/user-schema";
+import { manageUserFormSchema, getRoleBadgeVariant, getStatusBadgeVariant, availableRoles } from "@/schemas/user-schema";
 
-
-const availableRoles: SpecificRole[] = ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'stagiaire', 'other'];
 const NO_ROLE_SENTINEL = "_NONE_"; 
-
-const manageUserFormSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().optional(), 
-  confirmPassword: z.string().optional(), 
-  displayName: z.string().min(2, "Display name must be at least 2 characters.").max(50),
-  fullName: z.string().min(2, "Full name must be at least 2 characters.").max(100),
-  employeeId: z.string().max(50).optional(), 
-  joiningDate: z.string().optional().refine(val => val === "" || !val || !isNaN(new Date(val).getTime()), { message: "Invalid date format. Please use YYYY-MM-DD or leave empty."}), 
-  role: z.string().optional(), 
-  accountStatus: z.boolean().default(true), 
-})
-.refine((data) => {
-  if (data.password) {
-    if (!data.confirmPassword) return false; 
-    return data.password === data.confirmPassword;
-  }
-  return true; 
-}, {
-  message: "Passwords don't match or confirmation is missing.",
-  path: ["confirmPassword"],
-})
-.superRefine((data, ctx) => {
-    if (data.password) { 
-        if (!data.email || data.email.trim() === "") {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is required for new users.", path: ["email"]});
-        }
-        if (!data.employeeId || data.employeeId.trim() === "") {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Employee ID is required for new users.", path: ["employeeId"]});
-        }
-        if (!data.fullName || data.fullName.trim() === "") {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Full name is required for new users.", path: ["fullName"]});
-        }
-         if (!data.displayName || data.displayName.trim() === "") {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Display name is required for new users.", path: ["displayName"]});
-        }
-    }
-});
-
-type ManageUserFormValues = z.infer<typeof manageUserFormSchema>;
 
 type SortableColumn = "fullName" | "role" | "accountStatus" | "employeeId";
 type SortDirection = "asc" | 'desc';

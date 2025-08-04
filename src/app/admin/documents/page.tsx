@@ -20,14 +20,10 @@ import { useRouter } from "next/navigation";
 import { Library, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Download, Search, Filter, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { StoredDocument, documentFormSchema, documentEditFormSchema, documentCategories } from "@/schemas/document-schema";
+import { StoredDocument, documentFormSchema, documentEditFormSchema, documentCategories, DocumentFormValues, DocumentEditFormValues } from "@/schemas/document-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import Link from "next/link";
-import { z } from "zod";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
-
-type ManageDocumentFormValues = z.infer<typeof documentFormSchema>;
-type ManageDocumentEditFormValues = z.infer<typeof documentEditFormSchema>;
 
 type SortableColumn = 'title' | 'category' | 'version' | 'lastUpdated' | 'uploaderEmail';
 type SortDirection = 'asc' | 'desc';
@@ -50,7 +46,7 @@ export default function AdminDocumentsPage() {
     const [searchTerm, setSearchTerm] = React.useState("");
     const [categoryFilter, setCategoryFilter] = React.useState<DocumentCategory | "all">("all");
 
-    const form = useForm<ManageDocumentFormValues>({
+    const form = useForm<DocumentFormValues>({
         resolver: zodResolver(isEditMode ? documentEditFormSchema : documentFormSchema),
         defaultValues: { title: "", description: "", category: undefined, version: "", file: undefined },
     });
@@ -124,7 +120,7 @@ export default function AdminDocumentsPage() {
         setIsManageDialogOpen(true);
     };
 
-    const handleFormSubmit = async (data: ManageDocumentFormValues | ManageDocumentEditFormValues) => {
+    const handleFormSubmit = async (data: DocumentFormValues | DocumentEditFormValues) => {
         if (!user) return;
         setIsSubmitting(true);
         try {
@@ -287,7 +283,7 @@ export default function AdminDocumentsPage() {
                         <DialogDescription>{isEditMode ? "Update the document details below." : "Fill in the form to add a new document."}</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+                        <form onSubmit={form.handleSubmit(handleFormSubmit as any)} className="space-y-4">
                             <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{documentCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
