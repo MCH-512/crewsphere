@@ -444,14 +444,20 @@ const sidebarMenuButtonVariants = cva(
   }
 )
 
+interface SidebarMenuButtonProps
+  extends React.ButtonHTMLAttributes<HTMLElement>,
+    VariantProps<typeof sidebarMenuButtonVariants> {
+  as?: React.ElementType
+  tooltip?: string | React.ComponentProps<typeof TooltipContent>
+}
+
 const SidebarMenuButton = React.forwardRef<
-  React.ElementRef<typeof Button>,
-  React.ComponentProps<typeof Button> & {
-    tooltip?: string | React.ComponentProps<typeof TooltipContent>
-  } & Pick<VariantProps<typeof sidebarMenuButtonVariants>, "variant">
+  HTMLElement,
+  SidebarMenuButtonProps
 >(
   (
     {
+      as: Comp = "button",
       tooltip,
       variant = "default",
       className,
@@ -460,12 +466,10 @@ const SidebarMenuButton = React.forwardRef<
     ref
   ) => {
     const { isMobile, state } = useSidebar()
-
     const button = (
-      <Button
+      <Comp
         ref={ref}
         data-sidebar="menu-button"
-        variant={variant as any} // We have to cast here because our variants are different
         className={cn(sidebarMenuButtonVariants({ variant, className }))}
         {...props}
       />

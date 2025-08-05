@@ -169,6 +169,7 @@ function LayoutWithSidebar({
                      <SidebarMenuItem key={item.href}>
                        <Link href={item.href!} passHref>
                          <SidebarMenuButton
+                            as="a"
                             variant={isActive ? "active" : "ghost"}
                             tooltip={{ children: item.title, side: "right", align: "center" }}
                             className="h-9 w-full justify-start"
@@ -190,12 +191,13 @@ function LayoutWithSidebar({
                     <SidebarMenuItem>
                         <Link href="/" passHref>
                           <SidebarMenuButton
+                              as="a"
                               variant="ghost"
                               tooltip={{ children: "Exit Admin", side: "right", align: "center" }}
                               className="h-9 w-full justify-start"
                           >
-                              <ServerCog className="w-4 h-4 text-destructive" />
-                              <span className="group-data-[state=collapsed]:hidden">Exit Admin</span>
+                            <ServerCog className="w-4 h-4 text-destructive" />
+                            <span className="group-data-[state=collapsed]:hidden">Exit Admin</span>
                           </SidebarMenuButton>
                         </Link>
                     </SidebarMenuItem>
@@ -208,6 +210,7 @@ function LayoutWithSidebar({
             <SidebarMenuItem>
                <Link href="/settings" passHref>
                 <SidebarMenuButton
+                  as="a"
                   variant={pathname === "/settings" ? "active" : "border"}
                   tooltip={{ children: "Settings", side: "right", align: "center" }}
                 >
