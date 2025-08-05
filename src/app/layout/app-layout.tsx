@@ -167,17 +167,17 @@ function LayoutWithSidebar({
                   const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
                   return (
                      <SidebarMenuItem key={item.href}>
-                       <Link href={item.href!} passHref>
-                         <SidebarMenuButton
-                            as="a"
+                        <SidebarMenuButton
+                            asChild
                             variant={isActive ? "active" : "ghost"}
                             tooltip={{ children: item.title, side: "right", align: "center" }}
                             className="h-9 w-full justify-start"
-                         >
-                           <item.icon className="w-4 h-4" />
-                           <span className="group-data-[state=collapsed]:hidden">{item.title}</span>
+                        >
+                            <Link href={item.href!}>
+                               <item.icon className="w-4 h-4" />
+                               <span className="group-data-[state=collapsed]:hidden">{item.title}</span>
+                            </Link>
                          </SidebarMenuButton>
-                       </Link>
                      </SidebarMenuItem>
                   )
                 })}
@@ -189,17 +189,17 @@ function LayoutWithSidebar({
                 <Separator className="my-2 bg-sidebar-border"/>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <Link href="/" passHref>
-                          <SidebarMenuButton
-                              as="a"
+                        <SidebarMenuButton
+                              asChild
                               variant="ghost"
                               tooltip={{ children: "Exit Admin", side: "right", align: "center" }}
                               className="h-9 w-full justify-start"
                           >
-                            <ServerCog className="w-4 h-4 text-destructive" />
-                            <span className="group-data-[state=collapsed]:hidden">Exit Admin</span>
+                            <Link href="/">
+                                <ServerCog className="w-4 h-4 text-destructive" />
+                                <span className="group-data-[state=collapsed]:hidden">Exit Admin</span>
+                            </Link>
                           </SidebarMenuButton>
-                        </Link>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarGroup>
@@ -208,16 +208,16 @@ function LayoutWithSidebar({
         <SidebarFooter className="p-2">
           <SidebarMenu>
             <SidebarMenuItem>
-               <Link href="/settings" passHref>
                 <SidebarMenuButton
-                  as="a"
+                  asChild
                   variant={pathname === "/settings" ? "active" : "border"}
                   tooltip={{ children: "Settings", side: "right", align: "center" }}
                 >
-                  <Settings className="w-5 h-5" />
-                  <span className="group-data-[state=collapsed]:hidden">Settings</span>
+                  <Link href="/settings">
+                    <Settings className="w-5 h-5" />
+                    <span className="group-data-[state=collapsed]:hidden">Settings</span>
+                  </Link>
                 </SidebarMenuButton>
-              </Link>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
