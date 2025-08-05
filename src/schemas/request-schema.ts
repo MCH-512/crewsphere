@@ -159,7 +159,7 @@ export const getStatusBadgeVariant = (status: RequestStatus): VariantProps<typeo
       case "pending": return "secondary";
       case "approved": return "success";
       case "rejected": return "destructive";
-      case "in-progress": return "outline";
+      case "in-progress": return "warning";
       default: return "secondary";
     }
 };
@@ -167,7 +167,7 @@ export const getStatusBadgeVariant = (status: RequestStatus): VariantProps<typeo
 export const getUrgencyBadgeVariant = (level: StoredUserRequest["urgencyLevel"]): VariantProps<typeof badgeVariants>["variant"] => {
     switch (level) {
       case "Critical": return "destructive";
-      case "High": return "default";
+      case "High": return "warning";
       case "Medium": return "secondary";
       case "Low": return "outline";
       default: return "outline";

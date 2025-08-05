@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { format, formatDistanceToNowStrict, differenceInDays, startOfDay, eachDayOfInterval } from "date-fns";
 import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
 import { StoredCourse } from "@/schemas/course-schema";
-import { StoredUserDocument } from "@/schemas/user-document-schema";
+import { StoredUserDocument, type UserDocumentStatus as CalculatedDocStatus } from "@/schemas/user-document-schema";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { UserActivity, ActivityType } from "@/schemas/user-activity-schema";
@@ -54,21 +54,22 @@ interface UserProfileData {
 
 // --- Status Logic (mirrored from expiry management for consistency) ---
 const EXPIRY_WARNING_DAYS = 30;
-type DocumentStatus = 'valid' | 'expiring-soon' | 'expired';
 
-const getDocumentStatus = (expiryDate: Date): DocumentStatus => {
+const getDocumentStatus = (doc: StoredUserDocument): CalculatedDocStatus => {
+    if (doc.status === 'pending-validation') return 'pending-validation';
     const today = new Date();
-    const daysUntilExpiry = differenceInDays(expiryDate, today);
+    const daysUntilExpiry = differenceInDays(doc.expiryDate.toDate(), today);
 
     if (daysUntilExpiry < 0) return 'expired';
     if (daysUntilExpiry <= EXPIRY_WARNING_DAYS) return 'expiring-soon';
-    return 'valid';
+    return 'approved';
 };
 
-const statusConfig: Record<DocumentStatus, { icon: React.ElementType, color: string, label: string }> = {
+const statusConfig: Record<CalculatedDocStatus, { icon: React.ElementType, color: string, label: string }> = {
     expired: { icon: CalendarX, color: "text-destructive", label: "Expired" },
     'expiring-soon': { icon: CalendarClock, color: "text-yellow-600", label: "Expiring Soon" },
-    valid: { icon: CalendarCheck2, color: "text-green-600", label: "Valid" },
+    approved: { icon: CalendarCheck2, color: "text-green-600", label: "Approved" },
+    'pending-validation': { icon: CalendarClock, color: "text-blue-600", label: "Pending Validation"},
 };
 
 
@@ -330,7 +331,7 @@ export default function UserDetailPage() {
                         <ul className="space-y-3">
                             {documents.map(doc => {
                                 const expiryDate = doc.expiryDate.toDate();
-                                const status = getDocumentStatus(expiryDate);
+                                const status = getDocumentStatus(doc);
                                 const config = statusConfig[status];
                                 const Icon = config.icon;
                                 return (

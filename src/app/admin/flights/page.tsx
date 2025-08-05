@@ -185,11 +185,6 @@ export default function AdminFlightsPage() {
             scheduledDepartureDateTimeUTC: "", scheduledArrivalDateTimeUTC: "",
             aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: [],
             instructorIds: [], traineeIds: [],
-            includeReturnFlight: false,
-            returnFlightNumber: "", returnDepartureAirport: "", returnArrivalAirport: "",
-            returnScheduledDepartureDateTimeUTC: "", returnScheduledArrivalDateTimeUTC: "",
-            returnAircraftType: undefined, returnPurserId: "", returnPilotIds: [], returnCabinCrewIds: [],
-            returnInstructorIds: [], returnTraineeIds: [],
             enableRecurrence: false,
             recurrenceType: "Daily",
             recurrenceCount: 1,
@@ -257,33 +252,6 @@ export default function AdminFlightsPage() {
             router.push('/');
         }
     }, [user, authLoading, router, fetchPageData]);
-
-    React.useEffect(() => {
-        if(watchedFields.includeReturnFlight) {
-            form.setValue('returnDepartureAirport', watchedFields.arrivalAirport);
-            form.setValue('returnArrivalAirport', watchedFields.departureAirport);
-            form.setValue('returnFlightNumber', watchedFields.flightNumber);
-            form.setValue('returnAircraftType', watchedFields.aircraftType);
-            form.setValue('returnPurserId', watchedFields.purserId);
-            form.setValue('returnPilotIds', watchedFields.pilotIds);
-            form.setValue('returnCabinCrewIds', watchedFields.cabinCrewIds);
-            form.setValue('returnInstructorIds', watchedFields.instructorIds);
-            form.setValue('returnTraineeIds', watchedFields.traineeIds);
-
-            if (watchedFields.scheduledArrivalDateTimeUTC) {
-                try {
-                    const arrivalDate = parseISO(watchedFields.scheduledArrivalDateTimeUTC);
-                    const defaultReturnDeparture = addHours(arrivalDate, 2);
-                    form.setValue('returnScheduledDepartureDateTimeUTC', format(defaultReturnDeparture, "yyyy-MM-dd'T'HH:mm"));
-                } catch(e) {/* ignore invalid date format during input */}
-            }
-        }
-    }, [
-        watchedFields.includeReturnFlight, watchedFields.arrivalAirport, watchedFields.departureAirport,
-        watchedFields.flightNumber, watchedFields.aircraftType, watchedFields.purserId,
-        watchedFields.pilotIds, watchedFields.cabinCrewIds, watchedFields.instructorIds, watchedFields.traineeIds,
-        watchedFields.scheduledArrivalDateTimeUTC, form
-    ]);
 
     const sortedAndFilteredFlights = React.useMemo(() => {
         let displayFlights = [...flights];
@@ -388,7 +356,6 @@ export default function AdminFlightsPage() {
                 cabinCrewIds: flightToEdit.cabinCrewIds || [],
                 instructorIds: flightToEdit.instructorIds || [],
                 traineeIds: flightToEdit.traineeIds || [],
-                includeReturnFlight: false,
                 enableRecurrence: false, // recurrence disabled for editing
             });
         } else {
@@ -399,11 +366,6 @@ export default function AdminFlightsPage() {
                 scheduledDepartureDateTimeUTC: "", scheduledArrivalDateTimeUTC: "",
                 aircraftType: undefined, purserId: "", pilotIds: [], cabinCrewIds: [],
                 instructorIds: [], traineeIds: [],
-                includeReturnFlight: false,
-                returnFlightNumber: "", returnDepartureAirport: "", returnArrivalAirport: "",
-                returnScheduledDepartureDateTimeUTC: "", returnScheduledArrivalDateTimeUTC: "",
-                returnAircraftType: undefined, returnPurserId: "", returnPilotIds: [], returnCabinCrewIds: [],
-                returnInstructorIds: [], returnTraineeIds: [],
                 enableRecurrence: false,
                 recurrenceType: "Daily",
                 recurrenceCount: 1,
@@ -430,7 +392,6 @@ export default function AdminFlightsPage() {
             cabinCrewIds: flight.cabinCrewIds || [],
             instructorIds: flight.instructorIds || [],
             traineeIds: flight.traineeIds || [],
-            includeReturnFlight: false,
             enableRecurrence: false, // recurrence disabled
         });
         setDepSearch(flight.arrivalAirportName || flight.arrivalAirport);
@@ -735,39 +696,6 @@ export default function AdminFlightsPage() {
                             {!isEditMode && (
                                 <>
                                 <Separator/>
-                                <FormField control={form.control} name="includeReturnFlight" render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                        <div className="space-y-0.5">
-                                            <FormLabel className="text-base">Include Return Flight</FormLabel>
-                                            <FormDescription>Automatically create a return flight for this rotation.</FormDescription>
-                                        </div>
-                                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                    </FormItem>
-                                )} />
-
-                                {watchedFields.includeReturnFlight && (
-                                    <div className="space-y-6 p-4 border-l-4 border-primary/50 bg-muted/30 rounded-r-md">
-                                        <h3 className="text-lg font-semibold text-primary flex items-center gap-2"><Plane className="h-5 w-5 -scale-x-100" />Return Flight</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="returnFlightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                            <FormField control={form.control} name="returnAircraftType" render={({ field }) => ( <FormItem><FormLabel>Aircraft Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an aircraft" /></SelectTrigger></FormControl><SelectContent>{aircraftTypes.map(type => ( <SelectItem key={type} value={type}>{type}</SelectItem> ))}</SelectContent></Select><FormMessage /></FormItem> )}/>
-                                        </div>
-                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="returnDepartureAirport" render={({ field }) => (<FormItem><FormLabel>Departure</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
-                                            <FormField control={form.control} name="returnArrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="returnScheduledDepartureDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Departure Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                            <FormField control={form.control} name="returnScheduledArrivalDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Arrival Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        </div>
-                                        <h4 className="text-md font-semibold pt-4">Return Crew Assignment</h4>
-                                        <FormField control={form.control} name="returnPurserId" render={({ field }) => (<FormItem><FormLabel>Assign Purser</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a purser" /></SelectTrigger></FormControl><SelectContent>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName} ({p.email})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="returnPilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="returnCabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                    </div>
-                                )}
-
-                                <Separator/>
                                 <FormField control={form.control} name="enableRecurrence" render={({ field }) => (
                                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                         <div className="space-y-0.5">
@@ -806,7 +734,7 @@ export default function AdminFlightsPage() {
                                             <Info className="h-4 w-4" />
                                             <AlertTitle>Heads Up!</AlertTitle>
                                             <ShadAlertDescription>
-                                                This will create {watchedFields.recurrenceCount || 1} separate flight(s) with the same crew. Return flights and availability conflicts are not checked for recurring flights.
+                                                This will create {watchedFields.recurrenceCount || 1} separate flight(s) with the same crew.
                                             </ShadAlertDescription>
                                         </Alert>
                                     </div>

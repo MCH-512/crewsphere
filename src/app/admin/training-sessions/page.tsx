@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -68,11 +69,7 @@ export default function AdminTrainingSessionsPage() {
         mode: "onBlur"
     });
     
-    const watchedPursers = form.watch("purserIds");
-    const watchedPilots = form.watch("pilotIds");
-    const watchedCabinCrew = form.watch("cabinCrewIds");
-    const watchedInstructors = form.watch("instructorIds");
-    const watchedTrainees = form.watch("traineeIds");
+    const watchedAttendees = form.watch(["purserIds", "pilotIds", "cabinCrewIds", "instructorIds", "traineeIds"]);
     const debouncedSessionDate = useDebounce(form.watch("sessionDateTimeUTC"), 500);
 
     const fetchPageData = React.useCallback(async () => {
@@ -144,10 +141,7 @@ export default function AdminTrainingSessionsPage() {
     }, [user, authLoading, router, fetchPageData]);
     
      React.useEffect(() => {
-        const allAttendees = [
-            ...(watchedPursers || []), ...(watchedPilots || []), ...(watchedCabinCrew || []),
-            ...(watchedInstructors || []), ...(watchedTrainees || [])
-        ].filter(Boolean);
+        const allAttendees = watchedAttendees.flat().filter(Boolean);
 
         if (allAttendees.length === 0 || !debouncedSessionDate) {
             setCrewWarnings({});
@@ -160,7 +154,7 @@ export default function AdminTrainingSessionsPage() {
                 const sessionDate = startOfDay(new Date(debouncedSessionDate));
                 if (isNaN(sessionDate.getTime())) return;
 
-                const warnings = await checkCrewAvailability(allAttendees, sessionDate, sessionDate);
+                const warnings = await checkCrewAvailability(allAttendees, sessionDate, sessionDate, isEditMode ? currentSession?.id : undefined);
                 setCrewWarnings(warnings);
             } catch (e) {
                 console.error("Failed to check crew availability for training session", e);
@@ -172,7 +166,7 @@ export default function AdminTrainingSessionsPage() {
 
         check();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [JSON.stringify(watchedPursers), JSON.stringify(watchedPilots), JSON.stringify(watchedCabinCrew), JSON.stringify(watchedInstructors), JSON.stringify(watchedTrainees), debouncedSessionDate, toast]);
+    }, [JSON.stringify(watchedAttendees), debouncedSessionDate, toast, currentSession, isEditMode]);
 
 
     const handleOpenDialog = async (sessionToEdit?: StoredTrainingSession) => {
@@ -180,9 +174,7 @@ export default function AdminTrainingSessionsPage() {
             setIsEditMode(true);
             setCurrentSession(sessionToEdit);
 
-            const attendeesData = await Promise.all(
-                (sessionToEdit.attendeeIds || []).map(id => userMap.get(id))
-            ).then(users => users.filter(Boolean) as User[]);
+            const attendeesData = (sessionToEdit.attendeeIds || []).map(id => userMap.get(id)).filter(Boolean) as User[];
             
             const sessionDate = sessionToEdit.sessionDateTimeUTC instanceof Timestamp 
                 ? sessionToEdit.sessionDateTimeUTC.toDate()

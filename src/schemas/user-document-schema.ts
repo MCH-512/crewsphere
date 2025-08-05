@@ -96,7 +96,7 @@ export interface StoredUserDocument {
  * @param warningDays The number of days before expiry to show a warning.
  * @returns The calculated UserDocumentStatus.
  */
-export const getDocumentStatus = (doc: StoredUserDocument, warningDays: number): UserDocumentStatus => {
+export const getDocumentStatus = (doc: StoredUserDocument, warningDays: number = 30): UserDocumentStatus => {
     if (doc.status === 'pending-validation') return 'pending-validation';
     const today = new Date();
     const daysUntilExpiry = differenceInDays(doc.expiryDate.toDate(), today);
@@ -111,8 +111,11 @@ export const getDocumentStatus = (doc: StoredUserDocument, warningDays: number):
  * @returns The corresponding badge variant.
  */
 export const getStatusBadgeVariant = (status: UserDocumentStatus): VariantProps<typeof badgeVariants>["variant"] => {
-    if (status === 'approved' || status === 'expiring-soon') return 'success';
-    if (status === 'expired') return 'destructive';
-    if (status === 'pending-validation') return 'outline';
-    return 'secondary';
+    switch (status) {
+        case 'approved': return 'success';
+        case 'expiring-soon': return 'warning';
+        case 'expired': return 'destructive';
+        case 'pending-validation': return 'outline';
+        default: return 'secondary';
+    }
 };

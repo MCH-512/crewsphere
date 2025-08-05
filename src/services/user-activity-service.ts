@@ -16,14 +16,14 @@ export interface Conflict {
  * @param crewUserIds An array of user UIDs to check.
  * @param startDate The start date of the period to check.
  * @param endDate The end date of the period to check.
- * @param flightIdToIgnore Optional. The ID of the current flight being edited, to ignore its own activities.
+ * @param activityIdToIgnore Optional. The ID of the current activity being edited, to ignore its own activities.
  * @returns A promise that resolves to a record mapping user IDs to their first found conflict.
  */
 export async function checkCrewAvailability(
   crewUserIds: string[],
   startDate: Date,
   endDate: Date,
-  flightIdToIgnore?: string
+  activityIdToIgnore?: string
 ): Promise<Record<string, Conflict>> {
   if (!isConfigValid || !db || crewUserIds.length === 0) {
     return {};
@@ -52,8 +52,8 @@ export async function checkCrewAvailability(
                 const activity = doc.data() as UserActivity;
                 // Check if the activity is on the current day of the interval
                 const isOnSameDay = isSameDay(activity.date.toDate(), day);
-                // And ignore the activity if it's part of the flight we're currently editing
-                const isIgnored = flightIdToIgnore && activity.flightId === flightIdToIgnore;
+                // And ignore the activity if it's part of the flight or session we're currently editing
+                const isIgnored = activityIdToIgnore && (activity.flightId === activityIdToIgnore || activity.trainingSessionId === activityIdToIgnore);
 
                 return isOnSameDay && !isIgnored;
             });

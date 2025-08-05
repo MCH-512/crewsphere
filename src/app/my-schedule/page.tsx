@@ -115,8 +115,7 @@ const ActivityCard = ({ activity, onActivityClick }: { activity: UserActivity; o
             <div className="flex-grow text-left">
                 <p className="font-semibold">{config.label}</p>
                 <div className="text-sm text-muted-foreground">
-                    {activity.activityType === 'flight' && `Flight ${activity.flightNumber || 'N/A'}: ${activity.departureAirport || 'N/A'} → ${activity.arrivalAirport || 'N/A'}`}
-                    {activity.comments && <p>{activity.comments}</p>}
+                    {activity.activityType === 'flight' ? `Flight ${activity.flightNumber || 'N/A'}: ${activity.departureAirport || 'N/A'} → ${activity.arrivalAirport || 'N/A'}` : activity.comments}
                 </div>
             </div>
         </div>
@@ -199,10 +198,6 @@ export default function MySchedulePage() {
     };
 
     const selectedDayActivities = activities.filter(activity => selectedDay && isSameDay(activity.date.toDate(), selectedDay));
-
-    const activityModifiers = {
-        hasActivity: activities.map(a => a.date.toDate()),
-    };
     
     const activityDotStyles = activities.reduce((acc, activity) => {
         const dateKey = format(activity.date.toDate(), 'yyyy-MM-dd');
@@ -245,7 +240,6 @@ export default function MySchedulePage() {
                         selected={selectedDay}
                         onSelect={setSelectedDay}
                         onMonthChange={setCurrentMonth}
-                        modifiers={activityModifiers}
                         components={{
                             DayContent: ({ date }) => {
                                 const dateKey = format(date, 'yyyy-MM-dd');

@@ -30,6 +30,7 @@ import {
     getUrgencyBadgeVariant,
 } from "@/schemas/request-schema";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
+import type { ActivityType } from "@/schemas/user-activity-schema";
 
 
 type SortableColumn = "createdAt" | "status" | "urgencyLevel";
@@ -153,13 +154,18 @@ export default function AdminUserRequestsPage() {
         
         const isLeaveRequest = selectedRequest.requestType === 'Leave & Absences';
         const isNowApproved = newStatus === 'approved';
+        const wasPreviouslyApproved = selectedRequest.status === 'approved';
 
+        // --- User Activities Management ---
+        // First, clear any existing activities linked to this request ID, regardless of the new status.
+        // This handles cases where an approved request is later rejected.
         if (isLeaveRequest) {
             const activitiesQuery = firestoreQuery(collection(db, "userActivities"), where("requestId", "==", selectedRequest.id));
             const activitiesSnapshot = await getDocs(activitiesQuery);
             activitiesSnapshot.forEach(doc => batch.delete(doc.ref));
         }
 
+        // If the request is a leave request and is now approved, create new activity entries.
         if (isLeaveRequest && isNowApproved && selectedRequest.startDate && selectedRequest.endDate) {
             const interval = eachDayOfInterval({ 
                 start: new Date(selectedRequest.startDate), 
@@ -170,7 +176,7 @@ export default function AdminUserRequestsPage() {
                 const activityRef = doc(collection(db, "userActivities"));
                 batch.set(activityRef, {
                     userId: selectedRequest.userId,
-                    activityType: 'leave',
+                    activityType: 'leave' as ActivityType,
                     date: Timestamp.fromDate(startOfDay(day)),
                     comments: selectedRequest.specificRequestType || 'Leave',
                     requestId: selectedRequest.id
@@ -189,7 +195,7 @@ export default function AdminUserRequestsPage() {
             details: { newStatus: newStatus, oldStatus: selectedRequest.status },
         });
 
-        toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. Response saved.` });
+        toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. User's schedule has been updated.` });
         fetchRequests(); 
         setIsManageDialogOpen(false);
     } catch (err: any) {
