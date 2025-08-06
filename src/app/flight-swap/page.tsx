@@ -18,7 +18,7 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getAirportByCode } from "@/services/airport-service";
-import { requestFlightSwap } from "@/services/flight-swap-service";
+import { requestFlightSwap, postFlightSwap } from "@/services/flight-swap-service";
 
 interface FlightForSwap extends StoredFlight {
     departureAirportIATA?: string;
@@ -204,19 +204,7 @@ export default function FlightSwapPage() {
         }
 
         try {
-            await addDoc(collection(db, "flightSwaps"), {
-                initiatingUserId: user.uid,
-                initiatingUserEmail: user.email,
-                initiatingFlightId: flightToPost.id,
-                flightInfo: {
-                    flightNumber: flightToPost.flightNumber,
-                    departureAirport: flightToPost.departureAirport,
-                    arrivalAirport: flightToPost.arrivalAirport,
-                    scheduledDepartureDateTimeUTC: flightToPost.scheduledDepartureDateTimeUTC,
-                },
-                status: "posted",
-                createdAt: serverTimestamp(),
-            });
+            await postFlightSwap(flightToPost, user);
             toast({ title: "Success", description: `Flight ${flightToPost.flightNumber} has been posted for swapping.` });
             fetchData();
         } catch (error) {

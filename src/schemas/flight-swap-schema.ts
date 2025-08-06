@@ -39,6 +39,9 @@ export interface StoredFlightSwap {
       scheduledDepartureDateTimeUTC: string;
   };
   
+  // New field for simplified queries and security rules
+  participantIds: string[]; // [initiatingUserId] or [initiatingUserId, requestingUserId]
+
   status: FlightSwapStatus;
   
   // Timestamps
