@@ -1,5 +1,5 @@
 
-'use server';
+'use client'; // <-- Changed from 'use server'
 
 import { db, isConfigValid } from "@/lib/firebase";
 import { collection, doc, getDoc, getDocs, updateDoc, writeBatch, serverTimestamp, deleteDoc, query, where, orderBy, addDoc } from "firebase/firestore";
