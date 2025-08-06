@@ -98,7 +98,7 @@ export default function PhoneticAlphabetPage() {
             ))}
            </div>
         </CardContent>
-      </Card>
+       </Card>
     </div>
   );
 }

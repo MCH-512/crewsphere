@@ -1,3 +1,4 @@
+
 'use server';
 
 import { Book, Calculator, CloudSun, Globe, Map, MessagesSquare, Mic, ScrollText, Wrench, ShieldAlert, Waypoints } from "lucide-react";
@@ -12,13 +13,6 @@ export interface Tool {
 }
 
 const toolsData: Tool[] = [
-   {
-    icon: CloudSun,
-    title: "Weather Decoder",
-    description: "Get a human-readable METAR or TAF weather report using our AI-powered decoder.",
-    href: "/toolbox/weather-decoder",
-    delay: 0.1
-  },
    {
     icon: CloudSun,
     title: "Airport Weather",
