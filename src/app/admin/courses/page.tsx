@@ -138,7 +138,7 @@ export default function AdminCoursesPage() {
             try {
                 const quizSnap = await getDoc(doc(db, "quizzes", courseToEdit.quizId));
                 const certRuleSnap = await getDoc(doc(db, "certificateRules", courseToEdit.certificateRuleId));
-                const questionsQuery = query(collection(db, "questions"), where("quizId", "==", courseToEdit.quizId));
+                const questionsQuery = query(collection(db, "questions"), where("quizId", "==", courseToEdit.quizId), orderBy("createdAt", "asc"));
                 const questionsSnapshot = await getDocs(questionsQuery);
 
                 const quizData = quizSnap.data() as StoredQuiz;
@@ -210,7 +210,7 @@ export default function AdminCoursesPage() {
                  const questionsSnapshot = await getDocs(questionsQuery);
                  questionsSnapshot.forEach(doc => batch.delete(doc.ref));
             }
-            data.questions.forEach(q => {
+            data.questions.forEach((q, index) => {
                 const questionRef = doc(collection(db, "questions"));
                 batch.set(questionRef, { ...q, quizId: quizRef.id, questionType: 'mcq', createdAt: serverTimestamp() });
             });

@@ -42,7 +42,7 @@ export interface StoredCourse {
   duration?: string;
   mandatory: boolean;
   published: boolean;
-  imageUrl?: string;
+  imageUrl?: string | null;
   imageHint?: string;
   chapters: Chapter[];
   quizId: string;

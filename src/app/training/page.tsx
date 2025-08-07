@@ -129,7 +129,7 @@ export default function TrainingPage() {
 
                 const [coursesSnapshot, attemptsSnapshot] = await Promise.all([
                     getDocs(coursesQuery),
-                    getDocs(attemptsQuery)
+                    getDocs(attemptsSnapshot)
                 ]);
 
                 const fetchedCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCourse));
