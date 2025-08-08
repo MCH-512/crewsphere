@@ -2,6 +2,16 @@
 {
   "indexes": [
     {
+      "collectionGroup": "communityPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "courses",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
@@ -80,11 +90,21 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "status",
-          "order": "ASCENDING"
+          "fieldPath": "participantIds",
+          "arrayConfig": "CONTAINS"
         },
         {
-          "fieldPath": "initiatingUserId",
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "flightSwaps",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
           "order": "ASCENDING"
         },
         {
@@ -188,34 +208,6 @@
         {
           "fieldPath": "status",
           "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "flightSwaps",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "initiatingUserId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "flightSwaps",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "requestingUserId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
         }
       ]
     }
