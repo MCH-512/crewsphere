@@ -56,6 +56,8 @@ export interface StoredQuiz {
   courseId: string;
   title: string;
   createdAt: Timestamp;
+  randomizeQuestions?: boolean;
+  randomizeAnswers?: boolean;
 }
 
 export interface StoredCertificateRule {
@@ -63,6 +65,7 @@ export interface StoredCertificateRule {
   courseId: string;
   passingThreshold: number;
   expiryDurationDays: number; // 0 for no expiry
+  signatureTextOrURL?: string;
   createdAt: Timestamp;
 }
 
