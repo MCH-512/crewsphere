@@ -9,7 +9,7 @@ import { collection, getDocs, query, where, orderBy, doc, addDoc, updateDoc, ser
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Loader2, AlertTriangle, CalendarX, CalendarClock, CalendarCheck2, PlusCircle, Edit, Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { StoredUserDocument, userDocumentCreateFormSchema, userDocumentUpdateFormSchema, userDocumentTypes, getDocumentStatus, getStatusBadgeVariant } from "@/schemas/user-document-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
@@ -23,9 +23,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { logAuditEvent } from "@/lib/audit-logger";
-import { UserDocumentFormValues } from "@/schemas/user-document-schema";
-
-const EXPIRY_WARNING_DAYS = 30;
+import { UserDocumentFormValues, UserDocumentStatus } from "@/schemas/user-document-schema";
 
 const statusConfig: Record<UserDocumentStatus, { icon: React.ElementType, color: string, label: string }> = {
     'pending-validation': { icon: CalendarClock, color: "text-blue-600", label: "Pending Validation" },
@@ -200,7 +198,7 @@ export default function MyDocumentsPage() {
             {documents.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {documents.map((docItem, index) => {
-                        const status = getDocumentStatus(docItem, EXPIRY_WARNING_DAYS);
+                        const status = getDocumentStatus(docItem, 30);
                         const config = statusConfig[status];
                         const Icon = config.icon;
                         
