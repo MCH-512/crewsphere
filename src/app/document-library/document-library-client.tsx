@@ -28,12 +28,12 @@ async function getDocuments() {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredDocument));
 }
 
-export function DocumentLibraryClient({ initialDocuments }: { initialDocuments: StoredDocument[] }) {
+export function DocumentLibraryClient() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
-    const [allDocuments, setAllDocuments] = React.useState<StoredDocument[]>(initialDocuments);
-    const [isLoading, setIsLoading] = React.useState(false);
+    const [allDocuments, setAllDocuments] = React.useState<StoredDocument[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
     const [isAcknowledging, setIsAcknowledging] = React.useState<string | null>(null);
     const [searchTerm, setSearchTerm] = React.useState("");
     const [categoryFilter, setCategoryFilter] = React.useState("all");
@@ -45,19 +45,27 @@ export function DocumentLibraryClient({ initialDocuments }: { initialDocuments: 
         try {
             const fetchedDocs = await getDocuments();
             setAllDocuments(fetchedDocs);
-            toast({ title: "Documents Refreshed", description: "The library has been updated with the latest documents." });
         } catch (error) {
-            toast({ title: "Error", description: "Could not refresh documents.", variant: "destructive"});
+            toast({ title: "Error", description: "Could not fetch documents. You may not have the required permissions.", variant: "destructive"});
         } finally {
             setIsLoading(false);
         }
     }, [toast]);
+    
+    const refreshDocuments = React.useCallback(async () => {
+       await fetchDocuments();
+       toast({ title: "Documents Refreshed", description: "The library has been updated with the latest documents." });
+    }, [fetchDocuments, toast]);
 
     React.useEffect(() => {
         if (!authLoading && !user) {
             router.push('/login');
+            return;
         }
-    }, [user, authLoading, router]);
+        if (!authLoading && user) {
+            fetchDocuments();
+        }
+    }, [user, authLoading, router, fetchDocuments]);
 
     const filteredDocuments = React.useMemo(() => {
         let docs = [...allDocuments];
@@ -115,7 +123,7 @@ export function DocumentLibraryClient({ initialDocuments }: { initialDocuments: 
         }
     };
 
-    if (authLoading && initialDocuments.length === 0) {
+    if (authLoading || isLoading) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
 
@@ -176,7 +184,7 @@ export function DocumentLibraryClient({ initialDocuments }: { initialDocuments: 
                             <div className="flex items-center justify-end gap-2">
                                 <Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('grid')}><LayoutGrid className="h-4 w-4" /></Button>
                                 <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('list')}><List className="h-4 w-4" /></Button>
-                                <Button variant="outline" size="icon" onClick={fetchDocuments} disabled={isLoading}><RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} /></Button>
+                                <Button variant="outline" size="icon" onClick={refreshDocuments} disabled={isLoading}><RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} /></Button>
                             </div>
                         </div>
                     </CardContent>
