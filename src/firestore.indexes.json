@@ -156,6 +156,16 @@
       ]
     },
     {
+      "collectionGroup": "trainingSessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "sessionDateTimeUTC",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "userDocuments",
       "queryScope": "COLLECTION",
       "fields": [
