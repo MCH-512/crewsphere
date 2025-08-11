@@ -240,7 +240,7 @@ function LayoutWithSidebar({
                 <Button variant="outline" className="relative h-9 w-9 rounded-full" aria-label="Open user menu">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User Avatar" data-ai-hint="user portrait" />
-                    <AvatarFallback>{user?.email ? user.email.substring(0, 2).toUpperCase() : "U"}</AvatarFallback>
+                    <AvatarFallback>{user?.displayName ? user.displayName.substring(0, 2).toUpperCase() : "U"}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -291,3 +291,5 @@ function LayoutWithSidebar({
     </>
   );
 }
+
+    
