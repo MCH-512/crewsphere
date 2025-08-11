@@ -12,6 +12,6 @@ export interface UserActivity {
   flightNumber?: string;
   departureAirport?: string;
   arrivalAirport?: string;
-  trainingSessionId?: string;
+  trainingSessionId?: string | null;
   requestId?: string;
 }

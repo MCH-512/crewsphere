@@ -89,6 +89,7 @@ export const adminNavConfig: { sidebarNav: NavGroup[] } = {
       items: [
         { href: "/admin/training-sessions", title: "Training Sessions", icon: ClipboardCheck, description: "Plan and manage in-person training sessions for crew members.", buttonText: "Manage Sessions", statKey: "upcomingSessions" },
         { href: "/admin/courses", title: "Course Management", icon: GraduationCap, description: "Create, edit, and publish e-learning courses and their content.", buttonText: "Manage Courses", statKey: "courses" },
+        { href: "/admin/quizzes", title: "Quiz Management", icon: CheckSquare, description: "Create and manage quizzes associated with training courses.", buttonText: "Manage Quizzes", statKey: "quizzes" },
       ]
     },
     {
