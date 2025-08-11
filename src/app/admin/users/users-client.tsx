@@ -38,7 +38,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   const router = useRouter();
   const { toast } = useToast();
   const [usersList, setUsersList] = React.useState<User[]>(initialUsers);
-  const [isLoading, setIsLoading] = React.useState(false); // Used for refresh action
+  const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
   const [isManageUserDialogOpen, setIsManageUserDialogOpen] = React.useState(false);
@@ -87,6 +87,13 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
       setIsLoading(false);
     }
   }, [toast]);
+  
+  React.useEffect(() => {
+    if (!authLoading && user) {
+      fetchUsers();
+    }
+  }, [authLoading, user, fetchUsers]);
+
 
   const filteredAndSortedUsers = React.useMemo(() => {
     let filtered = usersList
@@ -248,7 +255,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
         }
     };
   
-  if (authLoading && !initialUsers.length) {
+  if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
