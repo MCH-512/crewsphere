@@ -17,6 +17,7 @@ export interface TimelineActivity {
   details: {
     crewCount?: number;
     attendeeCount?: number;
+    purserName?: string;
   }
 }
 
