@@ -28,13 +28,6 @@ const toolsData: Tool[] = [
     delay: 0.15
   },
   {
-    icon: Waypoints,
-    title: "Company Flight Tracker",
-    description: "Get a real-time overview of all company flight operations and their status.",
-    href: "/toolbox/flight-timeline",
-    delay: 0.18
-  },
-  {
     icon: Map,
     title: "Live Flight Tracker",
     description: "View live air traffic from around the world on an interactive map.",
