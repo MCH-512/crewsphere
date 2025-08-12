@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { getCurrentUser } from "@/lib/session";
-import { MyLogbookClient, type LogbookEntry } from "./my-logbook-client";
+import { MyLogbookClient } from "./my-logbook-client";
 import { getLogbookEntries } from "@/services/logbook-service";
 
 
