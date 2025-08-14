@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to decode METAR/TAF weather reports.
@@ -17,7 +18,7 @@ const decodeWeatherReportPrompt = ai.definePrompt({
   model: 'googleai/gemini-1.5-flash-latest',
   input: {schema: DecodeWeatherReportInputSchema},
   output: {schema: DecodeWeatherReportOutputSchema},
-  prompt: `You are an expert aviation meteorologist. Your task is to decode the provided METAR or TAF report into a structured JSON format. Provide units for all values.
+  prompt: `You are an expert aviation meteorologist. Your task is to decode the provided METAR or TAF report into a structured JSON format. Provide units for all values. Be precise and professional.
 
 ---
 METAR/TAF Code: {{{reportCode}}}

@@ -75,6 +75,7 @@ export default function AirportWeatherPage() {
       if (!rawMetar) {
         throw new Error("No METAR data found for this ICAO code. Please check the code or try again later.");
       }
+      toast({ title: "Decoding Weather Report...", description: "The AI is analyzing the METAR data."});
       const decodedData = await decodeWeatherReport({ reportCode: rawMetar });
       setResult(decodedData);
     } catch (err: any) {
@@ -96,10 +97,10 @@ export default function AirportWeatherPage() {
         <CardHeader>
           <CardTitle className="text-2xl font-headline flex items-center">
             <CloudSun className="mr-3 h-7 w-7 text-primary" />
-            Airport Weather Check
+            AI Weather Decoder
           </CardTitle>
           <CardDescription>
-            Enter a 4-letter ICAO airport code to get the latest live weather report (METAR).
+            Enter a 4-letter ICAO airport code to get the latest live weather report (METAR) decoded by AI.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -142,7 +143,7 @@ export default function AirportWeatherPage() {
         <AnimatedCard>
             <div className="flex justify-center items-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="ml-3 text-muted-foreground">Fetching live data...</p>
+                <p className="ml-3 text-muted-foreground">Fetching live data & analyzing...</p>
             </div>
         </AnimatedCard>
       )}
