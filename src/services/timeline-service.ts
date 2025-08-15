@@ -1,5 +1,5 @@
 
-'use client'; // <-- Changed from 'use server'
+'use server';
 
 import { collection, getDocs, query, where, orderBy, Timestamp } from "firebase/firestore";
 import { startOfMonth, endOfMonth } from "date-fns";
