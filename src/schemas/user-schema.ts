@@ -32,12 +32,13 @@ export const manageUserFormSchema = z.object({
   confirmPassword: z.string().optional(), 
   displayName: z.string().min(2, "Display name must be at least 2 characters.").max(50),
   fullName: z.string().min(2, "Full name must be at least 2 characters.").max(100),
-  employeeId: z.string().max(50).optional(), 
+  employeeId: z.string().max(50), 
   joiningDate: z.string().optional().refine(val => val === "" || !val || !isNaN(new Date(val).getTime()), { message: "Invalid date format. Please use YYYY-MM-DD or leave empty."}), 
   role: z.string().optional(), 
   accountStatus: z.boolean().default(true), 
 })
 .refine((data) => {
+  // Password confirmation is only required if a password is being set
   if (data.password) {
     if (!data.confirmPassword) return false; 
     return data.password === data.confirmPassword;
@@ -48,9 +49,14 @@ export const manageUserFormSchema = z.object({
   path: ["confirmPassword"],
 })
 .superRefine((data, ctx) => {
+    // These fields are only truly required for new users, identified by the presence of a password.
+    // When editing, they are pre-filled and validated individually by their own rules.
     if (data.password) { 
         if (!data.email || data.email.trim() === "") {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email is required for new users.", path: ["email"]});
+        }
+        if (data.password.length < 6) {
+           ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Password must be at least 6 characters.", path: ["password"]});
         }
         if (!data.employeeId || data.employeeId.trim() === "") {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Employee ID is required for new users.", path: ["employeeId"]});

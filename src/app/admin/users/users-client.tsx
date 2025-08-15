@@ -402,18 +402,18 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                  {isCreateMode && (
                   <div className="space-y-4">
                       <h4 className="text-base font-semibold text-muted-foreground">Account Credentials</h4>
-                      <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email*</FormLabel><FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                      <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Password*</FormLabel><FormControl><Input type="password" placeholder="Min. 6 characters" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                      <FormField control={form.control} name="confirmPassword" render={({ field }) => (<FormItem><FormLabel>Confirm Password*</FormLabel><FormControl><Input type="password" placeholder="Re-enter password" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                      <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                      <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="Min. 6 characters" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                      <FormField control={form.control} name="confirmPassword" render={({ field }) => (<FormItem><FormLabel>Confirm Password</FormLabel><FormControl><Input type="password" placeholder="Re-enter password" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                       <Separator/>
                   </div>
                  )}
                   <h4 className="text-base font-semibold text-muted-foreground">Personal & Professional Info</h4>
                   <div className="space-y-4">
                      {!isCreateMode && <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" value={form.getValues("email")} disabled /></FormControl></FormItem>}
-                     <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Full Name{isCreateMode ? "*" : ""}</FormLabel><FormControl><Input placeholder="e.g., Johnathan Doe" {...field} /></FormControl><FormDescription>The user's full legal name.</FormDescription><FormMessage /></FormItem>)}/>
-                     <FormField control={form.control} name="displayName" render={({ field }) => (<FormItem><FormLabel>Display Name{isCreateMode ? "*" : ""}</FormLabel><FormControl><Input placeholder="e.g., John D." {...field} /></FormControl><FormDescription>This name will be shown publicly and in greetings.</FormDescription><FormMessage /></FormItem>)}/>
-                     <FormField control={form.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>Employee ID{isCreateMode ? "*" : ""}</FormLabel><FormControl><Input placeholder="e.g., EMP12345" {...field} /></FormControl><FormDescription>Unique company identifier for the employee.</FormDescription><FormMessage /></FormItem>)}/>
+                     <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="e.g., Johnathan Doe" {...field} /></FormControl><FormDescription>The user's full legal name.</FormDescription><FormMessage /></FormItem>)}/>
+                     <FormField control={form.control} name="displayName" render={({ field }) => (<FormItem><FormLabel>Display Name</FormLabel><FormControl><Input placeholder="e.g., John D." {...field} /></FormControl><FormDescription>This name will be shown publicly and in greetings.</FormDescription><FormMessage /></FormItem>)}/>
+                     <FormField control={form.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>Employee ID</FormLabel><FormControl><Input placeholder="e.g., EMP12345" {...field} /></FormControl><FormDescription>Unique company identifier for the employee.</FormDescription><FormMessage /></FormItem>)}/>
                      <FormField control={form.control} name="joiningDate" render={({ field }) => (<FormItem><FormLabel>Joining Date</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Optional. When the user joined the company.</FormDescription><FormMessage /></FormItem>)}/>
                   </div>
 
