@@ -755,5 +755,3 @@ export default function AdminFlightsPage() {
         </div>
     );
 }
-
-    
