@@ -3,10 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  /* font-family is handled by Tailwind config (font-body) */
-}
-
 @layer base {
   :root {
     --background: 206 67% 95%; /* Very light blue: #EBF4FA */
@@ -93,10 +89,8 @@ body {
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 }
