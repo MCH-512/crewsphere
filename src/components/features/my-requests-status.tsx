@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -42,14 +41,22 @@ export function MyRequestsStatusCard() {
         const getRequestsStatus = async () => {
             setIsLoading(true);
             const requestsQuery = query(collection(db, "requests"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(requestsQuery);
-            const allUserRequests = querySnapshot.docs.map(doc => doc.data() as RequestSummary);
             
-            const pendingCount = allUserRequests.filter(r => r.status === 'pending').length;
-            const latestRequest = allUserRequests.length > 0 ? allUserRequests[0] : null;
+            try {
+                const querySnapshot = await getDocs(requestsQuery);
+                console.log(`Fetched ${querySnapshot.size} requests for user ${user.uid}.`);
+                const allUserRequests = querySnapshot.docs.map(doc => doc.data() as RequestSummary);
+                
+                const pendingCount = allUserRequests.filter(r => r.status === 'pending').length;
+                const latestRequest = allUserRequests.length > 0 ? allUserRequests[0] : null;
 
-            setStats({ pendingCount, latestRequest });
-            setIsLoading(false);
+                setStats({ pendingCount, latestRequest });
+            } catch(e) {
+                 console.error("Error fetching request status:", e);
+                 setStats(null); // Set to null on error
+            } finally {
+                setIsLoading(false);
+            }
         }
 
         getRequestsStatus();

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -48,6 +47,7 @@ export function TodaysScheduleCard() {
                     where("date", "<=", todayEnd)
                 );
                 const querySnapshot = await getDocs(q);
+                console.log(`Fetched ${querySnapshot.size} activities for today for user ${user.uid}.`);
                 if (!querySnapshot.empty) {
                     setActivities(querySnapshot.docs.map(doc => doc.data() as TodayActivity));
                 }

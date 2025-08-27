@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -37,6 +36,7 @@ export function ActiveAlerts() {
             return;
         }
 
+        console.log(`Setting up alerts listener for user: ${user.uid} with role: ${user.role}`);
         const userRoles = ["all", user.role].filter(Boolean);
         const q = query(
             collection(db, "alerts"),
@@ -48,6 +48,7 @@ export function ActiveAlerts() {
         
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const fetchedAlerts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAlert));
+            console.log(`Fetched ${fetchedAlerts.length} active alerts.`);
             setAlerts(fetchedAlerts);
             setIsLoading(false);
         }, (error) => {

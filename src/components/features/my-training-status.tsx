@@ -26,21 +26,30 @@ export function MyTrainingStatusCard() {
         const getTrainingStatus = async () => {
             setIsLoading(true);
             const coursesQuery = query(collection(db, "courses"), where("published", "==", true), where("mandatory", "==", true));
+            // Corrected query with user ID filter
             const attemptsQuery = query(collection(db, "userQuizAttempts"), where("userId", "==", user.uid), where("status", "==", "passed"));
-            const [coursesSnapshot, attemptsSnapshot] = await Promise.all([getDocs(coursesQuery), getDocs(attemptsQuery)]);
+            
+            try {
+                const [coursesSnapshot, attemptsSnapshot] = await Promise.all([getDocs(coursesQuery), getDocs(attemptsQuery)]);
+                console.log(`Fetched ${coursesSnapshot.size} mandatory courses and ${attemptsSnapshot.size} passed attempts for user ${user.uid}.`);
 
-            const mandatoryCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCourse));
-            const passedCourseIds = new Set(attemptsSnapshot.docs.map(doc => (doc.data() as StoredUserQuizAttempt).courseId));
-            
-            const completedCount = mandatoryCourses.filter(c => passedCourseIds.has(c.id)).length;
-            const outstandingCourses = mandatoryCourses.filter(c => !passedCourseIds.has(c.id));
-            
-            setStats({
-                totalMandatory: mandatoryCourses.length,
-                completed: completedCount,
-                nextCourseId: outstandingCourses.length > 0 ? outstandingCourses[0].id : undefined
-            });
-            setIsLoading(false);
+                const mandatoryCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCourse));
+                const passedCourseIds = new Set(attemptsSnapshot.docs.map(doc => (doc.data() as StoredUserQuizAttempt).courseId));
+                
+                const completedCount = mandatoryCourses.filter(c => passedCourseIds.has(c.id)).length;
+                const outstandingCourses = mandatoryCourses.filter(c => !passedCourseIds.has(c.id));
+                
+                setStats({
+                    totalMandatory: mandatoryCourses.length,
+                    completed: completedCount,
+                    nextCourseId: outstandingCourses.length > 0 ? outstandingCourses[0].id : undefined
+                });
+            } catch(e) {
+                console.error("Error fetching training status: ", e);
+                setStats(null); // Set to null on error
+            } finally {
+                setIsLoading(false);
+            }
         }
 
         getTrainingStatus();
@@ -64,6 +73,14 @@ export function MyTrainingStatusCard() {
                          <div>
                             <p className="font-semibold text-lg">Loading status...</p>
                             <p className="text-sm text-muted-foreground">Checking your training records.</p>
+                        </div>
+                    </div>
+                ) : !stats ? (
+                     <div className="flex items-start gap-4">
+                        <AlertTriangle className="h-6 w-6 text-destructive mt-1" />
+                         <div>
+                            <p className="font-semibold text-lg">Could not load status</p>
+                            <p className="text-sm text-muted-foreground">There was an error fetching your data.</p>
                         </div>
                     </div>
                 ) : coursesToDo > 0 ? (

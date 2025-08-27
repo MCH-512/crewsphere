@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, SendHorizonal, Lightbulb, Wrench } from "lucide-react";
 import Link from "next/link";
