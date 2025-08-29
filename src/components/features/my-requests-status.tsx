@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -19,7 +20,7 @@ interface RequestSummary {
 
 const getStatusBadgeVariant = (status: RequestSummary["status"]): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
-      case "pending": return "secondary";
+      case "pending": return "warning";
       case "approved": return "success"; 
       case "rejected": return "destructive";
       case "in-progress": return "outline";
@@ -47,7 +48,7 @@ export function MyRequestsStatusCard() {
                 console.log(`Fetched ${querySnapshot.size} requests for user ${user.uid}.`);
                 const allUserRequests = querySnapshot.docs.map(doc => doc.data() as RequestSummary);
                 
-                const pendingCount = allUserRequests.filter(r => r.status === 'pending').length;
+                const pendingCount = allUserRequests.filter(r => r.status === 'pending' || r.status === 'in-progress').length;
                 const latestRequest = allUserRequests.length > 0 ? allUserRequests[0] : null;
 
                 setStats({ pendingCount, latestRequest });
@@ -67,7 +68,7 @@ export function MyRequestsStatusCard() {
         <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
             <CardHeader>
                 <CardTitle className="font-headline text-xl flex items-center gap-2">
-                    <Inbox className="h-5 w-5" />
+                    <Inbox className="h-5 w-5 text-primary" />
                     My Requests
                 </CardTitle>
                 <CardDescription>A summary of your submitted requests.</CardDescription>
@@ -79,14 +80,14 @@ export function MyRequestsStatusCard() {
                         <span>Loading status...</span>
                     </div>
                  ) : !stats ? (
-                     <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                     <div className="flex items-center gap-2 text-destructive">
+                        <AlertTriangle className="h-5 w-5" />
                         <p>Could not load request status.</p>
                     </div>
                  ) : stats.pendingCount > 0 ? (
                     <div className="space-y-3">
                         <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                            <AlertTriangle className="h-5 w-5 text-warning-foreground" />
                             <p>You have <strong className="text-foreground">{stats.pendingCount}</strong> request(s) awaiting review.</p>
                         </div>
                          {stats.latestRequest && (
@@ -97,7 +98,7 @@ export function MyRequestsStatusCard() {
                     </div>
                 ) : (
                     <div className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        <CheckCircle className="h-5 w-5 text-success" />
                         <p>You have no pending requests.</p>
                     </div>
                 )}

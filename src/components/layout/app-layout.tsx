@@ -167,19 +167,17 @@ function LayoutWithSidebar({
                   const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
                   return (
                      <SidebarMenuItem key={item.href}>
-                       <Link href={item.href!} passHref legacyBehavior>
-                         <SidebarMenuButton
+                        <SidebarMenuButton
                             asChild
                             variant={isActive ? "active" : "ghost"}
                             tooltip={{ children: item.title, side: "right", align: "center" }}
                             className="h-9 w-full justify-start"
-                         >
-                            <a>
-                               <item.icon className="w-4 h-4" />
+                        >
+                            <Link href={item.href!}>
+                               <item.icon className="w-4 h-4 text-primary" />
                                <span className="group-data-[state=collapsed]:hidden">{item.title}</span>
-                            </a>
+                            </Link>
                          </SidebarMenuButton>
-                       </Link>
                      </SidebarMenuItem>
                   )
                 })}
@@ -191,19 +189,17 @@ function LayoutWithSidebar({
                 <Separator className="my-2 bg-sidebar-border"/>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <Link href="/" passHref legacyBehavior>
-                          <SidebarMenuButton
+                        <SidebarMenuButton
                               asChild
                               variant="ghost"
                               tooltip={{ children: "Exit Admin", side: "right", align: "center" }}
                               className="h-9 w-full justify-start"
                           >
-                              <a>
-                                  <ServerCog className="w-4 h-4 text-destructive" />
-                                  <span className="group-data-[state=collapsed]:hidden">Exit Admin</span>
-                              </a>
+                            <Link href="/">
+                                <ServerCog className="w-4 h-4 text-destructive" />
+                                <span className="group-data-[state=collapsed]:hidden">Exit Admin</span>
+                            </Link>
                           </SidebarMenuButton>
-                        </Link>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarGroup>
@@ -212,18 +208,16 @@ function LayoutWithSidebar({
         <SidebarFooter className="p-2">
           <SidebarMenu>
             <SidebarMenuItem>
-               <Link href="/settings" passHref legacyBehavior>
                 <SidebarMenuButton
                   asChild
                   variant={pathname === "/settings" ? "active" : "border"}
                   tooltip={{ children: "Settings", side: "right", align: "center" }}
                 >
-                  <a>
+                  <Link href="/settings">
                     <Settings className="w-5 h-5" />
                     <span className="group-data-[state=collapsed]:hidden">Settings</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
-              </Link>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
@@ -246,7 +240,7 @@ function LayoutWithSidebar({
                 <Button variant="outline" className="relative h-9 w-9 rounded-full" aria-label="Open user menu">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User Avatar" data-ai-hint="user portrait" />
-                    <AvatarFallback>{user?.email ? user.email.substring(0, 2).toUpperCase() : "U"}</AvatarFallback>
+                    <AvatarFallback>{user?.displayName ? user.displayName.substring(0, 2).toUpperCase() : "U"}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>

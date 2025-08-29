@@ -4,46 +4,46 @@
 
 @layer base {
   :root {
-    --background: 206 60% 95%; /* Very Light Blue */
+    --background: 210 20% 98%; /* Light Gray from #f7f9fb */
     --foreground: 224 71% 4%;
 
-    --card: 206 60% 97%; /* Slightly lighter than background for depth */
+    --card: 0 0% 100%;
     --card-foreground: 224 71% 4%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    --primary: 207 48% 51%; /* Deep Sky Blue */
+    --primary: 206 70% 55%; /* Brighter Blue from #3498db */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 206 50% 90%;
+    --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 206 50% 90%;
+    --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 229 25% 54%; /* Slate Blue */
-    --accent-foreground: 0 0% 100%;
+    --accent: 210 40% 98%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
-    --destructive: 13 89% 55%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-
-    --success: 122 39% 49%;
+    
+    --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 45 100% 51%;
-    --warning-foreground: 224 71% 4%;
+    --warning: 28 80% 56%; /* Coral/Orange from #e67e22 */
+    --warning-foreground: 0 0% 100%;
 
-    --border: 206 40% 85%;
-    --input: 206 40% 85%;
-    --ring: 207 48% 51%; /* Deep Sky Blue */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 206 70% 55%; /* Brighter Blue for rings */
 
     --radius: 0.5rem;
 
-    --chart-1: 207 48% 51%;
-    --chart-2: 229 25% 54%;
-    --chart-3: 122 39% 55%;
-    --chart-4: 45 100% 55%;
+    --chart-1: 206 70% 55%;
+    --chart-2: 28 80% 56%;
+    --chart-3: 142 76% 36%;
+    --chart-4: 0 84% 60%;
     --chart-5: 210 30% 40%;
   }
 
@@ -57,7 +57,7 @@
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 207 48% 51%; /* Deep Sky Blue */
+    --primary: 206 70% 55%; /* Brighter Blue */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -66,35 +66,29 @@
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 229 25% 54%; /* Slate Blue */
+    --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 13 80% 60%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-
-    --success: 122 40% 60%;
-    --success-foreground: 0 0% 0%;
-
-    --warning: 45 90% 55%;
-    --warning-foreground: 222 47% 11%;
+    
+    --success: 142 71% 21%;
+    --success-foreground: 210 40% 98%;
+    
+    --warning: 28 74% 32%;
+    --warning-foreground: 210 40% 98%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 207 48% 51%; /* Deep Sky Blue */
-  }
-
-  body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-  }
-
-  * {
-    border-color: hsl(var(--border));
+    --ring: 206 70% 55%;
   }
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }

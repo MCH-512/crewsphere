@@ -61,7 +61,7 @@ export function MyTrainingStatusCard() {
         <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
             <CardHeader>
                 <CardTitle className="font-headline text-xl flex items-center gap-2">
-                    <GraduationCap className="h-5 w-5" />
+                    <GraduationCap className="h-5 w-5 text-primary" />
                     My Training Status
                 </CardTitle>
                  <CardDescription>Your mandatory training progress.</CardDescription>
@@ -76,24 +76,24 @@ export function MyTrainingStatusCard() {
                         </div>
                     </div>
                 ) : !stats ? (
-                     <div className="flex items-start gap-4">
-                        <AlertTriangle className="h-6 w-6 text-destructive mt-1" />
+                     <div className="flex items-start gap-4 text-destructive">
+                        <AlertTriangle className="h-6 w-6 mt-1" />
                          <div>
                             <p className="font-semibold text-lg">Could not load status</p>
-                            <p className="text-sm text-muted-foreground">There was an error fetching your data.</p>
+                            <p className="text-sm">There was an error fetching your data.</p>
                         </div>
                     </div>
                 ) : coursesToDo > 0 ? (
                     <div className="flex items-start gap-4">
-                        <AlertTriangle className="h-8 w-8 text-yellow-500 mt-1" />
+                        <AlertTriangle className="h-8 w-8 text-warning-foreground mt-1" />
                         <div>
                             <p className="font-semibold text-lg">{coursesToDo} mandatory course(s) to complete</p>
                             <p className="text-sm text-muted-foreground">Stay up-to-date with your required training to ensure compliance and safety.</p>
                         </div>
                     </div>
                 ) : (
-                    <div className="flex items-start gap-4">
-                        <CheckCircle className="h-8 w-8 text-green-600 mt-1" />
+                    <div className="flex items-start gap-4 text-success">
+                        <CheckCircle className="h-8 w-8 mt-1" />
                          <div>
                             <p className="font-semibold text-lg">All mandatory training complete!</p>
                             <p className="text-sm text-muted-foreground">Excellent work. You are fully compliant with all training requirements.</p>
