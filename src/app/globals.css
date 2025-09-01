@@ -4,16 +4,17 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* Main Palette based on user feedback */
+    --background: 210 29% 98%; /* #f7f9fb - Neutral light grey */
     --foreground: 224 71% 4%;
 
-    --card: 220 13% 96%; /* Subtle blue-gray pastel for cards */
+    --card: 0 0% 100%; /* Pure white for cards to stand out */
     --card-foreground: 224 71% 4%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    --primary: 217 91% 60%; /* Professional Deep Blue */
+    --primary: 207 70% 53%; /* #3498db - Bright blue for actions */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96.1%;
@@ -31,18 +32,18 @@
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 28 80% 56%; /* #e67e22 - Coral/orange for attention */
     --warning-foreground: 0 0% 100%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 217 91% 60%;
+    --ring: 207 70% 53%; /* Match primary blue */
 
     --radius: 0.5rem;
 
-    --chart-1: 217 91% 60%;
+    --chart-1: 207 70% 53%;
     --chart-2: 142 76% 36%;
-    --chart-3: 38 92% 50%;
+    --chart-3: 28 80% 56%;
     --chart-4: 0 84% 60%;
     --chart-5: 210 30% 40%;
   }
@@ -51,13 +52,13 @@
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 13%; /* Darker card background */
+    --card: 222 47% 13%;
     --card-foreground: 210 40% 98%;
 
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 217 91% 65%;
+    --primary: 207 70% 53%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -75,12 +76,12 @@
     --success: 142 71% 21%;
     --success-foreground: 210 40% 98%;
     
-    --warning: 38 74% 32%;
+    --warning: 28 74% 32%;
     --warning-foreground: 210 40% 98%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 217 91% 65%;
+    --ring: 207 70% 53%;
   }
 }
 
