@@ -73,7 +73,7 @@ export default function DashboardClientPage({ children }: { children: React.Reac
                 priority
                 className="object-cover z-0"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/20 z-10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-10" />
             <div className="relative z-20 text-white w-full flex justify-between items-end">
                  <div>
                     <CardTitle as="h1" className="text-4xl font-headline text-primary-foreground">Welcome Back, {userNameForGreeting}!</CardTitle>
