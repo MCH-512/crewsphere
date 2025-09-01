@@ -150,7 +150,7 @@ function LayoutWithSidebar({
 
   return (
     <>
-      <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r">
+      <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r bg-sidebar text-sidebar-foreground">
         <SidebarHeader className="h-16 flex items-center justify-center">
           <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
             <Plane className="w-8 h-8 text-primary" />
