@@ -25,6 +25,7 @@ import { summarizeReport } from "@/ai/flows/summarize-report-flow";
 import { CheckboxGroup } from "@/components/custom/custom-checkbox-group";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { AnimatedCard } from "@/components/motion/animated-card";
 
 interface FlightForReport {
   id: string;
@@ -149,7 +150,7 @@ export default function SubmitPurserReportPage() {
 
   const prevStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+      setCurrentStep(prev => prev + 1);
     }
   };
 
@@ -228,7 +229,7 @@ export default function SubmitPurserReportPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 
                 {/* Step 1: General Flight Info */}
-                <div className={cn(currentStep !== 0 && "hidden")}>
+                <AnimatedCard delay={0.1} className={cn(currentStep !== 0 && "hidden")}>
                     <Card><CardHeader><CardTitle className="flex items-center gap-2"><Plane/>General Flight Information</CardTitle></CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormItem><FormLabel>Flight Number</FormLabel><Input readOnly value={flightData?.flightNumber} /></FormItem>
@@ -240,40 +241,40 @@ export default function SubmitPurserReportPage() {
                         <FormField control={form.control} name="sccmName" render={({ field }) => (<FormItem><FormLabel>SCCM Name</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{sccmOnFlight.map(p => <SelectItem key={p.uid} value={p.displayName || p.email!}>{p.displayName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
                         <FormItem className="md:col-span-2"><FormLabel>Cabin Crew on board</FormLabel><div className="p-2 border rounded-md bg-muted/50 text-sm text-muted-foreground">{form.getValues('cabinCrewOnBoard').join(', ')}</div></FormItem>
                     </CardContent></Card>
-                </div>
+                </AnimatedCard>
                 
                 {/* Step 2: Crew */}
-                <div className={cn(currentStep !== 1 && "hidden")}>
+                <AnimatedCard delay={0.1} className={cn(currentStep !== 1 && "hidden")}>
                     <Card><CardHeader><CardTitle className="flex items-center gap-2"><Users/>Crew Coordination</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <FormField control={form.control} name="positivePoints" render={({ field }) => (<FormItem><FormLabel>Positive points to report (teamwork, initiative, etc.)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="improvementPoints" render={({ field }) => (<FormItem><FormLabel>Points for improvement or follow-up</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="actionRequired" render={({ field }) => (<FormItem><FormLabel>Does this section require a specific action from management?</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')} defaultValue={String(field.value)}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                     </CardContent></Card>
-                </div>
+                </AnimatedCard>
                 
                 {/* Step 3: Passengers & Cabin */}
-                 <div className={cn(currentStep !== 2 && "hidden")}>
+                 <AnimatedCard delay={0.1} className={cn(currentStep !== 2 && "hidden")}>
                     <Card><CardHeader><CardTitle className="flex items-center gap-2"><PersonStanding/>Passengers & Cabin</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <FormField control={form.control} name="passengerCount" render={({ field }) => (<FormItem><FormLabel>Total number of passengers</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormMessage /></FormItem>)} />
                         <CheckboxGroup control={form.control} name="passengersToReport" label="Specific passenger types on board" options={passengersToReportOptions} />
                         <CheckboxGroup control={form.control} name="technicalIssues" label="Technical issues observed in the cabin" options={technicalIssuesOptions} />
                     </CardContent></Card>
-                </div>
+                </AnimatedCard>
 
                 {/* Step 4: Safety & Service */}
-                <div className={cn(currentStep !== 3 && "hidden")}>
+                <AnimatedCard delay={0.1} className={cn(currentStep !== 3 && "hidden")}>
                     <Card><CardHeader><CardTitle className="flex items-center gap-2"><Shield/>Safety & Service</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <CheckboxGroup control={form.control} name="safetyChecks" label="Safety checks performed" options={safetyChecksOptions} />
                         <FormField control={form.control} name="safetyAnomalies" render={({ field }) => (<FormItem><FormLabel>Safety anomalies observed (if any)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="servicePassengerFeedback" render={({ field }) => (<FormItem><FormLabel>Notable passenger feedback on service (positive or negative)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </CardContent></Card>
-                </div>
+                </AnimatedCard>
 
                  {/* Step 5: Specific Incidents */}
-                <div className={cn(currentStep !== 4 && "hidden")}>
+                <AnimatedCard delay={0.1} className={cn(currentStep !== 4 && "hidden")}>
                     <Card><CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle/>Specific Incidents</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <FormField control={form.control} name="specificIncident" render={({ field }) => (<FormItem><FormLabel>Was there a specific incident to report?</FormLabel><Select onValueChange={(v) => field.onChange(v === 'true')} defaultValue={String(field.value)}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
@@ -284,7 +285,7 @@ export default function SubmitPurserReportPage() {
                         </>
                         )}
                     </CardContent></Card>
-                </div>
+                </AnimatedCard>
                 
                 {/* Navigation Buttons */}
                 <div className="flex justify-between mt-8">
