@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* Main Palette based on user feedback */
+    /* Main Palette */
     --background: 210 29% 98%; /* #f7f9fb - Neutral light grey */
     --foreground: 224 71% 4%;
 
@@ -37,7 +37,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 207 70% 53%; /* Match primary blue */
+    --ring: 207 70% 53%;
 
     --radius: 0.5rem;
 
@@ -46,9 +46,20 @@
     --chart-3: 28 80% 56%;
     --chart-4: 0 84% 60%;
     --chart-5: 210 30% 40%;
+    
+    /* Sidebar Specific Palette */
+    --sidebar-background: 222 47% 11%; /* hsl(222, 47%, 11%) - Dark Blue */
+    --sidebar-foreground: 210 40% 98%; /* hsl(210, 40%, 98%) - Almost White */
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-primary: 207 70% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217.2 32.6% 17.5%; /* Darker accent for hover */
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-ring: 207 70% 53%;
   }
 
   .dark {
+    /* Dark mode palette remains the same, as the sidebar is already dark */
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
@@ -82,6 +93,16 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 207 70% 53%;
+
+    /* Sidebar colors in dark mode can be the same */
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-primary: 207 70% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217.2 32.6% 25%; /* Slightly lighter accent for dark mode */
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-ring: 207 70% 53%;
   }
 }
 
