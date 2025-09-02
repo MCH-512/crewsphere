@@ -18,7 +18,7 @@ import { db, storage } from "@/lib/firebase";
 import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { collection, getDocs, query, orderBy, writeBatch, doc, serverTimestamp, where, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion, Search, Filter } from "lucide-react";
+import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion, Search, Filter, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { courseFormSchema, CourseFormValues, courseCategories, courseTypes } from "@/schemas/course-schema";
 import { StoredCourse } from "@/schemas/course-schema";
@@ -29,6 +29,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { StoredQuiz, StoredCertificateRule } from "@/schemas/course-schema";
 import { generateCourseImage } from "@/ai/flows/generate-course-image-flow";
+import { generateQuizFromContent } from "@/ai/flows/generate-quiz-flow";
 import { Badge } from "@/components/ui/badge";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
 import { StoredQuestion } from "@/schemas/quiz-question-schema";
@@ -47,6 +48,7 @@ export default function AdminCoursesPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [isGeneratingQuiz, setIsGeneratingQuiz] = React.useState(false);
     const [isEditMode, setIsEditMode] = React.useState(false);
     const [currentCourse, setCurrentCourse] = React.useState<StoredCourse | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
@@ -72,7 +74,7 @@ export default function AdminCoursesPage() {
     });
 
     const { fields: chapterFields, append: appendChapter, remove: removeChapter } = useFieldArray({ control: form.control, name: "chapters" });
-    const { fields: questionFields, append: appendQuestion, remove: removeQuestion } = useFieldArray({ control: form.control, name: "questions" });
+    const { fields: questionFields, append: appendQuestion, remove: removeQuestion, replace: replaceQuestions } = useFieldArray({ control: form.control, name: "questions" });
 
     const fetchCourses = React.useCallback(async () => {
         setIsLoading(true);
@@ -226,10 +228,10 @@ export default function AdminCoursesPage() {
                 };
                 if (imageUrl) updateData.imageUrl = imageUrl;
 
-                batch.update(courseRef, updateData);
+                batch.update(courseRef, updateData as any);
                 batch.update(quizRef, { title: data.quizTitle });
                 batch.update(certRuleRef, { passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays });
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'UPDATE_COURSE', entityType: "COURSE", entityId: currentCourse.id, details: { title: data.title }});
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: 'UPDATE_COURSE', entityType: "COURSE", entityId: currentCourse.id, details: { title: data.title }});
                 toast({ title: "Course Updated", description: `"${data.title}" has been updated successfully.` });
             
             } else {
@@ -245,7 +247,7 @@ export default function AdminCoursesPage() {
 
                 batch.set(quizRef, { courseId: courseRef.id, title: data.quizTitle, createdAt: serverTimestamp() });
                 batch.set(certRuleRef, { courseId: courseRef.id, passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays, createdAt: serverTimestamp() });
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'CREATE_COURSE', entityType: "COURSE", entityId: courseRef.id, details: { title: data.title }});
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: 'CREATE_COURSE', entityType: "COURSE", entityId: courseRef.id, details: { title: data.title }});
                 toast({ title: "Course Created", description: `"${data.title}" has been saved.` });
             }
             
@@ -258,6 +260,40 @@ export default function AdminCoursesPage() {
             toast({ title: isEditMode ? "Update Failed" : "Creation Failed", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
+        }
+    };
+    
+    const handleGenerateQuiz = async () => {
+        const courseTitle = form.getValues('title');
+        const chapters = form.getValues('chapters');
+        
+        if (!courseTitle || chapters.every(c => !c.content?.trim())) {
+            toast({ title: "Cannot Generate Quiz", description: "Please provide a course title and some chapter content first.", variant: "destructive" });
+            return;
+        }
+
+        setIsGeneratingQuiz(true);
+        toast({ title: "Generating Quiz with AI...", description: "This might take a moment. The form will be populated with new questions." });
+        
+        try {
+            const result = await generateQuizFromContent({
+                courseTitle,
+                courseContent: chapters.map(c => `Chapter: ${c.title}\n${c.content}`).join('\n\n'),
+                questionCount: 5, // You can make this dynamic later
+            });
+
+            if (result && result.questions.length > 0) {
+                replaceQuestions(result.questions);
+                toast({ title: "Quiz Generated!", description: `${result.questions.length} questions have been added to the form.` });
+            } else {
+                throw new Error("AI returned no questions.");
+            }
+
+        } catch (error) {
+            console.error("Quiz generation failed:", error);
+            toast({ title: "Quiz Generation Failed", description: "The AI could not generate questions. Please try again.", variant: "destructive" });
+        } finally {
+            setIsGeneratingQuiz(false);
         }
     };
 
@@ -273,7 +309,7 @@ export default function AdminCoursesPage() {
             batch.delete(doc(db, "courses", courseToDelete.id));
 
             await batch.commit();
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'DELETE_COURSE', entityType: "COURSE", entityId: courseToDelete.id, details: { title: courseToDelete.title }});
+            await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: 'DELETE_COURSE', entityType: "COURSE", entityId: courseToDelete.id, details: { title: courseToDelete.title }});
             toast({ title: "Course Deleted", description: `"${courseToDelete.title}" and all its data have been removed.` });
             fetchCourses();
         } catch (error) {
@@ -406,7 +442,13 @@ export default function AdminCoursesPage() {
 
                                     <Separator />
                                     <div className="space-y-4">
-                                        <FormLabel className="font-semibold text-base flex items-center gap-2"><FileQuestion/>Quiz Questions</FormLabel>
+                                        <div className="flex justify-between items-center">
+                                            <FormLabel className="font-semibold text-base flex items-center gap-2"><FileQuestion/>Quiz Questions</FormLabel>
+                                            <Button type="button" variant="outline" onClick={handleGenerateQuiz} disabled={isGeneratingQuiz}>
+                                                {isGeneratingQuiz ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}
+                                                Generate with AI
+                                            </Button>
+                                        </div>
                                         {questionFields.map((field, index) => {
                                             const options = form.watch(`questions.${index}.options`);
                                             return (
@@ -446,7 +488,7 @@ export default function AdminCoursesPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the course "{courseToDelete?.title}" and all associated data, including its quiz, questions, and any user progress.
+                            This action cannot be undone. This will permanently delete the course "{courseToDelete?.title}" and all its data, including its quiz, questions, and any user progress.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
