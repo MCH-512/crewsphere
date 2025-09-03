@@ -3,10 +3,11 @@
 
 import * as React from "react";
 import { UsersClient } from "./users-client";
+import { getInitialUsers } from "@/services/user-service";
 
 export default async function AdminUsersPage() {
-    // The initial data fetching is moved to the client component
-    // to ensure requests are authenticated with the user's credentials.
-    // We pass an empty array to avoid a flash of "no users found".
-    return <UsersClient initialUsers={[]} />;
+    // Fetch initial data on the server to provide a non-empty shell to the client component.
+    // The client will then re-fetch to ensure data is fresh and respects client-side auth.
+    const initialUsers = await getInitialUsers();
+    return <UsersClient initialUsers={initialUsers} />;
 }

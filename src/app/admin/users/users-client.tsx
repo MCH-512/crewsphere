@@ -13,20 +13,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch"; 
 import { useAuth } from "@/contexts/auth-context";
-import { db, auth } from "@/lib/firebase"; 
+import { auth } from "@/lib/firebase"; 
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye } from "lucide-react"; 
+import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye, Filter } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge"; 
-import { format } from "date-fns"; 
 import { logAuditEvent } from "@/lib/audit-logger";
 import Link from 'next/link';
 import { Separator } from "@/components/ui/separator";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
 import type { User, SpecificRole, AccountStatus, ManageUserFormValues } from "@/schemas/user-schema";
 import { manageUserFormSchema, getRoleBadgeVariant, getStatusBadgeVariant, availableRoles } from "@/schemas/user-schema";
+import { fetchUsers, manageUser } from "@/services/user-service";
+
 
 const NO_ROLE_SENTINEL = "_NONE_"; 
 
@@ -68,21 +68,15 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
     }
   });
 
-  const fetchUsers = React.useCallback(async () => {
+  const loadUsers = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const q = query(collection(db, "users"), orderBy("email", "asc"));
-      const querySnapshot = await getDocs(q);
-      const fetchedUsers = querySnapshot.docs.map(doc => ({
-          uid: doc.id,
-          ...doc.data(),
-      } as User));
+      const fetchedUsers = await fetchUsers();
       setUsersList(fetchedUsers);
-    } catch (err) {
-      console.error("Error fetching users:", err);
-      setError("Failed to load users. Please try again.");
-      toast({ title: "Loading Error", description: "Could not fetch users.", variant: "destructive" });
+    } catch (err: any) {
+      setError(err.message || "Failed to load users.");
+      toast({ title: "Loading Error", description: err.message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -90,9 +84,9 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   
   React.useEffect(() => {
     if (!authLoading && user) {
-      fetchUsers();
+      loadUsers();
     }
-  }, [authLoading, user, fetchUsers]);
+  }, [authLoading, user, loadUsers]);
 
 
   const filteredAndSortedUsers = React.useMemo(() => {
@@ -193,69 +187,24 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                     throw new Error("Email and password are required to create a user.");
                 }
 
-                const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-                const newUid = userCredential.user.uid;
-
-                const userDocRef = doc(db, "users", newUid);
-                await setDoc(userDocRef, {
-                    uid: newUid,
-                    email: data.email,
-                    displayName: data.displayName,
-                    fullName: data.fullName,
-                    employeeId: data.employeeId,
-                    joiningDate: data.joiningDate || null,
-                    role: data.role || 'other',
-                    accountStatus: data.accountStatus ? 'active' : 'inactive',
-                    createdAt: serverTimestamp(),
-                    lastLogin: null,
-                });
-
-                await logAuditEvent({
-                    userId: user.uid,
-                    userEmail: user.email || 'N/A',
-                    actionType: "CREATE_USER",
-                    entityType: "USER",
-                    entityId: newUid,
-                    details: { email: data.email, role: data.role, displayName: data.displayName },
-                });
-
+                await manageUser({ isCreate: true, data, adminUser: user });
                 toast({ title: "User Created", description: `User ${data.email} has been created.` });
 
             } else if (currentUserToManage) {
-                const userDocRef = doc(db, "users", currentUserToManage.uid);
-                await updateDoc(userDocRef, {
-                    displayName: data.displayName,
-                    fullName: data.fullName,
-                    employeeId: data.employeeId,
-                    joiningDate: data.joiningDate || null,
-                    role: data.role || 'other',
-                    accountStatus: data.accountStatus ? 'active' : 'inactive',
-                });
-                
-                await logAuditEvent({
-                    userId: user.uid,
-                    userEmail: user.email || 'N/A',
-                    actionType: "UPDATE_USER",
-                    entityType: "USER",
-                    entityId: currentUserToManage.uid,
-                    details: { email: data.email, role: data.role },
-                });
+                await manageUser({ isCreate: false, data, userId: currentUserToManage.uid, adminUser: user });
                 toast({ title: "User Updated", description: `User ${data.email} has been updated.` });
             }
-            fetchUsers();
+            loadUsers();
             setIsManageUserDialogOpen(false);
         } catch (error: any) {
             console.error("Error managing user:", error);
-            const errorMessage = error.code === 'auth/email-already-in-use' 
-                ? "This email address is already in use by another account."
-                : error.message || "An unexpected error occurred.";
-            toast({ title: "Operation Failed", description: errorMessage, variant: "destructive" });
+            toast({ title: "Operation Failed", description: error.message, variant: "destructive" });
         } finally {
             setIsSubmitting(false);
         }
     };
   
-  if (authLoading || isLoading) {
+  if ((authLoading || isLoading) && usersList.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -287,7 +236,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
             <CardDescription>View, create, and manage user accounts, their roles, and status.</CardDescription>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={fetchUsers} disabled={isLoading} className="flex-1 sm:flex-auto">
+            <Button variant="outline" onClick={loadUsers} disabled={isLoading} className="flex-1 sm:flex-auto">
               <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
@@ -316,6 +265,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
             </div>
             <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as any)}>
                 <SelectTrigger className="w-full md:w-[180px]">
+                    <Filter className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="Filter by role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -325,6 +275,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
             </Select>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
                 <SelectTrigger className="w-full md:w-[180px]">
+                     <Filter className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -351,11 +302,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                 <TableBody>
                   {filteredAndSortedUsers.map((u) => (
                     <TableRow key={u.uid}>
-                      <TableCell className="font-medium">
-                        <Link href={`/admin/users/${u.uid}`} className="hover:underline text-primary">
-                            {u.fullName || 'N/A'}
-                        </Link>
-                      </TableCell>
+                      <TableCell className="font-medium">{u.fullName || 'N/A'}</TableCell>
                       <TableCell>{u.email || 'N/A'}</TableCell>
                       <TableCell>
                         <Badge variant={getRoleBadgeVariant(u.role)} className="capitalize">
@@ -370,10 +317,10 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                       <TableCell>{u.employeeId || 'N/A'}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button variant="ghost" size="icon" title="View User Details" asChild>
-                          <Link href={`/admin/users/${u.uid}`}><Eye /></Link>
+                          <Link href={`/admin/users/${u.uid}`}><Eye className="h-4 w-4"/></Link>
                         </Button>
                         <Button variant="ghost" size="icon" title="Edit User" onClick={() => handleOpenEditUserDialog(u)}>
-                          <Edit />
+                          <Edit className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>

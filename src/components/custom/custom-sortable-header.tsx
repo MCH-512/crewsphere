@@ -22,7 +22,7 @@ export function SortableHeader<T extends string>({
   return (
     <TableHead
       onClick={() => onSort(column)}
-      className="cursor-pointer hover:bg-muted/50"
+      className="cursor-pointer hover:bg-muted/50 transition-colors"
     >
       <div className="flex items-center gap-2">
         {label}

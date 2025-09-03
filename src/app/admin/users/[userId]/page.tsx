@@ -9,7 +9,7 @@ import type { User } from "@/schemas/user-schema";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, orderBy, limit, getDocs, Timestamp, writeBatch } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, AlertTriangle, ArrowLeft, User as UserIcon, Calendar, GraduationCap, Inbox, CheckCircle, XCircle, ShieldCheck, CalendarX, CalendarClock, CalendarCheck2, PlusCircle, Info, CalendarDays } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowLeft, User as UserIcon, Calendar, GraduationCap, Inbox, CheckCircle, XCircle, ShieldCheck, CalendarX, CalendarClock, CalendarCheck2, PlusCircle, Info, CalendarDays, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -269,7 +269,7 @@ export default function UserDetailPage() {
                              <span>Joined: <span className="font-semibold">{formatDateDisplay(user.joiningDate)}</span></span>
                         </div>
                     </div>
-                     <Button onClick={() => router.push(`/admin/users`)}>Edit User</Button>
+                     <Button onClick={() => router.push(`/admin/users`)}><Edit className="mr-2 h-4 w-4" />Edit User Profile</Button>
                 </CardHeader>
              </Card>
 
