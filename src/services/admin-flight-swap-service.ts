@@ -145,5 +145,3 @@ export async function rejectFlightSwap(swapId: string, adminId: string, adminEma
         entityId: swapId, details: { notes }
     });
 }
-
-    
