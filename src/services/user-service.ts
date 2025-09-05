@@ -2,7 +2,7 @@
 'use server';
 
 import { db, auth, isConfigValid } from "@/lib/firebase";
-import { collection, doc, getDocs, query, orderBy, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { collection, doc, getDocs, query, orderBy, setDoc, updateDoc, serverTimestamp, limit } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import type { User, ManageUserFormValues } from "@/schemas/user-schema";
 import { logAuditEvent } from "./audit-logger";
@@ -57,7 +57,7 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
                 email: data.email,
                 displayName: data.displayName,
                 fullName: data.fullName,
-                employeeId: data.employeeId,
+                employeeId: data.employeeId || null,
                 joiningDate: data.joiningDate || null,
                 role: data.role || 'other',
                 accountStatus: data.accountStatus ? 'active' : 'inactive',
@@ -88,7 +88,7 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
             await updateDoc(userDocRef, {
                 displayName: data.displayName,
                 fullName: data.fullName,
-                employeeId: data.employeeId,
+                employeeId: data.employeeId || null,
                 joiningDate: data.joiningDate || null,
                 role: data.role || 'other',
                 accountStatus: data.accountStatus ? 'active' : 'inactive',

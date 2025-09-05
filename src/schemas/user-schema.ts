@@ -32,7 +32,7 @@ export const manageUserFormSchema = z.object({
   confirmPassword: z.string().optional(), 
   displayName: z.string().min(2, "Display name must be at least 2 characters.").max(50),
   fullName: z.string().min(2, "Full name must be at least 2 characters.").max(100),
-  employeeId: z.string().max(50), 
+  employeeId: z.string().max(50).optional(), 
   joiningDate: z.string().optional().refine(val => val === "" || !val || !isNaN(new Date(val).getTime()), { message: "Invalid date format. Please use YYYY-MM-DD or leave empty."}), 
   role: z.string().optional(), 
   accountStatus: z.boolean().default(true), 
@@ -57,9 +57,6 @@ export const manageUserFormSchema = z.object({
         }
         if (data.password.length < 6) {
            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Password must be at least 6 characters.", path: ["password"]});
-        }
-        if (!data.employeeId || data.employeeId.trim() === "") {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Employee ID is required for new users.", path: ["employeeId"]});
         }
         if (!data.fullName || data.fullName.trim() === "") {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Full name is required for new users.", path: ["fullName"]});
