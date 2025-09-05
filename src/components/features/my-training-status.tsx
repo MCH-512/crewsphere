@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -7,22 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { GraduationCap, AlertTriangle, CheckCircle, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { getTrainingStatus, type TrainingStats } from "@/services/schedule-service";
 
-export function MyTrainingStatusCard() {
-    const [stats, setStats] = React.useState<TrainingStats | null>(null);
-    const [isLoading, setIsLoading] = React.useState(true);
+export interface TrainingStats {
+    totalMandatory: number;
+    completed: number;
+    nextCourseId?: string;
+}
+
+export function MyTrainingStatusCard({ initialStats }: { initialStats: TrainingStats | null }) {
+    const [stats] = React.useState(initialStats);
+    const [isLoading] = React.useState(false);
     
-    React.useEffect(() => {
-        const fetchStatus = async () => {
-            setIsLoading(true);
-            const statusData = await getTrainingStatus();
-            setStats(statusData);
-            setIsLoading(false);
-        }
-        fetchStatus();
-    }, []);
-
     const coursesToDo = stats ? stats.totalMandatory - stats.completed : 0;
 
     return (

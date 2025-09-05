@@ -1,23 +1,19 @@
 
-
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
 import { getCurrentUser } from "@/lib/session";
-import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, where, Timestamp, orderBy, limit } from "firebase/firestore";
 import { startOfDay, endOfDay } from "date-fns";
 import type { StoredCourse } from "@/schemas/course-schema";
 import type { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
 import type { StoredUserRequest } from "@/schemas/request-schema";
+import type { RequestsChartDataPoint } from "@/components/features/charts/requests-status-bar-chart";
+import type { TrainingChartDataPoint } from "@/components/features/charts/training-progress-pie-chart";
+import type { TodayActivity } from "@/components/features/todays-schedule";
+import type { TrainingStats } from "@/components/features/my-training-status";
+import type { RequestsStats } from "@/components/features/my-requests-status";
 
-
-export interface TodayActivity {
-  activityType: 'flight' | 'leave' | 'training' | 'standby' | 'day-off';
-  comments?: string;
-  flightNumber?: string;
-  departureAirport?: string;
-  arrivalAirport?: string;
-}
 
 export async function getTodayActivities(): Promise<TodayActivity[]> {
     const user = await getCurrentUser();
@@ -43,16 +39,8 @@ export async function getTodayActivities(): Promise<TodayActivity[]> {
         return querySnapshot.docs.map(doc => doc.data() as TodayActivity);
     } catch (error) {
         console.error("Server Error fetching today's schedule:", error);
-        // In case of error, return an empty array to prevent the client from crashing.
         return [];
     }
-}
-
-
-export interface TrainingStats {
-    totalMandatory: number;
-    completed: number;
-    nextCourseId?: string;
 }
 
 export async function getTrainingStatus(): Promise<TrainingStats | null> {
@@ -79,13 +67,8 @@ export async function getTrainingStatus(): Promise<TrainingStats | null> {
         };
     } catch(e) {
         console.error("Error fetching training status from server: ", e);
-        return null; // Return null on error
+        return null;
     }
-}
-
-export interface RequestsStats {
-  pendingCount: number;
-  latestRequest: Omit<StoredUserRequest, 'id' | 'createdAt' | 'updatedAt' | 'issueDate' | 'expiryDate'> & { createdAt: string; } | null;
 }
 
 export async function getRequestsStatus(): Promise<RequestsStats | null> {
@@ -99,15 +82,14 @@ export async function getRequestsStatus(): Promise<RequestsStats | null> {
     try {
         const querySnapshot = await getDocs(requestsQuery);
         const allUserRequests = querySnapshot.docs.map(doc => {
-            const data = doc.data();
+            const data = doc.data() as Omit<StoredUserRequest, 'id'>;
             return {
                  ...data,
-                 createdAt: (data.createdAt as Timestamp).toDate().toISOString() // Serialize date
-            } as any; // Cast to any to handle serialized date
-        }) as (Omit<StoredUserRequest, 'id' | 'createdAt'> & { createdAt: string; })[];
+            };
+        });
         
         const pendingCount = allUserRequests.length;
-        const latestRequest = allUserRequests.length > 0 ? allUserRequests[0] : null;
+        const latestRequest = allUserRequests.length > 0 ? { subject: allUserRequests[0].subject, status: allUserRequests[0].status } : null;
 
         return { pendingCount, latestRequest };
     } catch(e) {
@@ -116,3 +98,49 @@ export async function getRequestsStatus(): Promise<RequestsStats | null> {
     }
 }
 
+
+export async function getTrainingChartData(): Promise<TrainingChartDataPoint[] | null> {
+    const user = await getCurrentUser();
+    if (!user || !isConfigValid || !db) return null;
+    try {
+        const mandatoryCoursesQuery = query(collection(db, "courses"), where("mandatory", "==", true), where("published", "==", true));
+        const attemptsQuery = query(collection(db, "userQuizAttempts"), where("userId", "==", user.uid), where("status", "==", "passed"));
+        
+        const [coursesSnap, attemptsSnap] = await Promise.all([getDocs(mandatoryCoursesQuery), getDocs(attemptsQuery)]);
+        
+        const mandatoryCoursesCount = coursesSnap.size;
+        const passedCourseIds = new Set(attemptsSnap.docs.map(doc => (doc.data() as StoredUserQuizAttempt).courseId));
+        const completedCount = coursesSnap.docs.filter(doc => passedCourseIds.has(doc.id)).length;
+        
+        return [
+            { name: 'Completed', count: completedCount, fill: 'var(--color-completed)' },
+            { name: 'Pending', count: mandatoryCoursesCount - completedCount, fill: 'var(--color-pending)' },
+        ];
+    } catch (error) {
+        console.error("Error fetching training chart data:", error);
+        return null;
+    }
+}
+
+
+export async function getRequestsChartData(): Promise<RequestsChartDataPoint[] | null> {
+    const user = await getCurrentUser();
+    if (!user || !isConfigValid || !db) return null;
+    try {
+        const requestsQuery = query(collection(db, "requests"), where("userId", "==", user.uid));
+        const requestsSnap = await getDocs(requestsQuery);
+        const requestsByStatus = requestsSnap.docs.reduce((acc, doc) => {
+            const status = doc.data().status || 'unknown';
+            acc[status] = (acc[status] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+        
+        return Object.entries(requestsByStatus).map(([status, count]) => ({
+            status: status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' '),
+            count,
+        }));
+    } catch (error) {
+        console.error("Error fetching requests chart data:", error);
+        return null;
+    }
+}

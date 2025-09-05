@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from "react";
@@ -10,8 +9,14 @@ import Link from "next/link";
 import { Badge } from "../ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import { badgeVariants } from "../ui/badge";
-import { getRequestsStatus, type RequestsStats } from "@/services/schedule-service";
 
+export interface RequestsStats {
+  pendingCount: number;
+  latestRequest: {
+    subject: string;
+    status: "pending" | "in-progress" | "approved" | "rejected";
+  } | null;
+}
 
 const getStatusBadgeVariant = (status: RequestsStats['latestRequest']['status']): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
@@ -23,20 +28,10 @@ const getStatusBadgeVariant = (status: RequestsStats['latestRequest']['status'])
     }
 };
 
-export function MyRequestsStatusCard() {
-    const [stats, setStats] = React.useState<RequestsStats | null>(null);
-    const [isLoading, setIsLoading] = React.useState(true);
+export function MyRequestsStatusCard({ initialStats }: { initialStats: RequestsStats | null }) {
+    const [stats] = React.useState(initialStats);
+    const [isLoading] = React.useState(false); // Initial data is now passed as a prop
 
-    React.useEffect(() => {
-        const fetchStatus = async () => {
-            setIsLoading(true);
-            const statusData = await getRequestsStatus();
-            setStats(statusData);
-            setIsLoading(false);
-        }
-        fetchStatus();
-    }, []);
-    
     return (
         <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
             <CardHeader>

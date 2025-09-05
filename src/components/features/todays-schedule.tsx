@@ -5,8 +5,6 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarCheck, Plane, Briefcase, GraduationCap, Bed, Anchor, Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import { useAuth } from "@/contexts/auth-context";
-import { getTodayActivities, type TodayActivity } from "@/services/schedule-service";
 
 const activityConfig: Record<TodayActivity['activityType'], { icon: React.ElementType; label: string; }> = {
     flight: { icon: Plane, label: "Flight" },
@@ -16,31 +14,17 @@ const activityConfig: Record<TodayActivity['activityType'], { icon: React.Elemen
     standby: { icon: Anchor, label: "Standby" },
 };
 
-export function TodaysScheduleCard() {
-    const { user } = useAuth();
-    const [activities, setActivities] = React.useState<TodayActivity[]>([]);
-    const [isLoading, setIsLoading] = React.useState(true);
+export interface TodayActivity {
+  activityType: 'flight' | 'leave' | 'training' | 'standby' | 'day-off';
+  comments?: string;
+  flightNumber?: string;
+  departureAirport?: string;
+  arrivalAirport?: string;
+}
 
-    React.useEffect(() => {
-        if (!user) {
-            setIsLoading(false);
-            return;
-        }
-
-        const fetchTodayActivities = async () => {
-            setIsLoading(true);
-            try {
-                const todayActivities = await getTodayActivities();
-                setActivities(todayActivities);
-            } catch (error) {
-                console.error("Error fetching today's schedule:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchTodayActivities();
-    }, [user]);
+export function TodaysScheduleCard({ initialActivities }: { initialActivities: TodayActivity[] }) {
+    const [activities] = React.useState(initialActivities);
+    const [isLoading] = React.useState(false); // Data is now passed via props
 
     const renderContent = () => {
         if (isLoading) {
