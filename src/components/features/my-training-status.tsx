@@ -1,59 +1,27 @@
 
+
 "use client";
 
 import * as React from "react";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { GraduationCap, AlertTriangle, CheckCircle, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { StoredCourse } from "@/schemas/course-schema";
-import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
-import { useAuth } from "@/contexts/auth-context";
+import { getTrainingStatus, type TrainingStats } from "@/services/schedule-service";
 
 export function MyTrainingStatusCard() {
-    const { user } = useAuth();
-    const [stats, setStats] = React.useState<{ totalMandatory: number; completed: number; nextCourseId?: string; } | null>(null);
+    const [stats, setStats] = React.useState<TrainingStats | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     
     React.useEffect(() => {
-        if (!user) {
-            setIsLoading(false);
-            return;
-        }
-
-        const getTrainingStatus = async () => {
+        const fetchStatus = async () => {
             setIsLoading(true);
-            const coursesQuery = query(collection(db, "courses"), where("published", "==", true), where("mandatory", "==", true));
-            // Corrected query with user ID filter
-            const attemptsQuery = query(collection(db, "userQuizAttempts"), where("userId", "==", user.uid), where("status", "==", "passed"));
-            
-            try {
-                const [coursesSnapshot, attemptsSnapshot] = await Promise.all([getDocs(coursesQuery), getDocs(attemptsQuery)]);
-                console.log(`Fetched ${coursesSnapshot.size} mandatory courses and ${attemptsSnapshot.size} passed attempts for user ${user.uid}.`);
-
-                const mandatoryCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCourse));
-                const passedCourseIds = new Set(attemptsSnapshot.docs.map(doc => (doc.data() as StoredUserQuizAttempt).courseId));
-                
-                const completedCount = mandatoryCourses.filter(c => passedCourseIds.has(c.id)).length;
-                const outstandingCourses = mandatoryCourses.filter(c => !passedCourseIds.has(c.id));
-                
-                setStats({
-                    totalMandatory: mandatoryCourses.length,
-                    completed: completedCount,
-                    nextCourseId: outstandingCourses.length > 0 ? outstandingCourses[0].id : undefined
-                });
-            } catch(e) {
-                console.error("Error fetching training status: ", e);
-                setStats(null); // Set to null on error
-            } finally {
-                setIsLoading(false);
-            }
+            const statusData = await getTrainingStatus();
+            setStats(statusData);
+            setIsLoading(false);
         }
-
-        getTrainingStatus();
-    }, [user]);
+        fetchStatus();
+    }, []);
 
     const coursesToDo = stats ? stats.totalMandatory - stats.completed : 0;
 

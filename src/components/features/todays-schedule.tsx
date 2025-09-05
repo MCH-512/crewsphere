@@ -2,20 +2,11 @@
 "use client";
 
 import * as React from "react";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarCheck, Plane, Briefcase, GraduationCap, Bed, Anchor, Loader2 } from "lucide-react";
-import { format, startOfDay, endOfDay } from "date-fns";
+import { format } from "date-fns";
 import { useAuth } from "@/contexts/auth-context";
-
-interface TodayActivity {
-  activityType: 'flight' | 'leave' | 'training' | 'standby' | 'day-off';
-  comments?: string;
-  flightNumber?: string;
-  departureAirport?: string;
-  arrivalAirport?: string;
-}
+import { getTodayActivities, type TodayActivity } from "@/services/schedule-service";
 
 const activityConfig: Record<TodayActivity['activityType'], { icon: React.ElementType; label: string; }> = {
     flight: { icon: Plane, label: "Flight" },
@@ -36,22 +27,11 @@ export function TodaysScheduleCard() {
             return;
         }
 
-        const getTodayActivities = async () => {
-            const todayStart = startOfDay(new Date());
-            const todayEnd = endOfDay(new Date());
-            
+        const fetchTodayActivities = async () => {
+            setIsLoading(true);
             try {
-                const q = query(
-                    collection(db, "userActivities"),
-                    where("userId", "==", user.uid),
-                    where("date", ">=", todayStart),
-                    where("date", "<=", todayEnd)
-                );
-                const querySnapshot = await getDocs(q);
-                console.log(`Fetched ${querySnapshot.size} activities for today for user ${user.uid}.`);
-                if (!querySnapshot.empty) {
-                    setActivities(querySnapshot.docs.map(doc => doc.data() as TodayActivity));
-                }
+                const todayActivities = await getTodayActivities();
+                setActivities(todayActivities);
             } catch (error) {
                 console.error("Error fetching today's schedule:", error);
             } finally {
@@ -59,8 +39,7 @@ export function TodaysScheduleCard() {
             }
         };
 
-        getTodayActivities();
-
+        fetchTodayActivities();
     }, [user]);
 
     const renderContent = () => {

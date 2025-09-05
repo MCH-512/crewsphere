@@ -1,9 +1,8 @@
 
+
 "use client";
 
 import * as React from "react";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy, limit, Timestamp } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Loader2, Inbox, AlertTriangle, CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,14 +10,10 @@ import Link from "next/link";
 import { Badge } from "../ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import { badgeVariants } from "../ui/badge";
-import { useAuth } from "@/contexts/auth-context";
+import { getRequestsStatus, type RequestsStats } from "@/services/schedule-service";
 
-interface RequestSummary {
-  subject: string;
-  status: "pending" | "approved" | "rejected" | "in-progress";
-}
 
-const getStatusBadgeVariant = (status: RequestSummary["status"]): VariantProps<typeof badgeVariants>["variant"] => {
+const getStatusBadgeVariant = (status: RequestsStats['latestRequest']['status']): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
       case "pending": return "warning";
       case "approved": return "success"; 
@@ -29,40 +24,18 @@ const getStatusBadgeVariant = (status: RequestSummary["status"]): VariantProps<t
 };
 
 export function MyRequestsStatusCard() {
-    const { user } = useAuth();
-    const [stats, setStats] = React.useState<{ pendingCount: number; latestRequest: RequestSummary | null } | null>(null);
+    const [stats, setStats] = React.useState<RequestsStats | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
 
     React.useEffect(() => {
-        if (!user) {
-            setIsLoading(false);
-            return;
-        }
-
-        const getRequestsStatus = async () => {
+        const fetchStatus = async () => {
             setIsLoading(true);
-            const requestsQuery = query(collection(db, "requests"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
-            
-            try {
-                const querySnapshot = await getDocs(requestsQuery);
-                console.log(`Fetched ${querySnapshot.size} requests for user ${user.uid}.`);
-                const allUserRequests = querySnapshot.docs.map(doc => doc.data() as RequestSummary);
-                
-                const pendingCount = allUserRequests.filter(r => r.status === 'pending' || r.status === 'in-progress').length;
-                const latestRequest = allUserRequests.length > 0 ? allUserRequests[0] : null;
-
-                setStats({ pendingCount, latestRequest });
-            } catch(e) {
-                 console.error("Error fetching request status:", e);
-                 setStats(null); // Set to null on error
-            } finally {
-                setIsLoading(false);
-            }
+            const statusData = await getRequestsStatus();
+            setStats(statusData);
+            setIsLoading(false);
         }
-
-        getRequestsStatus();
-
-    }, [user]);
+        fetchStatus();
+    }, []);
     
     return (
         <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
