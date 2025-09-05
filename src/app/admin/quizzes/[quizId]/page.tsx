@@ -2,32 +2,15 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/auth-context";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, getDocs, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { useRouter, useParams } from "next/navigation";
-import { CheckSquare, Loader2, AlertTriangle, ArrowLeft, PlusCircle, Edit, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import type { StoredQuestion } from "@/schemas/quiz-question-schema";
-import { StoredQuiz, StoredCourse } from "@/schemas/course-schema";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { questionFormSchema, type QuestionFormValues } from "@/schemas/quiz-question-schema";
-import { logAuditEvent } from "@/lib/audit-logger";
+import { useRouter, useParams } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from "lucide-react";
 
-export default function QuizDetailPage() {
-    const { user, loading: authLoading } = useAuth();
+
+export default function AdminQuizDetailPage() {
     const router = useRouter();
-    const params = useParams();
     const { toast } = useToast();
+    const params = useParams();
     const quizId = params.quizId as string;
 
     React.useEffect(() => {
@@ -53,3 +36,5 @@ export default function QuizDetailPage() {
         </div>
     );
 }
+
+    

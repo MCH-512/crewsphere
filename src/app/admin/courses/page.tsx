@@ -152,7 +152,7 @@ export default function AdminCoursesPage() {
                     category: courseToEdit.category, courseType: courseToEdit.courseType,
                     referenceBody: courseToEdit.referenceBody, duration: courseToEdit.duration,
                     mandatory: courseToEdit.mandatory, published: courseToEdit.published,
-                    imageHint: courseToEdit.imageHint,
+                    imageHint: courseToEdit.imageHint || "",
                     quizTitle: quizData.title,
                     passingThreshold: certRuleData.passingThreshold,
                     certificateExpiryDays: certRuleData.expiryDurationDays,
@@ -228,10 +228,10 @@ export default function AdminCoursesPage() {
                 };
                 if (imageUrl) updateData.imageUrl = imageUrl;
 
-                batch.update(courseRef, updateData);
+                batch.update(courseRef, updateData as any);
                 batch.update(quizRef, { title: data.quizTitle });
                 batch.update(certRuleRef, { passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays });
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'UPDATE_COURSE', entityType: "COURSE", entityId: currentCourse.id, details: { title: data.title }});
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: 'UPDATE_COURSE', entityType: "COURSE", entityId: currentCourse.id, details: { title: data.title }});
                 toast({ title: "Course Updated", description: `"${data.title}" has been updated successfully.` });
             
             } else {
@@ -247,7 +247,7 @@ export default function AdminCoursesPage() {
 
                 batch.set(quizRef, { courseId: courseRef.id, title: data.quizTitle, createdAt: serverTimestamp() });
                 batch.set(certRuleRef, { courseId: courseRef.id, passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays, createdAt: serverTimestamp() });
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'CREATE_COURSE', entityType: "COURSE", entityId: courseRef.id, details: { title: data.title }});
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: 'CREATE_COURSE', entityType: "COURSE", entityId: courseRef.id, details: { title: data.title }});
                 toast({ title: "Course Created", description: `"${data.title}" has been saved.` });
             }
             
@@ -309,7 +309,7 @@ export default function AdminCoursesPage() {
             batch.delete(doc(db, "courses", courseToDelete.id));
 
             await batch.commit();
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'DELETE_COURSE', entityType: "COURSE", entityId: courseToDelete.id, details: { title: courseToDelete.title }});
+            await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: 'DELETE_COURSE', entityType: "COURSE", entityId: courseToDelete.id, details: { title: courseToDelete.title }});
             toast({ title: "Course Deleted", description: `"${courseToDelete.title}" and all its data have been removed.` });
             fetchCourses();
         } catch (error) {
@@ -500,3 +500,5 @@ export default function AdminCoursesPage() {
         </div>
     );
 }
+
+    
