@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from "@/lib/firebase";
-import { doc, runTransaction, serverTimestamp, Timestamp, collection, updateDoc } from "firebase/firestore";
+import { doc, runTransaction, serverTimestamp, Timestamp, collection, updateDoc, writeBatch } from "firebase/firestore";
 import type { StoredFlight } from "@/schemas/flight-schema";
 import type { StoredFlightSwap } from "@/schemas/flight-swap-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
@@ -50,6 +50,8 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             const user2Role = findUserRoleOnFlight(flight2Data, swapData.requestingUserId);
             if (!user1Role || !user2Role) throw new Error("Could not determine user role on one of the flights.");
             if (user1Role.role !== user2Role.role) throw new Error(`Role mismatch: Cannot swap a ${user1Role.role} with a ${user2Role.role}.`);
+            
+            const batch = writeBatch(db);
 
             // --- Update Flights ---
             const flight1Update: Partial<StoredFlight> = {
@@ -82,26 +84,10 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             flight2Update.activityIds = newActivityIdsF2;
 
             if (activity1Id) {
-                const activity1Ref = doc(db, "userActivities", activity1Id);
-                transaction.update(activity1Ref, { 
-                    flightId: flight2Snap.id,
-                    flightNumber: flight2Data.flightNumber,
-                    departureAirport: flight2Data.departureAirport,
-                    arrivalAirport: flight2Data.arrivalAirport,
-                    date: Timestamp.fromDate(startOfDay(new Date(flight2Data.scheduledDepartureDateTimeUTC))),
-                    comments: `Flight ${flight2Data.flightNumber} from ${flight2Data.departureAirport} to ${flight2Data.arrivalAirport}`,
-                });
+                batch.update(doc(db, "userActivities", activity1Id), { flightId: flight2Snap.id, flightNumber: flight2Data.flightNumber, departureAirport: flight2Data.departureAirport, arrivalAirport: flight2Data.arrivalAirport, date: Timestamp.fromDate(startOfDay(new Date(flight2Data.scheduledDepartureDateTimeUTC))), comments: `Flight ${flight2Data.flightNumber} from ${flight2Data.departureAirport} to ${flight2Data.arrivalAirport}`, });
             }
              if (activity2Id) {
-                const activity2Ref = doc(db, "userActivities", activity2Id);
-                transaction.update(activity2Ref, {
-                    flightId: flight1Snap.id,
-                    flightNumber: flight1Data.flightNumber,
-                    departureAirport: flight1Data.departureAirport,
-                    arrivalAirport: flight1Data.arrivalAirport,
-                    date: Timestamp.fromDate(startOfDay(new Date(flight1Data.scheduledDepartureDateTimeUTC))),
-                    comments: `Flight ${flight1Data.flightNumber} from ${flight1Data.departureAirport} to ${flight1Data.arrivalAirport}`,
-                });
+                batch.update(doc(db, "userActivities", activity2Id), { flightId: flight1Snap.id, flightNumber: flight1Data.flightNumber, departureAirport: flight1Data.departureAirport, arrivalAirport: flight1Data.arrivalAirport, date: Timestamp.fromDate(startOfDay(new Date(flight1Data.scheduledDepartureDateTimeUTC))), comments: `Flight ${flight1Data.flightNumber} from ${flight1Data.departureAirport} to ${flight1Data.arrivalAirport}`, });
             }
             
             transaction.update(flight1Ref, flight1Update);
@@ -112,6 +98,8 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
                 resolvedBy: adminId,
                 updatedAt: serverTimestamp()
             });
+
+            await batch.commit();
         });
         
         await logAuditEvent({

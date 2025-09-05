@@ -17,20 +17,6 @@ export const flightFormSchema = z.object({
   instructorIds: z.array(z.string()).optional(),
   traineeIds: z.array(z.string()).optional(),
   
-  // Optional return flight fields
-  includeReturnFlight: z.boolean().optional(),
-  returnFlightNumber: z.string().optional(),
-  returnDepartureAirport: z.string().optional(),
-  returnArrivalAirport: z.string().optional(),
-  returnScheduledDepartureDateTimeUTC: z.string().optional(),
-  returnScheduledArrivalDateTimeUTC: z.string().optional(),
-  returnAircraftType: z.enum(aircraftTypes).optional(),
-  returnPurserId: z.string().optional(),
-  returnPilotIds: z.array(z.string()).optional(),
-  returnCabinCrewIds: z.array(z.string()).optional(),
-  returnInstructorIds: z.array(z.string()).optional(),
-  returnTraineeIds: z.array(z.string()).optional(),
-
   // Recurrence fields
   enableRecurrence: z.boolean().optional(),
   recurrenceType: z.enum(["Daily", "Weekly"]).optional(),
@@ -40,20 +26,6 @@ export const flightFormSchema = z.object({
 }).refine(data => new Date(data.scheduledArrivalDateTimeUTC) > new Date(data.scheduledDepartureDateTimeUTC), {
     message: "Arrival time must be after departure time.",
     path: ["scheduledArrivalDateTimeUTC"],
-}).superRefine((data, ctx) => {
-    if (data.includeReturnFlight) {
-        if (!data.returnFlightNumber || data.returnFlightNumber.length < 3) ctx.addIssue({ path: ['returnFlightNumber'], message: 'Return flight number is required.' });
-        if (!data.returnScheduledDepartureDateTimeUTC) ctx.addIssue({ path: ['returnScheduledDepartureDateTimeUTC'], message: 'Return departure time is required.' });
-        if (!data.returnScheduledArrivalDateTimeUTC) ctx.addIssue({ path: ['returnScheduledArrivalDateTimeUTC'], message: 'Return arrival time is required.' });
-        if (!data.returnAircraftType) ctx.addIssue({ path: ['returnAircraftType'], message: 'Return aircraft type is required.' });
-        if (!data.returnPurserId) ctx.addIssue({ path: ['returnPurserId'], message: 'Return purser is required.' });
-        if ((data.returnPilotIds?.length || 0) < 2) ctx.addIssue({ path: ['returnPilotIds'], message: 'At least two pilots are required for the return flight.' });
-        if ((data.returnCabinCrewIds?.length || 0) < 1) ctx.addIssue({ path: ['returnCabinCrewIds'], message: 'At least one cabin crew member is required for the return flight.' });
-        
-        if (data.returnScheduledDepartureDateTimeUTC && data.returnScheduledArrivalDateTimeUTC && new Date(data.returnScheduledArrivalDateTimeUTC) <= new Date(data.returnScheduledDepartureDateTimeUTC)) {
-             ctx.addIssue({ path: ['returnScheduledArrivalDateTimeUTC'], message: 'Return arrival must be after return departure.' });
-        }
-    }
 });
 
 
