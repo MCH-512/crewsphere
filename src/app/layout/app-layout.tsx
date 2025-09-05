@@ -150,10 +150,10 @@ function LayoutWithSidebar({
 
   return (
     <>
-      <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r">
+      <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r bg-sidebar text-sidebar-foreground">
         <SidebarHeader className="h-16 flex items-center justify-center">
           <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
-            <Plane className="w-8 h-8 text-sidebar-primary" />
+            <Plane className="w-8 h-8 text-primary" />
             <span className="font-bold text-lg group-data-[state=collapsed]:hidden">AirCrew Hub</span>
           </Link>
         </SidebarHeader>
@@ -174,7 +174,7 @@ function LayoutWithSidebar({
                             className="h-9 w-full justify-start"
                         >
                             <Link href={item.href!}>
-                               <item.icon className="w-4 h-4" />
+                               <item.icon className="w-4 h-4 text-primary" />
                                <span className="group-data-[state=collapsed]:hidden">{item.title}</span>
                             </Link>
                          </SidebarMenuButton>
