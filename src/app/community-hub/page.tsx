@@ -63,11 +63,6 @@ export default function CommunityHubPage() {
     const [posts, setPosts] = React.useState<StoredCommunityPost[]>([]);
     const [isLoadingPosts, setIsLoadingPosts] = React.useState(true);
 
-    const form = useForm<CommunityPostFormValues>({
-        resolver: zodResolver(communityPostFormSchema),
-        defaultValues: { content: "" },
-    });
-
     const fetchPosts = React.useCallback(async () => {
         setIsLoadingPosts(true);
         try {
@@ -158,6 +153,11 @@ export default function CommunityHubPage() {
         }
     };
     
+    const form = useForm<CommunityPostFormValues>({
+        resolver: zodResolver(communityPostFormSchema),
+        defaultValues: { content: "" },
+    });
+
     if (authLoading || (!user && !authLoading)) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
@@ -232,5 +232,3 @@ export default function CommunityHubPage() {
         </div>
     );
 }
-
-    

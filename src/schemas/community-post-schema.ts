@@ -21,5 +21,3 @@ export interface StoredCommunityPost {
   likes: string[]; // Array of user UIDs who liked the post
   likeCount: number;
 }
-
-    
