@@ -98,10 +98,10 @@ const ManageDocumentDialog = ({ open, onOpenChange, documentToEdit, onSave }: { 
             if (isEditMode && documentToEdit) {
                 const docRef = doc(db, "userDocuments", documentToEdit.id);
                 await updateDoc(docRef, docData);
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_SELF_DOCUMENT", entityType: "USER_DOCUMENT", entityId: docRef.id });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "UPDATE_SELF_DOCUMENT", entityType: "USER_DOCUMENT", entityId: docRef.id });
             } else {
                 const docRef = await addDoc(collection(db, "userDocuments"), { ...docData, createdAt: serverTimestamp() });
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_SELF_DOCUMENT", entityType: "USER_DOCUMENT", entityId: docRef.id });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "CREATE_SELF_DOCUMENT", entityType: "USER_DOCUMENT", entityId: docRef.id });
             }
             toast({ title: isEditMode ? "Document Updated" : "Document Added", description: `Your document is now pending validation by an administrator.` });
             onSave();
