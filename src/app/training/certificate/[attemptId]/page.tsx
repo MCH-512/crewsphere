@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -69,7 +68,7 @@ export default function CertificatePage() {
                 
                 if (!course.certificateRuleId) throw new Error("Certificate rule definition missing for this course.");
                 const certRuleSnap = await getDoc(doc(db, "certificateRules", course.certificateRuleId));
-                if (!certRuleSnap.exists()) throw new Error("Certificate rules could not be found.");
+                if (!certRuleSnap.exists()) throw new Error("Certification rules could not be found.");
 
                 setData({
                     attempt,

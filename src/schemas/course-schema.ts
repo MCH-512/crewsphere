@@ -2,6 +2,7 @@
 import { z } from "zod";
 import type { Timestamp } from 'firebase/firestore';
 import { questionFormSchema } from "./quiz-question-schema";
+import { StoredUserQuizAttempt } from "./user-progress-schema";
 
 export const courseCategories = ["Regulations & Compliance", "Safety & Emergency", "Customer Service", "Technical Knowledge", "Health & First Aid"] as const;
 export const courseTypes = ["Initial Training", "Recurrent Training", "Conversion Course", "Refresher"] as const;
@@ -79,3 +80,9 @@ export const GenerateCourseImageOutputSchema = z.object({
     imageDataUri: z.string().describe("The generated image as a Base64 encoded data URI."),
 });
 export type GenerateCourseImageOutput = z.infer<typeof GenerateCourseImageOutputSchema>;
+
+// Progress schema
+export interface StoredUserProgress {
+    readChapters?: string[];
+    lastAttempt?: StoredUserQuizAttempt;
+}

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -6,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { GraduationCap, Loader2, AlertTriangle, BookOpen, CheckCircle, XCircle, RefreshCw, Award } from "lucide-react";
 import { StoredCourse } from "@/schemas/course-schema";
@@ -129,7 +128,7 @@ export default function TrainingPage() {
 
                 const [coursesSnapshot, attemptsSnapshot] = await Promise.all([
                     getDocs(coursesQuery),
-                    getDocs(attemptsQuery)
+                    getDocs(attemptsSnapshot)
                 ]);
 
                 const fetchedCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCourse));

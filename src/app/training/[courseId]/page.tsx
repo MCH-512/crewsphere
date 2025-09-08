@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -6,10 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
 import { Loader2, AlertTriangle, ArrowLeft, CheckCircle, Clock, BookOpen, ListChecks } from "lucide-react";
-import { StoredCourse } from "@/schemas/course-schema";
+import { StoredCourse, StoredUserQuizAttempt } from "@/schemas/course-schema";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { Badge } from "@/components/ui/badge";
@@ -17,17 +16,20 @@ import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CourseDetailPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const params = useParams();
+    const { toast } = useToast();
     const courseId = params.courseId as string;
 
     const [course, setCourse] = React.useState<StoredCourse | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [readChapters, setReadChapters] = React.useState<string[]>([]);
+    const [lastAttempt, setLastAttempt] = React.useState<StoredUserQuizAttempt | null>(null);
 
     React.useEffect(() => {
         if (!courseId) return;
@@ -37,17 +39,42 @@ export default function CourseDetailPage() {
             return;
         }
 
-        const fetchCourse = async () => {
+        const fetchCourseAndProgress = async () => {
             setIsLoading(true);
             try {
                 const courseDocRef = doc(db, "courses", courseId);
-                const docSnap = await getDoc(courseDocRef);
+                const courseSnap = await getDoc(courseDocRef);
 
-                if (docSnap.exists() && docSnap.data().published) {
-                    setCourse({ id: docSnap.id, ...docSnap.data() } as StoredCourse);
+                if (courseSnap.exists() && courseSnap.data().published) {
+                    setCourse({ id: courseSnap.id, ...courseSnap.data() } as StoredCourse);
                 } else {
                     setError("Course not found or is not available.");
+                    setIsLoading(false);
+                    return;
                 }
+
+                // Load user progress for this specific course
+                const userProgressRef = doc(db, "userProgress", user.uid, "courses", courseId);
+                const progressSnap = await getDoc(userProgressRef);
+                if (progressSnap.exists()) {
+                    setReadChapters(progressSnap.data().readChapters || []);
+                }
+                
+                // Fetch last quiz attempt
+                const attemptsRef = collection(db, "userQuizAttempts");
+                const q = query(
+                    attemptsRef,
+                    where("userId", "==", user.uid),
+                    where("courseId", "==", courseId),
+                    orderBy("completedAt", "desc"),
+                    limit(1)
+                );
+                const attemptsSnapshot = await getDocs(q);
+                if (!attemptsSnapshot.empty) {
+                    setLastAttempt(attemptsSnapshot.docs[0].data() as StoredUserQuizAttempt);
+                }
+
+
             } catch (err) {
                 console.error("Error fetching course:", err);
                 setError("Failed to load the course.");
@@ -55,15 +82,27 @@ export default function CourseDetailPage() {
                 setIsLoading(false);
             }
         };
-        fetchCourse();
+        fetchCourseAndProgress();
     }, [courseId, user, authLoading, router]);
-    
-    const handleChapterToggle = (chapterTitle: string, isChecked: boolean) => {
-        setReadChapters(prev => 
-            isChecked 
-                ? [...prev, chapterTitle]
-                : prev.filter(title => title !== chapterTitle)
-        );
+
+     const handleChapterToggle = async (chapterTitle: string, isChecked: boolean) => {
+        if (!user) return;
+
+        const updatedReadChapters = isChecked
+            ? [...readChapters, chapterTitle]
+            : readChapters.filter(title => title !== chapterTitle);
+        
+        setReadChapters(updatedReadChapters);
+
+        try {
+            const userProgressRef = doc(db, "userProgress", user.uid, "courses", courseId);
+            // Use set with merge:true to create or update the document
+            await setDoc(userProgressRef, { readChapters: updatedReadChapters }, { merge: true });
+        } catch (error) {
+            toast({ title: "Error", description: "Could not save your progress.", variant: "destructive"});
+            // Revert optimistic update on failure
+            setReadChapters(readChapters);
+        }
     };
 
     if (authLoading || isLoading) {
@@ -91,6 +130,11 @@ export default function CourseDetailPage() {
         <div className="space-y-6 max-w-4xl mx-auto">
             <div className="flex justify-between items-center">
                 <Button variant="outline" onClick={() => router.push('/training')}><ArrowLeft className="mr-2 h-4 w-4"/>Back to E-Learning Center</Button>
+                 {lastAttempt?.status === 'passed' && (
+                    <Button variant="success" asChild>
+                        <Link href={`/training/certificate/${lastAttempt.id}`}>View Certificate</Link>
+                    </Button>
+                )}
             </div>
              <Card className="shadow-lg overflow-hidden">
                  <div className="relative h-60 w-full">
@@ -168,6 +212,4 @@ export default function CourseDetailPage() {
 
         </div>
     );
-
-    
 }
