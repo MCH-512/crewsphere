@@ -4,7 +4,7 @@ import {
   ClipboardCheck, MessageSquare, Activity, FileSignature, 
   Calendar as CalendarIcon, Library, GraduationCap, CheckSquare, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Wrench, 
-  Handshake, Inbox, Lightbulb, FileCheck2, History
+  Handshake, Inbox, Lightbulb, FileCheck2, History, CloudSun
 } from "lucide-react";
 import type { ElementType } from 'react';
 

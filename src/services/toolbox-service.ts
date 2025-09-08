@@ -15,8 +15,8 @@ export interface Tool {
 const toolsData: Tool[] = [
    {
     icon: CloudSun,
-    title: "Airport Weather",
-    description: "Check real-time METAR data for any airport by entering its ICAO code.",
+    title: "AI Weather Decoder",
+    description: "Get live METAR data for any airport, decoded and explained by AI.",
     href: "/toolbox/airport-weather",
     delay: 0.1
   },
