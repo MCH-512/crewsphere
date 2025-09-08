@@ -432,7 +432,7 @@ export default function AdminFlightsPage() {
                 }
                 
                 batch.update(flightRef, { ...data, allCrewIds: outboundCrewIds, activityIds, updatedAt: serverTimestamp() });
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_FLIGHT", entityType: "FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "UPDATE_FLIGHT", entityType: "FLIGHT", entityId: currentFlight.id, details: { flightNumber: data.flightNumber } });
                 toast({ title: "Flight Updated", description: `Flight ${data.flightNumber} has been updated.` });
             
             } else {
@@ -464,7 +464,7 @@ export default function AdminFlightsPage() {
                     batch.set(outboundFlightRef, { ...currentData, allCrewIds: outboundCrewIds, activityIds: outboundActivityIds, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), purserReportSubmitted: false });
                 }
                 
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_RECURRING_FLIGHTS", entityType: "FLIGHT", details: { flightNumber: data.flightNumber, count: recurrenceCount, type: data.recurrenceType } });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "CREATE_RECURRING_FLIGHTS", entityType: "FLIGHT", details: { flightNumber: data.flightNumber, count: recurrenceCount, type: data.recurrenceType } });
                 
                 toast({ title: "Flights Created", description: `${recurrenceCount} flight(s) for ${data.flightNumber} have been scheduled.` });
             }
@@ -499,7 +499,7 @@ export default function AdminFlightsPage() {
             }
             
             await batch.commit();
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "DELETE_FLIGHT", entityType: "FLIGHT", entityId: flightToDelete.id, details: { flightNumber: flightToDelete.flightNumber } });
+            await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "DELETE_FLIGHT", entityType: "FLIGHT", entityId: flightToDelete.id, details: { flightNumber: flightToDelete.flightNumber } });
             toast({ title: "Flight Deleted", description: `Flight "${flightToDelete.flightNumber}" and associated schedule entries have been removed.` });
             fetchPageData();
         } catch (error) {
