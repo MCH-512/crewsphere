@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -163,12 +162,12 @@ export default function AdminDocumentsPage() {
                     docData.readBy = [];
                 }
                 await updateDoc(docRef, docData);
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_DOCUMENT", entityType: "DOCUMENT", entityId: currentDocument.id, details: { title: data.title } });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "UPDATE_DOCUMENT", entityType: "DOCUMENT", entityId: currentDocument.id, details: { title: data.title } });
             } else {
                 const docRef = doc(collection(db, "documents"));
                 docData.readBy = [];
                 await setDoc(docRef, docData);
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_DOCUMENT", entityType: "DOCUMENT", entityId: docRef.id, details: { title: data.title } });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "CREATE_DOCUMENT", entityType: "DOCUMENT", entityId: docRef.id, details: { title: data.title } });
             }
 
             toast({ title: isEditMode ? "Document Updated" : "Document Added", description: `"${data.title}" has been saved.` });
@@ -187,7 +186,7 @@ export default function AdminDocumentsPage() {
         try {
             await deleteObject(ref(storage, docToDelete.filePath));
             await deleteDoc(doc(db, "documents", docToDelete.id));
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "DELETE_DOCUMENT", entityType: "DOCUMENT", entityId: docToDelete.id, details: { title: docToDelete.title } });
+            await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "DELETE_DOCUMENT", entityType: "DOCUMENT", entityId: docToDelete.id, details: { title: docToDelete.title } });
             toast({ title: "Document Deleted", description: `"${docToDelete.title}" has been removed.` });
             fetchDocuments();
         } catch (error) {
