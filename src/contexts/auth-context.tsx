@@ -60,7 +60,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const firestoreDisplayName = userData.displayName || currentUser.displayName || '';
 
                 const enhancedUser: User = {
-                  ...currentUser,
                   uid: currentUser.uid,
                   email: currentUser.email || '', 
                   displayName: firestoreDisplayName,
@@ -75,25 +74,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setSessionCookie(enhancedUser.uid);
             } else {
                 // User exists in Auth but not in Firestore, create a basic profile
-                const basicProfile = {
+                const basicProfile: Partial<User> = {
                     uid: currentUser.uid,
                     email: currentUser.email || '',
                     displayName: currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'New User'),
-                    role: 'other' as const, // Default role
-                    createdAt: new Date(), // Use JS date, Firestore will convert
-                    accountStatus: 'active' as const,
+                    role: 'other', // Default role
+                    accountStatus: 'active',
                     photoURL: currentUser.photoURL,
                 };
-                await setDoc(userDocRef, basicProfile);
-                const enhancedUser: User = { ...currentUser, ...basicProfile, email: currentUser.email || '' };
-                setUser(enhancedUser);
-                setSessionCookie(enhancedUser.uid);
+                await setDoc(doc(db, "users", currentUser.uid), {
+                    ...basicProfile,
+                     createdAt: new Date(),
+                });
+                setUser(basicProfile as User);
+                setSessionCookie(basicProfile.uid!);
             }
 
           } catch (firestoreError) {
             console.error("Error fetching or creating user details in Firestore:", firestoreError);
             setError(firestoreError instanceof Error ? firestoreError : new Error("Error managing user profile"));
-            const basicUser: User = { ...currentUser, uid: currentUser.uid, email: currentUser.email || '', displayName: currentUser.displayName || '', photoURL: currentUser.photoURL };
+            const basicUser: User = { uid: currentUser.uid, email: currentUser.email || '', displayName: currentUser.displayName || '', photoURL: currentUser.photoURL };
             setUser(basicUser);
             setSessionCookie(basicUser.uid);
           }

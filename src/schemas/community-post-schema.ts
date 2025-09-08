@@ -1,7 +1,7 @@
 
 import { z } from "zod";
 import type { Timestamp } from 'firebase/firestore';
-import type { User } from "@/contexts/auth-context";
+import type { User } from "@/schemas/user-schema";
 
 export const communityPostFormSchema = z.object({
   content: z.string().min(1, "Post cannot be empty.").max(1000, "Post cannot exceed 1000 characters."),
