@@ -254,10 +254,10 @@ export default function AdminTrainingSessionsPage() {
 
             if (isEditMode && currentSession) {
                 batch.update(sessionRef, sessionData);
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: currentSession.id, details: { title: data.title } });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "UPDATE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: currentSession.id, details: { title: data.title } });
             } else {
                 batch.set(sessionRef, { ...sessionData, createdAt: serverTimestamp() });
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: sessionRef.id, details: { title: data.title } });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "CREATE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: sessionRef.id, details: { title: data.title } });
             }
             
             await batch.commit();
@@ -283,7 +283,7 @@ export default function AdminTrainingSessionsPage() {
                 });
             }
             await batch.commit();
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "DELETE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: sessionToDelete.id, details: { title: sessionToDelete.title } });
+            await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "DELETE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: sessionToDelete.id, details: { title: sessionToDelete.title } });
             toast({ title: "Session Deleted", description: `"${sessionToDelete.title}" has been removed.` });
             fetchPageData();
         } catch (error) {
@@ -372,7 +372,7 @@ export default function AdminTrainingSessionsPage() {
                                     <h3 className="text-lg font-medium">Assign Attendees</h3>
                                      <FormField control={form.control} name="purserIds" render={({ field }) => (<FormItem><FormLabel>Assign Pursers</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pursers..." options={pursers.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                                      <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                     <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                                      <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                                      <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
 

@@ -2,233 +2,203 @@
 {
   "indexes": [
     {
+      "collectionGroup": "alerts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "targetAudience", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "communityPosts",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "courses",
-      "queryScope": "COLLECTION_GROUP",
+      "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "quizId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "title",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "published", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "courses",
-      "queryScope": "COLLECTION_GROUP",
+      "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "title",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "quizId",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "quizId", "order": "ASCENDING" },
+        { "fieldPath": "title", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "flights",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "allCrewIds",
-          "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "scheduledDepartureDateTimeUTC",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "allCrewIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "flights",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "allCrewIds",
-          "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "scheduledDepartureDateTimeUTC",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "purserId", "order": "ASCENDING" },
+        { "fieldPath": "purserReportSubmitted", "order": "ASCENDING" },
+        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "flights",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "flights",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "purserId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "purserReportSubmitted",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "scheduledDepartureDateTimeUTC",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "scheduledDepartureDateTimeUTC", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "flightSwaps",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "participantIds",
-          "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "participantIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "flightSwaps",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "status",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "purserReports",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "purserReports",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "status",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "questions",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "quizId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "quizId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "requests",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "trainingSessions",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "sessionDateTimeUTC",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "sessionDateTimeUTC", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "trainingSessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sessionDateTimeUTC", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "userDocuments",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "expiryDate",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "expiryDate", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "userDocuments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "expiryDate", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "userDocuments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "lastUpdatedAt", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "userQuizAttempts",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "completedAt",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "completedAt", "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "userQuizAttempts",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "quizId",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
       ]
     },
     {
-      "collectionGroup": "userQuizAttempts",
+      "collectionGroup": "userActivities",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "status",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "userActivities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "suggestions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "auditLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "email", "order": "ASCENDING" }
       ]
     }
   ],
