@@ -48,6 +48,9 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
         }
 
         try {
+            // This part is tricky as createUserWithEmailAndPassword logs the new user in on the server.
+            // This is a known complexity. For this app's purpose, we proceed, but in a real-world
+            // scenario, you might use a Cloud Function triggered by a Firestore document write.
             const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
             const newUid = userCredential.user.uid;
             
