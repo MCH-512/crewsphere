@@ -137,6 +137,13 @@
       "collectionGroup": "userDocuments",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "expiryDate", "order": "ASCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "userDocuments",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "lastUpdatedAt", "order": "DESCENDING" }
       ]
