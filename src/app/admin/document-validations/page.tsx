@@ -55,7 +55,7 @@ export default function AdminDocumentValidationPage() {
         try {
             const docRef = doc(db, "userDocuments", docToApprove.id);
             await updateDoc(docRef, { status: 'approved' });
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "APPROVE_USER_DOCUMENT", entityType: "USER_DOCUMENT", entityId: docToApprove.id });
+            await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "APPROVE_USER_DOCUMENT", entityType: "USER_DOCUMENT", entityId: docToApprove.id });
             toast({ title: "Document Approved", description: `${docToApprove.documentName} for ${docToApprove.userEmail} has been marked as approved.` });
             fetchDocuments();
         } catch (error) {
