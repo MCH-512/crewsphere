@@ -88,6 +88,10 @@ export default function CertificatePage() {
         fetchCertificateData();
     }, [attemptId, authUser, authLoading, router, toast]);
 
+    const handlePrint = () => {
+        window.print();
+    };
+
     if (authLoading || isLoading) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /><p className="ml-3">Loading Certificate...</p></div>;
     }
@@ -106,7 +110,7 @@ export default function CertificatePage() {
         <div className="space-y-6 max-w-4xl mx-auto">
              <div className="flex justify-between items-center print:hidden">
                 <Button variant="outline" onClick={() => router.push('/training')}><ArrowLeft className="mr-2 h-4 w-4"/>Back to E-Learning</Button>
-                <Button onClick={() => window.print()}><Download className="mr-2 h-4 w-4"/>Print Certificate</Button>
+                <Button onClick={handlePrint}><Download className="mr-2 h-4 w-4"/>Print Certificate</Button>
             </div>
             
             <Card className="shadow-2xl border-4 border-primary/20 aspect-[1.414/1] print:shadow-none print:border-none">

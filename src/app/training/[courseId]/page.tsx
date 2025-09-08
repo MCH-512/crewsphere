@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, query, where, orderBy, limit } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, AlertTriangle, ArrowLeft, CheckCircle, Clock, BookOpen, ListChecks } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowLeft, CheckCircle, Clock, BookOpen, ListChecks, Award } from "lucide-react";
 import { StoredCourse, StoredUserQuizAttempt } from "@/schemas/course-schema";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
@@ -130,9 +130,9 @@ export default function CourseDetailPage() {
         <div className="space-y-6 max-w-4xl mx-auto">
             <div className="flex justify-between items-center">
                 <Button variant="outline" onClick={() => router.push('/training')}><ArrowLeft className="mr-2 h-4 w-4"/>Back to E-Learning Center</Button>
-                 {lastAttempt?.status === 'passed' && (
+                 {lastAttempt?.status === 'passed' && lastAttempt.id && (
                     <Button variant="success" asChild>
-                        <Link href={`/training/certificate/${lastAttempt.id}`}>View Certificate</Link>
+                        <Link href={`/training/certificate/${lastAttempt.id}`}><Award className="mr-2 h-4 w-4"/>View Certificate</Link>
                     </Button>
                 )}
             </div>
