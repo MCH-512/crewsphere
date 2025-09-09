@@ -42,7 +42,3 @@ export interface StoredTrainingSession {
   updatedAt: Timestamp;
   activityIds?: Record<string, string>; // Maps userId -> activityId
 }
-
-    
-
-    
