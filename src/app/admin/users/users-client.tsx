@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch"; 
 import { useAuth } from "@/contexts/auth-context";
 import { auth } from "@/lib/firebase"; 
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye, Filter } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
@@ -152,14 +151,13 @@ export function UsersClient() {
     let formJoiningDate = "";
     if (userToEdit.joiningDate) {
         try {
-            const dateObj = new Date(userToEdit.joiningDate);
+            //Handles both Timestamps (from Firestore) and string dates
+            const dateObj = typeof userToEdit.joiningDate === 'string' ? new Date(userToEdit.joiningDate) : (userToEdit.joiningDate as any).toDate();
             if (!isNaN(dateObj.getTime())) { 
                 formJoiningDate = dateObj.toISOString().split('T')[0];
-            } else {
-                console.warn(`Invalid joiningDate '${userToEdit.joiningDate}' for user ${userToEdit.uid}. Resetting to empty.`);
             }
         } catch (e) {
-            console.error(`Error parsing joiningDate '${userToEdit.joiningDate}' for user ${userToEdit.uid}:`, e);
+             console.error(`Error parsing joiningDate for user ${userToEdit.uid}:`, e);
         }
     }
 
@@ -185,10 +183,6 @@ export function UsersClient() {
         setIsSubmitting(true);
         try {
             if (isCreateMode) {
-                if (!data.email || !data.password) {
-                    throw new Error("Email and password are required to create a user.");
-                }
-
                 await manageUser({ isCreate: true, data, adminUser: user });
                 toast({ title: "User Created", description: `User ${data.email} has been created.` });
 
@@ -372,7 +366,7 @@ export function UsersClient() {
                       <FormField control={form.control} name="role" render={({ field }) => (
                           <FormItem>
                           <FormLabel>Role</FormLabel>
-                          <Select onValueChange={(value) => field.onChange(value === NO_ROLE_SENTINEL ? "" : value)} value={field.value || NO_ROLE_SENT_INEL} >
+                          <Select onValueChange={(value) => field.onChange(value === NO_ROLE_SENTINEL ? "" : value)} value={field.value || NO_ROLE_SENTINEL} >
                               <FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl>
                               <SelectContent>
                               {availableRoles.map(roleValue => (<SelectItem key={roleValue} value={roleValue} className="capitalize">{roleValue}</SelectItem>))}

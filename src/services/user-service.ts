@@ -3,7 +3,7 @@
 
 import { db, auth, isConfigValid } from "@/lib/firebase";
 import { collection, doc, getDocs, query, orderBy, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import type { User, ManageUserFormValues } from "@/schemas/user-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 
@@ -35,11 +35,15 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
         }
 
         try {
-            // NOTE: This approach of using the client SDK on the server is generally not recommended
-            // for production as it can have unexpected authentication behavior.
-            // A more robust solution involves using the Firebase Admin SDK in a dedicated backend environment.
+            // This approach of creating a user on behalf of an admin is complex with the client SDK
+            // and should ideally be handled by a backend function (e.g., Cloud Function) with the Admin SDK.
+            // This implementation is a workaround for the current setup.
+            // NOTE: This will sign in the admin as the new user temporarily, which is not ideal.
             const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
             const newUid = userCredential.user.uid;
+
+            // Update profile for the newly created user
+            await updateProfile(userCredential.user, { displayName: data.displayName });
             
             const userDocRef = doc(db, "users", newUid);
             await setDoc(userDocRef, {
@@ -63,6 +67,7 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
                 entityId: newUid,
                 details: { email: data.email, role: data.role, displayName: data.displayName },
             });
+
         } catch (error: any) {
             if (error.code === 'auth/email-already-in-use') {
                 throw new Error("This email address is already in use by another account.");

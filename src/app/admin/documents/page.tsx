@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -45,7 +46,7 @@ export default function AdminDocumentsPage() {
     const [searchTerm, setSearchTerm] = React.useState("");
     const [categoryFilter, setCategoryFilter] = React.useState<DocumentCategory | "all">("all");
 
-    const form = useForm<DocumentFormValues>({
+    const form = useForm<DocumentFormValues | DocumentEditFormValues>({
         resolver: zodResolver(isEditMode ? documentEditFormSchema : documentFormSchema),
         defaultValues: { title: "", description: "", category: undefined, version: "", file: undefined },
     });
