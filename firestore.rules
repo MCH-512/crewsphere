@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -15,10 +16,10 @@ service cloud.firestore {
 
     // Users Collection
     match /users/{userId} {
-      // Admins can read any single profile. Users can read their own.
+      // Admins can get any user profile. Users can only get their own.
       allow get: if isOwner(userId) || isAdmin();
-      // Allow any authenticated user to list users (for admin panel functionality).
-      allow list: if request.auth != null || isAdmin();
+      // Allow server-side rendering to list users, and any authenticated user to list users for features like multi-selects.
+      allow list: if true;
       // Users can update their own profile. Admins can update any profile.
       allow write: if isOwner(userId) || isAdmin();
     }
