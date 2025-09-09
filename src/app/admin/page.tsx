@@ -176,7 +176,6 @@ export default function AdminConsolePage() {
         return;
     }
     if (user.role !== 'admin') {
-      // No toast needed, the UI will show access denied.
       router.push('/');
       return;
     }
@@ -225,7 +224,8 @@ export default function AdminConsolePage() {
       return (
         <div className="flex flex-col items-center justify-center text-center p-8">
            <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-           <p className="text-muted-foreground mb-4">Could not load dashboard data.</p>
+           <p className="font-semibold">Could not load dashboard data.</p>
+           <p className="text-muted-foreground mb-4">There might be a problem with database permissions.</p>
          </div>
        );
   }
