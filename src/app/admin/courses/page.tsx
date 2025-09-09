@@ -310,7 +310,7 @@ export default function AdminCoursesPage() {
 
             await batch.commit();
             await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: 'DELETE_COURSE', entityType: "COURSE", entityId: courseToDelete.id, details: { title: courseToDelete.title }});
-            toast({ title: "Course Deleted", description: `"${courseToDelete.title}" and all its data have been removed.` });
+            toast({ title: "Course Deleted", description: `"${courseToDelete.title}" and all its associated data have been removed.` });
             fetchCourses();
         } catch (error) {
             console.error(error);
@@ -501,4 +501,3 @@ export default function AdminCoursesPage() {
     );
 }
 
-    
