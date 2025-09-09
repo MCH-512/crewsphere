@@ -6,8 +6,8 @@ export const aircraftTypes = ["B737-800", "B737-300", "A320"] as const;
 
 export const flightFormSchema = z.object({
   flightNumber: z.string().min(3, "Flight number must be at least 3 characters.").max(10),
-  departureAirport: z.string().min(3, "Departure airport is required."),
-  arrivalAirport: z.string().min(3, "Arrival airport is required."),
+  departureAirport: z.string().min(3, "Departure airport is required.").max(4, "Invalid ICAO code"),
+  arrivalAirport: z.string().min(3, "Arrival airport is required.").max(4, "Invalid ICAO code"),
   scheduledDepartureDateTimeUTC: z.string().refine((val) => val && !isNaN(Date.parse(val)), { message: "Invalid departure date/time." }),
   scheduledArrivalDateTimeUTC: z.string().refine((val) => val && !isNaN(Date.parse(val)), { message: "Invalid arrival date/time." }),
   aircraftType: z.enum(aircraftTypes, { required_error: "Aircraft type is required." }),
