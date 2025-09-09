@@ -5,7 +5,7 @@ import { db, auth, isConfigValid } from "@/lib/firebase";
 import { collection, doc, getDocs, query, orderBy, setDoc, updateDoc, serverTimestamp, limit } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import type { User, ManageUserFormValues } from "@/schemas/user-schema";
-import { logAuditEvent } from "./audit-logger";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 export async function getInitialUsers(): Promise<User[]> {
     if (!isConfigValid || !db) return [];
