@@ -2,30 +2,16 @@
 'use server';
 
 import { db, auth, isConfigValid } from "@/lib/firebase";
-import { collection, doc, getDocs, query, orderBy, setDoc, updateDoc, serverTimestamp, limit } from "firebase/firestore";
+import { collection, doc, getDocs, query, orderBy, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import type { User, ManageUserFormValues } from "@/schemas/user-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 
-export async function getInitialUsers(): Promise<User[]> {
-    if (!isConfigValid || !db) return [];
-    // This provides a quick, non-empty list for the initial server render.
-    // The client will then fetch the full, sorted list.
-    // Sorting by email as it's a more reliable and indexed field.
-    const usersQuery = query(collection(db, "users"), orderBy("email", "asc"), limit(25));
-    try {
-        const querySnapshot = await getDocs(usersQuery);
-        return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
-    } catch (e) {
-        console.error("Failed to fetch initial users:", e);
-        return [];
-    }
-}
-
 export async function fetchUsers(): Promise<User[]> {
     if (!isConfigValid || !db) throw new Error("Firebase is not configured.");
     
-    const usersQuery = query(collection(db, "users"), orderBy("fullName", "asc"));
+    // Sorting by email is generally more reliable and performant.
+    const usersQuery = query(collection(db, "users"), orderBy("email", "asc"));
     const querySnapshot = await getDocs(usersQuery);
     return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
 }
@@ -49,9 +35,9 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
         }
 
         try {
-            // This part is tricky as createUserWithEmailAndPassword logs the new user in on the server.
-            // This is a known complexity. For this app's purpose, we proceed, but in a real-world
-            // scenario, you might use a Cloud Function triggered by a Firestore document write.
+            // NOTE: This approach of using the client SDK on the server is generally not recommended
+            // for production as it can have unexpected authentication behavior.
+            // A more robust solution involves using the Firebase Admin SDK in a dedicated backend environment.
             const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
             const newUid = userCredential.user.uid;
             

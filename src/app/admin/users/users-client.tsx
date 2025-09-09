@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -32,11 +33,11 @@ const NO_ROLE_SENTINEL = "_NONE_";
 type SortableColumn = "fullName" | "role" | "accountStatus" | "employeeId";
 type SortDirection = "asc" | 'desc';
 
-export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
+export function UsersClient() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [usersList, setUsersList] = React.useState<User[]>(initialUsers);
+  const [usersList, setUsersList] = React.useState<User[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -84,8 +85,10 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   React.useEffect(() => {
     if (!authLoading && user) {
       loadUsers();
+    } else if (!authLoading && !user) {
+      router.push('/login');
     }
-  }, [authLoading, user, loadUsers]);
+  }, [authLoading, user, loadUsers, router]);
 
 
   const filteredAndSortedUsers = React.useMemo(() => {
@@ -203,7 +206,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
         }
     };
   
-  if ((authLoading || isLoading) && usersList.length === 0) {
+  if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -369,7 +372,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                       <FormField control={form.control} name="role" render={({ field }) => (
                           <FormItem>
                           <FormLabel>Role</FormLabel>
-                          <Select onValueChange={(value) => field.onChange(value === NO_ROLE_SENTINEL ? "" : value)} value={field.value || NO_ROLE_SENTINEL} >
+                          <Select onValueChange={(value) => field.onChange(value === NO_ROLE_SENTINEL ? "" : value)} value={field.value || NO_ROLE_SENT_INEL} >
                               <FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl>
                               <SelectContent>
                               {availableRoles.map(roleValue => (<SelectItem key={roleValue} value={roleValue} className="capitalize">{roleValue}</SelectItem>))}

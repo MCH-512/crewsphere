@@ -16,10 +16,9 @@ service cloud.firestore {
 
     // Users Collection
     match /users/{userId} {
-      // Admins can get any user profile. Users can only get their own.
+      // Admins can list all users. Any authenticated user can get their own profile.
+      allow list: if isAdmin();
       allow get: if isOwner(userId) || isAdmin();
-      // Allow server-side rendering to list users, and any authenticated user to list users for features like multi-selects.
-      allow list: if true;
       // Users can update their own profile. Admins can update any profile.
       allow write: if isOwner(userId) || isAdmin();
     }
