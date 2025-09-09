@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Timestamp } from 'firebase/firestore';
 
 export const alertTypes = ["info", "warning", "critical"] as const;
-export const alertAudiences = ["all", "admin", "purser", "cabin crew", "instructor", "pilote"] as const;
+export const alertAudiences = ["all", "admin", "purser", "cabin crew", "instructor", "pilote", "stagiaire"] as const;
 
 export const alertFormSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters.").max(100),

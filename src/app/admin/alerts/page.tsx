@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -120,7 +121,7 @@ export default function AdminAlertsPage() {
             if (isEditMode && currentAlert) {
                 const alertRef = doc(db, "alerts", currentAlert.id);
                 await updateDoc(alertRef, data);
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_ALERT", entityType: "ALERT", entityId: currentAlert.id, details: { title: data.title } });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "UPDATE_ALERT", entityType: "ALERT", entityId: currentAlert.id, details: { title: data.title } });
                 toast({ title: "Alert Updated", description: `Alert "${data.title}" has been updated.` });
             } else {
                 const newAlertRef = await addDoc(collection(db, "alerts"), {
@@ -129,7 +130,7 @@ export default function AdminAlertsPage() {
                     creatorEmail: user.email,
                     createdAt: serverTimestamp(),
                 });
-                await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "CREATE_ALERT", entityType: "ALERT", entityId: newAlertRef.id, details: { title: data.title } });
+                await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "CREATE_ALERT", entityType: "ALERT", entityId: newAlertRef.id, details: { title: data.title } });
                 toast({ title: "Alert Created", description: `Alert "${data.title}" has been published.` });
             }
             fetchAlerts();
@@ -145,7 +146,7 @@ export default function AdminAlertsPage() {
         if (!user || !window.confirm(`Are you sure you want to delete the alert "${alertToDelete.title}"?`)) return;
         try {
             await deleteDoc(doc(db, "alerts", alertToDelete.id));
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "DELETE_ALERT", entityType: "ALERT", entityId: alertToDelete.id, details: { title: alertToDelete.title } });
+            await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "DELETE_ALERT", entityType: "ALERT", entityId: alertToDelete.id, details: { title: alertToDelete.title } });
             toast({ title: "Alert Deleted", description: `"${alertToDelete.title}" has been removed.` });
             fetchAlerts();
         } catch (error) {

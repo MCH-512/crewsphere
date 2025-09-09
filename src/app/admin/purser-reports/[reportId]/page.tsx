@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -102,7 +103,7 @@ export default function PurserReportDetailPage() {
             const reportRef = doc(db, "purserReports", report.id);
             await updateDoc(reportRef, { status: newStatus });
             setReport(prev => prev ? { ...prev, status: newStatus } : null);
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_REPORT_STATUS", entityType: "PURSER_REPORT", entityId: report.id, details: { oldStatus: report.status, newStatus } });
+            await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "UPDATE_REPORT_STATUS", entityType: "PURSER_REPORT", entityId: report.id, details: { oldStatus: report.status, newStatus } });
             toast({ title: "Status Updated", description: `Report status changed to "${statusConfig[newStatus].label}".` });
         } catch (error) {
             toast({ title: "Update Failed", variant: "destructive" });
@@ -118,7 +119,7 @@ export default function PurserReportDetailPage() {
             const reportRef = doc(db, "purserReports", report.id);
             await updateDoc(reportRef, { adminNotes });
             setReport(prev => prev ? { ...prev, adminNotes } : null);
-            await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: "UPDATE_REPORT_NOTES", entityType: "PURSER_REPORT", entityId: report.id });
+            await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "UPDATE_REPORT_NOTES", entityType: "PURSER_REPORT", entityId: report.id });
             toast({ title: "Notes Saved", description: "Administrator notes have been successfully saved." });
             setIsEditingNotes(false);
         } catch (error) {
