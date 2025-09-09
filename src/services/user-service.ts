@@ -11,7 +11,8 @@ export async function getInitialUsers(): Promise<User[]> {
     if (!isConfigValid || !db) return [];
     // This provides a quick, non-empty list for the initial server render.
     // The client will then fetch the full, sorted list.
-    const usersQuery = query(collection(db, "users"), orderBy("fullName", "asc"), limit(25));
+    // Sorting by email as it's a more reliable and indexed field.
+    const usersQuery = query(collection(db, "users"), orderBy("email", "asc"), limit(25));
     try {
         const querySnapshot = await getDocs(usersQuery);
         return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
