@@ -1,4 +1,3 @@
-
 import { db, isConfigValid } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 

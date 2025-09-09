@@ -1,4 +1,3 @@
-
 'use server';
 
 import { collection, getDocs, query, where, writeBatch, doc, serverTimestamp } from "firebase/firestore";
@@ -31,16 +30,11 @@ const courseData = {
         { title: "Réunions, bulletins et conventions éditoriales", content: "Explains how operational information is communicated through meetings and bulletins, and defines the standard editorial conventions used for clarity and consistency." },
     ] as Omit<Chapter, 'id'>[],
     questions: [
-        { questionText: "Quelle section du manuel décrit la structure du document ?", options: ["Section 1.1", "Section 1.2", "Section 1.3"], correctAnswer: "Section 1.2" },
-        { questionText: "Comment identifier une page mise à jour dans la 'List of Effective Pages' ?", options: ["Par la couleur", "Par la date et le numéro de révision", "Par un symbole spécial"], correctAnswer: "Par la date et le numéro de révision" },
-        { questionText: "Qui est responsable de la distribution du manuel aux équipages ?", options: ["Le commandant de bord", "Le service administratif de l’opérateur", "Chaque équipier individuellement"], correctAnswer: "Le service administratif de l’opérateur" },
-        { questionText: "Quelle est la différence entre une révision normale et temporaire ?", options: ["La couleur du papier", "Une révision normale est planifiée, une temporaire est urgente", "Il n'y a pas de différence"], correctAnswer: "Une révision normale est planifiée, une temporaire est urgente" },
-        { questionText: "Quel document enregistre les feedbacks ou suggestions concernant le manuel ?", options: ["Le journal de bord", "Section 1.8 (Feedback and Suggestions)", "Uniquement par email"], correctAnswer: "Section 1.8 (Feedback and Suggestions)" },
-        { questionText: "Quelles conventions éditoriales sont utilisées dans le manuel ?", options: ["Style libre", "Police, format, symboles standardisés", "Uniquement des images"], correctAnswer: "Police, format, symboles standardisés" },
-        { questionText: "Comment les bulletins opérationnels sont-ils diffusés aux équipages ?", options: ["Par courrier postal", "Uniquement oralement", "Par email ou affichage interne"], correctAnswer: "Par email ou affichage interne" },
-        { questionText: "Dans une composition d'équipage standard (Captain, First Officer, Purser, R1, R2, L2), qui est le garant de l'application des procédures cabine du manuel opérationnel ?", options: ["Le Captain", "Le Purser", "Le personnel au sol"], correctAnswer: "Le Purser" },
-        { questionText: "Quel est le rôle des réunions dans la mise à jour du manuel ?", options: ["Planifier les vacances", "Discuter des mises à jour ou des incidents", "Organiser des fêtes"], correctAnswer: "Discuter des mises à jour ou des incidents" },
-        { questionText: "Quels éléments doivent être vérifiés lors d’une inspection du manuel ?", options: ["La couverture du manuel", "Validité des pages, présence des révisions, accessibilité", "Le poids du manuel"], correctAnswer: "Validité des pages, présence des révisions, accessibilité" },
+        { questionText: "Quelle section du manuel décrit la structure du document ?", options: ["Section 1.1", "Section 1.2", "Section 1.3", "Section 1.4"], correctAnswer: "Section 1.2" },
+        { questionText: "Comment identifier une page mise à jour dans la 'List of Effective Pages' ?", options: ["Par la couleur", "Par la date et le numéro de révision", "Par un symbole spécial", "Par la taille de la police"], correctAnswer: "Par la date et le numéro de révision" },
+        { questionText: "Qui est responsable de la distribution du manuel aux équipages ?", options: ["Le commandant de bord", "Le service administratif de l’opérateur", "Chaque équipier individuellement", "Le chef de cabine"], correctAnswer: "Le service administratif de l’opérateur" },
+        { questionText: "Quelle est la différence entre une révision normale et temporaire ?", options: ["La couleur du papier", "Une révision normale est planifiée, une temporaire est urgente", "Il n'y a pas de différence", "La révision temporaire n'est pas documentée"], correctAnswer: "Une révision normale est planifiée, une temporaire est urgente" },
+        { questionText: "Quel document enregistre les feedbacks ou suggestions concernant le manuel ?", options: ["Le journal de bord", "Section 1.8 (Feedback and Suggestions)", "Uniquement par email", "Le rapport de vol"], correctAnswer: "Section 1.8 (Feedback and Suggestions)" },
     ] as { questionText: string; options: string[], correctAnswer: string }[]
 };
 
