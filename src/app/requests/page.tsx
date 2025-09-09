@@ -273,7 +273,16 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
   );
 };
 
-const RequestHistoryTab = ({ myRequests, isLoading, error, fetchMyRequests }: { myRequests: StoredUserRequest[], isLoading: boolean, error: string | null, fetchMyRequests: () => void }) => {
+// Interface for props with serialized dates
+interface RequestHistoryTabProps {
+    myRequests: (Omit<StoredUserRequest, 'createdAt' | 'updatedAt'> & { createdAt: string; updatedAt?: string; })[];
+    isLoading: boolean;
+    error: string | null;
+    fetchMyRequests: () => void;
+}
+
+
+const RequestHistoryTab = ({ myRequests, isLoading, error, fetchMyRequests }: RequestHistoryTabProps) => {
     
     if (isLoading) {
         return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-2">Loading your request history...</p></div>;
@@ -327,8 +336,8 @@ const RequestHistoryTab = ({ myRequests, isLoading, error, fetchMyRequests }: { 
                   </CardHeader>
                   <CardContent>
                     <div className="text-sm text-muted-foreground mb-3">
-                      Submitted: {request.createdAt ? format(request.createdAt.toDate(), "PPp") : 'N/A'}
-                      {request.updatedAt && request.updatedAt.toMillis() !== request.createdAt.toMillis() && (<span className="ml-2 italic">(Last updated: {format(request.updatedAt.toDate(), "PPpp")})</span>)}
+                      Submitted: {request.createdAt ? format(new Date(request.createdAt), "PPp") : 'N/A'}
+                      {request.updatedAt && new Date(request.updatedAt).getTime() !== new Date(request.createdAt).getTime() && (<span className="ml-2 italic">(Last updated: {format(new Date(request.updatedAt), "PPpp")})</span>)}
                     </div>
 
                     <Accordion type="single" collapsible className="w-full">
@@ -361,7 +370,7 @@ const RequestHistoryTab = ({ myRequests, isLoading, error, fetchMyRequests }: { 
 export default function RequestsPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [myRequests, setMyRequests] = React.useState<StoredUserRequest[]>([]);
+  const [myRequests, setMyRequests] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -376,7 +385,16 @@ export default function RequestsPage() {
     try {
       const q = query(collection(db, "requests"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
-      const fetchedRequests = querySnapshot.docs.map(doc => ({id: doc.id, ...doc.data() } as StoredUserRequest));
+      const fetchedRequests = querySnapshot.docs.map(doc => {
+          const data = doc.data() as StoredUserRequest;
+          return {
+              ...data,
+              id: doc.id,
+              // Convert timestamps to ISO strings for serialization
+              createdAt: data.createdAt.toDate().toISOString(),
+              updatedAt: data.updatedAt ? data.updatedAt.toDate().toISOString() : undefined,
+          };
+      });
       setMyRequests(fetchedRequests);
     } catch (err) {
       console.error("Error fetching user requests:", err);
