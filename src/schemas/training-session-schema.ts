@@ -1,4 +1,3 @@
-
 "use client";
 
 import { z } from "zod";
@@ -35,7 +34,7 @@ export interface StoredTrainingSession {
   title: string;
   description: string;
   location: string;
-  sessionDateTimeUTC: Timestamp; // Changed from string to Timestamp
+  sessionDateTimeUTC: Timestamp;
   attendeeIds: string[]; // Still stored as a single array in Firestore
   createdBy: string; // Admin's UID
   createdAt: Timestamp;
