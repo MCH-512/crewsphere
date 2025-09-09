@@ -16,9 +16,9 @@ service cloud.firestore {
 
     // Users Collection
     match /users/{userId} {
-      // Admins can list all users. Any authenticated user can get their own profile.
-      allow list: if isAdmin();
+      // Admins can list all users. Authenticated users can get their own document.
       allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
       // Users can update their own profile. Admins can update any profile.
       allow write: if isOwner(userId) || isAdmin();
     }
@@ -76,6 +76,9 @@ service cloud.firestore {
         // Users can create their own attempts. Admins can't create attempts for others.
         allow create: if isOwner(request.resource.data.userId);
         allow update, delete: if isAdmin();
+    }
+     match /userProgress/{userId}/{courseCollection}/{courseId} {
+      allow read, write: if isOwner(userId);
     }
     
     // Documents: Main library and user-specific
