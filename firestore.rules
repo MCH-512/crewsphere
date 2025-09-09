@@ -2,17 +2,129 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Allow server-side rendering to read user data for pre-loading pages.
-    // Writes are still restricted.
-    match /users/{userId} {
-      allow get, list: if true;
-      allow write: if request.auth != null;
+    
+    // Helper function to check for Admin role
+    function isAdmin() {
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    // Default-deny all other collections unless explicitly allowed below
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    // Helper function to check if the user is the owner of the document
+    function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      // Admins can read any single profile. Users can read their own.
+      allow get: if isOwner(userId) || isAdmin();
+      // Allow any authenticated user to list users (for admin panel functionality).
+      allow list: if request.auth != null || isAdmin();
+      // Users can update their own profile. Admins can update any profile.
+      allow write: if isOwner(userId) || isAdmin();
+    }
+    
+    // System-wide Configuration
+    match /systemConfiguration/{configId} {
+        allow read: if request.auth != null;
+        allow write: if isAdmin();
+    }
+    
+    // Alerts
+    match /alerts/{alertId} {
+        allow read: if request.auth != null;
+        allow create, update, delete: if isAdmin();
+    }
+    
+    // Audit Logs
+    match /auditLogs/{logId} {
+        allow read: if isAdmin();
+        // Only backend can create audit logs, deny client-side creation.
+        allow create, update, delete: if false;
+    }
+
+    // Flights and User Activities (interlinked)
+    match /flights/{flightId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isAdmin();
+    }
+    match /userActivities/{activityId} {
+      // Users can read their own activities. Admins can read all.
+      allow read: if request.auth != null && (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Training: Courses, Quizzes, Questions, Attempts, Certificate Rules
+    match /courses/{courseId} {
+        allow read: if request.auth != null;
+        allow create, update, delete: if isAdmin();
+    }
+     match /quizzes/{quizId} {
+        allow read: if request.auth != null;
+        allow create, update, delete: if isAdmin();
+    }
+     match /questions/{questionId} {
+        allow read: if request.auth != null;
+        allow create, update, delete: if isAdmin();
+    }
+    match /certificateRules/{ruleId} {
+        allow read: if request.auth != null;
+        allow create, update, delete: if isAdmin();
+    }
+    match /userQuizAttempts/{attemptId} {
+        // Users can read their own attempts. Admins can read all.
+        allow read: if isOwner(resource.data.userId) || isAdmin();
+        // Users can create their own attempts. Admins can't create attempts for others.
+        allow create: if isOwner(request.resource.data.userId);
+        allow update, delete: if isAdmin();
+    }
+    
+    // Documents: Main library and user-specific
+    match /documents/{docId} {
+        allow read: if request.auth != null;
+        allow create, update, delete: if isAdmin();
+    }
+    match /userDocuments/{userDocId} {
+        allow read: if isOwner(resource.data.userId) || isAdmin();
+        allow create: if isOwner(request.resource.data.userId);
+        allow update: if isOwner(resource.data.userId) || isAdmin();
+        allow delete: if isAdmin();
+    }
+    
+    // Community Features
+    match /communityPosts/{postId} {
+        allow read: if request.auth != null;
+        // Allow creation by any authenticated user.
+        // Allow update only for likes by any authenticated user.
+        allow create: if request.auth != null;
+        allow update: if request.auth != null;
+        allow delete: if isOwner(resource.data.authorId) || isAdmin();
+    }
+     match /suggestions/{suggestionId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null; // For upvoting
+        allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+    
+    // Requests
+    match /requests/{requestId} {
+        allow read: if isOwner(resource.data.userId) || isAdmin();
+        allow create: if isOwner(request.resource.data.userId);
+        allow update: if isOwner(resource.data.userId) || isAdmin();
+        allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    // Flight Swaps
+    match /flightSwaps/{swapId} {
+        allow read: if request.auth != null;
+        // User can create, or an admin can manage
+        allow create, update, delete: if request.auth != null;
+    }
+    
+    // Training Sessions
+    match /trainingSessions/{sessionId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isAdmin();
     }
   }
 }
