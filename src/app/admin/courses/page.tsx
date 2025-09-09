@@ -1,9 +1,8 @@
-
 "use client";
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,6 @@ import { logAuditEvent } from "@/lib/audit-logger";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import Link from "next/link";
 import { StoredQuiz, StoredCertificateRule } from "@/schemas/course-schema";
 import { generateCourseImage } from "@/ai/flows/generate-course-image-flow";
 import { generateQuizFromContent } from "@/ai/flows/generate-quiz-flow";
@@ -152,7 +150,7 @@ export default function AdminCoursesPage() {
                     category: courseToEdit.category, courseType: courseToEdit.courseType,
                     referenceBody: courseToEdit.referenceBody, duration: courseToEdit.duration,
                     mandatory: courseToEdit.mandatory, published: courseToEdit.published,
-                    imageHint: courseToEdit.imageHint || "",
+                    imageHint: courseToEdit.imageHint,
                     quizTitle: quizData.title,
                     passingThreshold: certRuleData.passingThreshold,
                     certificateExpiryDays: certRuleData.expiryDurationDays,
@@ -212,7 +210,7 @@ export default function AdminCoursesPage() {
                  const questionsSnapshot = await getDocs(questionsQuery);
                  questionsSnapshot.forEach(doc => batch.delete(doc.ref));
             }
-            data.questions.forEach((q, index) => {
+            data.questions.forEach((q) => {
                 const questionRef = doc(collection(db, "questions"));
                 batch.set(questionRef, { ...q, quizId: quizRef.id, questionType: 'mcq', createdAt: serverTimestamp() });
             });
@@ -435,8 +433,8 @@ export default function AdminCoursesPage() {
                                         <FormLabel className="font-semibold text-base flex items-center gap-2"><CheckSquare/>Quiz & Certificate</FormLabel>
                                          <FormField control={form.control} name="quizTitle" render={({ field }) => <FormItem><FormLabel>Quiz Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
                                          <div className="grid md:grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="passingThreshold" render={({ field }) => <FormItem><FormLabel>Passing Score (%)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl><FormMessage /></FormItem>} />
-                                            <FormField control={form.control} name="certificateExpiryDays" render={({ field }) => <FormItem><FormLabel>Certificate Expiry (Days)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl><FormMessage /></FormItem>} />
+                                            <FormField control={form.control} name="passingThreshold" render={({ field }) => <FormItem><FormLabel>Passing Score (%)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormMessage /></FormItem>} />
+                                            <FormField control={form.control} name="certificateExpiryDays" render={({ field }) => <FormItem><FormLabel>Certificate Expiry (Days)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormMessage /></FormItem>} />
                                          </div>
                                     </div>
 
@@ -500,4 +498,3 @@ export default function AdminCoursesPage() {
         </div>
     );
 }
-

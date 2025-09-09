@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { format, formatDistanceToNowStrict, differenceInDays, startOfDay, eachDayOfInterval } from "date-fns";
-import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
+import { StoredUserQuizAttempt } from "@/schemas/course-schema";
 import { StoredCourse } from "@/schemas/course-schema";
 import { StoredUserDocument, type UserDocumentStatus as CalculatedDocStatus } from "@/schemas/user-document-schema";
 import { Separator } from "@/components/ui/separator";
