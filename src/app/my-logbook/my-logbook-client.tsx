@@ -8,16 +8,11 @@ import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { NotebookPen, Loader2, AlertTriangle, Sigma, Hourglass, Plane, UserSquare, RefreshCw } from "lucide-react";
 import { format, parseISO, differenceInMinutes } from "date-fns";
-import { StoredFlight } from "@/schemas/flight-schema";
+import type { LogbookEntry } from "@/services/logbook-service";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { getLogbookEntries } from "@/services/logbook-service";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-
-export interface LogbookEntry extends StoredFlight {
-    flightDurationMinutes: number;
-    userRoleOnFlight: string;
-}
 
 const formatDuration = (totalMinutes: number): string => {
     if (isNaN(totalMinutes) || totalMinutes < 0) return "0h 0m";

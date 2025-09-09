@@ -6,9 +6,15 @@ import { parseISO, differenceInMinutes } from "date-fns";
 import { db, isConfigValid } from "@/lib/firebase";
 import { StoredFlight } from "@/schemas/flight-schema";
 
-export interface LogbookEntry extends StoredFlight {
+export interface LogbookEntry extends Omit<StoredFlight, 'createdAt' | 'updatedAt' | 'scheduledDepartureDateTimeUTC' | 'scheduledArrivalDateTimeUTC'> {
+    id: string;
     flightDurationMinutes: number;
     userRoleOnFlight: string;
+    // Dates are converted to strings for serialization
+    scheduledDepartureDateTimeUTC: string;
+    scheduledArrivalDateTimeUTC: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export async function getLogbookEntries(userId: string | undefined): Promise<LogbookEntry[]> {
@@ -37,7 +43,15 @@ export async function getLogbookEntries(userId: string | undefined): Promise<Log
             else if (data.instructorIds?.includes(userId)) userRoleOnFlight = "Instructor";
             else if (data.traineeIds?.includes(userId)) userRoleOnFlight = "Stagiaire";
 
-            return { ...data, flightDurationMinutes, userRoleOnFlight };
+            return { 
+                ...data,
+                id: doc.id,
+                flightDurationMinutes, 
+                userRoleOnFlight,
+                // Convert Timestamps to ISO strings
+                createdAt: data.createdAt.toDate().toISOString(),
+                updatedAt: data.updatedAt.toDate().toISOString(),
+            };
         });
         return entries;
     } catch (err: any) {
