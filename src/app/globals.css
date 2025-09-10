@@ -48,7 +48,7 @@
     --chart-4: 0 84% 60%;   /* Red */
     --chart-5: 215 28% 47%; /* Slate */
     
-    /* Sidebar remains consistent */
+    /* Sidebar in Light Mode */
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-border: 217.2 32.6% 17.5%;
@@ -100,14 +100,24 @@
     --chart-3: 48 96% 53%;  /* Yellow */
     --chart-4: 0 72% 51%;   /* Red */
     --chart-5: 215 20% 65%;  /* Slate */
+
+    /* Sidebar in Dark Mode */
+    --sidebar-background: 222.2 84% 4.9%; /* Same as card background */
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
     @apply bg-background text-foreground;
+  }
+  * {
+    @apply border-border;
   }
 }
