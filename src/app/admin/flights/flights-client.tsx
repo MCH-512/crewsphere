@@ -487,12 +487,14 @@ export function AdminFlightsClient({
 
     const CalendarDay = (props: DayContentProps) => {
         const hasFlights = dayHasFlights(props.date);
+        const dayHasPendingSwap = flights.some(f => isSameDay(parseISO(f.scheduledDepartureDateTimeUTC), props.date) && f.pendingSwap);
+        
         return (
             <div className="relative flex h-full w-full items-center justify-center">
                 <p>{format(props.date, 'd')}</p>
                 {hasFlights &&
                     <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-0.5">
-                        <div className={cn("h-1.5 w-1.5 rounded-full", "bg-primary")} />
+                        <div className={cn("h-1.5 w-1.5 rounded-full", dayHasPendingSwap ? "bg-warning" : "bg-primary")} />
                     </div>
                 }
             </div>
@@ -517,7 +519,7 @@ export function AdminFlightsClient({
                         <Button variant="outline" onClick={fetchPageData} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
                         <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4"/>Create Flight</Button>
                         <div className="flex items-center space-x-2 ml-auto">
-                            <Label htmlFor="pending-swaps-filter" className="flex items-center gap-1 text-sm"><Filter className="h-4 w-4"/>Pending Swaps Only</Label>
+                            <Label htmlFor="pending-swaps-filter" className="flex items-center gap-1 text-sm text-warning-foreground"><Filter className="h-4 w-4"/>Pending Swaps Only</Label>
                             <Switch id="pending-swaps-filter" checked={showPendingSwapsOnly} onCheckedChange={setShowPendingSwapsOnly} />
                         </div>
                     </div>
@@ -550,7 +552,7 @@ export function AdminFlightsClient({
                                     </TableCell>
                                      <TableCell className="space-x-2">
                                         {!f.purserReportSubmitted && (<Button variant="outline" size="icon" className="h-7 w-7 border-amber-500/50 text-amber-600" title="Purser Report Pending"><FileSignature className="h-4 w-4" /></Button>)}
-                                        {f.pendingSwap && (<Button variant="outline" size="icon" className="h-7 w-7 border-blue-500/50 text-blue-600 animate-pulse" title="Swap Request Pending" onClick={() => setSwapToApprove(f.pendingSwap!)}><Handshake className="h-4 w-4" /></Button>)}
+                                        {f.pendingSwap && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning text-warning-foreground animate-pulse" title="Swap Request Pending" onClick={() => setSwapToApprove(f.pendingSwap!)}><Handshake className="h-4 w-4" /></Button>)}
                                     </TableCell>
                                     <TableCell className="text-right space-x-1">
                                         <Button variant="ghost" size="icon" onClick={() => handleCreateReturnFlight(f)} title="Create Return Flight"><ArrowRightLeft className="h-4 w-4" /></Button>
@@ -642,7 +644,7 @@ export function AdminFlightsClient({
                             <h3 className="text-lg font-medium flex items-center gap-2"><Users />Crew Assignment</h3>
                              <FormField control={form.control} name="purserId" render={({ field }) => (<FormItem><FormLabel>Assign Purser</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a purser" /></SelectTrigger></FormControl><SelectContent>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName} ({p.email})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                             <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${p.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                             <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                             
