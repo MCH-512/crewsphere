@@ -41,7 +41,7 @@ export async function postFlightSwap(flightToPost: StoredFlight, user: User): Pr
             userEmail: user.email || 'N/A',
             actionType: 'POST_FLIGHT_SWAP',
             entityType: 'FLIGHT_SWAP',
-            details: `Posted flight ${flightToPost.flightNumber} for swap`
+            details: `Posted flight ${'${flightToPost.flightNumber}'} for swap`
         });
 
     } catch (error) {
@@ -90,7 +90,7 @@ export async function requestFlightSwap(swapId: string, requestingFlight: Stored
             actionType: 'REQUEST_FLIGHT_SWAP',
             entityType: 'FLIGHT_SWAP',
             entityId: swapId,
-            details: `Requested to swap flight ${requestingFlight.flightNumber}`
+            details: `Requested to swap flight ${'${requestingFlight.flightNumber}'}`
         });
 
     } catch (error) {
@@ -167,6 +167,6 @@ export async function getMySwaps(userId: string): Promise<StoredFlightSwap[]> {
 
     } catch (error) {
         console.error("Error fetching user's flight swaps:", error);
-        throw new Error("Could not retrieve your flight swap history.");
+        throw new Error("Could not retrieve your flight swap history. This might be due to a missing database index.");
     }
 }
