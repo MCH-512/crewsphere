@@ -9,24 +9,17 @@ import Link from "next/link";
 import { Badge } from "../ui/badge";
 import type { VariantProps } from "class-variance-authority";
 import { badgeVariants } from "../ui/badge";
+import { getStatusBadgeVariant } from "@/schemas/request-schema";
+import type { StoredUserRequest } from "@/schemas/request-schema";
+
 
 export interface RequestsStats {
   pendingCount: number;
   latestRequest: {
     subject: string;
-    status: "pending" | "in-progress" | "approved" | "rejected";
+    status: StoredUserRequest['status'];
   } | null;
 }
-
-const getStatusBadgeVariant = (status: RequestsStats['latestRequest']['status']): VariantProps<typeof badgeVariants>["variant"] => {
-    switch (status) {
-      case "pending": return "warning";
-      case "approved": return "success"; 
-      case "rejected": return "destructive";
-      case "in-progress": return "outline";
-      default: return "secondary";
-    }
-};
 
 export function MyRequestsStatusCard({ initialStats }: { initialStats: RequestsStats | null }) {
     const [stats] = React.useState(initialStats);
@@ -54,14 +47,14 @@ export function MyRequestsStatusCard({ initialStats }: { initialStats: RequestsS
                     </div>
                  ) : stats.pendingCount > 0 ? (
                     <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-warning-foreground" />
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle className="h-5 w-5 text-warning-foreground mt-0.5 flex-shrink-0" />
                             <p>You have <strong className="text-foreground">{stats.pendingCount}</strong> request(s) awaiting review.</p>
                         </div>
                          {stats.latestRequest && (
-                            <p className="text-sm text-muted-foreground truncate">
+                            <div className="text-sm text-muted-foreground truncate p-2 border-l-2 border-warning/80">
                                 Latest: "{stats.latestRequest.subject}" <Badge variant={getStatusBadgeVariant(stats.latestRequest.status)} className="capitalize">{stats.latestRequest.status.replace('-', ' ')}</Badge>
-                            </p>
+                            </div>
                         )}
                     </div>
                 ) : (

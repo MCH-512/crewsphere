@@ -49,7 +49,7 @@ export async function getTrainingStatus(): Promise<TrainingStats | null> {
         return null;
     }
      try {
-        const coursesQuery = query(collection(db, "courses"), where("published", "==", true), where("mandatory", "==", true));
+        const coursesQuery = query(collection(db, "courses"), where("published", "==", true), where("mandatory", "==", true), orderBy("createdAt", "asc"));
         const attemptsQuery = query(collection(db, "userQuizAttempts"), where("userId", "==", user.uid), where("status", "==", "passed"));
         
         const [coursesSnapshot, attemptsSnapshot] = await Promise.all([getDocs(coursesQuery), getDocs(attemptsQuery)]);
@@ -77,7 +77,12 @@ export async function getRequestsStatus(): Promise<RequestsStats | null> {
         return null;
     }
 
-    const requestsQuery = query(collection(db, "requests"), where("userId", "==", user.uid), where("status", "in", ["pending", "in-progress"]), orderBy("createdAt", "desc"));
+    const requestsQuery = query(
+        collection(db, "requests"), 
+        where("userId", "==", user.uid), 
+        where("status", "in", ["pending", "in-progress"]), 
+        orderBy("createdAt", "desc")
+    );
     
     try {
         const querySnapshot = await getDocs(requestsQuery);

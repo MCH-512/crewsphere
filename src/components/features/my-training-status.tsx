@@ -47,7 +47,7 @@ export function MyTrainingStatusCard({ initialStats }: { initialStats: TrainingS
                     </div>
                 ) : coursesToDo > 0 ? (
                     <div className="flex items-start gap-4">
-                        <AlertTriangle className="h-8 w-8 text-warning-foreground mt-1" />
+                        <AlertTriangle className="h-8 w-8 text-warning-foreground mt-1 flex-shrink-0" />
                         <div>
                             <p className="font-semibold text-lg">{coursesToDo} mandatory course(s) to complete</p>
                             <p className="text-sm text-muted-foreground">Stay up-to-date with your required training to ensure compliance and safety.</p>
@@ -55,7 +55,7 @@ export function MyTrainingStatusCard({ initialStats }: { initialStats: TrainingS
                     </div>
                 ) : (
                     <div className="flex items-start gap-4 text-success">
-                        <CheckCircle className="h-8 w-8 mt-1" />
+                        <CheckCircle className="h-8 w-8 mt-1 flex-shrink-0" />
                          <div>
                             <p className="font-semibold text-lg">All mandatory training complete!</p>
                             <p className="text-sm text-muted-foreground">Excellent work. You are fully compliant with all training requirements.</p>
