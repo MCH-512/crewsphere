@@ -13,6 +13,24 @@ import type { TrainingChartDataPoint } from "@/components/features/charts/traini
 import type { TodayActivity } from "@/components/features/todays-schedule";
 import type { TrainingStats } from "@/components/features/my-training-status";
 import type { RequestsStats } from "@/components/features/my-requests-status";
+import imageData from '@/data/placeholder-images.json';
+
+type TimeOfDay = "morning" | "afternoon" | "evening" | "night";
+
+const getTimeOfDay = (): TimeOfDay => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return "morning";
+    if (hour >= 12 && hour < 18) return "afternoon";
+    if (hour >= 18 && hour < 22) return "evening";
+    return "night";
+};
+
+
+export async function getDashboardHeroImage(): Promise<{ src: string; hint: string; }> {
+    const timeOfDay = getTimeOfDay();
+    const heroImages = imageData.dashboardHero;
+    return heroImages[timeOfDay] || heroImages.default;
+}
 
 
 export async function getTodayActivities(): Promise<TodayActivity[]> {

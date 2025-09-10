@@ -72,7 +72,7 @@ export default function DashboardClientPage({ children, heroImage }: DashboardCl
         <Card className="shadow-lg border-none relative overflow-hidden min-h-[220px] flex flex-col justify-between p-6">
             <Image
                 src={heroImage.src}
-                alt="Airplane view"
+                alt="Dashboard hero image"
                 data-ai-hint={heroImage.hint}
                 fill
                 priority
