@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -18,6 +19,7 @@ import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode, type Airport } from "@/services/airport-service";
 import { type UserActivity } from "@/schemas/user-activity-schema";
 import Link from 'next/link';
+import { getUserActivitiesForMonth } from "@/services/user-activity-service";
 
 
 // --- Data Structures ---
@@ -144,14 +146,8 @@ export default function MySchedulePage() {
     const fetchActivities = React.useCallback(async (month: Date) => {
         if (!user) return;
         setIsLoading(true);
-        const start = startOfMonth(month);
-        const end = endOfMonth(month);
-
         try {
-            const q = query(collection(db, "userActivities"), where("userId", "==", user.uid), where("date", ">=", start), where("date", "<=", end));
-            const querySnapshot = await getDocs(q);
-            const fetchedActivities = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserActivity));
-            fetchedActivities.sort((a, b) => a.date.toMillis() - b.date.toMillis());
+            const fetchedActivities = await getUserActivitiesForMonth(user.uid, month);
             setActivities(fetchedActivities);
         } catch (error) {
             console.error("Error fetching schedule:", error);

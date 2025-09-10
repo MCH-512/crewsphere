@@ -3,13 +3,49 @@
 
 import { db, isConfigValid } from "@/lib/firebase";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
-import { format, eachDayOfInterval, startOfDay, isSameDay } from 'date-fns';
+import { format, eachDayOfInterval, startOfDay, isSameDay, startOfMonth, endOfMonth } from 'date-fns';
 import { type ActivityType, type UserActivity } from "@/schemas/user-activity-schema";
 
 export interface Conflict {
     activityType: ActivityType;
     details: string;
 }
+
+
+/**
+ * Fetches all activities for a specific user within a given month.
+ * @param userId The UID of the user.
+ * @param month The month to fetch activities for.
+ * @returns A promise that resolves to an array of UserActivity objects.
+ */
+export async function getUserActivitiesForMonth(userId: string, month: Date): Promise<UserActivity[]> {
+    if (!isConfigValid || !db) {
+        console.error("Firebase is not configured. Cannot fetch user activities.");
+        return [];
+    }
+
+    const start = startOfMonth(month);
+    const end = endOfMonth(month);
+
+    try {
+        const q = query(
+            collection(db, "userActivities"), 
+            where("userId", "==", userId), 
+            where("date", ">=", start), 
+            where("date", "<=", end)
+        );
+        const querySnapshot = await getDocs(q);
+        const activities = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserActivity));
+        activities.sort((a, b) => a.date.toMillis() - b.date.toMillis());
+        return activities;
+    } catch (error) {
+        console.error("Error fetching user activities for month:", error);
+        // In a real app, you might want to handle this more gracefully.
+        // For now, returning an empty array to prevent the page from crashing.
+        return [];
+    }
+}
+
 
 /**
  * Checks the availability of multiple crew members for a given date range.
