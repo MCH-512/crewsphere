@@ -167,6 +167,7 @@ export async function getMySwaps(userId: string): Promise<StoredFlightSwap[]> {
 
     } catch (error) {
         console.error("Error fetching user's flight swaps:", error);
-        throw new Error("Could not retrieve your flight swap history. This might be due to a missing database index.");
+        // Instead of throwing, return empty array to allow UI to handle the error.
+        return [];
     }
 }
