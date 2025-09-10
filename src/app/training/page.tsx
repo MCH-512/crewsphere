@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -7,8 +8,8 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Loader2, AlertTriangle, BookOpen, CheckCircle, XCircle, RefreshCw, Award } from "lucide-react";
-import { StoredCourse } from "@/schemas/course-schema";
+import { GraduationCap, Loader2, AlertTriangle, BookOpen, CheckCircle, XCircle, RefreshCw, Award, Search, Filter } from "lucide-react";
+import { StoredCourse, courseCategories } from "@/schemas/course-schema";
 import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
@@ -16,6 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 interface CourseWithProgress extends StoredCourse {
     progress?: StoredUserQuizAttempt;
@@ -99,8 +103,13 @@ const CourseProgressCard = ({ course, delay }: { course: CourseWithProgress; del
 export default function TrainingPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
-    const [courses, setCourses] = React.useState<CourseWithProgress[]>([]);
+    const [allCourses, setAllCourses] = React.useState<CourseWithProgress[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
+    
+    const [searchTerm, setSearchTerm] = React.useState("");
+    const [categoryFilter, setCategoryFilter] = React.useState<typeof courseCategories[number] | 'all'>('all');
+    const [statusFilter, setStatusFilter] = React.useState<'all' | 'completed' | 'in-progress' | 'not-started'>('all');
+
 
     React.useEffect(() => {
         if (authLoading) return;
@@ -148,7 +157,7 @@ export default function TrainingPage() {
                     progress: latestAttempts.get(course.id),
                 }));
 
-                setCourses(coursesWithProgress);
+                setAllCourses(coursesWithProgress);
 
             } catch (error) {
                 console.error("Error fetching courses and progress:", error);
@@ -160,6 +169,29 @@ export default function TrainingPage() {
         fetchCoursesAndProgress();
     }, [user, authLoading, router]);
 
+    const filteredCourses = React.useMemo(() => {
+        return allCourses.filter(course => {
+            // Search filter
+            if (searchTerm && !course.title.toLowerCase().includes(searchTerm.toLowerCase())) {
+                return false;
+            }
+            // Category filter
+            if (categoryFilter !== 'all' && course.category !== categoryFilter) {
+                return false;
+            }
+            // Status filter
+            if (statusFilter !== 'all') {
+                const status = course.progress?.status;
+                if (statusFilter === 'completed' && status !== 'passed') return false;
+                // "In Progress" can mean the user has started but not passed, i.e., failed an attempt or read chapters.
+                // We'll consider any attempt (passed or failed) as 'in-progress' or 'completed'
+                if (statusFilter === 'in-progress' && status !== 'failed') return false; 
+                if (statusFilter === 'not-started' && course.progress) return false;
+            }
+            return true;
+        });
+    }, [allCourses, searchTerm, categoryFilter, statusFilter]);
+
     if (authLoading || isLoading) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
@@ -167,9 +199,9 @@ export default function TrainingPage() {
     if (!user) {
         return null; // Redirecting
     }
-
-    const mandatoryCourses = courses.filter(c => c.mandatory);
-    const optionalCourses = courses.filter(c => !c.mandatory);
+    
+    const mandatoryCourses = filteredCourses.filter(c => c.mandatory);
+    const optionalCourses = filteredCourses.filter(c => !c.mandatory);
 
     return (
         <div className="space-y-8">
@@ -182,33 +214,71 @@ export default function TrainingPage() {
                         </CardTitle>
                         <CardDescription>Browse and complete your assigned and optional training courses.</CardDescription>
                     </CardHeader>
+                     <CardContent>
+                        <div className="flex flex-col md:flex-row gap-4">
+                             <div className="relative flex-grow">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    type="search"
+                                    placeholder="Search by course title..."
+                                    className="pl-8 w-full"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <div className="flex gap-4">
+                               <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as any)}>
+                                    <SelectTrigger className="w-full md:w-[240px]">
+                                        <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                                        <SelectValue placeholder="Filter by category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Categories</SelectItem>
+                                        {courseCategories.map(cat => (
+                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                               <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+                                    <SelectTrigger className="w-full md:w-[200px]">
+                                        <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                                        <SelectValue placeholder="Filter by status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Statuses</SelectItem>
+                                        <SelectItem value="not-started">Not Started</SelectItem>
+                                        <SelectItem value="in-progress">In Progress</SelectItem>
+                                        <SelectItem value="completed">Completed</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </CardContent>
                 </Card>
             </AnimatedCard>
 
-            {courses.length === 0 ? (
-                <AnimatedCard delay={0.1}>
+            {filteredCourses.length === 0 ? (
+                 <AnimatedCard delay={0.1}>
                     <Card className="text-center py-12">
                         <CardContent>
-                            <p className="text-muted-foreground mb-4">No training courses are currently available.</p>
+                            <p className="text-muted-foreground mb-4">No training courses found matching your criteria.</p>
                         </CardContent>
                     </Card>
                 </AnimatedCard>
             ) : (
                 <div className="space-y-8">
                     {/* Mandatory Courses Section */}
-                    <section>
-                        <h2 className="text-2xl font-bold tracking-tight mb-4">Mandatory Courses</h2>
-                        <Separator className="mb-6"/>
-                        {mandatoryCourses.length > 0 ? (
+                     {mandatoryCourses.length > 0 && (
+                        <section>
+                            <h2 className="text-2xl font-bold tracking-tight mb-4">Mandatory Courses</h2>
+                            <Separator className="mb-6"/>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {mandatoryCourses.map((course, index) => (
                                     <CourseProgressCard key={course.id} course={course} delay={0.1 + index * 0.05} />
                                 ))}
                             </div>
-                        ) : (
-                             <p className="text-muted-foreground text-center py-8">No mandatory courses assigned.</p>
-                        )}
-                    </section>
+                        </section>
+                     )}
                     
                      {/* Optional Courses Section */}
                     {optionalCourses.length > 0 && (
