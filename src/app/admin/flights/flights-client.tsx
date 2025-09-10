@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, getDoc, where } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, getDoc, where, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, Handshake, FileSignature, Calendar as CalendarIcon, List, Filter, Repeat, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -230,6 +230,34 @@ export function AdminFlightsClient({
     React.useEffect(() => {
         if (!authLoading && !user) router.push('/');
     }, [user, authLoading, router]);
+
+    // Firestore listener for real-time swap notifications
+    React.useEffect(() => {
+        if (!db) return;
+        
+        const q = query(collection(db, "flightSwaps"), where("status", "==", "pending_approval"));
+        
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === "added") {
+                    const newSwap = change.doc.data() as StoredFlightSwap;
+                    toast({
+                        title: "New Swap Request",
+                        description: `Flight ${newSwap.flightInfo.flightNumber} has a new swap request from ${newSwap.requestingUserEmail}.`,
+                        variant: "default",
+                        duration: 10000, // Keep it on screen longer
+                    });
+                    fetchPageData(); // Refresh the list to show the new pending swap
+                }
+            });
+        }, (error) => {
+            console.error("Error with swap listener:", error);
+            // Optionally, inform the admin that real-time updates have stopped
+            toast({ title: "Real-time Connection Lost", description: "Could not listen for new swap requests.", variant: "destructive" });
+        });
+
+        return () => unsubscribe(); // Cleanup on component unmount
+    }, [toast, fetchPageData]);
 
     const sortedAndFilteredFlights = React.useMemo(() => {
         let displayFlights = [...flights];
@@ -651,7 +679,7 @@ export function AdminFlightsClient({
                             <h3 className="text-lg font-medium flex items-center gap-2"><Users />Crew Assignment</h3>
                              <FormField control={form.control} name="purserId" render={({ field }) => (<FormItem><FormLabel>Assign Purser</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a purser" /></SelectTrigger></FormControl><SelectContent>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName} ({p.email})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                             <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                             <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${p.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${p.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${p.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                             
@@ -736,4 +764,4 @@ export function AdminFlightsClient({
     );
 }
 
-    
+
