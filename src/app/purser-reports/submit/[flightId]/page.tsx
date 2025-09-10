@@ -43,7 +43,7 @@ interface FlightForReport {
 const steps = [
     { id: 1, title: 'Flight Info', fields: ['flightNumber', 'flightDate', 'route', 'aircraftType', 'picName', 'foName', 'sccmName'], icon: Plane },
     { id: 2, title: 'Crew', fields: ['positivePoints', 'improvementPoints', 'actionRequired'], icon: Users },
-    { id: 3, title: 'Passengers & Cabin', fields: ['passengerCount', 'passengersToReport', 'technicalIssues'], icon: PersonStanding },
+    { id: 3, title: 'Passengers & Cabin', fields: ['passengerCount', 'passengersToReport', 'technicalIssues', 'passengersToReportDetails'], icon: PersonStanding },
     { id: 4, title: 'Safety & Service', fields: ['safetyChecks', 'safetyAnomalies', 'servicePassengerFeedback'], icon: Shield },
     { id: 5, title: 'Incidents', fields: ['specificIncident', 'incidentTypes', 'incidentDetails'], icon: AlertTriangle },
 ];
@@ -67,6 +67,7 @@ export default function SubmitPurserReportPage() {
         cabinCrewOnBoard: [], passengerCount: 0,
         positivePoints: "", improvementPoints: "", actionRequired: false,
         passengersToReport: [],
+        passengersToReportDetails: "",
         technicalIssues: [],
         safetyChecks: [], safetyAnomalies: "",
         servicePassengerFeedback: "",
@@ -74,6 +75,8 @@ export default function SubmitPurserReportPage() {
     },
     mode: "onChange",
   });
+  
+  const passengersToReport = form.watch("passengersToReport");
 
   React.useEffect(() => {
     if (!flightId || authLoading) return;
@@ -150,7 +153,7 @@ export default function SubmitPurserReportPage() {
 
   const prevStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => prev - 1);
     }
   };
 
@@ -173,7 +176,7 @@ export default function SubmitPurserReportPage() {
       };
       
       toast({ title: "Generating AI Summary...", description: "Please wait while we analyze your report." });
-      const reportContent = `Flight report for ${data.flightNumber} (${data.route}) on ${format(parseISO(data.flightDate), "PPP")}. Passengers: ${data.passengerCount}. Positives: ${data.positivePoints}. Improvements: ${data.improvementPoints}. Passenger notes: ${data.passengersToReport?.join(', ')}. Cabin issues: ${data.technicalIssues?.join(', ')}. Safety anomalies: ${data.safetyAnomalies}. Service feedback: ${data.servicePassengerFeedback}. Incident: ${data.specificIncident ? `Yes, ${data.incidentTypes?.join(', ')} - ${data.incidentDetails}` : 'No'}.`;
+      const reportContent = `Flight report for ${data.flightNumber} (${data.route}) on ${format(parseISO(data.flightDate), "PPP")}. Passengers: ${data.passengerCount}. Positives: ${data.positivePoints}. Improvements: ${data.improvementPoints}. Passenger notes: ${data.passengersToReport?.join(', ')} - Details: ${data.passengersToReportDetails}. Cabin issues: ${data.technicalIssues?.join(', ')}. Safety anomalies: ${data.safetyAnomalies}. Service feedback: ${data.servicePassengerFeedback}. Incident: ${data.specificIncident ? `Yes, ${data.incidentTypes?.join(', ')} - ${data.incidentDetails}` : 'No'}.`;
       
       const summaryResult = await summarizeReport({ reportContent });
 
@@ -259,6 +262,9 @@ export default function SubmitPurserReportPage() {
                     <CardContent className="space-y-4">
                         <FormField control={form.control} name="passengerCount" render={({ field }) => (<FormItem><FormLabel>Total number of passengers</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormMessage /></FormItem>)} />
                         <CheckboxGroup control={form.control} name="passengersToReport" label="Specific passenger types on board" options={passengersToReportOptions} />
+                         {passengersToReport && passengersToReport.length > 0 && (
+                            <FormField control={form.control} name="passengersToReportDetails" render={({ field }) => (<FormItem><FormLabel>Details about passengers to report</FormLabel><FormControl><Textarea {...field} placeholder="Provide seat numbers, names, and relevant details..."/></FormControl><FormMessage /></FormItem>)} />
+                        )}
                         <CheckboxGroup control={form.control} name="technicalIssues" label="Technical issues observed in the cabin" options={technicalIssuesOptions} />
                     </CardContent></Card>
                 </AnimatedCard>

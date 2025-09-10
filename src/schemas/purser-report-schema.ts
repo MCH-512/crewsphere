@@ -30,6 +30,7 @@ export const purserReportFormSchema = z.object({
   // Section 3: Passengers & Cabin
   passengerCount: z.number().min(0, "Passenger count cannot be negative."),
   passengersToReport: z.array(z.string()).optional(),
+  passengersToReportDetails: z.string().max(1000).optional(),
   technicalIssues: z.array(z.string()).optional(),
 
   // Section 4: Safety & Service
@@ -99,6 +100,7 @@ export interface StoredPurserReport {
   actionRequired: boolean;
   passengerCount: number;
   passengersToReport?: string[];
+  passengersToReportDetails?: string;
   technicalIssues?: string[];
   safetyChecks: string[];
   safetyAnomalies?: string;
