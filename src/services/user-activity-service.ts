@@ -52,7 +52,7 @@ export async function getUserActivitiesForMonth(userId: string, month: Date): Pr
  * @param crewUserIds An array of user UIDs to check.
  * @param startDate The start date of the period to check.
  * @param endDate The end date of the period to check.
- * @param activityIdToIgnore Optional. The ID of the current activity being edited, to ignore its own activities.
+ * @param activityIdToIgnore Optional. The ID of the current flight or session being edited, to ignore its own activities.
  * @returns A promise that resolves to a record mapping user IDs to their first found conflict.
  */
 export async function checkCrewAvailability(
@@ -66,7 +66,7 @@ export async function checkCrewAvailability(
   }
   
   const warnings: Record<string, Conflict> = {};
-  const dateInterval = eachDayOfInterval({ start: startDate, end: endDate });
+  const dateInterval = eachDayOfInterval({ start: startOfDay(startDate), end: startOfDay(endDate) });
 
   for (const userId of crewUserIds) {
       if (warnings[userId]) continue; // Already found a conflict for this user
@@ -88,8 +88,12 @@ export async function checkCrewAvailability(
                 const activity = doc.data() as UserActivity;
                 // Check if the activity is on the current day of the interval
                 const isOnSameDay = isSameDay(activity.date.toDate(), day);
-                // And ignore the activity if it's part of the flight or session we're currently editing
-                const isIgnored = activityIdToIgnore && (activity.flightId === activityIdToIgnore || activity.trainingSessionId === activityIdToIgnore);
+                
+                let isIgnored = false;
+                if (activityIdToIgnore) {
+                    // Check if the activity's flightId or trainingSessionId matches the ID to ignore
+                    isIgnored = (activity.flightId === activityIdToIgnore) || (activity.trainingSessionId === activityIdToIgnore);
+                }
 
                 return isOnSameDay && !isIgnored;
             });

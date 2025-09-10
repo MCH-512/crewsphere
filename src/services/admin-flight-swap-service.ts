@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db } from "@/lib/firebase";
@@ -7,7 +6,7 @@ import type { StoredFlight } from "@/schemas/flight-schema";
 import type { StoredFlightSwap } from "@/schemas/flight-swap-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { startOfDay } from "date-fns";
-import { checkCrewAvailability, type Conflict } from "@/services/user-activity-service";
+import { checkCrewAvailability } from "@/services/user-activity-service";
 
 const findUserRoleOnFlight = (flight: StoredFlight, userId: string): { role: string; field: string } | null => {
     if (flight.purserId === userId) return { role: 'purser', field: 'purserId' };
@@ -157,7 +156,8 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
         const initiatorConflicts = await checkCrewAvailability(
             [swap.initiatingUserId],
             new Date(swap.requestingFlightInfo!.scheduledDepartureDateTimeUTC),
-            new Date(swap.requestingFlightInfo!.scheduledArrivalDateTimeUTC)
+            new Date(swap.requestingFlightInfo!.scheduledArrivalDateTimeUTC),
+            swap.initiatingFlightId // Ignore the flight they are swapping away from
         );
         if (Object.keys(initiatorConflicts).length > 0) {
             const conflict = Object.values(initiatorConflicts)[0];
@@ -168,7 +168,8 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
         const requesterConflicts = await checkCrewAvailability(
             [swap.requestingUserId],
             new Date(swap.flightInfo.scheduledDepartureDateTimeUTC),
-            new Date(swap.flightInfo.scheduledArrivalDateTimeUTC)
+            new Date(swap.flightInfo.scheduledArrivalDateTimeUTC),
+            swap.requestingFlightId // Ignore the flight they are swapping away from
         );
          if (Object.keys(requesterConflicts).length > 0) {
             const conflict = Object.values(requesterConflicts)[0];
