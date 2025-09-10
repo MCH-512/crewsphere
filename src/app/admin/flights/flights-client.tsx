@@ -271,11 +271,11 @@ export function AdminFlightsClient({
             setListenerError(null); // Clear error on successful data receive
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added") {
-                    const newSwap = change.doc.data() as StoredFlightSwap;
+                    const newSwap = { id: change.doc.id, ...change.doc.data() } as StoredFlightSwap;
                     toast({
                         title: "New Swap Request",
                         description: `Flight ${newSwap.flightInfo.flightNumber} has a new swap request from ${newSwap.requestingUserEmail}.`,
-                        action: <Button variant="secondary" size="sm" onClick={() => setSwapToApprove({...newSwap, id: change.doc.id })}>Review</Button>,
+                        action: <Button variant="secondary" size="sm" onClick={() => setSwapToApprove(newSwap)}>Review</Button>,
                         duration: 10000,
                     });
                     fetchPageData(); // Refresh the list to show the new pending swap
@@ -824,5 +824,3 @@ export function AdminFlightsClient({
         </div>
     );
 }
-
-    

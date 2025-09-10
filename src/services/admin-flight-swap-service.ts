@@ -149,13 +149,15 @@ export async function rejectFlightSwap(swapId: string, adminId: string, adminEma
 }
 
 export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string | null> {
-    if (!swap.requestingFlightId || !swap.requestingUserId) return null;
+    if (!swap.requestingFlightId || !swap.requestingUserId || !swap.requestingFlightInfo) {
+        return "Swap request is incomplete and cannot be checked.";
+    }
 
     try {
         const initiatorConflicts = await checkCrewAvailability(
             [swap.initiatingUserId],
-            new Date(swap.requestingFlightInfo!.scheduledDepartureDateTimeUTC),
-            new Date(swap.requestingFlightInfo!.scheduledArrivalDateTimeUTC),
+            new Date(swap.requestingFlightInfo.scheduledDepartureDateTimeUTC),
+            new Date(swap.requestingFlightInfo.scheduledArrivalDateTimeUTC),
             swap.initiatingFlightId
         );
         if (Object.keys(initiatorConflicts).length > 0) {
@@ -181,5 +183,3 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
         return "Could not automatically check for conflicts due to a server error.";
     }
 }
-
-    
