@@ -122,7 +122,7 @@ export default function SubmitPurserReportPage() {
         flightId: loadedFlightData.id, 
         flightNumber: loadedFlightData.flightNumber,
         flightDate: loadedFlightData.scheduledDepartureDateTimeUTC,
-        route: `${loadedFlightData.departureAirport} → ${loadedFlightData.arrivalAirport}`,
+        route: `${'${loadedFlightData.departureAirport}'} → ${'${loadedFlightData.arrivalAirport}'}`,
         aircraftType: loadedFlightData.aircraftType, 
         picName: loadedFlightData.defaultPicName, 
         foName: loadedFlightData.defaultFoName,
@@ -176,7 +176,7 @@ export default function SubmitPurserReportPage() {
       };
       
       toast({ title: "Generating AI Summary...", description: "Please wait while we analyze your report." });
-      const reportContent = `Flight report for ${data.flightNumber} (${data.route}) on ${format(parseISO(data.flightDate), "PPP")}. Passengers: ${data.passengerCount}. Positives: ${data.positivePoints}. Improvements: ${data.improvementPoints}. Passenger notes: ${data.passengersToReport?.join(', ')} - Details: ${data.passengersToReportDetails}. Cabin issues: ${data.technicalIssues?.join(', ')}. Safety anomalies: ${data.safetyAnomalies}. Service feedback: ${data.servicePassengerFeedback}. Incident: ${data.specificIncident ? `Yes, ${data.incidentTypes?.join(', ')} - ${data.incidentDetails}` : 'No'}.`;
+      const reportContent = `Flight report for ${'${data.flightNumber}'} (${'${data.route}'}) on ${'${format(parseISO(data.flightDate), "PPP")}'}. Passengers: ${'${data.passengerCount}'}. Positives: ${'${data.positivePoints}'}. Improvements: ${'${data.improvementPoints}'}. Passenger notes: ${'${data.passengersToReport?.join(\', \')}'} - Details: ${'${data.passengersToReportDetails}'}. Cabin issues: ${'${data.technicalIssues?.join(\', \')}'}. Safety anomalies: ${'${data.safetyAnomalies}'}. Service feedback: ${'${data.servicePassengerFeedback}'}. Incident: ${'${data.specificIncident ? `Yes, ${data.incidentTypes?.join(\', \')} - ${data.incidentDetails}` : \'No\'}'}.`;
       
       const summaryResult = await summarizeReport({ reportContent });
 
@@ -194,7 +194,7 @@ export default function SubmitPurserReportPage() {
       batch.update(flightRef, { purserReportSubmitted: true, purserReportId: reportRef.id });
       
       await batch.commit();
-      await logAuditEvent({ userId: user.uid, userEmail: user.email, actionType: 'SUBMIT_PURSER_REPORT', entityType: 'PURSER_REPORT', entityId: reportRef.id, details: { flightNumber: data.flightNumber } });
+      await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: 'SUBMIT_PURSER_REPORT', entityType: 'PURSER_REPORT', entityId: reportRef.id, details: { flightNumber: data.flightNumber } });
 
       toast({ title: "Report Submitted", description: "Your purser report has been successfully submitted." });
       router.push("/purser-reports/history");
@@ -237,7 +237,7 @@ export default function SubmitPurserReportPage() {
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormItem><FormLabel>Flight Number</FormLabel><Input readOnly value={flightData?.flightNumber} /></FormItem>
                         <FormItem><FormLabel>Flight Date</FormLabel><Input readOnly value={flightData ? format(parseISO(flightData.scheduledDepartureDateTimeUTC), "PPP") : ''} /></FormItem>
-                        <FormItem><FormLabel>Route</FormLabel><Input readOnly value={`${flightData?.departureAirport} → ${flightData?.arrivalAirport}`} /></FormItem>
+                        <FormItem><FormLabel>Route</FormLabel><Input readOnly value={`${'${flightData?.departureAirport}'} → ${'${flightData?.arrivalAirport}'}`} /></FormItem>
                         <FormItem><FormLabel>Aircraft Type</FormLabel><Input readOnly value={flightData?.aircraftType} /></FormItem>
                         <FormField control={form.control} name="picName" render={({ field }) => (<FormItem><FormLabel>PIC Name</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{pilotsOnFlight.filter(p => p.displayName !== selectedFoName).map(p => <SelectItem key={p.uid} value={p.displayName || p.email!}>{p.displayName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
                         <FormField control={form.control} name="foName" render={({ field }) => (<FormItem><FormLabel>FO Name</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{pilotsOnFlight.filter(p => p.displayName !== selectedPicName).map(p => <SelectItem key={p.uid} value={p.displayName || p.email!}>{p.displayName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
