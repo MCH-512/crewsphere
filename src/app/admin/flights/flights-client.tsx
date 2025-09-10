@@ -15,7 +15,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, getDoc, where, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, Handshake, FileSignature, Calendar as CalendarIcon, List, Filter, Repeat, Info } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, Handshake, FileSignature, Calendar as CalendarIcon, List, Filter, Repeat, Info, BellOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, parseISO, addHours, isSameDay, startOfMonth, endOfMonth, addDays, addWeeks, differenceInMinutes, addMinutes } from "date-fns";
 import { flightFormSchema, type FlightFormValues, type StoredFlight, aircraftTypes } from "@/schemas/flight-schema";
@@ -33,7 +33,7 @@ import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { StoredFlightSwap } from "@/schemas/flight-swap-schema";
-import { approveFlightSwap, rejectFlightSwap } from "@/services/admin-flight-swap-service";
+import { approveFlightSwap, rejectFlightSwap, checkSwapConflict } from "@/services/admin-flight-swap-service";
 import { Textarea } from "@/components/ui/textarea";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
 import { Label } from "@/components/ui/label";
@@ -51,9 +51,26 @@ const SwapApprovalDialog = ({ swap, onClose, onAction }: { swap: StoredFlightSwa
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [rejectionNotes, setRejectionNotes] = React.useState("");
     const [isRejecting, setIsRejecting] = React.useState(false);
+    const [conflict, setConflict] = React.useState<string | null>(null);
+    const [isCheckingConflict, setIsCheckingConflict] = React.useState(true);
+    
+    React.useEffect(() => {
+        const checkConflicts = async () => {
+            setIsCheckingConflict(true);
+            const conflictMessage = await checkSwapConflict(swap);
+            setConflict(conflictMessage);
+            setIsCheckingConflict(false);
+        };
+        checkConflicts();
+    }, [swap]);
 
     const handleApprove = async () => {
         if (!user) return;
+        if (conflict) {
+            if (!window.confirm("A scheduling conflict exists. Are you sure you want to approve this swap?")) {
+                return;
+            }
+        }
         setIsSubmitting(true);
         try {
             await approveFlightSwap(swap.id, user.uid, user.email || "N/A");
@@ -101,13 +118,21 @@ const SwapApprovalDialog = ({ swap, onClose, onAction }: { swap: StoredFlightSwa
                         <CardContent><p><strong>Flight:</strong> {swap.requestingFlightInfo?.flightNumber}</p><p><strong>Route:</strong> {swap.requestingFlightInfo?.departureAirport} to {swap.requestingFlightInfo?.arrivalAirport}</p><p><strong>Date:</strong> {format(parseISO(swap.requestingFlightInfo?.scheduledDepartureDateTimeUTC || "1970-01-01"), "PPP")}</p></CardContent>
                     </Card>
                 </div>
-                 <Alert variant="info" className="mt-4">
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Heads Up!</AlertTitle>
-                    <ShadAlertDescription>
-                        Approving this swap will automatically update the schedules. Please manually verify that the new assignments do not create any regulatory (FTL) or operational conflicts before proceeding.
-                    </ShadAlertDescription>
-                </Alert>
+                {isCheckingConflict ? (
+                     <div className="flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Checking for potential conflicts...</div>
+                ) : conflict ? (
+                    <Alert variant="warning">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Potential Conflict Detected</AlertTitle>
+                        <ShadAlertDescription>{conflict}</ShadAlertDescription>
+                    </Alert>
+                ) : (
+                    <Alert variant="success">
+                        <CheckCircle className="h-4 w-4" />
+                        <AlertTitle>No Conflicts Detected</AlertTitle>
+                        <ShadAlertDescription>No direct scheduling conflicts were found for this swap.</ShadAlertDescription>
+                    </Alert>
+                )}
                  {isRejecting ? (
                     <div className="space-y-2 mt-4">
                         <Label htmlFor="rejection-notes">Reason for Rejection</Label>
@@ -126,7 +151,7 @@ const SwapApprovalDialog = ({ swap, onClose, onAction }: { swap: StoredFlightSwa
                         <>
                             <Button variant="outline" onClick={onClose}>Close</Button>
                             <Button variant="destructive" onClick={() => setIsRejecting(true)}>Reject</Button>
-                            <Button onClick={handleApprove} disabled={isSubmitting}>
+                            <Button onClick={handleApprove} disabled={isSubmitting || isCheckingConflict}>
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Approve Swap
                             </Button>
                         </>
@@ -191,6 +216,7 @@ export function AdminFlightsClient({
 
     const [swapToApprove, setSwapToApprove] = React.useState<StoredFlightSwap | null>(null);
     const [showPendingSwapsOnly, setShowPendingSwapsOnly] = React.useState(false);
+    const [listenerError, setListenerError] = React.useState<string | null>(null);
 
 
     const form = useForm<FlightFormValues>({
@@ -234,25 +260,27 @@ export function AdminFlightsClient({
     // Firestore listener for real-time swap notifications
     React.useEffect(() => {
         if (!db) return;
+        setListenerError(null);
         
         const q = query(collection(db, "flightSwaps"), where("status", "==", "pending_approval"));
         
         const unsubscribe = onSnapshot(q, (snapshot) => {
+            setListenerError(null); // Clear error on successful data receive
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added") {
                     const newSwap = change.doc.data() as StoredFlightSwap;
                     toast({
                         title: "New Swap Request",
                         description: `Flight ${newSwap.flightInfo.flightNumber} has a new swap request from ${newSwap.requestingUserEmail}.`,
-                        variant: "default",
-                        duration: 10000, // Keep it on screen longer
+                        action: <Button variant="secondary" size="sm" onClick={() => setSwapToApprove({...newSwap, id: change.doc.id })}>Review</Button>,
+                        duration: 10000,
                     });
                     fetchPageData(); // Refresh the list to show the new pending swap
                 }
             });
         }, (error) => {
             console.error("Error with swap listener:", error);
-            // Optionally, inform the admin that real-time updates have stopped
+            setListenerError("Real-time connection lost. Refresh manually.");
             toast({ title: "Real-time Connection Lost", description: "Could not listen for new swap requests.", variant: "destructive" });
         });
 
@@ -553,6 +581,12 @@ export function AdminFlightsClient({
                     <div className="flex flex-wrap items-center gap-4">
                         <Button variant="outline" onClick={fetchPageData} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
                         <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4"/>Create Flight</Button>
+                         {listenerError && (
+                            <div className="flex items-center gap-2 text-sm text-destructive font-medium ml-auto">
+                                <BellOff className="h-4 w-4"/>
+                                <span>{listenerError}</span>
+                            </div>
+                        )}
                         <div className="flex items-center space-x-2 ml-auto">
                             <Label htmlFor="pending-swaps-filter" className="flex items-center gap-1 text-sm text-warning-foreground"><Filter className="h-4 w-4"/>Pending Swaps Only</Label>
                             <Switch id="pending-swaps-filter" checked={showPendingSwapsOnly} onCheckedChange={setShowPendingSwapsOnly} />
@@ -586,7 +620,7 @@ export function AdminFlightsClient({
                                         </Link>
                                     </TableCell>
                                      <TableCell className="space-x-2">
-                                        {!f.purserReportSubmitted && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning/80 text-warning-foreground" title="Purser Report Pending"><FileSignature className="h-4 w-4" /></Button>)}
+                                        {!f.purserReportSubmitted && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning text-warning-foreground" title="Purser Report Pending"><FileSignature className="h-4 w-4" /></Button>)}
                                         {f.pendingSwap && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning text-warning-foreground animate-pulse" title="Swap Request Pending" onClick={() => setSwapToApprove(f.pendingSwap!)}><Handshake className="h-4 w-4" /></Button>)}
                                     </TableCell>
                                     <TableCell className="text-right space-x-1">
@@ -763,5 +797,6 @@ export function AdminFlightsClient({
         </div>
     );
 }
+
 
 

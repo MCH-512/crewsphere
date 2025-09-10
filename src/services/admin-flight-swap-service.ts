@@ -1,11 +1,13 @@
+
 'use server';
 
 import { db } from "@/lib/firebase";
-import { doc, runTransaction, serverTimestamp, Timestamp, collection, updateDoc, writeBatch } from "firebase/firestore";
+import { doc, runTransaction, serverTimestamp, Timestamp, collection, updateDoc, writeBatch, getDoc } from "firebase/firestore";
 import type { StoredFlight } from "@/schemas/flight-schema";
 import type { StoredFlightSwap } from "@/schemas/flight-swap-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { startOfDay } from "date-fns";
+import { checkCrewAvailability, type Conflict } from "@/services/user-activity-service";
 
 const findUserRoleOnFlight = (flight: StoredFlight, userId: string): { role: string; field: string } | null => {
     if (flight.purserId === userId) return { role: 'purser', field: 'purserId' };
@@ -131,4 +133,38 @@ export async function rejectFlightSwap(swapId: string, adminId: string, adminEma
         actionType: 'REJECT_FLIGHT_SWAP', entityType: 'FLIGHT_SWAP',
         entityId: swapId, details: { notes }
     });
+}
+
+export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string | null> {
+    if (!swap.requestingFlightId || !swap.requestingUserId) return null;
+
+    try {
+        // Check if user 1 (initiator) is available for user 2's flight
+        const initiatorConflicts = await checkCrewAvailability(
+            [swap.initiatingUserId],
+            new Date(swap.requestingFlightInfo!.scheduledDepartureDateTimeUTC),
+            new Date(swap.requestingFlightInfo!.scheduledArrivalDateTimeUTC)
+        );
+        if (Object.keys(initiatorConflicts).length > 0) {
+            const conflict = Object.values(initiatorConflicts)[0];
+            return `${swap.initiatingUserEmail} has a conflict on the new date: ${conflict.details}.`;
+        }
+
+        // Check if user 2 (requester) is available for user 1's flight
+        const requesterConflicts = await checkCrewAvailability(
+            [swap.requestingUserId],
+            new Date(swap.flightInfo.scheduledDepartureDateTimeUTC),
+            new Date(swap.flightInfo.scheduledArrivalDateTimeUTC)
+        );
+         if (Object.keys(requesterConflicts).length > 0) {
+            const conflict = Object.values(requesterConflicts)[0];
+            return `${swap.requestingUserEmail} has a conflict on the new date: ${conflict.details}.`;
+        }
+
+        return null;
+
+    } catch (error) {
+        console.error("Error checking swap conflict:", error);
+        return "Could not automatically check for conflicts due to a server error.";
+    }
 }
