@@ -52,13 +52,9 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             if (!user1Role || !user2Role) throw new Error("Could not determine user role on one of the flights.");
             if (user1Role.role !== user2Role.role) throw new Error(`Role mismatch: Cannot swap a ${user1Role.role} with a ${user2Role.role}.`);
             
-            // --- Update Flights ---
-            const flight1Update: Partial<StoredFlight> = {
-                allCrewIds: updateCrewArray(flight1Data.allCrewIds, swapData.initiatingUserId, swapData.requestingUserId)
-            };
-            const flight2Update: Partial<StoredFlight> = {
-                allCrewIds: updateCrewArray(flight2Data.allCrewIds, swapData.requestingUserId, swapData.initiatingUserId)
-            };
+            // --- Prepare Flight Updates ---
+            const flight1Update: Partial<StoredFlight> = { allCrewIds: updateCrewArray(flight1Data.allCrewIds, swapData.initiatingUserId, swapData.requestingUserId) };
+            const flight2Update: Partial<StoredFlight> = { allCrewIds: updateCrewArray(flight2Data.allCrewIds, swapData.requestingUserId, swapData.initiatingUserId) };
             
             if (user1Role.field === 'purserId') {
                 (flight1Update as any).purserId = swapData.requestingUserId;
@@ -68,7 +64,7 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
                  (flight2Update as any)[user2Role.field] = updateCrewArray((flight2Data as any)[user2Role.field], swapData.requestingUserId, swapData.initiatingUserId);
             }
             
-            // --- Update Activities ---
+            // --- Prepare Activity Updates ---
             const activity1Id = flight1Data.activityIds?.[swapData.initiatingUserId];
             const activity2Id = flight2Data.activityIds?.[swapData.requestingUserId];
 
@@ -82,37 +78,28 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             if (activity1Id) newActivityIdsF2[swapData.initiatingUserId] = activity1Id;
             flight2Update.activityIds = newActivityIdsF2;
 
-            transaction.update(flight1Ref, flight1Update);
-            transaction.update(flight2Ref, flight2Update);
-            
-            const activityBatch = writeBatch(db);
+            // --- Execute all updates within the transaction ---
+            transaction.update(flight1Ref, flight1Update as any);
+            transaction.update(flight2Ref, flight2Update as any);
+
             if (activity1Id) {
-                activityBatch.update(doc(db, "userActivities", activity1Id), { 
-                    flightId: flight2Snap.id, 
-                    flightNumber: flight2Data.flightNumber, 
-                    departureAirport: flight2Data.departureAirport, 
-                    arrivalAirport: flight2Data.arrivalAirport, 
+                transaction.update(doc(db, "userActivities", activity1Id), { 
+                    flightId: flight2Snap.id, flightNumber: flight2Data.flightNumber, 
+                    departureAirport: flight2Data.departureAirport, arrivalAirport: flight2Data.arrivalAirport, 
                     date: Timestamp.fromDate(startOfDay(new Date(flight2Data.scheduledDepartureDateTimeUTC))), 
                     comments: `Flight ${flight2Data.flightNumber} from ${flight2Data.departureAirport} to ${flight2Data.arrivalAirport}`, 
                 });
             }
              if (activity2Id) {
-                activityBatch.update(doc(db, "userActivities", activity2Id), { 
-                    flightId: flight1Snap.id, 
-                    flightNumber: flight1Data.flightNumber, 
-                    departureAirport: flight1Data.departureAirport, 
-                    arrivalAirport: flight1Data.arrivalAirport, 
+                transaction.update(doc(db, "userActivities", activity2Id), { 
+                    flightId: flight1Snap.id, flightNumber: flight1Data.flightNumber, 
+                    departureAirport: flight1Data.departureAirport, arrivalAirport: flight1Data.arrivalAirport, 
                     date: Timestamp.fromDate(startOfDay(new Date(flight1Data.scheduledDepartureDateTimeUTC))), 
                     comments: `Flight ${flight1Data.flightNumber} from ${flight1Data.departureAirport} to ${flight1Data.arrivalAirport}`, 
                 });
             }
-            await activityBatch.commit();
             
-            transaction.update(swapRef, {
-                status: 'approved',
-                resolvedBy: adminId,
-                updatedAt: serverTimestamp()
-            });
+            transaction.update(swapRef, { status: 'approved', resolvedBy: adminId, updatedAt: serverTimestamp() });
         });
         
         await logAuditEvent({
