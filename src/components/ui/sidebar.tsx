@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -185,7 +186,7 @@ const Sidebar = React.forwardRef<
       return (
         <div
           className={cn(
-            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
+            "flex h-full w-[--sidebar-width] flex-col bg-sidebar-background text-sidebar-foreground",
             className
           )}
           ref={ref}
@@ -202,7 +203,7 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+            className="w-[--sidebar-width] bg-sidebar-background p-0 text-sidebar-foreground [&>button]:hidden"
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -259,7 +260,7 @@ const Sidebar = React.forwardRef<
         >
           <div
             data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+            className="flex h-full w-full flex-col bg-sidebar-background group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
           >
             {children}
           </div>
@@ -337,7 +338,7 @@ const SidebarFooter = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="footer"
-      className={cn("flex flex-col gap-2 p-2", className)}
+      className={cn("flex flex-col gap-2 p-2 mt-auto", className)}
       {...props}
     />
   )
@@ -384,16 +385,19 @@ const SidebarGroupLabel = React.forwardRef<
   const Comp = asChild ? Slot : "div"
 
   return (
-    <Comp
-      ref={ref}
-      data-sidebar="group-label"
-      className={cn(
-        "duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opa] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
-        "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
-        className
-      )}
-      {...props}
-    />
+    <>
+      <Comp
+        ref={ref}
+        data-sidebar="group-label"
+        className={cn(
+          "duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opa] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+          "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 font-semibold",
+          className
+        )}
+        {...props}
+      />
+      <Separator className="my-1 bg-sidebar-border group-data-[collapsible=icon]:hidden" />
+    </>
   )
 })
 SidebarGroupLabel.displayName = "SidebarGroupLabel"
@@ -429,12 +433,12 @@ const sidebarMenuButtonVariants = cva(
   {
     variants: {
       variant: {
-        default: "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        default: "hover:bg-sidebar-hover",
         active:
-          "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90",
+          "bg-sidebar-active text-sidebar-active-foreground hover:bg-sidebar-active/90 border-l-4 border-sidebar-primary",
         border:
-          "bg-card text-card-foreground border border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        ghost: "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+          "bg-card text-card-foreground border border-sidebar-border hover:bg-sidebar-hover",
+        ghost: "hover:bg-sidebar-hover",
       },
     },
     defaultVariants: {
