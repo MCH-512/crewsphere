@@ -218,6 +218,9 @@ export function AdminFlightsClient({
     const [showPendingSwapsOnly, setShowPendingSwapsOnly] = React.useState(false);
     const [listenerError, setListenerError] = React.useState<string | null>(null);
 
+    const [searchTerm, setSearchTerm] = React.useState("");
+    const [aircraftFilter, setAircraftFilter] = React.useState<string>("all");
+    const [purserFilter, setPurserFilter] = React.useState<string>("all");
 
     const form = useForm<FlightFormValues>({
         resolver: zodResolver(flightFormSchema),
@@ -290,8 +293,16 @@ export function AdminFlightsClient({
     const sortedAndFilteredFlights = React.useMemo(() => {
         let displayFlights = [...flights];
 
-        if (showPendingSwapsOnly) {
-            displayFlights = displayFlights.filter(f => f.pendingSwap);
+        if (showPendingSwapsOnly) displayFlights = displayFlights.filter(f => f.pendingSwap);
+        if (aircraftFilter !== 'all') displayFlights = displayFlights.filter(f => f.aircraftType === aircraftFilter);
+        if (purserFilter !== 'all') displayFlights = displayFlights.filter(f => f.purserId === purserFilter);
+        if (searchTerm) {
+            const lowerTerm = searchTerm.toLowerCase();
+            displayFlights = displayFlights.filter(f => 
+                f.flightNumber.toLowerCase().includes(lowerTerm) ||
+                f.departureAirportName?.toLowerCase().includes(lowerTerm) ||
+                f.arrivalAirportName?.toLowerCase().includes(lowerTerm)
+            );
         }
 
         return displayFlights.sort((a, b) => {
@@ -309,7 +320,7 @@ export function AdminFlightsClient({
 
             return sortDirection === 'asc' ? comparison : -comparison;
         });
-    }, [flights, sortColumn, sortDirection, showPendingSwapsOnly]);
+    }, [flights, sortColumn, sortDirection, showPendingSwapsOnly, aircraftFilter, purserFilter, searchTerm]);
 
     const handleSort = (column: SortableColumn) => {
         if (sortColumn === column) {
@@ -578,7 +589,28 @@ export function AdminFlightsClient({
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-wrap items-center gap-4">
+                     <div className="flex flex-col md:flex-row gap-2">
+                        <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                            <div className="relative">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input type="search" placeholder="Search by flight number or route..." className="pl-8 w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                            </div>
+                            <Select value={aircraftFilter} onValueChange={setAircraftFilter}>
+                                <SelectTrigger><Filter className="mr-2 h-4 w-4" /> <span className="truncate">Aircraft: {aircraftFilter === 'all' ? 'All' : aircraftFilter}</span></SelectTrigger>
+                                <SelectContent><SelectItem value="all">All Aircraft</SelectItem>{aircraftTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
+                            </Select>
+                            <Select value={purserFilter} onValueChange={setPurserFilter}>
+                                <SelectTrigger><Filter className="mr-2 h-4 w-4" /><span className="truncate">Purser: {purserFilter === 'all' ? 'All' : userMap.get(purserFilter)?.displayName}</span></SelectTrigger>
+                                <SelectContent><SelectItem value="all">All Pursers</SelectItem>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName}</SelectItem>)}</SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex items-center space-x-2 shrink-0">
+                            <Label htmlFor="pending-swaps-filter" className="flex items-center gap-1 text-sm text-warning-foreground"><Filter className="h-4 w-4"/>Pending Swaps Only</Label>
+                            <Switch id="pending-swaps-filter" checked={showPendingSwapsOnly} onCheckedChange={setShowPendingSwapsOnly} />
+                        </div>
+                    </div>
+                </CardContent>
+                <CardFooter className="flex-wrap items-center gap-4 border-t pt-4">
                         <Button variant="outline" onClick={fetchPageData} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
                         <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4"/>Create Flight</Button>
                          {listenerError && (
@@ -587,12 +619,7 @@ export function AdminFlightsClient({
                                 <span>{listenerError}</span>
                             </div>
                         )}
-                        <div className="flex items-center space-x-2 ml-auto">
-                            <Label htmlFor="pending-swaps-filter" className="flex items-center gap-1 text-sm text-warning-foreground"><Filter className="h-4 w-4"/>Pending Swaps Only</Label>
-                            <Switch id="pending-swaps-filter" checked={showPendingSwapsOnly} onCheckedChange={setShowPendingSwapsOnly} />
-                        </div>
-                    </div>
-                </CardContent>
+                </CardFooter>
             </Card>
 
             {viewMode === 'list' ? (
@@ -713,7 +740,7 @@ export function AdminFlightsClient({
                             <h3 className="text-lg font-medium flex items-center gap-2"><Users />Crew Assignment</h3>
                              <FormField control={form.control} name="purserId" render={({ field }) => (<FormItem><FormLabel>Assign Purser</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a purser" /></SelectTrigger></FormControl><SelectContent>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName} ({p.email})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                             <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${p.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                             <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                             
@@ -798,4 +825,4 @@ export function AdminFlightsClient({
     );
 }
 
-    
+
