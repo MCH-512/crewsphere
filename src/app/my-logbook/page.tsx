@@ -10,7 +10,7 @@ import { getLogbookEntries } from "@/services/logbook-service";
 export default async function MyLogbookPage() {
     const user = await getCurrentUser();
     // Fetch initial entries on the server to provide immediate data to the client component
-    const initialEntries = await getLogbookEntries(user?.uid);
+    const initialEntries = user ? await getLogbookEntries(user.uid) : [];
 
     return <MyLogbookClient initialEntries={initialEntries} />;
 }
