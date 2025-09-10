@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -174,7 +173,7 @@ function LayoutWithSidebar({
                             className="h-9 w-full justify-start"
                         >
                             <Link href={item.href!}>
-                               <item.icon className="w-4 h-4 text-sidebar-foreground" />
+                               <item.icon className="w-4 h-4" />
                                <span className="group-data-[state=collapsed]:hidden">{item.title}</span>
                             </Link>
                          </SidebarMenuButton>

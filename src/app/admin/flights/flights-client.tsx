@@ -15,7 +15,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, getDoc, where, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, Handshake, FileSignature, Calendar as CalendarIcon, List, Filter, Repeat, Info, BellOff } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, Handshake, FileSignature, Calendar as CalendarIcon, List, Filter, Repeat, Info, BellOff, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, parseISO, addHours, isSameDay, startOfMonth, endOfMonth, addDays, addWeeks, differenceInMinutes, addMinutes } from "date-fns";
 import { flightFormSchema, type FlightFormValues, type StoredFlight, aircraftTypes } from "@/schemas/flight-schema";
@@ -620,8 +620,8 @@ export function AdminFlightsClient({
                                         </Link>
                                     </TableCell>
                                      <TableCell className="space-x-2">
-                                        {!f.purserReportSubmitted && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning text-warning-foreground" title="Purser Report Pending"><FileSignature className="h-4 w-4" /></Button>)}
-                                        {f.pendingSwap && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning text-warning-foreground animate-pulse" title="Swap Request Pending" onClick={() => setSwapToApprove(f.pendingSwap!)}><Handshake className="h-4 w-4" /></Button>)}
+                                        {!f.purserReportSubmitted && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning text-warning" title="Purser Report Pending"><FileSignature className="h-4 w-4" /></Button>)}
+                                        {f.pendingSwap && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning text-warning animate-pulse" title="Swap Request Pending" onClick={() => setSwapToApprove(f.pendingSwap!)}><Handshake className="h-4 w-4" /></Button>)}
                                     </TableCell>
                                     <TableCell className="text-right space-x-1">
                                         <Button variant="ghost" size="icon" onClick={() => handleCreateReturnFlight(f)} title="Create Return Flight"><ArrowRightLeft className="h-4 w-4" /></Button>
@@ -797,6 +797,3 @@ export function AdminFlightsClient({
         </div>
     );
 }
-
-
-

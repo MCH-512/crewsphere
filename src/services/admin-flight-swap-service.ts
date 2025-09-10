@@ -52,8 +52,6 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             if (!user1Role || !user2Role) throw new Error("Could not determine user role on one of the flights.");
             if (user1Role.role !== user2Role.role) throw new Error(`Role mismatch: Cannot swap a ${user1Role.role} with a ${user2Role.role}.`);
             
-            const batch = writeBatch(db);
-
             // --- Update Flights ---
             const flight1Update: Partial<StoredFlight> = {
                 allCrewIds: updateCrewArray(flight1Data.allCrewIds, swapData.initiatingUserId, swapData.requestingUserId)
@@ -84,23 +82,39 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             if (activity1Id) newActivityIdsF2[swapData.initiatingUserId] = activity1Id;
             flight2Update.activityIds = newActivityIdsF2;
 
-            if (activity1Id) {
-                batch.update(doc(db, "userActivities", activity1Id), { flightId: flight2Snap.id, flightNumber: flight2Data.flightNumber, departureAirport: flight2Data.departureAirport, arrivalAirport: flight2Data.arrivalAirport, date: Timestamp.fromDate(startOfDay(new Date(flight2Data.scheduledDepartureDateTimeUTC))), comments: `Flight ${flight2Data.flightNumber} from ${flight2Data.departureAirport} to ${flight2Data.arrivalAirport}`, });
-            }
-             if (activity2Id) {
-                batch.update(doc(db, "userActivities", activity2Id), { flightId: flight1Snap.id, flightNumber: flight1Data.flightNumber, departureAirport: flight1Data.departureAirport, arrivalAirport: flight1Data.arrivalAirport, date: Timestamp.fromDate(startOfDay(new Date(flight1Data.scheduledDepartureDateTimeUTC))), comments: `Flight ${flight1Data.flightNumber} from ${flight1Data.departureAirport} to ${flight1Data.arrivalAirport}`, });
-            }
-            
             transaction.update(flight1Ref, flight1Update);
             transaction.update(flight2Ref, flight2Update);
+            
+            // Update activities in a separate batch, as transactions can't contain logic after writes.
+            // This part will be executed after the transaction successfully commits.
+            const activityBatch = writeBatch(db);
+            if (activity1Id) {
+                activityBatch.update(doc(db, "userActivities", activity1Id), { 
+                    flightId: flight2Snap.id, 
+                    flightNumber: flight2Data.flightNumber, 
+                    departureAirport: flight2Data.departureAirport, 
+                    arrivalAirport: flight2Data.arrivalAirport, 
+                    date: Timestamp.fromDate(startOfDay(new Date(flight2Data.scheduledDepartureDateTimeUTC))), 
+                    comments: `Flight ${flight2Data.flightNumber} from ${flight2Data.departureAirport} to ${flight2Data.arrivalAirport}`, 
+                });
+            }
+             if (activity2Id) {
+                activityBatch.update(doc(db, "userActivities", activity2Id), { 
+                    flightId: flight1Snap.id, 
+                    flightNumber: flight1Data.flightNumber, 
+                    departureAirport: flight1Data.departureAirport, 
+                    arrivalAirport: flight1Data.arrivalAirport, 
+                    date: Timestamp.fromDate(startOfDay(new Date(flight1Data.scheduledDepartureDateTimeUTC))), 
+                    comments: `Flight ${flight1Data.flightNumber} from ${flight1Data.departureAirport} to ${flight1Data.arrivalAirport}`, 
+                });
+            }
+            await activityBatch.commit();
             
             transaction.update(swapRef, {
                 status: 'approved',
                 resolvedBy: adminId,
                 updatedAt: serverTimestamp()
             });
-
-            await batch.commit();
         });
         
         await logAuditEvent({
