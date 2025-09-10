@@ -48,7 +48,7 @@ interface DashboardClientPageProps {
 }
 
 export default function DashboardClientPage({ children, heroImage }: DashboardClientPageProps) {
-  const { user } = useAuth() as { user: User };
+  const { user } = useAuth();
   const [userNameForGreeting, setUserNameForGreeting] = React.useState<string>("User");
 
   React.useEffect(() => {
