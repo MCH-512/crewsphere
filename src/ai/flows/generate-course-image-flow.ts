@@ -22,11 +22,8 @@ const generateCourseImageFlow = ai.defineFlow(
   },
   async (input) => {
     const { media } = await ai.generate({
-      model: 'googleai/gemini-pro-vision',
+      model: 'googleai/imagen-4.0-fast-generate-001',
       prompt: `Generate a professional, high-quality image suitable for an e-learning course cover on the topic of: ${input.prompt}. The style should be clean, modern, and relevant to the aviation industry. Avoid text in the image.`,
-      config: {
-        responseModalities: ['IMAGE'],
-      },
     });
 
     if (!media?.url) {
