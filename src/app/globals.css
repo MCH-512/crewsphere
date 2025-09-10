@@ -5,75 +5,74 @@
 
 @layer base {
   :root {
-    /* Main Palette */
-    --background: 210 29% 98%; /* #f7f9fb - Neutral light grey */
-    --foreground: 224 71% 4%;
+    /* Base Palette: Slate - modern and neutral */
+    --background: 0 0% 100%; /* #ffffff */
+    --foreground: 222.2 84% 4.9%; /* #09090b */
 
-    --card: 0 0% 100%; /* Pure white for cards to stand out */
-    --card-foreground: 224 71% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 207 70% 53%; /* #3498db - Bright blue for actions */
-    --primary-foreground: 0 0% 100%;
+    --primary: 221.2 83.2% 53.3%; /* #3b82f6 - Vivid Blue */
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
+    --secondary: 210 40% 96.1%; /* #f1f5f9 */
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 98%;
+    --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%; /* #ef4444 */
+    --destructive-foreground: 210 40% 98%;
     
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
+    --success: 142.1 76.2% 36.3%; /* #22c55e */
+    --success-foreground: 210 40% 98%;
 
-    --warning: 28 80% 56%; /* #e67e22 - Coral/orange for attention */
-    --warning-foreground: 0 0% 100%;
+    --warning: 47.9 95.8% 53.1%; /* #f59e0b */
+    --warning-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 207 70% 53%;
+    --ring: 221.2 83.2% 53.3%;
 
     --radius: 0.5rem;
 
-    --chart-1: 207 70% 53%;
-    --chart-2: 142 76% 36%;
-    --chart-3: 28 80% 56%;
-    --chart-4: 0 84% 60%;
-    --chart-5: 210 30% 40%;
+    --chart-1: 221 83% 53%; /* Blue */
+    --chart-2: 142 76% 36%; /* Green */
+    --chart-3: 48 96% 53%;  /* Yellow */
+    --chart-4: 0 84% 60%;   /* Red */
+    --chart-5: 215 28% 47%; /* Slate */
     
-    /* Sidebar Specific Palette */
-    --sidebar-background: 222 47% 11%; /* hsl(222, 47%, 11%) - Dark Blue */
-    --sidebar-foreground: 210 40% 98%; /* hsl(210, 40%, 98%) - Almost White */
+    /* Sidebar remains consistent */
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
     --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-primary: 207 70% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217.2 32.6% 17.5%; /* Darker accent for hover */
+    --sidebar-primary: 221.2 83.2% 53.3%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-ring: 207 70% 53%;
+    --sidebar-ring: 221.2 83.2% 53.3%;
   }
 
   .dark {
-    /* Dark mode palette remains the same, as the sidebar is already dark */
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    --background: 222.2 84% 4.9%; /* #09090b */
+    --foreground: 210 40% 98%; /* #f8fafc */
 
-    --card: 222 47% 13%;
+    --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 47% 11%;
+    --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 207 70% 53%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 217.2 91.2% 59.8%; /* Brighter Blue for Dark Mode */
+    --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217.2 32.6% 17.5%; /* #1e293b */
     --secondary-foreground: 210 40% 98%;
 
     --muted: 217.2 32.6% 17.5%;
@@ -82,28 +81,25 @@
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 63% 31%;
+    --destructive: 0 62.8% 30.6%; /* #b91c1c */
     --destructive-foreground: 210 40% 98%;
     
-    --success: 142 71% 21%;
+    --success: 142.1 70.6% 21.4%; /* #15803d */
     --success-foreground: 210 40% 98%;
     
-    --warning: 28 74% 32%;
-    --warning-foreground: 210 40% 98%;
+    --warning: 47.9 95.8% 53.1%;
+    --warning-foreground: 222.2 47.4% 11.2%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 207 70% 53%;
+    --ring: 217.2 91.2% 59.8%;
 
-    /* Sidebar colors in dark mode can be the same */
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-primary: 207 70% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217.2 32.6% 25%; /* Slightly lighter accent for dark mode */
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-ring: 207 70% 53%;
+    /* Chart colors for dark theme */
+    --chart-1: 217 91% 59%;  /* Blue */
+    --chart-2: 142 71% 40%;  /* Green */
+    --chart-3: 48 96% 53%;  /* Yellow */
+    --chart-4: 0 72% 51%;   /* Red */
+    --chart-5: 215 20% 65%;  /* Slate */
   }
 }
 
