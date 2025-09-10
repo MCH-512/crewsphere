@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db } from "@/lib/firebase";
@@ -84,8 +85,7 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             transaction.update(flight1Ref, flight1Update);
             transaction.update(flight2Ref, flight2Update);
             
-            // Update activities in a separate batch, as transactions can't contain logic after writes.
-            // This part will be executed after the transaction successfully commits.
+            // --- Update activities collection separately after transaction ---
             const activityBatch = writeBatch(db);
             if (activity1Id) {
                 activityBatch.update(doc(db, "userActivities", activity1Id), { 
@@ -152,24 +152,22 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
     if (!swap.requestingFlightId || !swap.requestingUserId) return null;
 
     try {
-        // Check if user 1 (initiator) is available for user 2's flight
         const initiatorConflicts = await checkCrewAvailability(
             [swap.initiatingUserId],
             new Date(swap.requestingFlightInfo!.scheduledDepartureDateTimeUTC),
             new Date(swap.requestingFlightInfo!.scheduledArrivalDateTimeUTC),
-            swap.initiatingFlightId // Ignore the flight they are swapping away from
+            swap.initiatingFlightId
         );
         if (Object.keys(initiatorConflicts).length > 0) {
             const conflict = Object.values(initiatorConflicts)[0];
             return `${swap.initiatingUserEmail} has a conflict on the new date: ${conflict.details}.`;
         }
 
-        // Check if user 2 (requester) is available for user 1's flight
         const requesterConflicts = await checkCrewAvailability(
             [swap.requestingUserId],
             new Date(swap.flightInfo.scheduledDepartureDateTimeUTC),
             new Date(swap.flightInfo.scheduledArrivalDateTimeUTC),
-            swap.requestingFlightId // Ignore the flight they are swapping away from
+            swap.requestingFlightId
         );
          if (Object.keys(requesterConflicts).length > 0) {
             const conflict = Object.values(requesterConflicts)[0];
@@ -183,3 +181,5 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
         return "Could not automatically check for conflicts due to a server error.";
     }
 }
+
+    
