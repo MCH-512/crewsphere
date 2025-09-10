@@ -26,7 +26,6 @@ import { logAuditEvent } from "@/lib/audit-logger";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import Link from "next/link";
 import { StoredQuiz, StoredCertificateRule } from "@/schemas/course-schema";
 import { generateCourseImage } from "@/ai/flows/generate-course-image-flow";
 import { generateQuizFromContent } from "@/ai/flows/generate-quiz-flow";
@@ -310,7 +309,7 @@ export default function AdminCoursesPage() {
 
             await batch.commit();
             await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: 'DELETE_COURSE', entityType: "COURSE", entityId: courseToDelete.id, details: { title: courseToDelete.title }});
-            toast({ title: "Course Deleted", description: `"${courseToDelete.title}" and all its data have been removed.` });
+            toast({ title: "Course Deleted", description: `"${courseToDelete.title}" and all its associated data have been removed.` });
             fetchCourses();
         } catch (error) {
             console.error(error);
@@ -435,8 +434,32 @@ export default function AdminCoursesPage() {
                                         <FormLabel className="font-semibold text-base flex items-center gap-2"><CheckSquare/>Quiz & Certificate</FormLabel>
                                          <FormField control={form.control} name="quizTitle" render={({ field }) => <FormItem><FormLabel>Quiz Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
                                          <div className="grid md:grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="passingThreshold" render={({ field }) => <FormItem><FormLabel>Passing Score (%)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl><FormMessage /></FormItem>} />
-                                            <FormField control={form.control} name="certificateExpiryDays" render={({ field }) => <FormItem><FormLabel>Certificate Expiry (Days)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl><FormMessage /></FormItem>} />
+                                            <Controller
+                                                control={form.control}
+                                                name="passingThreshold"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Passing Score (%)</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Controller
+                                                control={form.control}
+                                                name="certificateExpiryDays"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Certificate Expiry (Days)</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
                                          </div>
                                     </div>
 
@@ -488,7 +511,7 @@ export default function AdminCoursesPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the course "{courseToDelete?.title}" and all its data, including its quiz, questions, and any user progress.
+                            This action cannot be undone. This will permanently delete the course "{courseToDelete?.title}" and all its associated data, including its quiz, questions, and any user progress.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -500,3 +523,5 @@ export default function AdminCoursesPage() {
         </div>
     );
 }
+
+    
