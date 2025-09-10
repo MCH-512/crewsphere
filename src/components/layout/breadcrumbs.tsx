@@ -74,7 +74,7 @@ export function Breadcrumbs() {
   }
 
   return (
-    <nav aria-label="Breadcrumb" className="mb-4 text-sm text-muted-foreground hidden md:block">
+    <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground hidden md:block">
       <ol className="flex items-center space-x-1.5">
         <li>
           <Link

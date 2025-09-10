@@ -239,7 +239,7 @@ export default function SettingsPage() {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <div className="relative">
                             <Image 
-                                src={previewUrl || user?.photoURL || "https://placehold.co/100x100.png"} 
+                                src={previewUrl || user?.photoURL || "https://images.unsplash.com/photo-1559535456-e9b626438153?q=80&w=1964&auto=format&fit=crop"} 
                                 alt="User Avatar" 
                                 width={80} 
                                 height={80} 
@@ -400,5 +400,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
