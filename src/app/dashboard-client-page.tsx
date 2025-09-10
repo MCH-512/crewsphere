@@ -42,7 +42,12 @@ const ChartSkeleton = () => (
     </Card>
 );
 
-export default function DashboardClientPage({ children }: { children: React.ReactNode }) {
+interface DashboardClientPageProps {
+  children: React.ReactNode;
+  heroImage: { src: string; hint: string };
+}
+
+export default function DashboardClientPage({ children, heroImage }: DashboardClientPageProps) {
   const { user } = useAuth() as { user: User };
   const [userNameForGreeting, setUserNameForGreeting] = React.useState<string>("User");
 
@@ -66,9 +71,9 @@ export default function DashboardClientPage({ children }: { children: React.Reac
       <AnimatedCard>
         <Card className="shadow-lg border-none relative overflow-hidden min-h-[220px] flex flex-col justify-between p-6">
             <Image
-                src="https://images.unsplash.com/photo-1542296332-2e4473faf563?q=80&w=1974&auto=format&fit=crop"
-                alt="Airplane on the tarmac at sunset"
-                data-ai-hint="airplane tarmac"
+                src={heroImage.src}
+                alt="Airplane view"
+                data-ai-hint={heroImage.hint}
                 fill
                 priority
                 className="object-cover z-0"
