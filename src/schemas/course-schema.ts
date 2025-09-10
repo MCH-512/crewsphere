@@ -95,3 +95,5 @@ export interface StoredUserQuizAttempt {
   completedAt: Timestamp;
   answers: Record<string, string>;
 }
+
+    

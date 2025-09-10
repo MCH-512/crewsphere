@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -131,7 +132,7 @@ export default function CertificatePage() {
 
                     <div className="relative z-10 mt-12 flex justify-between w-full max-w-lg">
                         <div className="text-center text-xs">
-                           <p className="font-serif italic mb-2">AirCrew Hub Training Department</p>
+                           <p className="font-serif italic mb-2">{certRule.signatureTextOrURL || "AirCrew Hub Training Dept."}</p>
                            <hr />
                            <p className="mt-1">Authorized Signature</p>
                         </div>
@@ -152,3 +153,5 @@ export default function CertificatePage() {
         </div>
     );
 }
+
+    

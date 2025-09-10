@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -102,7 +103,7 @@ export default function QuizPage() {
             // Log the audit event for system tracking
             await logAuditEvent({
                 userId: user.uid,
-                userEmail: user.email,
+                userEmail: user.email!,
                 actionType: "COMPLETE_QUIZ",
                 entityType: "QUIZ_ATTEMPT",
                 entityId: quizData.id,
@@ -128,7 +129,7 @@ export default function QuizPage() {
 
             toast({
                 title: "Quiz Results Saved",
-                description: `Your score of ${calculatedScore.toFixed(2)}% has been recorded.`,
+                description: `Your score of ${calculatedScore.toFixed(0)}% has been recorded.`,
                 variant: passed ? "success" : "default",
             });
             setQuizState('submitted');
@@ -222,6 +223,11 @@ export default function QuizPage() {
                                </Link>
                            </Button>
                         )}
+                         {!passed && (
+                           <Button onClick={() => window.location.reload()}>
+                               <RefreshCw className="mr-2 h-4 w-4" /> Retake Quiz
+                           </Button>
+                        )}
                     </CardFooter>
                 </Card>
                 <Card>
@@ -260,3 +266,5 @@ export default function QuizPage() {
     
     return null; // Should not be reached
 }
+
+    

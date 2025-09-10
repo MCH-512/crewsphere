@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -139,7 +140,7 @@ export default function CourseDetailPage() {
              <Card className="shadow-lg overflow-hidden">
                  <div className="relative h-60 w-full">
                     <Image
-                        src={course.imageUrl || `https://placehold.co/800x400.png`}
+                        src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/400`}
                         alt={course.title}
                         data-ai-hint={course.imageHint || "training manual"}
                         fill
@@ -213,3 +214,5 @@ export default function CourseDetailPage() {
         </div>
     );
 }
+
+    

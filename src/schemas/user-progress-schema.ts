@@ -8,7 +8,7 @@ export const userQuizAttemptSchema = z.object({
   quizId: z.string(),
   score: z.number(),
   status: z.enum(['passed', 'failed']),
-  completedAt: z.instanceof(Timestamp),
+  completedAt: z.instanceof(Date).or(z.instanceof(Timestamp)), // Allow both types
   answers: z.record(z.string(), z.string()), // questionId -> userAnswer
 });
 
@@ -24,3 +24,5 @@ export interface StoredUserQuizAttempt {
   completedAt: Timestamp;
   answers: Record<string, string>;
 }
+
+    

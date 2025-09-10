@@ -35,7 +35,7 @@ const CourseProgressCard = ({ course, delay }: { course: CourseWithProgress; del
              <Card className="shadow-sm h-full flex flex-col hover:shadow-lg transition-shadow overflow-hidden">
                 <div className="relative h-40 w-full">
                     <Image 
-                      src={course.imageUrl || `https://placehold.co/600x400.png`}
+                      src={course.imageUrl || `https://picsum.photos/seed/${course.id}/600/400`}
                       alt={course.title}
                       data-ai-hint={course.imageHint || "training manual"}
                       fill
@@ -297,3 +297,5 @@ export default function TrainingPage() {
         </div>
     );
 }
+
+    
