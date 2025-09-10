@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -417,8 +416,8 @@ export default function AdminCoursesPage() {
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="space-x-1">
-                                        <Button variant="ghost" size="icon" onClick={()={() => handleOpenDialog(course)}} title="Edit Course Details"><Edit className="h-4 w-4" /></Button>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title="Delete Course" onClick={()={() => { setCourseToDelete(course); setIsDeleteDialogOpen(true); }}}><Trash2 className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(course)} title="Edit Course Details"><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title="Delete Course" onClick={() => { setCourseToDelete(course); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -587,5 +586,4 @@ export default function AdminCoursesPage() {
             </AlertDialog>
         </div>
     );
-
-    
+}
