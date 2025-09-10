@@ -15,7 +15,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, getDoc, where, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, Handshake, FileSignature, Calendar as CalendarIcon, List, Filter, Repeat, Info, BellOff, CheckCircle } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, Handshake, FileSignature, Calendar as CalendarIcon, List, Filter, Repeat, Info, BellOff, CheckCircle, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, parseISO, addHours, isSameDay, startOfMonth, endOfMonth, addDays, addWeeks, differenceInMinutes, addMinutes } from "date-fns";
 import { flightFormSchema, type FlightFormValues, type StoredFlight, aircraftTypes } from "@/schemas/flight-schema";
@@ -210,7 +210,7 @@ export function AdminFlightsClient({
 
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>('scheduledDepartureDateTimeUTC');
     const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
-    const [viewMode, setViewMode] = React.useState<ViewMode>("calendar");
+    const [viewMode, setViewMode] = React.useState<ViewMode>("list");
     const [calendarMonth, setCalendarMonth] = React.useState(new Date());
     const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(new Date());
 
@@ -260,7 +260,6 @@ export function AdminFlightsClient({
         if (!authLoading && !user) router.push('/');
     }, [user, authLoading, router]);
 
-    // Firestore listener for real-time swap notifications
     React.useEffect(() => {
         if (!db) return;
         setListenerError(null);
@@ -268,7 +267,7 @@ export function AdminFlightsClient({
         const q = query(collection(db, "flightSwaps"), where("status", "==", "pending_approval"));
         
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setListenerError(null); // Clear error on successful data receive
+            setListenerError(null);
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added") {
                     const newSwap = { id: change.doc.id, ...change.doc.data() } as StoredFlightSwap;
@@ -278,7 +277,7 @@ export function AdminFlightsClient({
                         action: <Button variant="secondary" size="sm" onClick={() => setSwapToApprove(newSwap)}>Review</Button>,
                         duration: 10000,
                     });
-                    fetchPageData(); // Refresh the list to show the new pending swap
+                    fetchPageData();
                 }
             });
         }, (error) => {
@@ -287,7 +286,7 @@ export function AdminFlightsClient({
             toast({ title: "Real-time Connection Lost", description: "Could not listen for new swap requests.", variant: "destructive" });
         });
 
-        return () => unsubscribe(); // Cleanup on component unmount
+        return () => unsubscribe();
     }, [toast, fetchPageData]);
 
     const sortedAndFilteredFlights = React.useMemo(() => {
@@ -401,7 +400,7 @@ export function AdminFlightsClient({
                 cabinCrewIds: flightToEdit.cabinCrewIds || [],
                 instructorIds: flightToEdit.instructorIds || [],
                 traineeIds: flightToEdit.traineeIds || [],
-                enableRecurrence: false, // recurrence disabled for editing
+                enableRecurrence: false,
             });
         } else {
             setIsEditMode(false);
@@ -427,8 +426,8 @@ export function AdminFlightsClient({
         setCurrentFlight(null);
         form.reset({
             flightNumber: flight.flightNumber,
-            departureAirport: flight.arrivalAirport, // Swapped
-            arrivalAirport: flight.departureAirport, // Swapped
+            departureAirport: flight.arrivalAirport,
+            arrivalAirport: flight.departureAirport,
             scheduledDepartureDateTimeUTC: "",
             scheduledArrivalDateTimeUTC: "",
             aircraftType: flight.aircraftType as any,
@@ -437,7 +436,7 @@ export function AdminFlightsClient({
             cabinCrewIds: flight.cabinCrewIds || [],
             instructorIds: flight.instructorIds || [],
             traineeIds: flight.traineeIds || [],
-            enableRecurrence: false, // recurrence disabled
+            enableRecurrence: false,
         });
         setDepSearch(flight.arrivalAirportName || flight.arrivalAirport);
         setArrSearch(flight.departureAirportName || flight.departureAirport);
@@ -462,7 +461,6 @@ export function AdminFlightsClient({
             const batch = writeBatch(db);
 
             if (isEditMode && currentFlight) {
-                // UPDATE logic for a single flight
                 const outboundCrewIds = [...new Set([data.purserId, ...(data.pilotIds || []), ...(data.cabinCrewIds || []), ...(data.instructorIds || []), ...(data.traineeIds || [])].filter(Boolean))];
                 const flightRef = doc(db, "flights", currentFlight.id);
                 if (currentFlight.activityIds) {
@@ -481,7 +479,6 @@ export function AdminFlightsClient({
                 toast({ title: "Flight Updated", description: `Flight ${data.flightNumber} has been updated.` });
             
             } else {
-                // CREATE logic for one or more flights
                 const initialDepartureDate = parseISO(data.scheduledDepartureDateTimeUTC);
                 const initialArrivalDate = parseISO(data.scheduledArrivalDateTimeUTC);
                 const flightDurationMinutes = differenceInMinutes(initialArrivalDate, initialDepartureDate);
@@ -584,8 +581,8 @@ export function AdminFlightsClient({
                         <CardDescription>Schedule new flights and assign crew members.</CardDescription>
                     </div>
                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setViewMode('calendar')} className={cn(viewMode === 'calendar' && 'bg-accent text-accent-foreground')}><CalendarIcon className="mr-2 h-4 w-4"/>Calendar</Button>
-                        <Button variant="outline" size="sm" onClick={() => setViewMode('list')} className={cn(viewMode === 'list' && 'bg-accent text-accent-foreground')}><List className="mr-2 h-4 w-4"/>List</Button>
+                        <Button variant="outline" size="sm" onClick={() => setViewMode('list')} className={cn(viewMode === 'list' && 'bg-accent text-accent-foreground')}><List className="mr-2 h-4 w-4"/>List View</Button>
+                        <Button variant="outline" size="sm" onClick={() => setViewMode('calendar')} className={cn(viewMode === 'calendar' && 'bg-accent text-accent-foreground')}><CalendarIcon className="mr-2 h-4 w-4"/>Calendar View</Button>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -593,7 +590,7 @@ export function AdminFlightsClient({
                         <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                             <div className="relative">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input type="search" placeholder="Search by flight number or route..." className="pl-8 w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                <Input type="search" placeholder="Search flights..." className="pl-8 w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                             </div>
                             <Select value={aircraftFilter} onValueChange={setAircraftFilter}>
                                 <SelectTrigger><Filter className="mr-2 h-4 w-4" /> <span className="truncate">Aircraft: {aircraftFilter === 'all' ? 'All' : aircraftFilter}</span></SelectTrigger>
@@ -647,8 +644,8 @@ export function AdminFlightsClient({
                                         </Link>
                                     </TableCell>
                                      <TableCell className="space-x-2">
-                                        {!f.purserReportSubmitted && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning text-warning" title="Purser Report Pending"><FileSignature className="h-4 w-4" /></Button>)}
-                                        {f.pendingSwap && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning text-warning animate-pulse" title="Swap Request Pending" onClick={() => setSwapToApprove(f.pendingSwap!)}><Handshake className="h-4 w-4" /></Button>)}
+                                        {!f.purserReportSubmitted && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning/80 text-warning-foreground" title="Purser Report Pending"><FileSignature className="h-4 w-4" /></Button>)}
+                                        {f.pendingSwap && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning text-warning-foreground animate-pulse" title="Swap Request Pending" onClick={() => setSwapToApprove(f.pendingSwap!)}><Handshake className="h-4 w-4" /></Button>)}
                                     </TableCell>
                                     <TableCell className="text-right space-x-1">
                                         <Button variant="ghost" size="icon" onClick={() => handleCreateReturnFlight(f)} title="Create Return Flight"><ArrowRightLeft className="h-4 w-4" /></Button>
@@ -740,7 +737,7 @@ export function AdminFlightsClient({
                             <h3 className="text-lg font-medium flex items-center gap-2"><Users />Crew Assignment</h3>
                              <FormField control={form.control} name="purserId" render={({ field }) => (<FormItem><FormLabel>Assign Purser</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a purser" /></SelectTrigger></FormControl><SelectContent>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName} ({p.email})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                             <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${p.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                             <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                              <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
                             

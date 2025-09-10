@@ -85,7 +85,6 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             transaction.update(flight1Ref, flight1Update);
             transaction.update(flight2Ref, flight2Update);
             
-            // --- Update activities collection separately after transaction ---
             const activityBatch = writeBatch(db);
             if (activity1Id) {
                 activityBatch.update(doc(db, "userActivities", activity1Id), { 
@@ -149,7 +148,7 @@ export async function rejectFlightSwap(swapId: string, adminId: string, adminEma
 }
 
 export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string | null> {
-    if (!swap.requestingFlightId || !swap.requestingUserId || !swap.requestingFlightInfo) {
+    if (!swap.requestingFlightId || !swap.requestingUserId || !swap.requestingFlightInfo || !swap.initiatingFlightId || !swap.initiatingUserId) {
         return "Swap request is incomplete and cannot be checked.";
     }
 
@@ -157,8 +156,8 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
         const initiatorConflicts = await checkCrewAvailability(
             [swap.initiatingUserId],
             new Date(swap.requestingFlightInfo.scheduledDepartureDateTimeUTC),
-            new Date(swap.requestingFlightInfo.scheduledArrivalDateTimeUTC),
-            swap.initiatingFlightId
+            new Date(swap.requestingFlightInfo.scheduledArrivalDateTimeUTC || swap.requestingFlightInfo.scheduledDepartureDateTimeUTC),
+            swap.initiatingFlightId // Ignore the original flight
         );
         if (Object.keys(initiatorConflicts).length > 0) {
             const conflict = Object.values(initiatorConflicts)[0];
@@ -169,7 +168,7 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
             [swap.requestingUserId],
             new Date(swap.flightInfo.scheduledDepartureDateTimeUTC),
             new Date(swap.flightInfo.scheduledArrivalDateTimeUTC),
-            swap.requestingFlightId
+            swap.requestingFlightId // Ignore the original flight
         );
          if (Object.keys(requesterConflicts).length > 0) {
             const conflict = Object.values(requesterConflicts)[0];
