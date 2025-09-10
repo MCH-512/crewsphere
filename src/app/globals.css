@@ -5,14 +5,14 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 220 14.3% 95.9%;
     --foreground: 224 71.4% 4.1%;
     --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 20% 98%;
+    --primary: 262.1 83.3% 57.8%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 220 14.3% 95.9%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 220 14.3% 95.9%;
@@ -24,7 +24,7 @@
     --success: 142.1 76.2% 36.3%;
     --success-foreground: 210 20% 98%;
     --warning: 47.9 95.8% 53.1%;
-    --warning-foreground: 210 20% 98%;
+    --warning-foreground: 210 20% 9.8%;
     --border: 220 13% 91%;
     --input: 220 13% 91%;
     --ring: 221.2 83.2% 53.3%;
@@ -39,14 +39,14 @@
     --sidebar-background: 222 39% 23%; /* dark navy: #1e293b */
     --sidebar-foreground: 0 0% 100%; /* white */
     --sidebar-border: 222 39% 28%;
-    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary: 262.1 83.3% 57.8%; /* primary blue */
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 26% 35%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-ring: 221 83% 53%;
-    --sidebar-hover: 215 28% 25%; /* #334155 */
-    --sidebar-active: 221 83% 53%; /* primary blue */
+    --sidebar-hover: 222 47% 11%;
+    --sidebar-active: 262.1 83.3% 53.3%;
     --sidebar-active-foreground: 0 0% 100%;
+    --sidebar-ring: 221 83% 53%;
   }
 
   .dark {
@@ -56,8 +56,8 @@
     --card-foreground: 210 20% 98%;
     --popover: 224 71.4% 4.1%;
     --popover-foreground: 210 20% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 210 20% 9.8%;
+    --primary: 262.1 83.3% 57.8%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 215 27.9% 16.9%;
     --secondary-foreground: 210 20% 98%;
     --muted: 215 27.9% 16.9%;
@@ -84,14 +84,14 @@
     --sidebar-background: 222 47% 11%; /* very dark slate: #111827 */
     --sidebar-foreground: 0 0% 100%; /* white */
     --sidebar-border: 222 39% 23%;
-    --sidebar-primary: 221 83% 60%;
+    --sidebar-primary: 262.1 83.3% 57.8%; /* primary blue */
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 222 39% 23%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-ring: 221 83% 60%;
-    --sidebar-hover: 222 39% 23%; /* #1e293b */
-    --sidebar-active: 217.2 91.2% 59.8%; /* bright blue */
+    --sidebar-hover: 222 47% 11%;
+    --sidebar-active: 262.1 83.3% 53.3%;
     --sidebar-active-foreground: 0 0% 100%;
+    --sidebar-ring: 221 83% 60%;
   }
 }
 
