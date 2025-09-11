@@ -575,12 +575,12 @@ export function AdminFlightsClient({
     return (
         <div className="space-y-6">
             <Card className="shadow-lg">
-                <CardHeader className="flex flex-row justify-between items-start">
+                <CardHeader className="flex flex-col md:flex-row justify-between items-start gap-4">
                     <div>
                         <CardTitle className="text-2xl font-headline flex items-center"><Plane className="mr-3 h-7 w-7 text-primary" />Flight Management</CardTitle>
                         <CardDescription>Schedule new flights and assign crew members.</CardDescription>
                     </div>
-                     <div className="flex gap-2">
+                     <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={() => setViewMode('list')} className={cn(viewMode === 'list' && 'bg-accent text-accent-foreground')}><List className="mr-2 h-4 w-4"/>List View</Button>
                         <Button variant="outline" size="sm" onClick={() => setViewMode('calendar')} className={cn(viewMode === 'calendar' && 'bg-accent text-accent-foreground')}><CalendarIcon className="mr-2 h-4 w-4"/>Calendar View</Button>
                     </div>
@@ -601,7 +601,7 @@ export function AdminFlightsClient({
                                 <SelectContent><SelectItem value="all">All Pursers</SelectItem>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName}</SelectItem>)}</SelectContent>
                             </Select>
                         </div>
-                        <div className="flex items-center space-x-2 shrink-0">
+                        <div className="flex items-center space-x-2 shrink-0 mt-2 md:mt-0">
                             <Label htmlFor="pending-swaps-filter" className="flex items-center gap-1 text-sm text-warning-foreground"><Filter className="h-4 w-4"/>Pending Swaps Only</Label>
                             <Switch id="pending-swaps-filter" checked={showPendingSwapsOnly} onCheckedChange={setShowPendingSwapsOnly} />
                         </div>
@@ -821,3 +821,5 @@ export function AdminFlightsClient({
         </div>
     );
 }
+
+    
