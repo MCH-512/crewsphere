@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db, auth, isConfigValid } from "@/lib/firebase";

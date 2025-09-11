@@ -153,7 +153,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                 formJoiningDate = dateObj.toISOString().split('T')[0];
             }
         } catch (e) {
-             console.error(`Error parsing joiningDate for user ${userToEdit.uid}:`, e);
+             console.error(`Error parsing joiningDate for user ${'${userToEdit.uid}'}:`, e);
         }
     }
 
@@ -180,11 +180,11 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
         try {
             if (isCreateMode) {
                 await manageUser({ isCreate: true, data, adminUser: user });
-                toast({ title: "User Created", description: `User ${data.email} has been created.` });
+                toast({ title: "User Created", description: `User ${'${data.email}'} has been created.` });
 
             } else if (currentUserToManage) {
                 await manageUser({ isCreate: false, data, userId: currentUserToManage.uid, adminUser: user });
-                toast({ title: "User Updated", description: `User ${data.email} has been updated.` });
+                toast({ title: "User Updated", description: `User ${'${data.email}'} has been updated.` });
             }
             loadUsers();
             setIsManageUserDialogOpen(false);
@@ -229,7 +229,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={loadUsers} disabled={isLoading} className="flex-1 sm:flex-auto">
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`mr-2 h-4 w-4 ${'${isLoading}' ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             <Button onClick={handleOpenCreateUserDialog} className="flex-1 sm:flex-auto">
@@ -309,7 +309,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                       <TableCell>{u.employeeId || 'N/A'}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button variant="ghost" size="icon" title="View User Details" asChild>
-                          <Link href={`/admin/users/${u.uid}`}><Eye className="h-4 w-4"/></Link>
+                          <Link href={`/admin/users/${'${u.uid}'}`}><Eye className="h-4 w-4"/></Link>
                         </Button>
                         <Button variant="ghost" size="icon" title="Edit User" onClick={() => handleOpenEditUserDialog(u)}>
                           <Edit className="h-4 w-4" />
@@ -332,7 +332,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)}>
               <DialogHeader>
-                <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${currentUserToManage?.displayName || currentUserToManage?.email}`}</DialogTitle>
+                <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${'${currentUserToManage?.displayName || currentUserToManage?.email}'}`}</DialogTitle>
                 <DialogDescription>
                   {isCreateMode ? "Fill in the details for the new user." : "Modify the user's information below."}
                 </DialogDescription>
