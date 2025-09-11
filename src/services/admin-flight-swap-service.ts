@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db } from "@/lib/firebase";
@@ -154,7 +153,7 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
         const requesterConflicts = await checkCrewAvailability(
             [swap.requestingUserId],
             new Date(swap.flightInfo.scheduledDepartureDateTimeUTC),
-            new Date(swap.flightInfo.scheduledArrivalDateTimeUTC),
+            new Date(swap.flightInfo.scheduledArrivalDateTimeUTC || swap.flightInfo.scheduledDepartureDateTimeUTC),
             swap.requestingFlightId // Ignore the original flight
         );
          if (Object.keys(requesterConflicts).length > 0) {

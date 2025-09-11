@@ -80,6 +80,7 @@ export default function AdminCoursesPage() {
             questions: [{ questionText: "", options: ["", "", "", ""], correctAnswer: "" }],
             quizTitle: "", passingThreshold: 80, certificateExpiryDays: 365
         },
+        mode: "onChange",
     });
 
     const { fields: chapterFields, append: appendChapter, remove: removeChapter } = useFieldArray({ control: form.control, name: "chapters" });
