@@ -18,7 +18,6 @@ import { useRouter } from "next/navigation";
 import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye, Filter } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge"; 
-import { logAuditEvent } from "@/lib/audit-logger";
 import Link from 'next/link';
 import { Separator } from "@/components/ui/separator";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
@@ -26,18 +25,17 @@ import type { User, SpecificRole, AccountStatus, ManageUserFormValues } from "@/
 import { manageUserFormSchema, getRoleBadgeVariant, getStatusBadgeVariant, availableRoles } from "@/schemas/user-schema";
 import { fetchUsers, manageUser } from "@/services/user-service";
 
-
 const NO_ROLE_SENTINEL = "_NONE_"; 
 
 type SortableColumn = "fullName" | "role" | "accountStatus" | "employeeId";
 type SortDirection = "asc" | 'desc';
 
-export function UsersClient() {
+export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [usersList, setUsersList] = React.useState<User[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [usersList, setUsersList] = React.useState<User[]>(initialUsers);
+  const [isLoading, setIsLoading] = React.useState(false); // Only for client-side re-fetches
   const [error, setError] = React.useState<string | null>(null);
 
   const [isManageUserDialogOpen, setIsManageUserDialogOpen] = React.useState(false);
@@ -82,12 +80,10 @@ export function UsersClient() {
   }, [toast]);
   
   React.useEffect(() => {
-    if (!authLoading && user) {
-      loadUsers();
-    } else if (!authLoading && !user) {
+    if (!authLoading && !user) {
       router.push('/login');
     }
-  }, [authLoading, user, loadUsers, router]);
+  }, [authLoading, user, router]);
 
 
   const filteredAndSortedUsers = React.useMemo(() => {
@@ -200,7 +196,7 @@ export function UsersClient() {
         }
     };
   
-  if (authLoading || isLoading) {
+  if (authLoading || (isLoading && usersList.length === 0)) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />

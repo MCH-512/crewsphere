@@ -8,12 +8,19 @@ import type { User, ManageUserFormValues } from "@/schemas/user-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 
 export async function fetchUsers(): Promise<User[]> {
-    if (!isConfigValid || !db) throw new Error("Firebase is not configured.");
+    if (!isConfigValid || !db) {
+        console.error("User fetch failed: Firebase is not configured.");
+        return []; // Return empty array instead of throwing
+    }
     
-    // Sorting by email is generally more reliable and performant.
-    const usersQuery = query(collection(db, "users"), orderBy("email", "asc"));
-    const querySnapshot = await getDocs(usersQuery);
-    return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
+    try {
+        const usersQuery = query(collection(db, "users"), orderBy("email", "asc"));
+        const querySnapshot = await getDocs(usersQuery);
+        return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
+    } catch (error) {
+        console.error("Error fetching users from Firestore:", error);
+        return []; // Return empty on error to prevent page crash
+    }
 }
 
 

@@ -1,11 +1,12 @@
+"use server";
 
-"use client";
-
-import * as React from "react";
+import "server-only";
 import { UsersClient } from "./users-client";
+import { fetchUsers } from "@/services/user-service";
 
-export default function AdminUsersPage() {
-    // This component now simply renders the client component.
-    // The initialUsers prop is removed, as fetching is now handled client-side.
-    return <UsersClient />;
+export default async function AdminUsersPage() {
+    // Fetch initial data on the server to reduce client-side loading
+    const initialUsers = await fetchUsers();
+    
+    return <UsersClient initialUsers={initialUsers} />;
 }
