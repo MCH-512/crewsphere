@@ -33,6 +33,7 @@ import {
     type StoredUserRequest, getStatusBadgeVariant, getUrgencyBadgeVariant, getAdminResponseAlertVariant
 } from "@/schemas/request-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 
 // --- Form Default Values ---
@@ -121,7 +122,16 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
         createdAt: serverTimestamp(),
         status: "pending",
       };
-      await addDoc(collection(db, "requests"), requestData);
+      const docRef = await addDoc(collection(db, "requests"), requestData);
+
+      await logAuditEvent({
+        userId: user.uid,
+        userEmail: user.email!,
+        actionType: 'CREATE_REQUEST',
+        entityType: 'REQUEST',
+        entityId: docRef.id,
+        details: { subject: submissionData.subject, category: submissionData.requestCategory },
+      });
 
       toast({
         title: "Request Submitted Successfully",

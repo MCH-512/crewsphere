@@ -1,6 +1,7 @@
 "use server";
 
 import * as React from "react";
+import { Suspense } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ServerCog } from "lucide-react";
@@ -8,11 +9,28 @@ import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { adminNavConfig } from "@/config/nav";
 import { cn } from "@/lib/utils";
-import { getAdminDashboardStats } from "@/services/admin-dashboard-service";
+import { getAdminDashboardStats, getAdminDashboardWeeklyTrends } from "@/services/admin-dashboard-service";
 import { Badge } from "@/components/ui/badge";
+import { WeeklyTrendsChart } from "@/components/admin/weekly-trends-chart";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const ChartSkeleton = () => (
+    <Card className="col-span-1 lg:col-span-2">
+        <CardHeader>
+             <Skeleton className="h-6 w-1/2" />
+             <Skeleton className="h-4 w-3/4" />
+        </CardHeader>
+        <CardContent>
+            <Skeleton className="h-[250px] w-full" />
+        </CardContent>
+    </Card>
+);
 
 export default async function AdminConsolePage() {
-  const stats = await getAdminDashboardStats();
+  const [stats, weeklyTrends] = await Promise.all([
+    getAdminDashboardStats(),
+    getAdminDashboardWeeklyTrends(),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -30,6 +48,12 @@ export default async function AdminConsolePage() {
         </Card>
       </AnimatedCard>
       
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Suspense fallback={<ChartSkeleton />}>
+            <WeeklyTrendsChart initialData={weeklyTrends} />
+        </Suspense>
+      </div>
+
       {adminNavConfig.sidebarNav.map((group, groupIndex) => (
           <section key={groupIndex}>
               <h2 className="text-2xl font-bold tracking-tight mb-4">{group.title}</h2>
@@ -54,8 +78,8 @@ export default async function AdminConsolePage() {
                                           <CardTitle className="text-lg">{item.title}</CardTitle>
                                       </div>
                                        {statValue !== undefined && (
-                                            <Badge variant={shouldHighlight ? "destructive" : "secondary"}>
-                                                {statValue} {item.statKey === 'pendingRequests' && statValue > 0 ? 'Pending' : ''}
+                                            <Badge variant={shouldHighlight ? "destructive" : "secondary"} className="animate-pulse">
+                                                {statValue}
                                             </Badge>
                                         )}
                                   </CardHeader>

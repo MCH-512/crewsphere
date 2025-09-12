@@ -7,6 +7,17 @@ import {
 } from "lucide-react";
 import type { ElementType } from 'react';
 
+export interface AdminDashboardStats {
+  pendingRequests: number;
+  pendingDocValidations: number;
+  newSuggestions: number;
+  pendingSwaps: number;
+  activeAlerts: number;
+  pendingReports: number;
+  [key: string]: number | undefined;
+}
+
+
 export interface NavItem {
   href: string;
   title: string;
@@ -21,16 +32,6 @@ export interface NavItem {
 export interface NavGroup {
   title: string;
   items: NavItem[];
-}
-
-export interface AdminDashboardStats {
-  pendingRequests: number;
-  pendingDocValidations: number;
-  newSuggestions: number;
-  pendingSwaps: number;
-  activeAlerts: number;
-  // Add other stats as needed
-  [key: string]: number | undefined;
 }
 
 

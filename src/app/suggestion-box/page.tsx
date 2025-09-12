@@ -36,6 +36,7 @@ import { formatDistanceToNowStrict } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { AnimatedCard } from "@/components/motion/animated-card";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 
 // Suggestion Card Component
@@ -132,7 +133,7 @@ export default function SuggestionBoxPage() {
         }
         setIsSubmitting(true);
         try {
-            await addDoc(collection(db, "suggestions"), {
+            const docRef = await addDoc(collection(db, "suggestions"), {
                 ...data,
                 userId: user.uid,
                 userEmail: data.isAnonymous ? null : user.email,
@@ -141,6 +142,16 @@ export default function SuggestionBoxPage() {
                 upvoteCount: 0,
                 createdAt: serverTimestamp(),
             });
+
+            await logAuditEvent({
+                userId: user.uid,
+                userEmail: user.email!,
+                actionType: 'SUBMIT_SUGGESTION',
+                entityType: 'SUGGESTION',
+                entityId: docRef.id,
+                details: { subject: data.subject, category: data.category },
+            });
+
             toast({ title: "Suggestion Submitted!", description: "Thank you for your feedback.", action: <CheckCircle className="text-green-500"/> });
             form.reset();
             fetchSuggestions();
