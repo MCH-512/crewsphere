@@ -582,7 +582,7 @@ export function AdminFlightsClient({
                     </div>
                 </CardContent>
                 <CardFooter className="flex-wrap items-center gap-4 border-t pt-4">
-                        <Button variant="outline" onClick={fetchPageData} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
+                        <Button variant="outline" onClick={fetchPageData} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 animate-spin ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
                         <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4"/>Create Flight</Button>
                          {listenerError && (
                             <div className="flex items-center gap-2 text-sm text-destructive font-medium ml-auto">
@@ -749,3 +749,5 @@ export function AdminFlightsClient({
         </div>
     );
 }
+
+    
