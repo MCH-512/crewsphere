@@ -6,13 +6,21 @@ import { collection, doc, getDocs, query, orderBy, setDoc, updateDoc, serverTime
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import type { User, ManageUserFormValues } from "@/schemas/user-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
+import { getCurrentUser } from "@/lib/session";
 
 export async function fetchUsers(): Promise<User[]> {
     if (!isConfigValid || !db) {
         console.error("User fetch failed: Firebase is not configured.");
-        return []; // Return empty array instead of throwing
+        return []; 
     }
     
+    // Security check: only admins can list all users.
+    const adminUser = await getCurrentUser();
+    if (!adminUser || adminUser.role !== 'admin') {
+        console.warn("Unauthorized attempt to fetch all users.");
+        return [];
+    }
+
     try {
         const usersQuery = query(collection(db, "users"), orderBy("email", "asc"));
         const querySnapshot = await getDocs(usersQuery);
