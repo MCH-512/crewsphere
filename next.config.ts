@@ -7,7 +7,7 @@ const cspHeader = `
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' https://placehold.co https://*.tile.openstreetmap.org https://unpkg.com https://images.unsplash.com https://picsum.photos data: blob:;
     font-src 'self' https://fonts.gstatic.com;
-    connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://storage.googleapis.com https://www.googleapis.com https://opensky-network.org https://www.aviationweather.gov;
+    connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://storage.googleapis.com https://www.googleapis.com https://opensky-network.org https://www.aviationweather.gov *.sentry.io;
     frame-src 'self';
     object-src 'none';
     form-action 'self';
@@ -17,7 +17,12 @@ const cspHeader = `
 
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  sentry: {
+    widenClientFileUpload: true,
+    transpileClientSDK: true,
+    hideSourceMaps: true,
+    tunnelRoute: '/monitoring',
+  },
   typescript: {
     ignoreBuildErrors: false,
   },
