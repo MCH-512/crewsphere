@@ -1,79 +1,57 @@
-
-# CrewSphere : Portail Complet pour Équipages Aériens
+# CrewSphere: Industrial-Grade Aviation Crew Portal
 
 ![Next.js Audit Status](https://img.shields.io/badge/Next.js%20Audit-PASSÉ-brightgreen?logo=next.js&style=for-the-badge)
 
-**CrewSphere** est une application web moderne et complète, conçue pour être le portail centralisé pour les membres d'équipage d'une compagnie aérienne. Développée avec Next.js, TypeScript et Firebase, elle offre une suite d'outils et de fonctionnalités pour simplifier la gestion des horaires, la formation, la communication et les opérations quotidiennes.
+**CrewSphere** is an enterprise-grade, intelligent web application designed to serve as the central operational hub for airline crew members. Built with a **server-first architecture** using Next.js 15, TypeScript, and Firebase, it provides a comprehensive suite of tools for schedule management, training, communication, and daily operations, all while enforcing the highest standards of code quality and performance through an integrated, Dockerized audit system.
 
-L'application est divisée en deux interfaces principales : un portail pour les membres d'équipage et un panneau d'administration puissant pour la gestion.
-
----
-
-## Fonctionnalités pour les Membres d'Équipage
-
-### 1. **Tableau de Bord Personnalisé (`/`)**
-- **Accueil Centralisé** : Affiche un aperçu de l'emploi du temps du jour, les alertes critiques, et l'état d'avancement des formations obligatoires.
-- **Accès Rapide** : Liens directs vers les fonctionnalités les plus utilisées comme le "Toolbox" ou le système de requêtes.
-- **Visualisations** : Graphiques illustrant la progression des formations et le statut des requêtes soumises.
-
-### 2. **Mon Emploi du Temps (`/my-schedule`)**
-- **Calendrier Interactif** : Vue mensuelle de l'emploi du temps personnel, incluant vols, formations, jours de repos et congés.
-- **Détails d'Activité** : En cliquant sur une date, l'utilisateur peut voir les détails de chaque activité, comme la liste des membres d'équipage pour un vol.
-
-### 3. **Gestion des Échanges de Vols (`/flight-swap`, `/my-swaps`)**
-- **Tableau d'Échange** : Un "marché" où les membres d'équipage peuvent poster un vol qu'ils souhaitent échanger.
-- **Système de Requête** : Permet de proposer un de ses propres vols en échange d'un vol posté par un collègue.
-- **Suivi des Échanges** : Une page dédiée (`/my-swaps`) permet de suivre le statut de ses propres propositions et requêtes d'échange (en attente, approuvé, rejeté).
-
-### 4. **Centre de Formation en Ligne (`/training`)**
-- **Catalogue de Cours** : Accès à des cours de formation obligatoires et optionnels.
-- **Apprentissage Interactif** : Chaque cours contient des chapitres à lire. L'utilisateur doit marquer chaque chapitre comme lu pour débloquer le quiz final.
-- **Quiz et Certification** : À la fin de chaque cours, un quiz est généré. En cas de réussite, un certificat est automatiquement créé et peut être consulté.
-
-### 5. **Ressources et Communication**
-- **Bibliothèque de Documents (`/document-library`)** : Accès centralisé à tous les manuels opérationnels, documents de sécurité et politiques de la compagnie.
-- **Mes Documents (`/my-documents`)** : Espace personnel pour que chaque membre d'équipage télécharge et suive la date d'expiration de ses propres documents (passeport, licence, certificat médical).
-- **Boîte à Suggestions (`/suggestion-box`)** : Permet de soumettre des idées d'amélioration (anonymement ou non) et de voter pour les suggestions des autres.
-- **Système de Requêtes (`/requests`)** : Un formulaire structuré pour soumettre des requêtes officielles à différents départements (RH, planning, etc.).
-- **Hub Communautaire (`/community-hub`)** : Un fil d'actualité social où les membres d'équipage peuvent partager des messages et interagir.
-
-### 6. **Toolbox (`/toolbox`)**
-- Une suite d'outils pratiques, incluant :
-  - **Décodeur Météo par IA** : Traduit les codes METAR/TAF en langage clair.
-  - **Calculateur FTL** : Aide à calculer les limitations de temps de vol selon les normes EASA.
-  - **Carte de Vol en Direct** : Visualise le trafic aérien mondial en temps réel.
-  - **Glossaires et Guides** : Références pour l'alphabet phonétique, le jargon aéronautique, et les guides de bonnes pratiques.
+The application is architected around two core interfaces: a user-centric portal for crew members and a powerful, data-driven command center for administrators.
 
 ---
 
-## Fonctionnalités du Panneau d'Administration (`/admin`)
+## Core Features for Crew Members
 
-### 1. **Gestion des Utilisateurs et des Opérations**
-- **Gestion des Utilisateurs** : Créer, modifier, et assigner des rôles (pilote, purser, admin, etc.) aux utilisateurs.
-- **Gestion des Vols** : Planifier des vols, assigner des équipages complets, et gérer les requêtes d'échange de vols.
-- **Gestion des Formations** : Créer des sessions de formation en présentiel et assigner des participants.
-
-### 2. **Gestion de Contenu**
-- **Gestion des Cours en Ligne** : Créer et publier des cours, incluant les chapitres et les quiz. **Intègre une IA pour générer automatiquement les questions de quiz à partir du contenu du cours.**
-- **Gestion des Documents** : Uploader et gérer les documents officiels de la bibliothèque.
-- **Gestion des Alertes** : Créer et diffuser des notifications importantes à des groupes d'utilisateurs spécifiques.
-
-### 3. **Supervision et Conformité**
-- **Validation des Documents** : Approuver les documents personnels soumis par les membres d'équipage.
-- **Revue des Rapports de Vol** : Consulter et gérer les rapports soumis par les commissaires de bord. **Intègre une IA pour générer un résumé des points clés de chaque rapport.**
-- **Suivi des Requêtes et Suggestions** : Gérer et répondre aux requêtes et suggestions des utilisateurs.
-- **Journal d'Audit** : Une vue complète de toutes les actions administratives effectuées sur la plateforme.
+-   **Intelligent Dashboard (`/`)**: A central overview of the day's schedule, critical alerts, and mandatory training progress.
+-   **Interactive Schedule (`/my-schedule`)**: A monthly calendar view of personal schedules, including flights, training, and leave.
+-   **Flight Swap Board (`/flight-swap`, `/my-swaps`)**: A marketplace for posting and requesting flight swaps, with real-time status tracking.
+-   **E-Learning Center (`/training`)**: A catalog of mandatory and optional courses with chapter tracking, automated quizzes, and certificate generation.
+-   **Resource Hub**:
+    -   **Document Library (`/document-library`)**: Centralized access to operational manuals and company policies.
+    -   **My Documents (`/my-documents`)**: A personal space for managing licenses and certificates with expiry tracking.
+    -   **Suggestion Box (`/suggestion-box`)**: An anonymous or named forum for submitting and upvoting improvement ideas.
+    -   **Requests System (`/requests`)**: A structured form for official requests to various departments (HR, Planning).
+-   **Toolbox (`/toolbox`)**: A suite of practical utilities, including an AI-powered weather decoder, FTL calculator, and live flight tracker.
 
 ---
 
-## Pile Technologique
+## Command Center for Administrators (`/admin`)
 
-- **Framework Frontend** : Next.js 15 (App Router)
-- **Langage** : TypeScript
-- **Base de Données** : Firestore (NoSQL)
-- **Authentification** : Firebase Authentication
-- **Stockage de Fichiers** : Firebase Storage
-- **Fonctionnalités IA** : Google AI & Genkit
-- **UI & Style** : Tailwind CSS, shadcn/ui, Framer Motion
+The admin panel is designed as an **intelligent command center**, not just a management interface. It leverages server-side data aggregation to provide actionable insights and automate decision-making processes.
 
-Cette application a été conçue pour être à la fois puissante pour les administrateurs et intuitive pour les membres d'équipage, en tirant parti des technologies modernes pour offrir une expérience fluide et intelligente.
+-   **Action-Oriented Dashboard**: Displays at-a-glance KPIs for pending tasks (requests, validations, swaps) and a **weekly activity trend chart**.
+-   **Smart Planning Tools**:
+    -   **Flight & Training Scheduling**: Forms are equipped with **real-time conflict detection**, preventing double-booking of crew members by checking their availability *before* submission.
+    -   **Automated Swap & Leave Validation**: The system automatically checks for schedule conflicts when an admin reviews a swap or leave request, presenting a clear "Conflict Detected" or "No Conflict" status.
+-   **AI-Enhanced Content Management**:
+    -   **AI Quiz Generation**: Automatically creates quiz questions from course content.
+    -   **AI Report Summarization**: Generates executive summaries and identifies key risks from purser reports upon submission.
+-   **Full-Spectrum Management**: Comprehensive tools for managing users, courses, documents, alerts, system settings, and viewing audit logs.
+
+---
+
+## Architectural Pillars & Quality Assurance
+
+CrewSphere is built on a foundation of modern, robust, and scalable technologies, with a strict adherence to best practices.
+
+-   **Server-First Architecture**: Leveraging Next.js App Router, Server Components, and Server Actions to ensure optimal performance, security, and SEO. Data is fetched and processed on the server first, delivering fully-rendered, interactive pages to the client.
+-   **Automated Quality Control**:
+    -   **Static Analysis Script (`nextjs-audit.js`)**: A custom Node.js script that enforces 23 rules for best practices, from preventing `useEffect(fetch)` to ensuring accessibility standards.
+    -   **Dockerized Environment**: The audit script is containerized with Docker, ensuring **100% reproducible builds** and zero local dependencies for analysis. This allows seamless execution in any CI/CD pipeline (e.g., GitHub Actions).
+    -   **CI/CD Integration-Ready**: The architecture is designed for automated quality gates, blocking non-compliant pull requests before they enter the main branch.
+-   **Tech Stack**:
+    -   **Frontend**: Next.js 15 (App Router), React, TypeScript
+    -   **Backend & Database**: Firebase (Firestore, Auth, Storage)
+    -   **AI Features**: Google AI & Genkit
+    -   **UI & Styling**: Tailwind CSS, shadcn/ui, Recharts, Framer Motion
+    -   **Infrastructure**: Docker
+
+This application was engineered not just to be functional, but to be **intelligent, reliable, and maintainable** at an industrial scale.
