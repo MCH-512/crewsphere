@@ -17,7 +17,6 @@ import { format, formatDistanceToNowStrict, differenceInDays, startOfDay, eachDa
 import { StoredUserQuizAttempt } from "@/schemas/course-schema";
 import { StoredCourse } from "@/schemas/course-schema";
 import { StoredUserDocument, type UserDocumentStatus as CalculatedDocStatus } from "@/schemas/user-document-schema";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { UserActivity, ActivityType } from "@/schemas/user-activity-schema";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -31,28 +30,6 @@ import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
 import { logAuditEvent } from "@/lib/audit-logger";
 
-
-// --- Interfaces for fetched data ---
-interface RequestSummary {
-    id: string;
-    subject: string;
-    status: "pending" | "approved" | "rejected" | "in-progress";
-    createdAt: Timestamp;
-}
-
-interface TrainingWithCourse extends StoredUserQuizAttempt {
-    courseTitle?: string;
-}
-
-interface UserProfileData {
-    user: User;
-    activities: UserActivity[];
-    trainings: TrainingWithCourse[];
-    requests: RequestSummary[];
-    documents: StoredUserDocument[];
-}
-
-// --- Status Logic (mirrored from expiry management for consistency) ---
 const EXPIRY_WARNING_DAYS = 30;
 
 const getDocumentStatus = (doc: StoredUserDocument): CalculatedDocStatus => {
@@ -172,11 +149,12 @@ export default function UserDetailPage() {
     const { toast } = useToast();
     const userId = params.userId as string;
 
-    const [profileData, setProfileData] = React.useState<UserProfileData | null>(null);
+    const [profileData, setProfileData] = React.useState<any | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
 
     const fetchUserProfileData = React.useCallback(async () => {
+        if (!userId) return;
         setIsLoading(true);
         setError(null);
         try {
@@ -194,15 +172,20 @@ export default function UserDetailPage() {
             const fetchedUser = { uid: userSnap.id, ...userSnap.data() } as User;
             
             const activities = activitiesSnap.docs.map(d => ({ id: d.id, ...d.data() }) as UserActivity);
-            const requests = requestsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as RequestSummary);
+            const requests = requestsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             const documents = documentsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserDocument);
 
             const trainingAttempts = trainingsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserQuizAttempt);
             const courseIds = [...new Set(trainingAttempts.map(t => t.courseId))];
-            const coursePromises = courseIds.map(id => getDoc(doc(db, "courses", id)));
-            const courseDocs = await Promise.all(coursePromises);
-            const coursesMap = new Map(courseDocs.map(d => [d.id, d.data() as StoredCourse]));
-            const trainings = trainingAttempts.map(t => ({ ...t, courseTitle: coursesMap.get(t.courseId)?.title || "Unknown Course" }));
+            
+            let trainings: any[] = [];
+            if(courseIds.length > 0) {
+              const coursePromises = courseIds.map(id => getDoc(doc(db, "courses", id)));
+              const courseDocs = await Promise.all(coursePromises);
+              const coursesMap = new Map(courseDocs.map(d => [d.id, d.data() as StoredCourse]));
+              trainings = trainingAttempts.map(t => ({ ...t, courseTitle: coursesMap.get(t.courseId)?.title || "Unknown Course" }));
+            }
+            
 
             setProfileData({ user: fetchedUser, activities, trainings, requests, documents });
 
@@ -281,7 +264,7 @@ export default function UserDetailPage() {
                     </CardHeader>
                     <CardContent>
                         {activities.length > 0 ? (
-                             <ul className="space-y-2">{activities.map(act => <li key={act.id} className="text-sm flex justify-between"><span>{act.activityType === 'flight' ? `Flight ${act.flightNumber}` : act.comments || act.activityType}</span> <span className="text-muted-foreground">{format(act.date.toDate(), 'PP')}</span></li>)}</ul>
+                             <ul className="space-y-2">{activities.map((act: UserActivity) => <li key={act.id} className="text-sm flex justify-between"><span>{act.activityType === 'flight' ? `Flight ${act.flightNumber}` : act.comments || act.activityType}</span> <span className="text-muted-foreground">{format(act.date.toDate(), 'PP')}</span></li>)}</ul>
                         ) : (<p className="text-sm text-muted-foreground text-center py-4">No recent activities found.</p>)}
                     </CardContent>
                 </Card>
@@ -289,7 +272,7 @@ export default function UserDetailPage() {
                     <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Inbox className="h-5 w-5 text-primary"/>Recent Requests</CardTitle></CardHeader>
                     <CardContent>
                         {requests.length > 0 ? (
-                             <ul className="space-y-2">{requests.map(req => <li key={req.id} className="text-sm flex justify-between">
+                             <ul className="space-y-2">{requests.map((req: any) => <li key={req.id} className="text-sm flex justify-between">
                                 <Link href={`/admin/user-requests`} className="hover:underline text-primary truncate pr-2">{req.subject}</Link>
                                 <Badge variant="secondary" className="capitalize">{req.status}</Badge>
                              </li>)}</ul>
@@ -303,7 +286,7 @@ export default function UserDetailPage() {
                 <CardContent>
                      {trainings.length > 0 ? (
                         <div className="space-y-3">
-                            {trainings.map(t => (
+                            {trainings.map((t: any) => (
                                 <div key={t.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
                                     <div>
                                         <p className="font-medium">
@@ -357,3 +340,5 @@ export default function UserDetailPage() {
         </div>
     );
 }
+
+    
