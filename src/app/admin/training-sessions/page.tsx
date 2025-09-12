@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -15,7 +14,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ClipboardCheck, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users } from "lucide-react";
+import { ClipboardCheck, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, BookCopy, ArrowLeft, ArrowRight, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, parseISO } from "date-fns";
 import { trainingSessionFormSchema, type TrainingSessionFormValues, type StoredTrainingSession } from "@/schemas/training-session-schema";
@@ -28,6 +27,9 @@ import { checkCrewAvailability, type Conflict } from "@/services/user-activity-s
 import { Alert, AlertDescription as ShadAlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
+import { Progress } from "@/components/ui/progress";
+import { AnimatedCard } from "@/components/motion/animated-card";
+import { cn } from "@/lib/utils";
 
 type SortableColumn = 'title' | 'location' | 'sessionDateTimeUTC' | 'attendeeCount';
 type SortDirection = 'asc' | 'desc';
@@ -35,6 +37,12 @@ type SortDirection = 'asc' | 'desc';
 interface SessionForDisplay extends StoredTrainingSession {
     attendeeCount: number;
 }
+
+const wizardSteps = [
+    { id: 1, title: 'Session Details', fields: ['title', 'description', 'location', 'sessionDateTimeUTC'], icon: BookCopy },
+    { id: 2, title: 'Assign Attendees', fields: ['purserIds', 'pilotIds', 'cabinCrewIds', 'instructorIds', 'traineeIds'], icon: Users },
+];
+
 
 export default function AdminTrainingSessionsPage() {
     const { user, loading: authLoading } = useAuth();
@@ -56,6 +64,7 @@ export default function AdminTrainingSessionsPage() {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [isEditMode, setIsEditMode] = React.useState(false);
     const [currentSession, setCurrentSession] = React.useState<StoredTrainingSession | null>(null);
+    const [currentStep, setCurrentStep] = React.useState(0);
 
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>('sessionDateTimeUTC');
     const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
@@ -170,6 +179,7 @@ export default function AdminTrainingSessionsPage() {
 
 
     const handleOpenDialog = async (sessionToEdit?: StoredTrainingSession) => {
+        setCurrentStep(0);
         if (sessionToEdit) {
             setIsEditMode(true);
             setCurrentSession(sessionToEdit);
@@ -291,6 +301,30 @@ export default function AdminTrainingSessionsPage() {
         }
     };
 
+    const triggerValidation = async (fields: (keyof TrainingSessionFormValues)[]) => {
+        return await form.trigger(fields);
+    };
+
+    const nextStep = async () => {
+        const fieldsToValidate = wizardSteps[currentStep].fields as (keyof TrainingSessionFormValues)[];
+        const isValid = await triggerValidation(fieldsToValidate);
+        if (isValid) {
+            if (currentStep < wizardSteps.length - 1) {
+                setCurrentStep(prev => prev + 1);
+            }
+        } else {
+            toast({ title: "Incomplete Section", description: "Please fill all required fields before continuing.", variant: "destructive" });
+        }
+    };
+
+    const prevStep = () => {
+        if (currentStep > 0) {
+            setCurrentStep(prev => prev - 1);
+        }
+    };
+
+    const progressPercentage = ((currentStep + 1) / wizardSteps.length) * 100;
+
     if (authLoading || isLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
 
     const formatDateSafe = (date: Timestamp | string) => {
@@ -357,47 +391,74 @@ export default function AdminTrainingSessionsPage() {
                     <DialogHeader>
                         <DialogTitle>{isEditMode ? "Edit Session" : "Create New Session"}</DialogTitle>
                         <DialogDescription>{isEditMode ? "Update session details." : "Fill in the form to create a new in-person training session."}</DialogDescription>
+                         <Progress value={progressPercentage} className="mt-4"/>
+                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                            <span>Step {currentStep + 1} of {wizardSteps.length}: <strong>{wizardSteps[currentStep].title}</strong></span>
+                            <span>{Math.round(progressPercentage)}% Complete</span>
+                        </div>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleFormSubmit)}>
-                            <ScrollArea className="h-[70vh] p-4">
-                                <div className="space-y-6">
-                                    <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Session Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} className="min-h-[100px]" /></FormControl><FormMessage /></FormItem>)} />
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} placeholder="e.g., Training Center - Room A" /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="sessionDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Date & Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    </div>
-                                    <Separator />
-                                    <h3 className="text-lg font-medium">Assign Attendees</h3>
-                                     <FormField control={form.control} name="purserIds" render={({ field }) => (<FormItem><FormLabel>Assign Pursers</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pursers..." options={pursers.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                            <ScrollArea className="h-[60vh] p-4">
 
-                                    <Separator />
-                                     <h3 className="text-lg font-medium">Attendee Availability</h3>
-                                        {isCheckingAvailability ? (
-                                            <div className="flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Checking schedules...</div>
-                                        ) : Object.keys(crewWarnings).length > 0 ? (
-                                            <div className="space-y-2">
-                                                {Object.entries(crewWarnings).map(([userId, conflict]) => (
-                                                    <Alert key={userId} variant="warning">
-                                                        <AlertTriangle className="h-4 w-4" />
-                                                        <AlertTitle>{userMap.get(userId)?.displayName || 'User'} has a conflict</AlertTitle>
-                                                        <ShadAlertDescription>{conflict.details}</ShadAlertDescription>
-                                                    </Alert>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <p className="text-sm text-muted-foreground">No conflicts detected for the selected attendees and date.</p>
-                                        )}
-                                </div>
+                                {/* Step 1: Session Details */}
+                                <AnimatedCard delay={0.1} className={cn(currentStep !== 0 && "hidden")}>
+                                    <div className="space-y-6">
+                                        <h3 className="text-lg font-semibold flex items-center gap-2"><BookCopy/>Session Details</h3>
+                                        <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Session Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} className="min-h-[100px]" /></FormControl><FormMessage /></FormItem>)} />
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} placeholder="e.g., Training Center - Room A" /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="sessionDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Date & Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        </div>
+                                    </div>
+                                </AnimatedCard>
+                                
+                                {/* Step 2: Assign Attendees */}
+                                <AnimatedCard delay={0.1} className={cn(currentStep !== 1 && "hidden")}>
+                                     <div className="space-y-4">
+                                        <h3 className="text-lg font-medium flex items-center gap-2"><Users/>Assign Attendees</h3>
+                                         <FormField control={form.control} name="purserIds" render={({ field }) => (<FormItem><FormLabel>Assign Pursers</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pursers..." options={pursers.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                         <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                         <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                         <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                         <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+
+                                        <Separator />
+                                         <h3 className="text-lg font-medium">Attendee Availability</h3>
+                                            {isCheckingAvailability ? (
+                                                <div className="flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Checking schedules...</div>
+                                            ) : Object.keys(crewWarnings).length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {Object.entries(crewWarnings).map(([userId, conflict]) => (
+                                                        <Alert key={userId} variant="warning">
+                                                            <AlertTriangle className="h-4 w-4" />
+                                                            <AlertTitle>{userMap.get(userId)?.displayName || 'User'} has a conflict</AlertTitle>
+                                                            <ShadAlertDescription>{conflict.details}</ShadAlertDescription>
+                                                        </Alert>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground">No conflicts detected for the selected attendees and date.</p>
+                                            )}
+                                    </div>
+                                </AnimatedCard>
                             </ScrollArea>
-                            <DialogFooter className="mt-4 pt-4 border-t">
-                                <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                                <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}{isEditMode ? "Save Changes" : "Create Session"}</Button>
+                             <DialogFooter className="mt-4 pt-4 border-t flex justify-between w-full">
+                                <Button type="button" variant="outline" onClick={prevStep} disabled={currentStep === 0}>
+                                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+                                </Button>
+                                
+                                {currentStep < wizardSteps.length - 1 ? (
+                                    <Button type="button" onClick={nextStep}>
+                                        Next <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                ) : (
+                                    <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>
+                                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
+                                        {isEditMode ? "Save Changes" : "Create Session"}
+                                    </Button>
+                                )}
                             </DialogFooter>
                         </form>
                     </Form>
@@ -406,6 +467,3 @@ export default function AdminTrainingSessionsPage() {
         </div>
     );
 }
-
-    
-    
