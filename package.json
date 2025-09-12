@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "audit": "node nextjs-audit.js"
+    "audit": "node nextjs-audit.js",
+    "auto-optimize": "node scripts/run-analysis.js"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.0.0",
