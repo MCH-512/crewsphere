@@ -130,7 +130,7 @@ export default function AdminUserRequestsPage() {
     if (selectedRequest?.requestType === 'Leave & Absences' && selectedRequest.startDate && selectedRequest.endDate) {
         setIsCheckingConflict(true);
         setConflict(null);
-        checkCrewAvailability([selectedRequest.userId], new Date(selectedRequest.startDate), new Date(selectedRequest.endDate))
+        checkCrewAvailability([selectedRequest.userId], new Date(selectedRequest.startDate), new Date(selectedRequest.endDate), selectedRequest.id)
             .then(conflicts => {
                 if (conflicts[selectedRequest.userId]) {
                     setConflict(conflicts[selectedRequest.userId]);
@@ -140,6 +140,7 @@ export default function AdminUserRequestsPage() {
             .finally(() => setIsCheckingConflict(false));
     } else {
         setConflict(null);
+        setIsCheckingConflict(false);
     }
   }, [selectedRequest]);
 
