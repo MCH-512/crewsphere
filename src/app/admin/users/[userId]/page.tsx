@@ -256,7 +256,7 @@ export default function UserDetailPage() {
              <Card className="shadow-lg">
                 <CardHeader className="flex flex-col md:flex-row items-start md:items-center gap-4">
                     <Avatar className="h-20 w-20 border">
-                        <AvatarImage src={user.photoURL || undefined} data-ai-hint="user portrait" />
+                        <AvatarImage src={user.photoURL ?? undefined} data-ai-hint="user portrait" />
                         <AvatarFallback className="text-2xl">{user.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
