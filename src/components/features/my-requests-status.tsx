@@ -1,29 +1,17 @@
 
-"use client";
+"use server";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader2, Inbox, AlertTriangle, CheckCircle, ArrowRight } from "lucide-react";
+import { Inbox, AlertTriangle, CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Badge } from "../ui/badge";
-import type { VariantProps } from "class-variance-authority";
-import { badgeVariants } from "../ui/badge";
 import { getStatusBadgeVariant } from "@/schemas/request-schema";
-import type { StoredUserRequest } from "@/schemas/request-schema";
+import { getRequestsStatus } from "@/services/dashboard-service";
 
-
-export interface RequestsStats {
-  pendingCount: number;
-  latestRequest: {
-    subject: string;
-    status: StoredUserRequest['status'];
-  } | null;
-}
-
-export function MyRequestsStatusCard({ initialStats }: { initialStats: RequestsStats | null }) {
-    const [stats] = React.useState(initialStats);
-    const [isLoading] = React.useState(false); // Initial data is now passed as a prop
+export async function MyRequestsStatusCard() {
+    const stats = await getRequestsStatus();
 
     return (
         <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
@@ -35,12 +23,7 @@ export function MyRequestsStatusCard({ initialStats }: { initialStats: RequestsS
                 <CardDescription>A summary of your submitted requests.</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
-                 {isLoading ? (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span>Loading status...</span>
-                    </div>
-                 ) : !stats ? (
+                 {!stats ? (
                      <div className="flex items-center gap-2 text-destructive">
                         <AlertTriangle className="h-5 w-5" />
                         <p>Could not load request status.</p>

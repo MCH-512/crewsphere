@@ -1,10 +1,11 @@
 
-"use client";
+"use server";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarCheck, Plane, Briefcase, GraduationCap, Bed, Anchor, Loader2 } from "lucide-react";
+import { CalendarCheck, Plane, Briefcase, GraduationCap, Bed, Anchor } from "lucide-react";
 import { format } from "date-fns";
+import { getTodayActivities, type TodayActivity } from "@/services/dashboard-service";
 
 const activityConfig: Record<TodayActivity['activityType'], { icon: React.ElementType; label: string; }> = {
     flight: { icon: Plane, label: "Flight" },
@@ -14,33 +15,10 @@ const activityConfig: Record<TodayActivity['activityType'], { icon: React.Elemen
     standby: { icon: Anchor, label: "Standby" },
 };
 
-export interface TodayActivity {
-  activityType: 'flight' | 'leave' | 'training' | 'standby' | 'day-off';
-  comments?: string;
-  flightNumber?: string;
-  departureAirport?: string;
-  arrivalAirport?: string;
-}
-
-export function TodaysScheduleCard({ initialActivities }: { initialActivities: TodayActivity[] }) {
-    const [activities] = React.useState(initialActivities);
-    const [isLoading] = React.useState(false); // Data is now passed via props
+export async function TodaysScheduleCard() {
+    const activities = await getTodayActivities();
 
     const renderContent = () => {
-        if (isLoading) {
-            return (
-                <div className="flex items-start gap-4">
-                    <Loader2 className="h-6 w-6 text-muted-foreground animate-spin mt-1" />
-                    <div>
-                        <p className="font-semibold">Loading Schedule...</p>
-                        <div className="text-sm text-muted-foreground">
-                            <p>Checking your agenda for today.</p>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-        
         if (activities.length === 0) {
             return (
                  <div className="flex items-start gap-4">

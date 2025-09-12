@@ -1,22 +1,15 @@
 
-"use client";
+"use server";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { GraduationCap, AlertTriangle, CheckCircle, ArrowRight, Loader2 } from "lucide-react";
+import { GraduationCap, AlertTriangle, CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { getTrainingStatus } from "@/services/dashboard-service";
 
-export interface TrainingStats {
-    totalMandatory: number;
-    completed: number;
-    nextCourseId?: string;
-}
-
-export function MyTrainingStatusCard({ initialStats }: { initialStats: TrainingStats | null }) {
-    const [stats] = React.useState(initialStats);
-    const [isLoading] = React.useState(false);
-    
+export async function MyTrainingStatusCard() {
+    const stats = await getTrainingStatus();
     const coursesToDo = stats ? stats.totalMandatory - stats.completed : 0;
 
     return (
@@ -29,15 +22,7 @@ export function MyTrainingStatusCard({ initialStats }: { initialStats: TrainingS
                  <CardDescription>Your mandatory training progress.</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
-                {isLoading ? (
-                     <div className="flex items-start gap-4">
-                        <Loader2 className="h-6 w-6 text-muted-foreground animate-spin mt-1" />
-                         <div>
-                            <p className="font-semibold text-lg">Loading status...</p>
-                            <p className="text-sm text-muted-foreground">Checking your training records.</p>
-                        </div>
-                    </div>
-                ) : !stats ? (
+                {!stats ? (
                      <div className="flex items-start gap-4 text-destructive">
                         <AlertTriangle className="h-6 w-6 mt-1" />
                          <div>
