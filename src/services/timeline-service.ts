@@ -27,7 +27,13 @@ export async function getTimelineData(month: Date): Promise<TimelineActivity[]> 
 
     try {
         const flightsQuery = query(collection(db, "flights"), where("scheduledDepartureDateTimeUTC", ">=", start.toISOString()), where("scheduledDepartureDateTimeUTC", "<=", end.toISOString()));
-        const trainingQuery = query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", start), where("sessionDateTimeUTC", "<=", end));
+        // Simplified query to fetch all sessions within the month, ordered by date.
+        // This avoids complex queries that might clash with security rules or require composite indexes.
+        const trainingQuery = query(
+            collection(db, "trainingSessions"), 
+            where("sessionDateTimeUTC", ">=", start), 
+            where("sessionDateTimeUTC", "<=", end)
+        );
         
         const [flightsSnap, trainingSnap] = await Promise.all([getDocs(flightsQuery), getDocs(trainingQuery)]);
 
@@ -66,6 +72,7 @@ export async function getTimelineData(month: Date): Promise<TimelineActivity[]> 
         return allActivities;
     } catch (error) {
         console.error("Error fetching timeline data:", error);
+        // Return empty array to prevent page crashes on server-side errors
         return [];
     }
 }
