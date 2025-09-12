@@ -332,7 +332,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)}>
               <DialogHeader>
-                <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${'${currentUserToManage?.displayName || currentUserToManage?.email}'}`}</DialogTitle>
+                <DialogTitle>{isCreateMode ? "Create New User" : `Edit User: ${currentUserToManage?.displayName || currentUserToManage?.email}`}</DialogTitle>
                 <DialogDescription>
                   {isCreateMode ? "Fill in the details for the new user." : "Modify the user's information below."}
                 </DialogDescription>
@@ -401,3 +401,5 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
     </div>
   );
 }
+
+    
