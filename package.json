@@ -10,7 +10,14 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "audit": "node nextjs-audit.js",
-    "auto-optimize": "node scripts/run-analysis.js"
+    "auto-optimize": "node scripts/run-analysis.js",
+    "test:unit": "jest",
+    "test:e2e": "playwright test",
+    "test:accessibility": "npx axe-core",
+    "test:performance": "lighthouse-ci",
+    "test:ai": "node scripts/ai-validation.js",
+    "test:auto-generate": "node scripts/generate-tests.js",
+    "test": "node scripts/run-all-tests.js"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.0.0",
