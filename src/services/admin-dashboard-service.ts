@@ -97,12 +97,6 @@ export async function getAdminDashboardWeeklyTrends(): Promise<WeeklyTrendDataPo
     const endDate = new Date();
     const startDate = subDays(endDate, 6);
 
-    const relevantActionTypes = [
-        "CREATE_REQUEST", // Assuming this will be the actionType for new requests
-        "SUBMIT_SUGGESTION", // Assuming
-        "REQUEST_FLIGHT_SWAP",
-    ];
-
     try {
         const logsQuery = query(
             collection(db, "auditLogs"),
@@ -124,8 +118,8 @@ export async function getAdminDashboardWeeklyTrends(): Promise<WeeklyTrendDataPo
         // Aggregate logs by day
         logs.forEach(log => {
             const day = format(log.timestamp.toDate(), 'yyyy-MM-dd');
-            if (dailyCounts.has(day)) {
-                const dayData = dailyCounts.get(day)!;
+            const dayData = dailyCounts.get(day);
+            if (dayData) {
                  if (log.actionType === 'CREATE_REQUEST') {
                     dayData.Requests += 1;
                 } else if (log.actionType === 'SUBMIT_SUGGESTION') {
@@ -141,17 +135,8 @@ export async function getAdminDashboardWeeklyTrends(): Promise<WeeklyTrendDataPo
             date: format(new Date(date), 'MMM d'), // Format for display
             ...counts
         }));
-
-        // The audit log for requests and suggestions don't exist yet, so we'll add some dummy data.
-        if (trendData.every(d => d.Requests === 0 && d.Suggestions === 0)) {
-            trendData.forEach((day, index) => {
-                day.Requests = Math.floor(Math.random() * (index + 1) * 3);
-                day.Suggestions = Math.floor(Math.random() * (index + 1) * 2);
-            });
-        }
-
-
-        return trendData as any;
+        
+        return trendData;
 
     } catch (error) {
         console.error("Error fetching weekly trends:", error);
