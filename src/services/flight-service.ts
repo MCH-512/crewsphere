@@ -39,19 +39,23 @@ export async function getFlightsForAdmin(calendarMonth: Date = new Date()) {
     const end = endOfMonth(calendarMonth);
     const flightsQuery = query(
         collection(db, "flights"), 
-        where("scheduledDepartureDateTimeUTC", ">=", start.toISOString()), 
-        where("scheduledDepartureDateTimeUTC", "<=", end.toISOString())
+        orderBy("scheduledDepartureDateTimeUTC", "desc")
     );
     const swapsQuery = query(collection(db, "flightSwaps"), where("status", "==", "pending_approval"));
 
     const [flightsSnapshot, swapsSnapshot] = await Promise.all([getDocs(flightsQuery), getDocs(swapsQuery)]);
+    
+    const allFlights = flightsSnapshot.docs.map(d => ({id: d.id, ...d.data()}) as StoredFlight);
+    const flightsInMonth = allFlights.filter(f => {
+        const flightDate = new Date(f.scheduledDepartureDateTimeUTC);
+        return flightDate >= start && flightDate <= end;
+    });
 
     const pendingSwaps = swapsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredFlightSwap));
     const swapsByFlightId = new Map(pendingSwaps.map(s => [s.initiatingFlightId, s]));
 
     const flights = await Promise.all(
-        flightsSnapshot.docs.map(async (d) => {
-            const data = { id: d.id, ...d.data() } as StoredFlight;
+        flightsInMonth.map(async (data) => {
             const [depAirport, arrAirport] = await Promise.all([
                 getAirportByCode(data.departureAirport),
                 getAirportByCode(data.arrivalAirport),
@@ -63,13 +67,13 @@ export async function getFlightsForAdmin(calendarMonth: Date = new Date()) {
                 arrivalAirportName: `${arrAirport?.name} (${arrAirport?.iata})` || data.arrivalAirport,
                 purserName: userMap.get(data.purserId)?.displayName || 'N/A',
                 crewCount,
-                pendingSwap: swapsByFlightId.get(d.id),
+                pendingSwap: swapsByFlightId.get(data.id),
             } as FlightForDisplay;
         })
     );
 
     return {
-        flights: flights.sort((a, b) => new Date(b.scheduledDepartureDateTimeUTC).getTime() - new Date(a.scheduledDepartureDateTimeUTC).getTime()),
+        flights: flights, // Already sorted by query
         allUsers,
         pilots,
         pursers,
