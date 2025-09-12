@@ -1,41 +1,19 @@
-"use client";
+"use server";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowRight, AlertTriangle, ServerCog } from "lucide-react";
+import { ArrowRight, ServerCog } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@/contexts/auth-context";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { adminNavConfig } from "@/config/nav";
 import { cn } from "@/lib/utils";
+import { getAdminDashboardStats } from "@/services/admin-dashboard-service";
+import { Badge } from "@/components/ui/badge";
 
+export default async function AdminConsolePage() {
+  const stats = await getAdminDashboardStats();
 
-export default function AdminConsolePage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  React.useEffect(() => {
-    if (loading) return;
-    if (!user) {
-        router.push('/login');
-        return;
-    }
-    if (user.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-  }, [user, loading, router]);
-
-  if (loading || !user || user.role !== 'admin') {
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
   return (
     <div className="space-y-8">
       <AnimatedCard>
@@ -58,17 +36,28 @@ export default function AdminConsolePage() {
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {group.items.map((item, itemIndex) => {
                       if (item.href === '/admin') return null; // Don't show the dashboard card itself
+                      
                       const IconComponent = item.icon;
                       const animationDelay = 0.1 + (itemIndex * 0.05);
+                      const statValue = item.statKey ? stats[item.statKey] : undefined;
+                      const shouldHighlight = statValue !== undefined && item.highlightWhen ? item.highlightWhen(statValue) : false;
 
                       return (
                           <AnimatedCard key={item.href} delay={animationDelay}>
-                              <Card className={cn("shadow-sm h-full flex flex-col transition-all hover:shadow-md")}>
+                              <Card className={cn(
+                                "shadow-sm h-full flex flex-col transition-all hover:shadow-md",
+                                shouldHighlight && "border-primary ring-2 ring-primary/50"
+                              )}>
                                   <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
                                       <div className="flex items-center gap-3">
                                           <IconComponent className="h-6 w-6 text-primary" />
                                           <CardTitle className="text-lg">{item.title}</CardTitle>
                                       </div>
+                                       {statValue !== undefined && (
+                                            <Badge variant={shouldHighlight ? "destructive" : "secondary"}>
+                                                {statValue} {item.statKey === 'pendingRequests' && statValue > 0 ? 'Pending' : ''}
+                                            </Badge>
+                                        )}
                                   </CardHeader>
                                   <CardContent className="flex-grow">
                                       <p className="text-sm text-muted-foreground">{item.description}</p>

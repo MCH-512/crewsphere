@@ -7,21 +7,32 @@ import {
 } from "lucide-react";
 import type { ElementType } from 'react';
 
-interface NavItem {
+export interface NavItem {
   href: string;
   title: string;
   icon: ElementType;
   roles?: string[];
   description?: string;
   buttonText?: string;
-  statKey?: string;
+  statKey?: keyof AdminDashboardStats;
   highlightWhen?: (value: number) => boolean;
 }
 
-interface NavGroup {
+export interface NavGroup {
   title: string;
   items: NavItem[];
 }
+
+export interface AdminDashboardStats {
+  pendingRequests: number;
+  pendingDocValidations: number;
+  newSuggestions: number;
+  pendingSwaps: number;
+  activeAlerts: number;
+  // Add other stats as needed
+  [key: string]: number | undefined;
+}
+
 
 export const mainNavConfig: { sidebarNav: NavGroup[] } = {
   sidebarNav: [
@@ -76,25 +87,25 @@ export const adminNavConfig: { sidebarNav: NavGroup[] } = {
       items: [
         { href: "/admin", title: "Dashboard", icon: LayoutDashboard, description: "Central hub for managing application settings and data.", buttonText: "View Dashboard" },
         { href: "/admin/flights", title: "Flight Management", icon: Plane, description: "Schedule new flights, assign crew, and manage flight details.", buttonText: "Manage Flights", statKey: "pendingSwaps", highlightWhen: v => v > 0 },
-        { href: "/admin/training-sessions", title: "Training Sessions", icon: ClipboardCheck, description: "Plan and manage in-person training sessions for crew members.", buttonText: "Manage Sessions", statKey: "upcomingSessions" },
+        { href: "/admin/training-sessions", title: "Training Sessions", icon: ClipboardCheck, description: "Plan and manage in-person training sessions for crew members.", buttonText: "Manage Sessions" },
       ]
     },
     {
       title: "Crew Management",
       items: [
-        { href: "/admin/users", title: "User Management", icon: Users, description: "View, create, and manage user accounts, roles, and permissions.", buttonText: "Manage Users", statKey: "users" },
-        { href: "/admin/user-requests", title: "User Requests", icon: ClipboardList, description: "Review and manage all user-submitted requests.", buttonText: "Manage Requests", statKey: "requests", highlightWhen: v => v > 0 },
-        { href: "/admin/purser-reports", title: "Purser Reports", icon: FileSignature, description: "Review and manage all flight reports submitted by pursers.", buttonText: "Review Reports", statKey: "reports", highlightWhen: v => v > 0 },
+        { href: "/admin/users", title: "User Management", icon: Users, description: "View, create, and manage user accounts, roles, and permissions.", buttonText: "Manage Users" },
+        { href: "/admin/user-requests", title: "User Requests", icon: ClipboardList, description: "Review and manage all user-submitted requests.", buttonText: "Manage Requests", statKey: "pendingRequests", highlightWhen: v => v > 0 },
+        { href: "/admin/purser-reports", title: "Purser Reports", icon: FileSignature, description: "Review and manage all flight reports submitted by pursers.", buttonText: "Review Reports", statKey: "pendingReports", highlightWhen: v => v > 0 },
       ]
     },
     {
       title: "Content & Compliance",
       items: [
-        { href: "/admin/courses", title: "Course Management", icon: GraduationCap, description: "Create, edit, and publish e-learning courses and their content.", buttonText: "Manage Courses", statKey: "courses" },
-        { href: "/admin/documents", title: "Document Library", icon: Library, description: "Upload, manage, and distribute operational manuals.", buttonText: "Manage Documents", statKey: "documents" },
-        { href: "/admin/document-validations", title: "Doc Validations", icon: FileCheck2, description: "Review and approve documents updated or submitted by users.", buttonText: "Validate Docs", statKey: "pendingValidations", highlightWhen: v => v > 0 },
+        { href: "/admin/courses", title: "Course Management", icon: GraduationCap, description: "Create, edit, and publish e-learning courses and their content.", buttonText: "Manage Courses" },
+        { href: "/admin/documents", title: "Document Library", icon: Library, description: "Upload, manage, and distribute operational manuals.", buttonText: "Manage Documents" },
+        { href: "/admin/document-validations", title: "Doc Validations", icon: FileCheck2, description: "Review and approve documents updated or submitted by users.", buttonText: "Validate Docs", statKey: "pendingDocValidations", highlightWhen: v => v > 0 },
         { href: "/admin/expiry-management", title: "Document Expiry", icon: BadgeAlert, description: "Track and manage expiry dates for all user documents and licenses.", buttonText: "Manage Expiry" },
-        { href: "/admin/suggestions", title: "Suggestions", icon: MessageSquare, description: "Review and manage all user-submitted suggestions.", buttonText: "Manage Suggestions", statKey: "suggestions", highlightWhen: v => v > 0 },
+        { href: "/admin/suggestions", title: "Suggestions", icon: MessageSquare, description: "Review and manage all user-submitted suggestions.", buttonText: "Manage Suggestions", statKey: "newSuggestions", highlightWhen: v => v > 0 },
       ]
     },
      {
