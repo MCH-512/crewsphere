@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -104,6 +103,8 @@ const LiveMap = () => {
             setError(null);
         }
         try {
+            // Note: This is a client-side fetch, which is an exception to the Server-First rule
+            // for real-time, third-party data that does not require authentication.
             const response = await fetch('https://opensky-network.org/api/states/all');
             if (!response.ok) {
                 throw new Error(`Failed to fetch flight data: ${response.statusText}`);

@@ -50,20 +50,33 @@ const PUBLIC_PATHS = ['/login', '/signup'];
 
 const useTheme = () => {
   const [theme, setTheme] = React.useState("light");
+
   React.useEffect(() => {
-    const localTheme = typeof window !== "undefined" ? localStorage.getItem("theme") : "light";
+    // On mount, read the theme from localStorage and update the state
+    const localTheme = localStorage.getItem("theme");
     if (localTheme) {
       setTheme(localTheme);
-      document.documentElement.classList.toggle("dark", localTheme === "dark");
+       if (localTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+    } else {
+        // If no theme is in localStorage, use system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const systemTheme = prefersDark ? 'dark' : 'light';
+        setTheme(systemTheme);
+        localStorage.setItem('theme', systemTheme);
+        if (prefersDark) {
+            document.documentElement.classList.add('dark');
+        }
     }
   }, []);
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("theme", newTheme);
-    }
+    localStorage.setItem("theme", newTheme);
     document.documentElement.classList.toggle("dark", newTheme === "dark");
   };
   return { theme, toggleTheme };
@@ -146,6 +159,8 @@ function LayoutWithSidebar({
 
   const isAdminPage = pathname.startsWith('/admin');
   const currentNavConfig = isAdminPage && user?.role === 'admin' ? adminNavConfig : mainNavConfig;
+  
+  const avatarFallback = user?.displayName ? user.displayName.substring(0, 2).toUpperCase() : user?.email?.substring(0,2).toUpperCase() || 'U';
 
   return (
     <>
@@ -238,8 +253,8 @@ function LayoutWithSidebar({
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="relative h-9 w-9 rounded-full" aria-label="Open user menu">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.photoURL || "https://images.unsplash.com/photo-1559535456-e9b626438153?q=80&w=1964&auto=format&fit=crop"} alt="User Avatar" data-ai-hint="user portrait" />
-                    <AvatarFallback>{user?.displayName ? user.displayName.substring(0, 2).toUpperCase() : "U"}</AvatarFallback>
+                    <AvatarImage src={user?.photoURL ?? undefined} alt="User Avatar" data-ai-hint="user portrait" />
+                    <AvatarFallback>{avatarFallback}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
