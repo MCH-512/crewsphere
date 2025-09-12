@@ -292,5 +292,3 @@ export default function AdminSuggestionsPage() {
         </div>
     );
 }
-
-    
