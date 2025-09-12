@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -24,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lightbulb, Send, Loader2, AlertTriangle, MessageSquare, ThumbsUp, CheckCircle } from "lucide-react";
+import { Lightbulb, Send, Loader2, AlertTriangle, MessageSquare, ThumbsUp, CheckCircle, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
@@ -90,6 +89,7 @@ export default function SuggestionBoxPage() {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [suggestions, setSuggestions] = React.useState<StoredSuggestion[]>([]);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = React.useState(true);
+    const [sortOrder, setSortOrder] = React.useState<'createdAt' | 'upvoteCount'>('createdAt');
 
     const form = useForm<SuggestionFormValues>({
         resolver: zodResolver(suggestionFormSchema),
@@ -104,6 +104,7 @@ export default function SuggestionBoxPage() {
     const fetchSuggestions = React.useCallback(async () => {
         setIsLoadingSuggestions(true);
         try {
+            // We always fetch sorted by date, sorting by upvotes will be done client-side
             const q = query(collection(db, "suggestions"), orderBy("createdAt", "desc"));
             const querySnapshot = await getDocs(q);
             const fetchedSuggestions = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredSuggestion));
@@ -194,6 +195,15 @@ export default function SuggestionBoxPage() {
             toast({ title: "Error", description: "Could not process your vote.", variant: "destructive" });
         }
     };
+    
+    const sortedSuggestions = React.useMemo(() => {
+        const sorted = [...suggestions];
+        if (sortOrder === 'upvoteCount') {
+            sorted.sort((a, b) => b.upvoteCount - a.upvoteCount);
+        }
+        // 'createdAt' is the default from Firestore fetch
+        return sorted;
+    }, [suggestions, sortOrder]);
 
 
     if (authLoading || (!user && !authLoading)) {
@@ -222,11 +232,17 @@ export default function SuggestionBoxPage() {
                     <TabsTrigger value="submit">Submit New Idea</TabsTrigger>
                 </TabsList>
                 <TabsContent value="browse" className="mt-6">
+                    <div className="flex justify-end mb-4">
+                        <Button variant="outline" onClick={() => setSortOrder(prev => prev === 'createdAt' ? 'upvoteCount' : 'createdAt')}>
+                            <ArrowUpDown className="mr-2 h-4 w-4" />
+                            Sort by: {sortOrder === 'createdAt' ? 'Most Recent' : 'Most Upvoted'}
+                        </Button>
+                    </div>
                     {isLoadingSuggestions ? (
                         <div className="text-center py-8"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary"/></div>
-                    ) : suggestions.length > 0 ? (
+                    ) : sortedSuggestions.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {suggestions.map((s, index) => <SuggestionCard key={s.id} suggestion={s} onUpvote={handleUpvote} currentUserId={user?.uid || null} delay={0.1 + index * 0.05} />)}
+                            {sortedSuggestions.map((s, index) => <SuggestionCard key={s.id} suggestion={s} onUpvote={handleUpvote} currentUserId={user?.uid || null} delay={0.1 + index * 0.05} />)}
                         </div>
                     ) : (
                         <p className="text-center text-muted-foreground py-8">No suggestions yet. Be the first!</p>
