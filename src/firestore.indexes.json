@@ -1,4 +1,3 @@
-
 {
   "indexes": [
     {
@@ -68,14 +67,8 @@
       "collectionGroup": "flightSwaps",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "participantIds",
-          "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "participantIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
