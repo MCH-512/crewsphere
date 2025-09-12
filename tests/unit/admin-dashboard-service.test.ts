@@ -6,6 +6,10 @@ import { getCountFromServer } from 'firebase/firestore';
 jest.mock('firebase/firestore', () => ({
   ...jest.requireActual('firebase/firestore'), // import and retain all actual exports
   getCountFromServer: jest.fn(),
+  collection: jest.fn(),
+  query: jest.fn(),
+  where: jest.fn(),
+  orderBy: jest.fn(),
 }));
 
 // Mock the session user

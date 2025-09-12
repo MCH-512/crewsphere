@@ -1,4 +1,3 @@
-
 // scripts/generate-tests.js
 const { ai } = require('@/ai/genkit');
 const fs = require('fs');
