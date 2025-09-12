@@ -1,23 +1,41 @@
-
-"use client";
+"use server";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { useRouter, useParams } from "next/navigation";
-import { FileSignature, Loader2, AlertTriangle, ArrowLeft, Shield, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, PlusCircle, CheckCircle, Users, PersonStanding, Plane, Waypoints, HeartPulse } from "lucide-react";
+import { ArrowLeft, Shield, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, CheckCircle, Users, PersonStanding, Plane, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { StoredPurserReport } from "@/schemas/purser-report-schema";
-import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { VariantProps } from "class-variance-authority";
 import { alertVariants } from "@/components/ui/alert";
+import { getCurrentUser } from "@/lib/session";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 
 type ReportStatus = "submitted" | "under-review" | "closed";
+
+const getStatusBadgeVariant = (status: ReportStatus) => {
+    switch (status) {
+        case "submitted": return "secondary";
+        case "under-review": return "outline";
+        case "closed": return "success";
+        default: return "secondary";
+    }
+};
+
+const getAdminResponseAlertVariant = (status: ReportStatus): VariantProps<typeof alertVariants>["variant"] => {
+    switch (status) {
+      case "closed": return "success";
+      case "approved": return "success";
+      case "rejected": return "destructive";
+      default: return "info";
+    }
+};
 
 const SectionDisplay = ({ label, value, icon: Icon }: { label: string; value?: string | string[] | null | boolean; icon: React.ElementType }) => {
     if (value === undefined || value === null || (Array.isArray(value) && value.length === 0)) return null;
@@ -41,91 +59,44 @@ const SectionDisplay = ({ label, value, icon: Icon }: { label: string; value?: s
     );
 };
 
-export default function PurserReportHistoryDetailPage() {
-    const { user, loading: authLoading } = useAuth();
-    const router = useRouter();
-    const params = useParams();
-    const { toast } = useToast();
-    const reportId = params.reportId as string;
+async function getReportData(reportId: string) {
+    const authUser = await getCurrentUser();
+    if (!authUser) {
+      redirect('/login');
+    }
 
-    const [report, setReport] = React.useState<StoredPurserReport | null>(null);
-    const [isLoading, setIsLoading] = React.useState(true);
-    const [error, setError] = React.useState<string | null>(null);
+    const reportDocRef = doc(db, "purserReports", reportId);
+    const docSnap = await getDoc(reportDocRef);
 
-    React.useEffect(() => {
-        if (!reportId || !user) return;
-        setIsLoading(true);
-        setError(null);
-        const fetchReport = async () => {
-            try {
-                const reportDocRef = doc(db, "purserReports", reportId);
-                const docSnap = await getDoc(reportDocRef);
+    if (!docSnap.exists()) {
+       notFound();
+    }
 
-                if (docSnap.exists()) {
-                    const data = { id: docSnap.id, ...docSnap.data() } as StoredPurserReport;
-                    if (data.userId !== user.uid && user.role !== 'admin') {
-                        throw new Error("You do not have permission to view this report.");
-                    }
-                    setReport(data);
-                } else {
-                    setError("Report not found.");
-                }
-            } catch (err: any) {
-                console.error("Error fetching report:", err);
-                setError(err.message || "Failed to load the report.");
-                toast({ title: "Loading Error", description: err.message, variant: "destructive" });
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        if (!authLoading) {
-            fetchReport();
-        }
-    }, [reportId, user, authLoading, router, toast]);
-
-    const getStatusBadgeVariant = (status: ReportStatus) => {
-        switch (status) {
-            case "submitted": return "secondary";
-            case "under-review": return "outline";
-            case "closed": return "success";
-            default: return "secondary";
-        }
-    };
+    const report = { id: docSnap.id, ...docSnap.data() } as StoredPurserReport;
     
-    const getAdminResponseAlertVariant = (status: ReportStatus): VariantProps<typeof alertVariants>["variant"] => {
-        switch (status) {
-          case "closed": return "success";
-          default: return "info";
-        }
-    };
-
-    if (isLoading || authLoading) {
-        return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+    // Security check
+    if (report.userId !== authUser.uid && authUser.role !== 'admin') {
+      redirect('/purser-reports/history');
     }
     
-     if (!user) {
-        return null;
-    }
+    return report;
+}
 
-    if (error) {
-        return <div className="text-center py-10"><AlertTriangle className="mx-auto h-12 w-12 text-destructive" /><p className="mt-4 text-lg">{error}</p><Button onClick={() => router.back()} className="mt-4">Go Back</Button></div>;
-    }
 
-    if (!report) {
-        return <div className="text-center py-10"><p>No report data to display.</p></div>;
-    }
-
+export default async function PurserReportHistoryDetailPage({ params }: { params: { reportId: string } }) {
+    const report = await getReportData(params.reportId);
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
-            <Button variant="outline" onClick={() => router.push('/purser-reports/history')}><ArrowLeft className="mr-2 h-4 w-4"/>Back to History</Button>
+            <Button variant="outline" asChild>
+                <Link href="/purser-reports/history"><ArrowLeft className="mr-2 h-4 w-4"/>Back to History</Link>
+            </Button>
             
             <Card className="shadow-lg">
                 <CardHeader>
                     <div className="flex justify-between items-start">
                         <div>
-                            <CardTitle className="text-2xl font-headline flex items-center"><FileSignature className="mr-3 h-7 w-7 text-primary" />Report for Flight {report.flightNumber}</CardTitle>
+                            <CardTitle className="text-2xl font-headline flex items-center">Report for Flight {report.flightNumber}</CardTitle>
                             <CardDescription>
                                 {report.departureAirport} to {report.arrivalAirport} on {format(parseISO(report.flightDate), "PPP")}
                             </CardDescription>

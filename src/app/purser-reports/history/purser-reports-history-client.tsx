@@ -6,21 +6,29 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
-import { FileSignature, Loader2, AlertTriangle, List, ArrowRight } from "lucide-react";
+import { List, ArrowRight } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
 import { StoredPurserReport } from "@/schemas/purser-report-schema";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
 // The client component expects dates as strings from the server component
-type ClientReport = Omit<StoredPurserReport, 'createdAt'> & { createdAt: string };
+type ClientReport = Omit<StoredPurserReport, 'createdAt' | 'updatedAt'> & { 
+    id: string;
+    createdAt: string; 
+    updatedAt?: string; 
+};
 
 export function PurserReportsHistoryClient({ initialReports }: { initialReports: ClientReport[] }) {
-    const { user, loading: authLoading } = useAuth();
+    const { user } = useAuth();
     const router = useRouter();
-    const { toast } = useToast();
     const [reports] = React.useState<ClientReport[]>(initialReports);
+
+    React.useEffect(() => {
+        if (!user) {
+            router.push('/login');
+        }
+    }, [user, router]);
 
     const getStatusBadgeVariant = (status: StoredPurserReport['status']) => {
         switch (status) {
@@ -30,14 +38,9 @@ export function PurserReportsHistoryClient({ initialReports }: { initialReports:
             default: return "secondary";
         }
     };
-
-    if (authLoading && initialReports.length === 0) {
-        return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
-    }
     
-     if (!user && !authLoading) {
-        router.push('/login');
-        return null;
+    if (!user) {
+        return null; // Or a loading spinner, but parent layout should handle it
     }
 
     return (

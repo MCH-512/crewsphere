@@ -6,10 +6,12 @@ import { getCurrentUser } from "@/lib/session";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 import type { StoredPurserReport } from "@/schemas/purser-report-schema";
+import { redirect } from "next/navigation";
+
 
 async function getHistory() {
     const user = await getCurrentUser();
-    if (!user) return [];
+    if (!user) redirect('/login');
 
     try {
         const q = query(
@@ -25,7 +27,9 @@ async function getHistory() {
                 ...data,
                 id: doc.id,
                 createdAt: data.createdAt.toDate().toISOString(),
-                flightDate: data.flightDate,
+                // Ensure other potential Timestamps are handled if necessary
+                updatedAt: data.updatedAt ? data.updatedAt.toDate().toISOString() : undefined,
+                flightDate: data.flightDate, // Already a string
             };
         });
     } catch (err) {
