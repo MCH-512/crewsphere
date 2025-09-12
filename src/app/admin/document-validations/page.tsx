@@ -105,6 +105,11 @@ export default function AdminDocumentValidationPage() {
     );
 
     if (authLoading || isLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+    
+     if (!user || user.role !== 'admin') {
+        return <div className="flex flex-col items-center justify-center min-h-screen text-center p-4"><AlertTriangle className="h-16 w-16 text-destructive mb-4" /><CardTitle className="text-2xl mb-2">Access Denied</CardTitle><p className="text-muted-foreground">You do not have permission to view this page.</p><Button onClick={() => router.push('/')} className="mt-6">Go to Dashboard</Button></div>;
+    }
+
 
     const pendingDocs = filterDocsByStatus('pending-validation');
     const approvedDocs = filterDocsByStatus('approved');
@@ -125,7 +130,7 @@ export default function AdminDocumentValidationPage() {
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="pending">
                         Pending Validation
-                        <Badge variant="secondary" className="ml-2">{pendingDocs.length}</Badge>
+                        <Badge variant={pendingDocs.length > 0 ? "destructive" : "secondary"} className="ml-2">{pendingDocs.length}</Badge>
                     </TabsTrigger>
                     <TabsTrigger value="approved">Approved</TabsTrigger>
                 </TabsList>
@@ -151,3 +156,4 @@ export default function AdminDocumentValidationPage() {
         </div>
     );
 }
+
