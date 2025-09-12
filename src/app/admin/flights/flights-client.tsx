@@ -212,7 +212,6 @@ export function AdminFlightsClient({
     const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
     const [viewMode, setViewMode] = React.useState<ViewMode>("list");
     const [calendarMonth, setCalendarMonth] = React.useState(new Date());
-    const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(new Date());
 
     const [swapToApprove, setSwapToApprove] = React.useState<StoredFlightSwap | null>(null);
     const [showPendingSwapsOnly, setShowPendingSwapsOnly] = React.useState(false);
@@ -240,21 +239,21 @@ export function AdminFlightsClient({
      const fetchPageData = React.useCallback(async () => {
         setIsLoading(true);
         try {
-            const { flights } = await getFlightsForAdmin(calendarMonth);
+            const { flights } = await getFlightsForAdmin();
             setFlights(flights);
         } catch (err) {
             toast({ title: "Error Refreshing Data", description: "Could not fetch updated flight data.", variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
-    }, [toast, calendarMonth]);
+    }, [toast]);
     
     React.useEffect(() => {
         if (!authLoading && user) {
             fetchPageData();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [calendarMonth]);
+    }, []);
 
     React.useEffect(() => {
         if (!authLoading && !user) router.push('/');
@@ -552,26 +551,7 @@ export function AdminFlightsClient({
 
     if (authLoading) return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     if (!user || user.role !== 'admin') return <div className="flex flex-col items-center justify-center min-h-screen text-center p-4"><AlertTriangle className="h-16 w-16 text-destructive mb-4" /><CardTitle className="text-2xl mb-2">Access Denied</CardTitle><p className="text-muted-foreground">You do not have permission to view this page.</p><Button onClick={() => router.push('/')} className="mt-6">Go to Dashboard</Button></div>;
-
-    const selectedDayFlights = flights.filter(f => selectedDay && isSameDay(parseISO(f.scheduledDepartureDateTimeUTC), selectedDay));
-    const dayHasFlights = (date: Date) => flights.some(f => isSameDay(parseISO(f.scheduledDepartureDateTimeUTC), date));
-
-    const CalendarDay = (props: DayContentProps) => {
-        const hasFlights = dayHasFlights(props.date);
-        const dayHasPendingSwap = flights.some(f => isSameDay(parseISO(f.scheduledDepartureDateTimeUTC), props.date) && f.pendingSwap);
-        
-        return (
-            <div className="relative flex h-full w-full items-center justify-center">
-                <p>{format(props.date, 'd')}</p>
-                {hasFlights &&
-                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-0.5">
-                        <div className={cn("h-1.5 w-1.5 rounded-full", dayHasPendingSwap ? "bg-warning" : "bg-primary")} />
-                    </div>
-                }
-            </div>
-        );
-    };
-
+    
     return (
         <div className="space-y-6">
             <Card className="shadow-lg">
@@ -579,10 +559,6 @@ export function AdminFlightsClient({
                     <div>
                         <CardTitle className="text-2xl font-headline flex items-center"><Plane className="mr-3 h-7 w-7 text-primary" />Flight Management</CardTitle>
                         <CardDescription>Schedule new flights and assign crew members.</CardDescription>
-                    </div>
-                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setViewMode('list')} className={cn(viewMode === 'list' && 'bg-accent text-accent-foreground')}><List className="mr-2 h-4 w-4"/>List View</Button>
-                        <Button variant="outline" size="sm" onClick={() => setViewMode('calendar')} className={cn(viewMode === 'calendar' && 'bg-accent text-accent-foreground')}><CalendarIcon className="mr-2 h-4 w-4"/>Calendar View</Button>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -619,91 +595,45 @@ export function AdminFlightsClient({
                 </CardFooter>
             </Card>
 
-            {viewMode === 'list' ? (
-                <div className="rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <SortableHeader column="scheduledDepartureDateTimeUTC" label="Date" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                                <SortableHeader column="flightNumber" label="Flight No." sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                                <SortableHeader column="departureAirportName" label="Route" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                                <SortableHeader column="purserName" label="Purser" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <SortableHeader column="scheduledDepartureDateTimeUTC" label="Date" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="flightNumber" label="Flight No." sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="departureAirportName" label="Route" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="purserName" label="Purser" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {sortedAndFilteredFlights.map((f) => (
+                            <TableRow key={f.id}>
+                                <TableCell className="font-medium text-xs">{format(new Date(f.scheduledDepartureDateTimeUTC), "PP")}</TableCell>
+                                <TableCell>{f.flightNumber}</TableCell>
+                                <TableCell className="text-xs">{f.departureAirportName} → {f.arrivalAirportName}</TableCell>
+                                <TableCell className="text-xs">
+                                        <Link href={`/admin/users/${f.purserId}`} className="hover:underline text-primary">
+                                        {f.purserName}
+                                    </Link>
+                                </TableCell>
+                                 <TableCell className="space-x-2">
+                                    {!f.purserReportSubmitted && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning/80 text-warning-foreground" title="Purser Report Pending"><FileSignature className="h-4 w-4" /></Button>)}
+                                    {f.pendingSwap && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning text-warning-foreground animate-pulse" title="Swap Request Pending" onClick={() => setSwapToApprove(f.pendingSwap!)}><Handshake className="h-4 w-4" /></Button>)}
+                                </TableCell>
+                                <TableCell className="text-right space-x-1">
+                                    <Button variant="ghost" size="icon" onClick={() => handleCreateReturnFlight(f)} title="Create Return Flight"><ArrowRightLeft className="h-4 w-4" /></Button>
+                                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(f)} title="Edit Flight"><Edit className="h-4 w-4" /></Button>
+                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(f)} title="Delete Flight"><Trash2 className="h-4 w-4" /></Button>
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {sortedAndFilteredFlights.map((f) => (
-                                <TableRow key={f.id}>
-                                    <TableCell className="font-medium text-xs">{format(new Date(f.scheduledDepartureDateTimeUTC), "PP")}</TableCell>
-                                    <TableCell>{f.flightNumber}</TableCell>
-                                    <TableCell className="text-xs">{f.departureAirportName} → {f.arrivalAirportName}</TableCell>
-                                    <TableCell className="text-xs">
-                                            <Link href={`/admin/users/${f.purserId}`} className="hover:underline text-primary">
-                                            {f.purserName}
-                                        </Link>
-                                    </TableCell>
-                                     <TableCell className="space-x-2">
-                                        {!f.purserReportSubmitted && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning/80 text-warning-foreground" title="Purser Report Pending"><FileSignature className="h-4 w-4" /></Button>)}
-                                        {f.pendingSwap && (<Button variant="outline" size="icon" className="h-7 w-7 border-warning text-warning-foreground animate-pulse" title="Swap Request Pending" onClick={() => setSwapToApprove(f.pendingSwap!)}><Handshake className="h-4 w-4" /></Button>)}
-                                    </TableCell>
-                                    <TableCell className="text-right space-x-1">
-                                        <Button variant="ghost" size="icon" onClick={() => handleCreateReturnFlight(f)} title="Create Return Flight"><ArrowRightLeft className="h-4 w-4" /></Button>
-                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(f)} title="Edit Flight"><Edit className="h-4 w-4" /></Button>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(f)} title="Delete Flight"><Trash2 className="h-4 w-4" /></Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                    {sortedAndFilteredFlights.length === 0 && <p className="text-center text-muted-foreground py-8">No flights found matching criteria.</p>}
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                        <Calendar
-                            mode="single"
-                            selected={selectedDay}
-                            onSelect={setSelectedDay}
-                            month={calendarMonth}
-                            onMonthChange={setCalendarMonth}
-                            className="w-full p-2"
-                            components={{ Day: CalendarDay }}
-                        />
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Flights on {selectedDay ? format(selectedDay, 'PPP') : '...'}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {selectedDayFlights.length > 0 ? (
-                                <ScrollArea className="h-72">
-                                    <div className="space-y-4 pr-4">
-                                    {selectedDayFlights.map(f => (
-                                        <div key={f.id} className="p-3 border rounded-md">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="font-semibold">{f.flightNumber}</p>
-                                                    <p className="text-xs text-muted-foreground">{f.departureAirportName} → {f.arrivalAirportName}</p>
-                                                </div>
-                                                <div className="flex gap-1">
-                                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenDialog(f)} title="Edit Flight"><Edit className="h-4 w-4" /></Button>
-                                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(f)} title="Delete Flight"><Trash2 className="h-4 w-4" /></Button>
-                                                </div>
-                                            </div>
-                                            <p className="text-xs mt-2">Purser: <Link href={`/admin/users/${f.purserId}`} className="hover:underline text-primary">{f.purserName}</Link></p>
-                                        </div>
-                                    ))}
-                                    </div>
-                                </ScrollArea>
-                            ) : (
-                                <p className="text-center text-muted-foreground py-8">No flights scheduled for this day.</p>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
-
+                        ))}
+                    </TableBody>
+                </Table>
+                {sortedAndFilteredFlights.length === 0 && <p className="text-center text-muted-foreground py-8">No flights found matching criteria.</p>}
+            </div>
+            
             {swapToApprove && (
                 <SwapApprovalDialog swap={swapToApprove} onClose={() => setSwapToApprove(null)} onAction={fetchPageData} />
             )}
@@ -822,4 +752,3 @@ export function AdminFlightsClient({
     );
 }
 
-    

@@ -17,7 +17,7 @@ export interface FlightForDisplay extends StoredFlight {
     pendingSwap?: StoredFlightSwap;
 }
 
-export async function getFlightsForAdmin(calendarMonth: Date = new Date()) {
+export async function getFlightsForAdmin() {
     if (!isConfigValid || !db) {
         throw new Error("Firebase is not configured.");
     }
@@ -34,9 +34,7 @@ export async function getFlightsForAdmin(calendarMonth: Date = new Date()) {
     const instructors = allUsers.filter(u => u.role === 'instructor');
     const trainees = allUsers.filter(u => u.role === 'stagiaire');
 
-    // Fetch flights for the given month
-    const start = startOfMonth(calendarMonth);
-    const end = endOfMonth(calendarMonth);
+    // Fetch all flights
     const flightsQuery = query(
         collection(db, "flights"), 
         orderBy("scheduledDepartureDateTimeUTC", "desc")
@@ -46,16 +44,12 @@ export async function getFlightsForAdmin(calendarMonth: Date = new Date()) {
     const [flightsSnapshot, swapsSnapshot] = await Promise.all([getDocs(flightsQuery), getDocs(swapsQuery)]);
     
     const allFlights = flightsSnapshot.docs.map(d => ({id: d.id, ...d.data()}) as StoredFlight);
-    const flightsInMonth = allFlights.filter(f => {
-        const flightDate = new Date(f.scheduledDepartureDateTimeUTC);
-        return flightDate >= start && flightDate <= end;
-    });
-
+    
     const pendingSwaps = swapsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredFlightSwap));
     const swapsByFlightId = new Map(pendingSwaps.map(s => [s.initiatingFlightId, s]));
 
     const flights = await Promise.all(
-        flightsInMonth.map(async (data) => {
+        allFlights.map(async (data) => {
             const [depAirport, arrAirport] = await Promise.all([
                 getAirportByCode(data.departureAirport),
                 getAirportByCode(data.arrivalAirport),
@@ -73,7 +67,7 @@ export async function getFlightsForAdmin(calendarMonth: Date = new Date()) {
     );
 
     return {
-        flights: flights, // Already sorted by query
+        flights: flights,
         allUsers,
         pilots,
         pursers,
