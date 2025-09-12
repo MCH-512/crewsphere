@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -23,7 +24,6 @@ import { courseFormSchema, CourseFormValues, courseCategories, courseTypes } fro
 import { StoredCourse } from "@/schemas/course-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StoredQuiz, StoredCertificateRule } from "@/schemas/course-schema";
 import { generateCourseImage } from "@/ai/flows/generate-course-image-flow";

@@ -210,8 +210,6 @@ export function AdminFlightsClient({
 
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>('scheduledDepartureDateTimeUTC');
     const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
-    const [viewMode, setViewMode] = React.useState<ViewMode>("list");
-    const [calendarMonth, setCalendarMonth] = React.useState(new Date());
 
     const [swapToApprove, setSwapToApprove] = React.useState<StoredFlightSwap | null>(null);
     const [showPendingSwapsOnly, setShowPendingSwapsOnly] = React.useState(false);
@@ -250,7 +248,7 @@ export function AdminFlightsClient({
     
     React.useEffect(() => {
         if (!authLoading && user) {
-            fetchPageData();
+            // Initial data is already loaded, no need to fetch again unless requested.
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -484,7 +482,7 @@ export function AdminFlightsClient({
                 const recurrenceCount = data.enableRecurrence ? data.recurrenceCount || 1 : 1;
 
                 for (let i = 0; i < recurrenceCount; i++) {
-                    const dateOffsetFn = data.recurrenceType === 'Daily' ? (d: Date) => addDays(d, i) : (d: Date) => addWeeks(d, i);
+                    const dateOffsetFn = data.recurrenceType === 'Weekly' ? (d: Date) => addWeeks(d, i) : (d: Date) => addDays(d, i);
                     
                     const currentDepartureDate = dateOffsetFn(initialDepartureDate);
                     const currentArrivalDate = addMinutes(currentDepartureDate, flightDurationMinutes);
@@ -751,4 +749,3 @@ export function AdminFlightsClient({
         </div>
     );
 }
-

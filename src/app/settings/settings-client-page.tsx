@@ -22,6 +22,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { format } from "date-fns";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Schema for the main profile & preferences form
 const profileSettingsFormSchema = z.object({
@@ -213,6 +214,9 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
       </div>
     );
   }
+  
+  const avatarFallback = initialUser?.displayName ? initialUser.displayName.substring(0, 2).toUpperCase() : initialUser?.email?.substring(0,2).toUpperCase() || 'U';
+
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
@@ -232,14 +236,10 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
                 <CardContent className="space-y-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <div className="relative">
-                            <Image 
-                                src={previewUrl || initialUser?.photoURL || "https://images.unsplash.com/photo-1559535456-e9b626438153?q=80&w=1964&auto=format&fit=crop"} 
-                                alt="User Avatar" 
-                                width={80} 
-                                height={80} 
-                                className="rounded-full" 
-                                data-ai-hint="user avatar"
-                            />
+                            <Avatar className="h-20 w-20">
+                               <AvatarImage src={previewUrl || initialUser.photoURL || undefined} alt="User Avatar" data-ai-hint="user portrait" />
+                               <AvatarFallback>{avatarFallback}</AvatarFallback>
+                            </Avatar>
                              <Button 
                                 type="button"
                                 variant="outline"

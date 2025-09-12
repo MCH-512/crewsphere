@@ -15,13 +15,16 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 import { Badge } from "@/components/ui/badge";
 import { getMySwaps, cancelMySwap } from "@/services/flight-swap-service";
 
+interface MySwapsClientProps {
+    initialSwaps: StoredFlightSwap[];
+}
 
-export function MySwapsClient() {
+export function MySwapsClient({ initialSwaps }: MySwapsClientProps) {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
-    const [mySwaps, setMySwaps] = React.useState<StoredFlightSwap[]>([]);
-    const [isLoading, setIsLoading] = React.useState(true);
+    const [mySwaps, setMySwaps] = React.useState<StoredFlightSwap[]>(initialSwaps);
+    const [isLoading, setIsLoading] = React.useState(false);
     const [isCancelling, setIsCancelling] = React.useState<string | null>(null);
 
     const fetchData = React.useCallback(async () => {
@@ -30,6 +33,7 @@ export function MySwapsClient() {
         try {
             const swaps = await getMySwaps(user.uid);
             setMySwaps(swaps);
+            toast({title: "Refreshed", description: "Your swaps have been updated."})
         } catch (error) {
             console.error("Error fetching user swaps:", error);
             toast({ title: "Error", description: "Could not fetch your swaps.", variant: "destructive" });
@@ -39,13 +43,10 @@ export function MySwapsClient() {
     }, [user, toast]);
 
     React.useEffect(() => {
-        if (authLoading) return;
-        if (!user) {
+        if (!authLoading && !user) {
             router.push('/login');
-            return;
         }
-        fetchData();
-    }, [user, authLoading, router, fetchData]);
+    }, [user, authLoading, router]);
 
     const handleCancel = async (swapId: string) => {
         if (!user || !window.confirm("Are you sure you want to cancel this swap posting?")) return;
@@ -72,7 +73,7 @@ export function MySwapsClient() {
         }
     };
 
-    if (isLoading || authLoading) {
+    if (authLoading && mySwaps.length === 0) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
 

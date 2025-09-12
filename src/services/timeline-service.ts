@@ -6,6 +6,7 @@ import { startOfMonth, endOfMonth } from "date-fns";
 import { db } from "@/lib/firebase";
 import { type StoredFlight } from "@/schemas/flight-schema";
 import { type StoredTrainingSession } from "@/schemas/training-session-schema";
+import type { User } from "@/schemas/user-schema";
 
 export interface TimelineActivity {
   id: string;
@@ -27,13 +28,7 @@ export async function getTimelineData(month: Date): Promise<TimelineActivity[]> 
 
     try {
         const flightsQuery = query(collection(db, "flights"), where("scheduledDepartureDateTimeUTC", ">=", start.toISOString()), where("scheduledDepartureDateTimeUTC", "<=", end.toISOString()));
-        // Simplified query to fetch all sessions within the month, ordered by date.
-        // This avoids complex queries that might clash with security rules or require composite indexes.
-        const trainingQuery = query(
-            collection(db, "trainingSessions"), 
-            where("sessionDateTimeUTC", ">=", start), 
-            where("sessionDateTimeUTC", "<=", end)
-        );
+        const trainingQuery = query(collection(db, "trainingSessions"), where("sessionDateTimeUTC", ">=", start), where("sessionDateTimeUTC", "<=", end));
         
         const [flightsSnap, trainingSnap] = await Promise.all([getDocs(flightsQuery), getDocs(trainingQuery)]);
 
@@ -72,7 +67,6 @@ export async function getTimelineData(month: Date): Promise<TimelineActivity[]> 
         return allActivities;
     } catch (error) {
         console.error("Error fetching timeline data:", error);
-        // Return empty array to prevent page crashes on server-side errors
         return [];
     }
 }
