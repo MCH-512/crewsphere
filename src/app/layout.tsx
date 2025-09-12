@@ -9,7 +9,7 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'AirCrew Hub',
+  title: 'CrewSphere',
   description: 'A comprehensive portal for airline crew members.',
 };
 

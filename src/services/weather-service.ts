@@ -19,7 +19,7 @@ export async function getLiveWeather(icao: string): Promise<string | null> {
         const response = await fetch(url, {
             // Using a user-agent can help avoid being blocked by some services.
             headers: {
-                'User-Agent': 'CrewWorld-App/1.0'
+                'User-Agent': 'CrewSphere-App/1.0'
             },
             // Revalidate every 5 minutes
             next: { revalidate: 300 } 

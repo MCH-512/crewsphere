@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -153,7 +154,7 @@ function LayoutWithSidebar({
         <SidebarHeader className="h-16 flex items-center justify-center">
           <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-sidebar-primary transition-colors">
             <Plane className="w-8 h-8 text-primary" />
-            <span className="font-bold text-lg group-data-[state=collapsed]:hidden">AirCrew Hub</span>
+            <span className="font-bold text-lg group-data-[state=collapsed]:hidden">CrewSphere</span>
           </Link>
         </SidebarHeader>
         <SidebarContent className="p-2">

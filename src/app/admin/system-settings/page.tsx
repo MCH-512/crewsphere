@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -27,7 +28,7 @@ import { logAuditEvent } from "@/lib/audit-logger";
 import { seedInitialCourses } from "@/lib/seed";
 
 const systemSettingsSchema = z.object({
-  appName: z.string().min(3, "App name must be at least 3 characters.").max(50, "App name cannot exceed 50 characters.").default("Crew World"),
+  appName: z.string().min(3, "App name must be at least 3 characters.").max(50, "App name cannot exceed 50 characters.").default("CrewSphere"),
   maintenanceMode: z.boolean().default(false),
   supportEmail: z.string().email("Invalid email address.").min(5, "Support email is required."),
 });
@@ -47,7 +48,7 @@ export default function SystemSettingsPage() {
   const form = useForm<SystemSettingsFormValues>({
     resolver: zodResolver(systemSettingsSchema),
     defaultValues: {
-      appName: "Crew World",
+      appName: "CrewSphere",
       maintenanceMode: false,
       supportEmail: "",
     },
@@ -68,7 +69,7 @@ export default function SystemSettingsPage() {
                 if (docSnap.exists()) {
                     const data = docSnap.data() as SystemSettingsFormValues;
                     form.reset({
-                        appName: data.appName || "Crew World",
+                        appName: data.appName || "CrewSphere",
                         maintenanceMode: data.maintenanceMode || false,
                         supportEmail: data.supportEmail || "",
                     });
@@ -178,7 +179,7 @@ export default function SystemSettingsPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <FormField control={form.control} name="appName" render={({ field }) => (
-                  <FormItem><FormLabel>Application Name</FormLabel><FormControl><Input placeholder="e.g., Crew World" {...field} disabled={isSubmitting} /></FormControl><FormDescription>The name displayed throughout the application (e.g., in titles).</FormDescription><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Application Name</FormLabel><FormControl><Input placeholder="e.g., CrewSphere" {...field} disabled={isSubmitting} /></FormControl><FormDescription>The name displayed throughout the application (e.g., in titles).</FormDescription><FormMessage /></FormItem>
                 )}/>
                 <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
