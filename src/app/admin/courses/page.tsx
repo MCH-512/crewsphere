@@ -587,3 +587,5 @@ export default function AdminCoursesPage() {
         </div>
     );
 }
+
+    
