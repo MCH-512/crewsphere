@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -7,12 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { NotebookPen, Loader2, AlertTriangle, Sigma, Hourglass, Plane, UserSquare, RefreshCw } from "lucide-react";
-import { format, parseISO, differenceInMinutes } from "date-fns";
+import { format, parseISO } from "date-fns";
 import type { LogbookEntry } from "@/services/logbook-service";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { getLogbookEntries } from "@/services/logbook-service";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const formatDuration = (totalMinutes: number): string => {
     if (isNaN(totalMinutes) || totalMinutes < 0) return "0h 0m";
@@ -24,6 +23,7 @@ const formatDuration = (totalMinutes: number): string => {
 export function MyLogbookClient({ initialEntries }: { initialEntries: LogbookEntry[] }) {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const { toast } = useToast();
     const [logbookEntries, setLogbookEntries] = React.useState<LogbookEntry[]>(initialEntries);
     const [isLoading, setIsLoading] = React.useState(false); // Used for subsequent fetches, not initial load
     const [error, setError] = React.useState<string | null>(null);
@@ -41,7 +41,7 @@ export function MyLogbookClient({ initialEntries }: { initialEntries: LogbookEnt
         } finally {
             setIsLoading(false);
         }
-    }, [user]);
+    }, [user, toast]);
 
     React.useEffect(() => {
         if (!authLoading && !user) {
