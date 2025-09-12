@@ -48,12 +48,12 @@ export async function getUserActivitiesForMonth(userId: string, month: Date): Pr
 
 
 /**
- * Checks the availability of multiple crew members for a given date range.
- * @param crewUserIds An array of user UIDs to check.
+ * Checks the availability of a single crew member for a given date range.
+ * @param userId The user UID to check.
  * @param startDate The start date of the period to check.
  * @param endDate The end date of the period to check.
- * @param activityIdToIgnore Optional. The ID of the current flight or session being edited, to ignore its own activities.
- * @returns A promise that resolves to a record mapping user IDs to their first found conflict.
+ * @param activityIdToIgnore Optional. The ID of the current flight, session or request being edited, to ignore its own activities.
+ * @returns A promise that resolves to a conflict object or null.
  */
 export async function checkCrewAvailability(
   crewUserIds: string[],
@@ -91,8 +91,9 @@ export async function checkCrewAvailability(
                 
                 let isIgnored = false;
                 if (activityIdToIgnore) {
-                    // Check if the activity's flightId or trainingSessionId matches the ID to ignore
-                    isIgnored = (activity.flightId === activityIdToIgnore) || (activity.trainingSessionId === activityIdToIgnore);
+                    isIgnored = (activity.flightId === activityIdToIgnore) || 
+                                (activity.trainingSessionId === activityIdToIgnore) ||
+                                (activity.requestId === activityIdToIgnore);
                 }
 
                 return isOnSameDay && !isIgnored;

@@ -27,9 +27,11 @@ import {
     requestStatuses,
     getStatusBadgeVariant,
     getUrgencyBadgeVariant,
+    getAdminResponseAlertVariant
 } from "@/schemas/request-schema";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
 import type { ActivityType } from "@/schemas/user-activity-schema";
+import { checkCrewAvailability, type Conflict } from "@/services/user-activity-service";
 
 
 type SortableColumn = "createdAt" | "status" | "urgencyLevel";
@@ -52,6 +54,8 @@ export default function AdminUserRequestsPage() {
   const [newStatus, setNewStatus] = React.useState<RequestStatus | "">("");
   const [adminResponseText, setAdminResponseText] = React.useState("");
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
+  const [conflict, setConflict] = React.useState<Conflict | null>(null);
+  const [isCheckingConflict, setIsCheckingConflict] = React.useState(false);
   
   const [statusFilter, setStatusFilter] = React.useState<RequestStatus | "all">("all");
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -121,6 +125,24 @@ export default function AdminUserRequestsPage() {
     setFilteredAndSortedRequests(processedRequests);
   }, [allRequests, statusFilter, searchTerm, sortColumn, sortDirection]);
 
+  // Check for conflicts when a request is selected
+  React.useEffect(() => {
+    if (selectedRequest?.requestType === 'Leave & Absences' && selectedRequest.startDate && selectedRequest.endDate) {
+        setIsCheckingConflict(true);
+        setConflict(null);
+        checkCrewAvailability([selectedRequest.userId], new Date(selectedRequest.startDate), new Date(selectedRequest.endDate))
+            .then(conflicts => {
+                if (conflicts[selectedRequest.userId]) {
+                    setConflict(conflicts[selectedRequest.userId]);
+                }
+            })
+            .catch(err => console.error("Conflict check failed:", err))
+            .finally(() => setIsCheckingConflict(false));
+    } else {
+        setConflict(null);
+    }
+  }, [selectedRequest]);
+
 
   const handleOpenManageDialog = (request: StoredUserRequest) => {
     setSelectedRequest(request);
@@ -140,6 +162,12 @@ export default function AdminUserRequestsPage() {
         return;
     }
 
+    if (conflict && newStatus === 'approved') {
+        if (!window.confirm("A scheduling conflict exists. Are you sure you want to approve this leave request? This will not override the conflicting event.")) {
+            return;
+        }
+    }
+
     setIsUpdatingStatus(true);
     try {
         const batch = writeBatch(db);
@@ -153,11 +181,9 @@ export default function AdminUserRequestsPage() {
         
         const isLeaveRequest = selectedRequest.requestType === 'Leave & Absences';
         const isNowApproved = newStatus === 'approved';
-        const wasPreviouslyApproved = selectedRequest.status === 'approved';
-
-        // --- User Activities Management ---
-        // First, clear any existing activities linked to this request ID, regardless of the new status.
-        // This handles cases where an approved request is later rejected.
+        
+        // Clear any existing activities linked to this request ID first.
+        // This handles cases where an approved request is later rejected or changed.
         if (isLeaveRequest) {
             const activitiesQuery = firestoreQuery(collection(db, "userActivities"), where("requestId", "==", selectedRequest.id));
             const activitiesSnapshot = await getDocs(activitiesQuery);
@@ -194,7 +220,7 @@ export default function AdminUserRequestsPage() {
             details: { newStatus: newStatus, oldStatus: selectedRequest.status },
         });
 
-        toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. User's schedule has been updated.` });
+        toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. User's schedule has been updated accordingly.` });
         fetchRequests(); 
         setIsManageDialogOpen(false);
     } catch (err: any) {
@@ -348,10 +374,26 @@ export default function AdminUserRequestsPage() {
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Manage Request: {selectedRequest.subject}</DialogTitle>
-              <DialogDescription>Review details, update status, and add response notes.</DialogDescription>
+              <DialogDescription>Review details, check for conflicts, update status, and add response notes.</DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[60vh] pr-4">
             <div className="py-4 space-y-4">
+                {isCheckingConflict ? (
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm"><Loader2 className="h-4 w-4 animate-spin" />Checking schedule for conflicts...</div>
+                ) : conflict ? (
+                     <Alert variant="warning">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Scheduling Conflict Detected</AlertTitle>
+                        <ShadAlertDescription>This user already has an activity ({conflict.activityType}: {conflict.details}) scheduled during the requested leave period.</ShadAlertDescription>
+                    </Alert>
+                ) : selectedRequest.requestType === 'Leave & Absences' ? (
+                     <Alert variant="success">
+                        <CheckCircle className="h-4 w-4" />
+                        <AlertTitle>No Scheduling Conflicts Found</AlertTitle>
+                        <ShadAlertDescription>The user has no other activities scheduled during the requested leave period.</ShadAlertDescription>
+                    </Alert>
+                ) : null}
+
               <Card className="bg-muted/30">
                 <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="text-base font-semibold">Submitted Details</CardTitle>
@@ -412,7 +454,7 @@ export default function AdminUserRequestsPage() {
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancel</Button>
               </DialogClose>
-              <Button onClick={handleStatusUpdate} disabled={isUpdatingStatus}>
+              <Button onClick={handleStatusUpdate} disabled={isUpdatingStatus || isCheckingConflict}>
                 {isUpdatingStatus && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>
