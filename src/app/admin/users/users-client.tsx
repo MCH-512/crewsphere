@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch"; 
 import { useAuth } from "@/contexts/auth-context";
-import { auth } from "@/lib/firebase"; 
 import { useRouter } from "next/navigation";
 import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Power, PowerOff, Search, Eye, Filter } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
@@ -172,7 +171,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   };
 
     const handleFormSubmit = async (data: ManageUserFormValues) => {
-        if (!user || !auth) {
+        if (!user) {
             toast({ title: "Unauthorized", description: "You do not have permission to perform this action.", variant: "destructive" });
             return;
         }
@@ -401,5 +400,3 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
     </div>
   );
 }
-
-    
