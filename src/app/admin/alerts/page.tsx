@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -15,7 +14,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { BellRing, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2 } from "lucide-react";
+import { BellRing, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Search, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { VariantProps } from "class-variance-authority";
@@ -28,6 +27,8 @@ import { SortableHeader } from "@/components/custom/custom-sortable-header";
 
 type SortableColumn = 'title' | 'type' | 'targetAudience' | 'isActive' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
+type AlertType = StoredAlert["type"];
+type AlertAudience = StoredAlert["targetAudience"];
 
 export default function AdminAlertsPage() {
     const { user, loading: authLoading } = useAuth();
@@ -44,6 +45,10 @@ export default function AdminAlertsPage() {
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>("createdAt");
     const [sortDirection, setSortDirection] = React.useState<SortDirection>("desc");
 
+    const [searchTerm, setSearchTerm] = React.useState("");
+    const [typeFilter, setTypeFilter] = React.useState<AlertType | "all">("all");
+    const [audienceFilter, setAudienceFilter] = React.useState<AlertAudience | "all">("all");
+
     const form = useForm<AlertFormValues>({
         resolver: zodResolver(alertFormSchema),
         defaultValues: { title: "", message: "", type: "info", targetAudience: "all", isActive: true },
@@ -52,7 +57,6 @@ export default function AdminAlertsPage() {
     const fetchAlerts = React.useCallback(async () => {
         setIsLoading(true);
         try {
-            // Initial fetch is always ordered by creation date
             const q = query(collection(db, "alerts"), orderBy("createdAt", "desc"));
             const querySnapshot = await getDocs(q);
             setAlerts(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAlert)));
@@ -71,26 +75,29 @@ export default function AdminAlertsPage() {
     }, [user, authLoading, router, fetchAlerts]);
 
     const sortedAlerts = React.useMemo(() => {
-        const sorted = [...alerts];
+        const filtered = alerts.filter(alert => {
+            if (searchTerm && !alert.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+            if (typeFilter !== 'all' && alert.type !== typeFilter) return false;
+            if (audienceFilter !== 'all' && alert.targetAudience !== audienceFilter) return false;
+            return true;
+        });
+
+        const sorted = [...filtered];
         sorted.sort((a, b) => {
             let valA = a[sortColumn];
             let valB = b[sortColumn];
-
             let comparison = 0;
             if (valA instanceof Timestamp && valB instanceof Timestamp) {
                 comparison = valA.toMillis() - valB.toMillis();
-            } else if (typeof valA === 'string' && typeof valB === 'string') {
-                comparison = valA.localeCompare(valB);
             } else if (typeof valA === 'boolean' && typeof valB === 'boolean') {
                 comparison = valA === valB ? 0 : valA ? -1 : 1;
             } else {
                  comparison = String(valA).localeCompare(String(valB));
             }
-
             return sortDirection === 'asc' ? comparison : -comparison;
         });
         return sorted;
-    }, [alerts, sortColumn, sortDirection]);
+    }, [alerts, sortColumn, sortDirection, searchTerm, typeFilter, audienceFilter]);
 
     const handleSort = (column: SortableColumn) => {
         if (sortColumn === column) {
@@ -179,6 +186,39 @@ export default function AdminAlertsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                         <div className="relative flex-grow">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                type="search"
+                                placeholder="Search by title..."
+                                className="pl-8 w-full md:max-w-xs"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as any)}>
+                            <SelectTrigger className="w-full md:w-[180px]">
+                                <Filter className="mr-2 h-4 w-4" />
+                                <SelectValue placeholder="Filter by type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Types</SelectItem>
+                                {alertTypes.map(type => <SelectItem key={type} value={type} className="capitalize">{type}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select value={audienceFilter} onValueChange={(value) => setAudienceFilter(value as any)}>
+                            <SelectTrigger className="w-full md:w-[180px]">
+                                <Filter className="mr-2 h-4 w-4" />
+                                <SelectValue placeholder="Filter by audience" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Audiences</SelectItem>
+                                {alertAudiences.map(audience => <SelectItem key={audience} value={audience} className="capitalize">{audience}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
                     <Table>
                         <TableHeader><TableRow>
                             <SortableHeader column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
@@ -204,7 +244,7 @@ export default function AdminAlertsPage() {
                             ))}
                         </TableBody>
                     </Table>
-                    {sortedAlerts.length === 0 && <p className="text-center text-muted-foreground p-8">No alerts found.</p>}
+                    {sortedAlerts.length === 0 && <p className="text-center text-muted-foreground p-8">No alerts found matching your criteria.</p>}
                 </CardContent>
             </Card>
 
