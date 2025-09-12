@@ -57,6 +57,7 @@ export default function AdminConsolePage() {
               <h2 className="text-2xl font-bold tracking-tight mb-4">{group.title}</h2>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {group.items.map((item, itemIndex) => {
+                      if (item.href === '/admin') return null; // Don't show the dashboard card itself
                       const IconComponent = item.icon;
                       const animationDelay = 0.1 + (itemIndex * 0.05);
 
