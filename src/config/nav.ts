@@ -3,7 +3,7 @@ import {
   ClipboardCheck, MessageSquare, Activity, FileSignature, 
   Calendar as CalendarIcon, Library, GraduationCap, CheckSquare, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Wrench, 
-  Handshake, Inbox, Lightbulb, FileCheck2, History, CloudSun
+  Handshake, Inbox, Lightbulb, FileCheck2, History, CloudSun, AudioWaveform
 } from "lucide-react";
 import type { ElementType } from 'react';
 
@@ -113,6 +113,7 @@ export const adminNavConfig: { sidebarNav: NavGroup[] } = {
       title: "System",
       items: [
          { href: "/admin/alerts", title: "Alert Management", icon: BellRing, description: "Create and broadcast alerts to all or specific groups of users.", buttonText: "Manage Alerts", statKey: "activeAlerts", highlightWhen: v => v > 0 },
+         { href: "/admin/audio-studio", title: "Audio Studio", icon: AudioWaveform, description: "Generate voice announcements and audio messages using AI.", buttonText: "Open Studio" },
          { href: "/admin/system-settings", title: "System Settings", icon: Settings, description: "Configure application-wide settings and maintenance mode.", buttonText: "Configure Settings" },
          { href: "/admin/audit-logs", title: "Audit Logs", icon: Activity, description: "Review a chronological record of system activities and changes.", buttonText: "View Logs" },
        ]
