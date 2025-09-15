@@ -1,8 +1,9 @@
+
 'use server';
 
 /**
- * @fileOverview Un service pour la génération de vidéos.
- * Ce fichier contient les fonctions pour interagir avec les modèles de génération de vidéo.
+ * @fileOverview A service for video generation.
+ * This file contains functions for interacting with video generation models.
  */
 
 import { ai } from '@/ai/genkit';
@@ -14,9 +15,9 @@ import type { MediaPart } from 'genkit';
 
 
 /**
- * Génère une vidéo à partir d'un prompt texte et/ou d'une image.
- * @param input Les données d'entrée contenant le prompt et l'image optionnelle.
- * @returns Une promesse qui se résout avec l'URL de la vidéo générée.
+ * Generates a video from a text prompt and/or an image.
+ * @param input The input data containing the prompt and optional image.
+ * @returns A promise that resolves with the URL of the generated video.
  */
 export async function generateVideo(input: GenerateVideoInput): Promise<GenerateVideoOutput> {
   const { operation } = await ai.generate({
@@ -49,6 +50,10 @@ export async function generateVideo(input: GenerateVideoInput): Promise<Generate
   }
 
   // The URL provided by the operation is a temporary, signed URL.
-  // It is secure to be passed to the client for direct download.
-  return { videoUrl: video.media.url };
+  // It is secure to be passed to the client for direct download or display.
+  // Note: The key for this URL is NOT the Gemini API key, it's a temporary signature key.
+  // It needs to be appended with the actual Gemini API key for download to work.
+  const videoUrlWithKey = `${video.media.url}&key=${process.env.GEMINI_API_KEY}`;
+  
+  return { videoUrl: videoUrlWithKey };
 }
