@@ -11,7 +11,6 @@ import type { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
 import type { StoredUserRequest } from "@/schemas/request-schema";
 import type { RequestsChartDataPoint } from "@/components/features/charts/requests-status-bar-chart";
 import type { TrainingChartDataPoint } from "@/components/features/charts/training-progress-pie-chart";
-import imageData from '@/data/placeholder-images.json';
 import { generateDashboardImage } from "@/ai/flows/generate-dashboard-image-flow";
 import { getAirportByCode } from "./airport-service";
 
@@ -27,8 +26,7 @@ const getTimeOfDay = (): TimeOfDay => {
 
 
 export async function getDashboardHeroImage(): Promise<{ src: string; hint: string; }> {
-    const timeOfDay = getTimeOfDay();
-    const heroImages = imageData.dashboardHero;
+    const defaultImage = { src: "/images/default-hero.jpg", hint: "airplane tail wing" };
     const user = await getCurrentUser();
 
     if (user && isConfigValid && db) {
@@ -60,13 +58,11 @@ export async function getDashboardHeroImage(): Promise<{ src: string; hint: stri
             }
         } catch (error) {
             console.error("Failed to generate dynamic hero image, falling back to default:", error);
-            // Fallback to default if AI generation fails
-            return heroImages[timeOfDay] || heroImages.default;
+            return defaultImage;
         }
     }
     
-    // Default behavior if no user or flight
-    return heroImages[timeOfDay] || heroImages.default;
+    return defaultImage;
 }
 
 export async function getTrainingStatus(): Promise<{ totalMandatory: number; completed: number; nextCourseId?: string; } | null> {
@@ -175,3 +171,4 @@ export async function getRequestsChartData(): Promise<RequestsChartDataPoint[] |
         return null;
     }
 }
+
