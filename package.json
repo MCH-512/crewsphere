@@ -8,16 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "audit": "node nextjs-audit.js",
-    "auto-optimize": "node scripts/run-analysis.js",
-    "apply-optimizations": "node scripts/apply-optimizations.js",
-    "test:unit": "jest --coverage",
-    "test:e2e": "playwright test",
-    "test:accessibility": "npx axe-core --url=http://localhost:3000 --output=accessibility-report.json",
-    "test:performance": "lighthouse-ci",
-    "test:ai": "jest tests/ai-validation/",
-    "test:auto-generate": "node scripts/generate-tests.js",
-    "test": "node scripts/run-all-tests.js"
+    "audit": "node nextjs-audit.js"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.0.0",
