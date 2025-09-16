@@ -23,6 +23,12 @@ const nextConfig: NextConfig = {
     hideSourceMaps: true,
     tunnelRoute: '/monitoring',
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '4.5mb',
+    },
+    serverActionsTimeout: 120, // Increase timeout to 120 seconds for long-running AI tasks
+  },
   typescript: {
     ignoreBuildErrors: false,
   },
