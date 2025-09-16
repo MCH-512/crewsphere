@@ -30,6 +30,12 @@ async function getAlertHistory(): Promise<SimulatedAlertHistory[]> {
       triggeredAt: daysAgo(i * 30),
       resolvedAt: new Date(daysAgo(i * 30).getTime() + 1 * 60 * 60 * 1000), // 1-hour resolution
     })),
+     // Simulate a rule with no recent data
+    {
+      key: 'FAILED_SWAPS',
+      triggeredAt: daysAgo(100),
+      resolvedAt: daysAgo(99),
+    }
   ];
 }
 
@@ -41,12 +47,12 @@ export async function generateOptimizedAlertRules() {
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
   const recentAlerts = alerts.filter(a => a.triggeredAt >= ninetyDaysAgo && a.resolvedAt);
 
-  const ruleImprovements = [];
+  const ruleImprovements: { key: string; oldRule: Partial<AlertRule>; newRule: Partial<AlertRule>; reason: string }[] = [];
 
   for (const [key, currentRule] of Object.entries(ALERT_RULES)) {
     const relevantAlerts = recentAlerts.filter(a => a.key === key);
     if (relevantAlerts.length < 5) {
-        console.log(`- Rule [${key}] has too few data points (${relevantAlerts.length}). Skipping.`);
+        console.log(`- Rule [${key}] has too few data points (${relevantAlerts.length}) in the last 90 days. Skipping.`);
         continue;
     };
 
@@ -63,13 +69,13 @@ export async function generateOptimizedAlertRules() {
 
     // If alerts are too frequent AND take a long time to resolve, the threshold might be too high (detects problem too late)
     if (avgWeeklyFrequency > 5 && avgResolutionTime > 6) {
-      newThreshold = Math.max(1, currentRule.threshold - 1); // Lower threshold to detect earlier
-      if(newTimeoutHours) newTimeoutHours = Math.max(1, newTimeoutHours / 2); // Make it critical sooner
+      newThreshold = Math.max(1, Math.floor(currentRule.threshold * 0.8)); // Lower threshold to detect earlier
+      if(newTimeoutHours) newTimeoutHours = Math.max(1, Math.floor(newTimeoutHours / 2)); // Make it critical sooner
       reason = `High frequency (${avgWeeklyFrequency}/week) and slow resolution (${avgResolutionTime.toFixed(1)}h). Suggesting earlier detection.`;
     }
     // If alerts are rare and resolve quickly, the threshold might be too low (too sensitive)
     else if (avgWeeklyFrequency < 2 && avgResolutionTime < 1) {
-      newThreshold = currentRule.threshold + 1; // Increase threshold to reduce noise
+      newThreshold = Math.ceil(currentRule.threshold * 1.2); // Increase threshold to reduce noise
       reason = `Low frequency (${avgWeeklyFrequency}/week) and fast resolution (${avgResolutionTime.toFixed(1)}h). Suggesting reduced sensitivity.`;
     }
 
