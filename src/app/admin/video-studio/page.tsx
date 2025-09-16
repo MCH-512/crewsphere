@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Video, Loader2, Send, AlertTriangle, Film, ImageUp, X } from "lucide-react";
+import { Video, Loader2, Send, AlertTriangle, Film, ImageUp, X, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AnimatedCard } from "@/components/motion/animated-card";
