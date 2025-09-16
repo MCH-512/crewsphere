@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -221,11 +222,11 @@ export default function AdminAlertsPage() {
 
                     <Table>
                         <TableHeader><TableRow>
-                            <SortableHeader column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                            <SortableHeader column="type" label="Type" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                            <SortableHeader column="targetAudience" label="Audience" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                            <SortableHeader column="isActive" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                            <SortableHeader column="createdAt" label="Created" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader<SortableColumn> column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader<SortableColumn> column="type" label="Type" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader<SortableColumn> column="targetAudience" label="Audience" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader<SortableColumn> column="isActive" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader<SortableColumn> column="createdAt" label="Created" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
                             <TableHead>Actions</TableHead>
                         </TableRow></TableHeader>
                         <TableBody>

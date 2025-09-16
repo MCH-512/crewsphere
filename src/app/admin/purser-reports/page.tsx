@@ -169,12 +169,12 @@ export default function AdminPurserReportsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <SortableHeader column="flightDate" label="Flight Date" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                    <SortableHeader column="flightNumber" label="Flight #" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <SortableHeader<SortableColumn> column="flightDate" label="Flight Date" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <SortableHeader<SortableColumn> column="flightNumber" label="Flight #" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                     <TableHead>Route</TableHead>
                     <TableHead>Submitted By</TableHead>
-                    <SortableHeader column="createdAt" label="Submitted At" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                    <SortableHeader column="status" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <SortableHeader<SortableColumn> column="createdAt" label="Submitted At" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <SortableHeader<SortableColumn> column="status" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>

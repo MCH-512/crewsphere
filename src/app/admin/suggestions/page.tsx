@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -221,12 +222,12 @@ export default function AdminSuggestionsPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <SortableHeader column="createdAt" label="Submitted" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                                        <SortableHeader column="userEmail" label="User" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                                        <SortableHeader column="subject" label="Subject" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                                        <SortableHeader column="category" label="Category" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                                        <SortableHeader column="upvoteCount" label="Upvotes" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                                        <SortableHeader column="status" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                                        <SortableHeader<SortableColumn> column="createdAt" label="Submitted" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                                        <SortableHeader<SortableColumn> column="userEmail" label="User" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                                        <SortableHeader<SortableColumn> column="subject" label="Subject" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                                        <SortableHeader<SortableColumn> column="category" label="Category" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                                        <SortableHeader<SortableColumn> column="upvoteCount" label="Upvotes" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                                        <SortableHeader<SortableColumn> column="status" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>

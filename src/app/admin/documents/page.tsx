@@ -245,11 +245,11 @@ export default function AdminDocumentsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <SortableHeader column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader column="category" label="Category" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader column="version" label="Version" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader column="lastUpdated" label="Last Updated" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader column="uploaderEmail" label="Uploaded By" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader<SortableColumn> column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader<SortableColumn> column="category" label="Category" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader<SortableColumn> column="version" label="Version" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader<SortableColumn> column="lastUpdated" label="Last Updated" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader<SortableColumn> column="uploaderEmail" label="Uploaded By" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -306,5 +306,4 @@ export default function AdminDocumentsPage() {
         </div>
     );
 }
-
     
