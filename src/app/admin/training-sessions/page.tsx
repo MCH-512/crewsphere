@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -75,7 +76,7 @@ export default function AdminTrainingSessionsPage() {
     const form = useForm<TrainingSessionFormValues>({
         resolver: zodResolver(trainingSessionFormSchema),
         defaultValues: { title: "", description: "", location: "", sessionDateTimeUTC: "", purserIds: [], pilotIds: [], cabinCrewIds: [], instructorIds: [], traineeIds: [] },
-        mode: "onBlur"
+        mode: "onChange"
     });
     
     const watchedAttendees = form.watch(["purserIds", "pilotIds", "cabinCrewIds", "instructorIds", "traineeIds"]);
