@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { ArrowLeft, Shield, Utensils, AlertCircle, UserCheck, Wrench, MessageSquare, CheckCircle, Users, PersonStanding, Plane, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Shield, AlertCircle, UserCheck, Wrench, MessageSquare, CheckCircle, Users, PersonStanding, Plane, AlertTriangle, FileSignature } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { StoredPurserReport } from "@/schemas/purser-report-schema";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -98,7 +98,7 @@ export default async function PurserReportHistoryDetailPage({ params }: { params
                         <div>
                             <CardTitle className="text-2xl font-headline flex items-center">Report for Flight {report.flightNumber}</CardTitle>
                             <CardDescription>
-                                {report.departureAirport} to {report.arrivalAirport} on {format(parseISO(report.flightDate), "PPP")}
+                                {report.departureAirport} → {report.arrivalAirport} on {format(parseISO(report.flightDate), "PPP")}
                             </CardDescription>
                         </div>
                         <div className="text-right text-sm">

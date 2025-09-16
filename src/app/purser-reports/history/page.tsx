@@ -1,47 +1,49 @@
-"use client";
+"use server";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/auth-context";
-import { useRouter } from "next/navigation";
-import { List, ArrowRight } from "lucide-react";
+import { List, ArrowRight, FileSignature } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { StoredPurserReport } from "@/schemas/purser-report-schema";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
+import { getCurrentUser } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
-// The client component expects dates as strings from the server component
-type ClientReport = Omit<StoredPurserReport, 'createdAt' | 'updatedAt'> & { 
-    id: string;
-    createdAt: string; 
-    updatedAt?: string; 
+async function getMyReports() {
+    const user = await getCurrentUser();
+    if (!user) {
+        redirect('/login');
+    }
+
+    const q = query(
+        collection(db, "purserReports"),
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    const reports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredPurserReport));
+    
+    // Convert Timestamps to strings for serialization to client components if needed,
+    // but here we render directly on the server.
+    return reports;
+}
+
+const getStatusBadgeVariant = (status: StoredPurserReport['status']) => {
+    switch (status) {
+        case "submitted": return "secondary";
+        case "under-review": return "outline";
+        case "closed": return "success";
+        default: return "secondary";
+    }
 };
 
-export function PurserReportsHistoryClient({ initialReports }: { initialReports: ClientReport[] }) {
-    const { user } = useAuth();
-    const router = useRouter();
-    const [reports] = React.useState<ClientReport[]>(initialReports);
-
-    React.useEffect(() => {
-        if (!user) {
-            router.push('/login');
-        }
-    }, [user, router]);
-
-    const getStatusBadgeVariant = (status: StoredPurserReport['status']) => {
-        switch (status) {
-            case "submitted": return "secondary";
-            case "under-review": return "outline";
-            case "closed": return "success";
-            default: return "secondary";
-        }
-    };
-    
-    if (!user) {
-        return null; // Or a loading spinner, but parent layout should handle it
-    }
+export default async function PurserReportsHistoryPage() {
+    const reports = await getMyReports();
 
     return (
         <div className="space-y-6">
@@ -86,7 +88,7 @@ export function PurserReportsHistoryClient({ initialReports }: { initialReports:
                                     <p className="text-sm text-muted-foreground line-clamp-3">{report.aiSummary || 'No summary available.'}</p>
                                 </CardContent>
                                 <CardFooter className="flex-col items-start gap-2">
-                                     <p className="text-xs text-muted-foreground">Submitted: {format(parseISO(report.createdAt), "PPp")}</p>
+                                     <p className="text-xs text-muted-foreground">Submitted: {format(report.createdAt.toDate(), "PPp")}</p>
                                      <Button asChild variant="outline" className="w-full">
                                         <Link href={`/purser-reports/history/${report.id}`}>
                                             View Details & Response
