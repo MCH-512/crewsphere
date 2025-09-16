@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from './firebase'
 import type { User } from '@/schemas/user-schema'
+import { cache } from 'react'
  
 // This is a placeholder for a secure, server-side session management solution.
 // In a real production app, this would involve verifying a session cookie
@@ -12,7 +13,7 @@ import type { User } from '@/schemas/user-schema'
 // For this project, we'll simulate this by reading a "pseudo-session" cookie
 // that simply contains the user's UID.
 
-export async function getCurrentUser(): Promise<User | null> {
+export const getCurrentUser = cache(async (): Promise<User | null> => {
   // This is a simplified, non-secure way to get the user for server components.
   // In a real app, you would verify a secure session token here.
   const session = cookies().get('firebase-session-uid')?.value
@@ -46,4 +47,5 @@ export async function getCurrentUser(): Promise<User | null> {
     console.error("Failed to fetch user from session:", error);
     return null;
   }
-}
+})
+
