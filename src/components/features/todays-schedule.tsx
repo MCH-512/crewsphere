@@ -1,11 +1,14 @@
 
+
 "use server";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarCheck, Plane, Briefcase, GraduationCap, Bed, Anchor } from "lucide-react";
 import { format } from "date-fns";
-import { getTodayActivities, type TodayActivity } from "@/services/dashboard-service";
+import { getTodayActivities } from "@/services/activity-service";
+import type { TodayActivity } from "@/services/activity-service";
+
 
 const activityConfig: Record<TodayActivity['activityType'], { icon: React.ElementType; label: string; }> = {
     flight: { icon: Plane, label: "Flight" },

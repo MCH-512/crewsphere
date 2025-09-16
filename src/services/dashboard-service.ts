@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
@@ -10,10 +11,9 @@ import type { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
 import type { StoredUserRequest } from "@/schemas/request-schema";
 import type { RequestsChartDataPoint } from "@/components/features/charts/requests-status-bar-chart";
 import type { TrainingChartDataPoint } from "@/components/features/charts/training-progress-pie-chart";
-import type { TodayActivity } from "@/components/features/todays-schedule";
-import type { TrainingStats } from "@/components/features/my-training-status";
-import type { RequestsStats } from "@/components/features/my-requests-status";
 import imageData from '@/data/placeholder-images.json';
+import { generateDashboardImage } from "@/ai/flows/generate-dashboard-image-flow";
+import { getAirportByCode } from "./airport-service";
 
 type TimeOfDay = "morning" | "afternoon" | "evening" | "night";
 
@@ -29,39 +29,47 @@ const getTimeOfDay = (): TimeOfDay => {
 export async function getDashboardHeroImage(): Promise<{ src: string; hint: string; }> {
     const timeOfDay = getTimeOfDay();
     const heroImages = imageData.dashboardHero;
+    const user = await getCurrentUser();
+
+    if (user && isConfigValid && db) {
+        try {
+            const now = new Date().toISOString();
+            const flightsQuery = query(
+                collection(db, "flights"),
+                where("allCrewIds", "array-contains", user.uid),
+                where("scheduledDepartureDateTimeUTC", ">=", now),
+                orderBy("scheduledDepartureDateTimeUTC", "asc"),
+                limit(1)
+            );
+            const nextFlightSnapshot = await getDocs(flightsQuery);
+
+            if (!nextFlightSnapshot.empty) {
+                const nextFlight = nextFlightSnapshot.docs[0].data();
+                const destinationAirport = await getAirportByCode(nextFlight.arrivalAirport);
+                const destination = destinationAirport?.city || nextFlight.arrivalAirport;
+                const departureTimeOfDay = new Date(nextFlight.scheduledDepartureDateTimeUTC).getHours() < 12 ? 'sunrise' : 'daylight';
+                
+                const result = await generateDashboardImage({
+                    destination,
+                    timeOfDay: departureTimeOfDay,
+                });
+                
+                if (result.imageDataUri) {
+                    return { src: result.imageDataUri, hint: `flight to ${destination}` };
+                }
+            }
+        } catch (error) {
+            console.error("Failed to generate dynamic hero image, falling back to default:", error);
+            // Fallback to default if AI generation fails
+            return heroImages[timeOfDay] || heroImages.default;
+        }
+    }
+    
+    // Default behavior if no user or flight
     return heroImages[timeOfDay] || heroImages.default;
 }
 
-
-export async function getTodayActivities(): Promise<TodayActivity[]> {
-    const user = await getCurrentUser();
-
-    if (!user || !isConfigValid || !db) {
-        return [];
-    }
-    
-    const todayStart = startOfDay(new Date());
-    const todayEnd = endOfDay(new Date());
-
-    try {
-        const q = query(
-            collection(db, "userActivities"),
-            where("userId", "==", user.uid),
-            where("date", ">=", todayStart),
-            where("date", "<=", todayEnd)
-        );
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-            return [];
-        }
-        return querySnapshot.docs.map(doc => doc.data() as TodayActivity);
-    } catch (error) {
-        console.error("Server Error fetching today's schedule:", error);
-        return [];
-    }
-}
-
-export async function getTrainingStatus(): Promise<TrainingStats | null> {
+export async function getTrainingStatus(): Promise<{ totalMandatory: number; completed: number; nextCourseId?: string; } | null> {
     const user = await getCurrentUser();
     if (!user || !isConfigValid || !db) {
         return null;
@@ -89,7 +97,7 @@ export async function getTrainingStatus(): Promise<TrainingStats | null> {
     }
 }
 
-export async function getRequestsStatus(): Promise<RequestsStats | null> {
+export async function getRequestsStatus(): Promise<{ pendingCount: number; latestRequest: { subject: string; status: string; } | null; } | null> {
     const user = await getCurrentUser();
     if (!user || !isConfigValid || !db) {
         return null;
