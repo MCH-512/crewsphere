@@ -1,4 +1,6 @@
 
+const { withSentryConfig } = require('@sentry/nextjs');
+
 /** @type {import('next').NextConfig} */
 
 const cspHeader = `
@@ -82,4 +84,11 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+const sentryWebpackPluginOptions = {
+  widenClientFileUpload: true,
+  transpileClientSDK: true,
+  hideSourceMaps: true,
+  tunnelRoute: '/monitoring',
+};
+
+module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions);
