@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -14,7 +15,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, getDoc, where, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, Handshake, FileSignature, Calendar as CalendarIcon, List, Filter, Repeat, Info, BellOff, CheckCircle, Search, ArrowLeft, ArrowRight } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, ArrowRightLeft, Handshake, FileSignature, Calendar as CalendarIcon, List, Filter, Repeat, Info, BellOff, CheckCircle, Search, ArrowLeft, ArrowRight, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay, parseISO, addHours, isSameDay, startOfMonth, endOfMonth, addDays, addWeeks, differenceInMinutes, addMinutes } from "date-fns";
 import { flightFormSchema, type FlightFormValues, type StoredFlight, aircraftTypes } from "@/schemas/flight-schema";
@@ -689,96 +690,100 @@ export function AdminFlightsClient({
                             
                                 {/* Step 1: Flight Details */}
                                 <AnimatedCard delay={0.1} className={cn(currentStep !== 0 && "hidden")}>
-                                     <h3 className="text-lg font-semibold text-primary flex items-center gap-2 mb-4"><Plane />Flight Details</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="aircraftType" render={({ field }) => ( <FormItem><FormLabel>Aircraft Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an aircraft" /></SelectTrigger></FormControl><SelectContent>{aircraftTypes.map(type => ( <SelectItem key={type} value={type}>{type}</SelectItem> ))}</SelectContent></Select><FormMessage /></FormItem> )}/>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                       <Controller control={form.control} name="departureAirport" render={({ field }) => (<FormItem><FormLabel>Departure</FormLabel><CustomAutocompleteAirport value={field.value} onSelect={(airport) => field.onChange(airport?.icao || "")} airports={depResults} isLoading={isSearchingAirports} onInputChange={setDepSearch} currentSearchTerm={depSearch} placeholder="Search departure..." /><FormMessage /></FormItem>)} />
-                                       <Controller control={form.control} name="arrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival</FormLabel><CustomAutocompleteAirport value={field.value} onSelect={(airport) => field.onChange(airport?.icao || "")} airports={arrResults} isLoading={isSearchingAirports} onInputChange={setArrSearch} currentSearchTerm={arrSearch} placeholder="Search arrival..." /><FormMessage /></FormItem>)} />
-                                    </div>
-                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                        <FormField control={form.control} name="scheduledDepartureDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Departure Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="scheduledArrivalDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Arrival Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    </div>
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold text-primary flex items-center gap-2 mb-4"><Plane />Flight Details</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="aircraftType" render={({ field }) => ( <FormItem><FormLabel>Aircraft Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an aircraft" /></SelectTrigger></FormControl><SelectContent>{aircraftTypes.map(type => ( <SelectItem key={type} value={type}>{type}</SelectItem> ))}</SelectContent></Select><FormMessage /></FormItem> )}/>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                        <Controller control={form.control} name="departureAirport" render={({ field }) => (<FormItem><FormLabel>Departure</FormLabel><CustomAutocompleteAirport value={field.value} onSelect={(airport) => field.onChange(airport?.icao || "")} airports={depResults} isLoading={isSearchingAirports} onInputChange={setDepSearch} currentSearchTerm={depSearch} placeholder="Search departure..." /><FormMessage /></FormItem>)} />
+                                        <Controller control={form.control} name="arrivalAirport" render={({ field }) => (<FormItem><FormLabel>Arrival</FormLabel><CustomAutocompleteAirport value={field.value} onSelect={(airport) => field.onChange(airport?.icao || "")} airports={arrResults} isLoading={isSearchingAirports} onInputChange={setArrSearch} currentSearchTerm={arrSearch} placeholder="Search arrival..." /><FormMessage /></FormItem>)} />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                            <FormField control={form.control} name="scheduledDepartureDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Departure Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={form.control} name="scheduledArrivalDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Arrival Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        </div>
 
-                                    {!isEditMode && (
-                                        <>
-                                        <Separator className="my-6"/>
-                                        <FormField control={form.control} name="enableRecurrence" render={({ field }) => (
-                                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                                <div className="space-y-0.5">
-                                                    <FormLabel className="text-base">Enable Recurrence</FormLabel>
-                                                    <FormDescription>Create this flight on a recurring schedule.</FormDescription>
+                                        {!isEditMode && (
+                                            <>
+                                            <Separator className="my-6"/>
+                                            <FormField control={form.control} name="enableRecurrence" render={({ field }) => (
+                                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                                    <div className="space-y-0.5">
+                                                        <FormLabel className="text-base">Enable Recurrence</FormLabel>
+                                                        <FormDescription>Create this flight on a recurring schedule.</FormDescription>
+                                                    </div>
+                                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                                </FormItem>
+                                            )}/>
+                                            {watchedFields.enableRecurrence && (
+                                                <div className="space-y-6 p-4 border-l-4 border-primary/50 bg-muted/30 rounded-r-md">
+                                                    <h3 className="text-lg font-semibold text-primary flex items-center gap-2"><Repeat/>Recurrence Details</h3>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <FormField control={form.control} name="recurrenceType" render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Frequency</FormLabel>
+                                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                                    <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="Daily">Daily</SelectItem>
+                                                                        <SelectItem value="Weekly">Weekly</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )} />
+                                                        <FormField control={form.control} name="recurrenceCount" render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Number of Occurrences</FormLabel>
+                                                                <FormControl><Input type="number" min="1" max="52" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )} />
+                                                    </div>
+                                                    <Alert variant="info">
+                                                        <Info className="h-4 w-4" />
+                                                        <AlertTitle>Heads Up!</AlertTitle>
+                                                        <ShadAlertDescription>
+                                                            This will create {watchedFields.recurrenceCount || 1} separate flight(s) with the same crew.
+                                                        </ShadAlertDescription>
+                                                    </Alert>
                                                 </div>
-                                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                            </FormItem>
-                                        )}/>
-                                        {watchedFields.enableRecurrence && (
-                                            <div className="space-y-6 p-4 border-l-4 border-primary/50 bg-muted/30 rounded-r-md">
-                                                <h3 className="text-lg font-semibold text-primary flex items-center gap-2"><Repeat/>Recurrence Details</h3>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                     <FormField control={form.control} name="recurrenceType" render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Frequency</FormLabel>
-                                                            <Select onValueChange={field.onChange} value={field.value}>
-                                                                <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
-                                                                <SelectContent>
-                                                                    <SelectItem value="Daily">Daily</SelectItem>
-                                                                    <SelectItem value="Weekly">Weekly</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )} />
-                                                     <FormField control={form.control} name="recurrenceCount" render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Number of Occurrences</FormLabel>
-                                                            <FormControl><Input type="number" min="1" max="52" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )} />
-                                                </div>
-                                                <Alert variant="info">
-                                                    <Info className="h-4 w-4" />
-                                                    <AlertTitle>Heads Up!</AlertTitle>
-                                                    <ShadAlertDescription>
-                                                        This will create {watchedFields.recurrenceCount || 1} separate flight(s) with the same crew.
-                                                    </ShadAlertDescription>
-                                                </Alert>
-                                            </div>
+                                            )}
+                                            </>
                                         )}
-                                        </>
-                                    )}
+                                    </div>
                                 </AnimatedCard>
                             
                                 {/* Step 2: Crew Assignment */}
                                 <AnimatedCard delay={0.1} className={cn(currentStep !== 1 && "hidden")}>
-                                    <h3 className="text-lg font-medium flex items-center gap-2 mb-4"><Users />Crew Assignment</h3>
-                                     <FormField control={form.control} name="purserId" render={({ field }) => (<FormItem><FormLabel>Assign Purser</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a purser" /></SelectTrigger></FormControl><SelectContent>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName} ({p.email})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                    
-                                     <Separator className="my-6"/>
-                                     <h3 className="text-lg font-medium">Crew Availability</h3>
-                                        {isCheckingAvailability ? (
-                                            <div className="flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Checking schedules...</div>
-                                        ) : Object.keys(crewWarnings).length > 0 ? (
-                                            <div className="space-y-2">
-                                                {Object.entries(crewWarnings).map(([userId, conflict]) => (
-                                                    <Alert key={userId} variant="warning">
-                                                        <AlertTriangle className="h-4 w-4" />
-                                                        <AlertTitle>{userMap.get(userId)?.displayName || 'User'} has a conflict</AlertTitle>
-                                                        <ShadAlertDescription>{conflict.details}</ShadAlertDescription>
-                                                    </Alert>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <p className="text-sm text-muted-foreground">No conflicts detected for the selected crew and dates.</p>
-                                        )}
+                                     <div className="space-y-4">
+                                        <h3 className="text-lg font-medium flex items-center gap-2 mb-4"><Users />Crew Assignment</h3>
+                                        <FormField control={form.control} name="purserId" render={({ field }) => (<FormItem><FormLabel>Assign Purser</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a purser" /></SelectTrigger></FormControl><SelectContent>{pursers.map(p => <SelectItem key={p.uid} value={p.uid}>{p.displayName} ({p.email})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                        
+                                        <Separator className="my-6"/>
+                                        <h3 className="text-lg font-medium">Crew Availability</h3>
+                                            {isCheckingAvailability ? (
+                                                <div className="flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Checking schedules...</div>
+                                            ) : Object.keys(crewWarnings).length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {Object.entries(crewWarnings).map(([userId, conflict]) => (
+                                                        <Alert key={userId} variant="warning">
+                                                            <AlertTriangle className="h-4 w-4" />
+                                                            <AlertTitle>{userMap.get(userId)?.displayName || 'User'} has a conflict</AlertTitle>
+                                                            <ShadAlertDescription>{conflict.details}</ShadAlertDescription>
+                                                        </Alert>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground">No conflicts detected for the selected crew and dates.</p>
+                                            )}
+                                    </div>
                                 </AnimatedCard>
                             </div>
                         </ScrollArea>
@@ -805,3 +810,5 @@ export function AdminFlightsClient({
         </div>
     );
 }
+
+    
