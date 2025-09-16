@@ -3,7 +3,6 @@
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -14,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { generateAudio } from "@/ai/flows/generate-audio-flow";
-import { GenerateAudioInputSchema, GenerateAudioOutputSchema, type GenerateAudioInput } from '@/schemas/video-schema';
+import { GenerateAudioInputSchema, type GenerateAudioInput } from '@/schemas/audio-schema';
 
 
 export default function AudioStudioPage() {

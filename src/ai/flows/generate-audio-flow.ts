@@ -6,7 +6,7 @@
 
 import { ai } from '@/ai/genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import { GenerateAudioInputSchema, type GenerateAudioInput, GenerateAudioOutputSchema, type GenerateAudioOutput } from '@/schemas/video-schema';
+import { GenerateAudioInputSchema, type GenerateAudioInput, GenerateAudioOutputSchema, type GenerateAudioOutput } from '@/schemas/audio-schema';
 import wav from 'wav';
 
 
