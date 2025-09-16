@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -52,7 +51,7 @@ export async function generateVideo(input: GenerateVideoInput): Promise<Generate
   // The URL provided by the operation is a temporary, signed URL.
   // It is secure to be passed to the client for direct download or display.
   // Note: The key for this URL is NOT the Gemini API key, it's a temporary signature key.
-  // It needs to be appended with the actual Gemini API key for download to work.
+  // The Gemini API key needs to be appended for the download/display to work from the browser.
   const videoUrlWithKey = `${video.media.url}&key=${process.env.GEMINI_API_KEY}`;
   
   return { videoUrl: videoUrlWithKey };
