@@ -1,7 +1,10 @@
-// src/services/predictive-analyzer.ts
 'use server';
+// src/services/predictive-analyzer.ts
 
 import { ALERT_RULES, type AlertRule } from '@/lib/alert-rules';
+import { promises as fs } from 'fs';
+import path from 'path';
+
 // In a real scenario, you would import a Prisma or Firestore client.
 // We simulate fetching historical data.
 
@@ -92,5 +95,17 @@ export async function generateOptimizedAlertRules() {
   }
   
   console.log(`✅ Analysis complete. Found ${ruleImprovements.length} potential improvement(s).`);
+
+  if (ruleImprovements.length > 0) {
+    const reportPath = path.join(process.cwd(), 'suggested-optimizations.json');
+    const report = {
+        generatedAt: new Date().toISOString(),
+        summary: `${ruleImprovements.length} rule optimization(s) suggested based on 90-day performance analysis.`,
+        optimizations: ruleImprovements
+    };
+    await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
+    console.log(`💾 Suggestions written to ${reportPath}`);
+  }
+
   return ruleImprovements;
 }
