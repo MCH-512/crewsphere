@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  audit:
+    build: .
+    volumes:
+      - .:/app
+    working_dir: /app
+    # The command to run when starting this service.
+    # We leave it empty so we can run one-off commands like `docker-compose run audit npm run audit`.
+    command: []
