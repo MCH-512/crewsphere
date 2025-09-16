@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -191,21 +192,19 @@ export default function AdminCoursesPage() {
     const handleFormSubmit = async (data: CourseFormValues) => {
         if (!user) return;
         setIsSubmitting(true);
-        try {
-            const batch = writeBatch(db);
-            let imageUrl: string | undefined = undefined;
+        let imageUrl: string | undefined = undefined;
 
-            const courseRef = isEditMode && currentCourse ? doc(db, "courses", currentCourse.id) : doc(collection(db, "courses"));
-            
+        try {
             if (data.imageHint && (!currentCourse?.imageUrl || data.imageHint !== currentCourse.imageHint)) {
+                toast({ title: "Generating AI Image...", description: "This may take a moment. Please wait." });
                 try {
-                    toast({ title: "Generating AI Image...", description: "This may take a moment. Please wait." });
                     const result = await generateCourseImage({ prompt: data.imageHint });
                     if (result.imageDataUri) {
-                        const storageRef = ref(storage, `course-images/${courseRef.id}/${Date.now()}.png`);
+                        const tempCourseId = isEditMode && currentCourse ? currentCourse.id : doc(collection(db, "courses")).id;
+                        const storageRef = ref(storage, `course-images/${tempCourseId}/${Date.now()}.png`);
                         await uploadString(storageRef, result.imageDataUri, 'data_url');
                         imageUrl = await getDownloadURL(storageRef);
-                         toast({ title: "AI Image Generated", description: "The course image has been successfully created." });
+                        toast({ title: "AI Image Generated", description: "The course image has been successfully created." });
                     }
                 } catch (imageError) {
                     console.error("AI Image generation/upload failed:", imageError);
@@ -213,6 +212,8 @@ export default function AdminCoursesPage() {
                 }
             }
 
+            const batch = writeBatch(db);
+            const courseRef = isEditMode && currentCourse ? doc(db, "courses", currentCourse.id) : doc(collection(db, "courses"));
             const quizRef = isEditMode && currentCourse ? doc(db, "quizzes", currentCourse.quizId) : doc(collection(db, "quizzes"));
             const certRuleRef = isEditMode && currentCourse ? doc(db, "certificateRules", currentCourse.certificateRuleId) : doc(collection(db, "certificateRules"));
 
@@ -349,7 +350,7 @@ export default function AdminCoursesPage() {
 
     const prevStep = () => {
         if (currentStep > 0) {
-          setCurrentStep(prev => prev - 1);
+          setCurrentStep(prev => prev + 1);
         }
     };
 
@@ -587,3 +588,5 @@ export default function AdminCoursesPage() {
         </div>
     );
 }
+
+    
