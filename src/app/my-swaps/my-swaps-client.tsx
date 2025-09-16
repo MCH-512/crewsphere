@@ -130,7 +130,10 @@ export function MySwapsClient({ initialSwaps }: MySwapsClientProps) {
                             <CardContent>
                                 {swap.status === 'pending_approval' && swap.requestingUserEmail && (
                                     <p className="text-sm text-muted-foreground">
-                                        Swap requested by <strong>{swap.requestingUserEmail}</strong>. Awaiting admin approval.
+                                        {swap.initiatingUserId === user?.uid 
+                                          ? <>Swap requested by <strong>{swap.requestingUserEmail}</strong>. Awaiting admin approval.</>
+                                          : <>You requested to swap with <strong>{swap.initiatingUserEmail}</strong>. Awaiting admin approval.</>
+                                        }
                                     </p>
                                 )}
                                  {swap.status === 'approved' && (
@@ -140,7 +143,7 @@ export function MySwapsClient({ initialSwaps }: MySwapsClientProps) {
                                     <p className="text-sm text-destructive">Swap rejected. Notes: {swap.adminNotes || 'No notes provided.'}</p>
                                 )}
                             </CardContent>
-                            {(swap.status === 'posted') && (
+                            {(swap.status === 'posted' && swap.initiatingUserId === user?.uid) && (
                                 <CardFooter>
                                     <Button variant="destructive" size="sm" onClick={() => handleCancel(swap.id)} disabled={isCancelling === swap.id}>
                                         {isCancelling === swap.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4"/>}
@@ -155,5 +158,3 @@ export function MySwapsClient({ initialSwaps }: MySwapsClientProps) {
         </div>
     );
 }
-
-    

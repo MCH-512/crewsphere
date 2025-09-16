@@ -7,6 +7,7 @@ import { StoredFlight } from "@/schemas/flight-schema";
 import { User } from "@/contexts/auth-context";
 import { logAuditEvent } from "@/lib/audit-logger";
 import type { StoredFlightSwap } from "@/schemas/flight-swap-schema";
+import { checkCrewAvailability } from "./user-activity-service";
 
 
 /**
@@ -172,4 +173,46 @@ export async function getMySwaps(userId: string): Promise<StoredFlightSwap[]> {
     }
 }
 
-    
+export interface SwapWithConflict extends StoredFlightSwap {
+    conflict?: string | null;
+}
+
+export async function getAvailableSwaps(userId: string): Promise<SwapWithConflict[]> {
+    if (!isConfigValid || !db || !userId) {
+        return [];
+    }
+
+    try {
+        const swapsQuery = query(
+            collection(db, "flightSwaps"),
+            where("status", "==", "posted")
+        );
+        const swapsSnapshot = await getDocs(swapsQuery);
+
+        const availableSwaps = swapsSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as StoredFlightSwap))
+            .filter(swap => swap.initiatingUserId !== userId);
+
+        // Enrich with conflict information
+        const swapsWithConflicts = await Promise.all(
+            availableSwaps.map(async (swap) => {
+                const conflicts = await checkCrewAvailability(
+                    [userId],
+                    new Date(swap.flightInfo.scheduledDepartureDateTimeUTC),
+                    new Date(swap.flightInfo.scheduledArrivalDateTimeUTC),
+                    undefined // We are not editing, so no need to ignore an activity
+                );
+                return {
+                    ...swap,
+                    conflict: conflicts[userId]?.details || null,
+                };
+            })
+        );
+        
+        return swapsWithConflicts;
+
+    } catch (error) {
+        console.error("Error fetching available swaps:", error);
+        return [];
+    }
+}

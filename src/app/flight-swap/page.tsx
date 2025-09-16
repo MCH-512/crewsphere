@@ -8,7 +8,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, addDoc, serverTimestamp, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { ArrowRightLeft, Loader2, PlusCircle, Handshake, Plane, Info, History } from "lucide-react";
+import { ArrowRightLeft, Loader2, PlusCircle, Handshake, Plane, Info, History, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { StoredFlight } from "@/schemas/flight-schema";
@@ -18,7 +18,7 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getAirportByCode } from "@/services/airport-service";
-import { requestFlightSwap, postFlightSwap } from "@/services/flight-swap-service";
+import { requestFlightSwap, postFlightSwap, getAvailableSwaps, type SwapWithConflict } from "@/services/flight-swap-service";
 
 interface FlightForSwap extends StoredFlight {
     departureAirportIATA?: string;
@@ -122,7 +122,7 @@ export default function FlightSwapPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
-    const [availableSwaps, setAvailableSwaps] = React.useState<StoredFlightSwap[]>([]);
+    const [availableSwaps, setAvailableSwaps] = React.useState<SwapWithConflict[]>([]);
     const [userFlights, setUserFlights] = React.useState<FlightForSwap[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isPostDialogOpen, setIsPostDialogOpen] = React.useState(false);
@@ -134,16 +134,9 @@ export default function FlightSwapPage() {
         if (!user) return;
         setIsLoading(true);
         try {
-            // Fetch active swaps posted by other users
-            const swapsQuery = query(
-                collection(db, "flightSwaps"),
-                where("status", "in", ["posted", "pending_approval"]),
-                orderBy("createdAt", "desc")
-            );
-            const swapsSnapshot = await getDocs(swapsQuery);
-            const allActiveSwaps = swapsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredFlightSwap));
-            
-            setAvailableSwaps(allActiveSwaps.filter(swap => swap.initiatingUserId !== user.uid && swap.status === 'posted'));
+            // Fetch available swaps with conflict info
+            const swapsWithConflicts = await getAvailableSwaps(user.uid);
+            setAvailableSwaps(swapsWithConflicts);
 
             // Fetch user's upcoming flights to allow them to post one or request a swap
             const now = new Date().toISOString();
@@ -155,8 +148,12 @@ export default function FlightSwapPage() {
             );
             const flightsSnapshot = await getDocs(flightsQuery);
             
-            const activeSwapFlightIds = allActiveSwaps
-                .filter(s => s.initiatingUserId === user.uid || s.requestingUserId === user.uid)
+             // We need to know which of the user's flights are already involved in ANY swap
+            const allUserSwapsQuery = query(collection(db, "flightSwaps"), where("participantIds", "array-contains", user.uid));
+            const allUserSwapsSnapshot = await getDocs(allUserSwapsQuery);
+            const activeSwapFlightIds = allUserSwapsSnapshot.docs
+                .map(doc => doc.data() as StoredFlightSwap)
+                .filter(s => s.status === 'posted' || s.status === 'pending_approval')
                 .flatMap(s => [s.initiatingFlightId, s.requestingFlightId].filter(Boolean));
 
             const eligibleFlights = await Promise.all(
@@ -263,7 +260,7 @@ export default function FlightSwapPage() {
                 <Info className="h-4 w-4"/>
                 <AlertTitle>How it works</AlertTitle>
                 <AlertDescription>
-                   This board shows flights other crew members want to swap. Requesting a swap will send it to administration for approval.
+                   This board shows flights other crew members want to swap. The system automatically checks for conflicts with your schedule.
                 </AlertDescription>
             </Alert>
             
@@ -282,9 +279,15 @@ export default function FlightSwapPage() {
                             <CardContent className="flex-grow">
                                 <p className="font-semibold">{swap.flightInfo.departureAirport} → {swap.flightInfo.arrivalAirport}</p>
                                 <p className="text-sm text-muted-foreground">{format(parseISO(swap.flightInfo.scheduledDepartureDateTimeUTC), "EEEE, PPP 'at' HH:mm")} UTC</p>
+                                 {swap.conflict && (
+                                    <div className="mt-3 p-2 bg-warning/10 border-l-4 border-warning text-warning-foreground text-xs rounded-r-md flex items-start gap-2">
+                                        <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                        <p><strong>Conflict:</strong> {swap.conflict}</p>
+                                    </div>
+                                )}
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full" onClick={() => { setSelectedSwapToRequest(swap); setIsRequestDialogOpen(true); }}>
+                                <Button className="w-full" disabled={!!swap.conflict} onClick={() => { setSelectedSwapToRequest(swap); setIsRequestDialogOpen(true); }}>
                                     <Handshake className="mr-2 h-4 w-4" />
                                     Request Swap
                                 </Button>
@@ -318,5 +321,3 @@ export default function FlightSwapPage() {
         </div>
     );
 }
-
-    
