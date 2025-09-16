@@ -3,7 +3,7 @@
 
 import { db, auth, isConfigValid } from "@/lib/firebase";
 import { collection, doc, getDocs, query, orderBy, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
 import type { User, ManageUserFormValues } from "@/schemas/user-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { getCurrentUser } from "@/lib/session";
@@ -48,14 +48,15 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
         if (!data.email || !data.password) {
             throw new Error("Email and password are required to create a user.");
         }
-
+        
+        // This is a placeholder for a more robust creation flow.
+        // A proper implementation would use a Cloud Function with the Admin SDK
+        // to avoid the security risks of creating users from the client or another user's session.
+        // For this project, we acknowledge this limitation.
+        let newUid: string | null = null;
         try {
-            // This approach of creating a user on behalf of an admin is complex with the client SDK
-            // and should ideally be handled by a backend function (e.g., Cloud Function) with the Admin SDK.
-            // This implementation is a workaround for the current setup.
-            // NOTE: This will sign in the admin as the new user temporarily, which is not ideal.
             const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-            const newUid = userCredential.user.uid;
+            newUid = userCredential.user.uid;
 
             // Update profile for the newly created user
             await updateProfile(userCredential.user, { displayName: data.displayName });
@@ -84,6 +85,19 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
             });
 
         } catch (error: any) {
+            // Rollback: If Firestore write fails after Auth user is created, delete the Auth user.
+            if (newUid) {
+                try {
+                    const userToDelete = auth.currentUser;
+                     if (userToDelete && userToDelete.uid === newUid) {
+                        await deleteUser(userToDelete);
+                        console.log(`Successfully rolled back and deleted auth user: ${newUid}`);
+                    }
+                } catch (rollbackError) {
+                    console.error(`CRITICAL: Failed to rollback user creation for ${newUid}. Manual cleanup required.`, rollbackError);
+                }
+            }
+
             if (error.code === 'auth/email-already-in-use') {
                 throw new Error("This email address is already in use by another account.");
             }

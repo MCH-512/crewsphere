@@ -38,76 +38,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = React.useState<Error | null>(null);
 
   React.useEffect(() => {
-    // If config is invalid, don't even try to set up the listener
     if (!isConfigValid || !auth) {
       setLoading(false);
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (currentUser) => { // Make this async
-        if (currentUser) {
-          try {
-            // Fetch user details from Firestore
-            if (!db) throw new Error("Firestore is not configured.");
-            const userDocRef = doc(db, "users", currentUser.uid);
-            const userDocSnap = await getDoc(userDocRef);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        try {
+          if (!db) throw new Error("Firestore is not configured.");
+          const userDocRef = doc(db, "users", firebaseUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
 
-            if (userDocSnap.exists()) {
-                const userData = userDocSnap.data();
-                const userRole = (userData.role && ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'stagiaire', 'other'].includes(userData.role)) ? userData.role : null;
-                const firestoreDisplayName = userData.displayName || currentUser.displayName || '';
+          let userProfile: User;
 
-                const enhancedUser: User = {
-                  uid: currentUser.uid,
-                  email: currentUser.email || '', 
-                  displayName: firestoreDisplayName,
-                  role: userRole,
-                  fullName: userData.fullName,
-                  employeeId: userData.employeeId,
-                  joiningDate: userData.joiningDate,
-                  accountStatus: userData.accountStatus,
-                  photoURL: currentUser.photoURL,
-                };
-                setUser(enhancedUser);
-                setSessionCookie(enhancedUser.uid);
-            } else {
-                // User exists in Auth but not in Firestore, create a basic profile
-                const basicProfile: Partial<User> = {
-                    uid: currentUser.uid,
-                    email: currentUser.email || '',
-                    displayName: currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'New User'),
-                    role: 'other', // Default role
-                    accountStatus: 'active',
-                    photoURL: currentUser.photoURL,
-                };
-                await setDoc(doc(db, "users", currentUser.uid), {
-                    ...basicProfile,
-                     createdAt: new Date(),
-                });
-                setUser(basicProfile as User);
-                setSessionCookie(basicProfile.uid!);
-            }
-
-          } catch (firestoreError) {
-            console.error("Error fetching or creating user details in Firestore:", firestoreError);
-            setError(firestoreError instanceof Error ? firestoreError : new Error("Error managing user profile"));
-            const basicUser: User = { uid: currentUser.uid, email: currentUser.email || '', displayName: currentUser.displayName || '', photoURL: currentUser.photoURL };
-            setUser(basicUser);
-            setSessionCookie(basicUser.uid);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            // Combine auth and firestore data into a single user object
+            userProfile = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || userData.email,
+              displayName: firebaseUser.displayName || userData.displayName,
+              photoURL: firebaseUser.photoURL || userData.photoURL,
+              role: userData.role || null,
+              fullName: userData.fullName,
+              employeeId: userData.employeeId,
+              joiningDate: userData.joiningDate,
+              accountStatus: userData.accountStatus,
+            };
+          } else {
+            // User exists in Auth but not Firestore, create a basic profile
+            userProfile = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'New User',
+              photoURL: firebaseUser.photoURL,
+              role: 'other',
+              accountStatus: 'active',
+            };
+            await setDoc(doc(db, "users", firebaseUser.uid), {
+                ...userProfile,
+                createdAt: new Date(),
+            });
           }
-        } else {
-          setUser(null);
-          setSessionCookie(null);
+          setUser(userProfile);
+          setSessionCookie(userProfile.uid);
+        } catch (e) {
+          console.error("Auth context error:", e);
+          setError(e instanceof Error ? e : new Error("An unexpected error occurred during authentication."));
+          // Fallback to basic user from auth if firestore fails
+          setUser({ uid: firebaseUser.uid, email: firebaseUser.email, displayName: firebaseUser.displayName, photoURL: firebaseUser.photoURL });
+          setSessionCookie(firebaseUser.uid);
         }
-        setLoading(false);
-      },
-      (err) => {
-        setError(err);
-        setLoading(false);
+      } else {
+        setUser(null);
+        setSessionCookie(null);
       }
-    );
+      setLoading(false);
+    }, (authError) => {
+      console.error("Auth state change error:", authError);
+      setError(authError);
+      setLoading(false);
+    });
+
     return () => unsubscribe();
   }, []);
 

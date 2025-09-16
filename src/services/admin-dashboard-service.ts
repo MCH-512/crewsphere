@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
@@ -101,7 +102,8 @@ export async function getAdminDashboardWeeklyTrends(): Promise<WeeklyTrendDataPo
         const logsQuery = query(
             collection(db, "auditLogs"),
             where("timestamp", ">=", startDate),
-            where("timestamp", "<=", endDate)
+            where("timestamp", "<=", endDate),
+            where("actionType", "in", ["CREATE_REQUEST", "SUBMIT_SUGGESTION", "REQUEST_FLIGHT_SWAP"])
         );
 
         const logsSnapshot = await getDocs(logsQuery);
