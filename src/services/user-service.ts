@@ -71,6 +71,7 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
                 joiningDate: data.joiningDate || null,
                 role: data.role || 'other',
                 accountStatus: data.accountStatus ? 'active' : 'inactive',
+                baseAirport: data.baseAirport || null,
                 createdAt: serverTimestamp(),
                 lastLogin: null,
             });
@@ -116,6 +117,7 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
                 joiningDate: data.joiningDate || null,
                 role: data.role || 'other',
                 accountStatus: data.accountStatus ? 'active' : 'inactive',
+                baseAirport: data.baseAirport || null,
             });
             
             await logAuditEvent({

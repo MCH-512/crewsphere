@@ -70,7 +70,14 @@ const FlightMarkers = ({ flights }: { flights: any[] }) => {
     );
 };
 
-const MapWrapper = React.memo(({ flights, center, zoom }: { flights: any[], center: L.LatLngExpression, zoom: number }) => {
+interface MapDisplayProps {
+    flights?: any[];
+    center: L.LatLngExpression;
+    zoom: number;
+    markers?: { lat: number; lon: number; popup: string }[];
+}
+
+export const MapDisplay = React.memo(({ flights, center, zoom, markers }: MapDisplayProps) => {
     return (
         <MapContainer 
             center={center}
@@ -83,11 +90,18 @@ const MapWrapper = React.memo(({ flights, center, zoom }: { flights: any[], cent
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <FlightMarkers flights={flights} />
+            {flights && <FlightMarkers flights={flights} />}
+            {markers && markers.map((marker, idx) => (
+                <Marker key={idx} position={[marker.lat, marker.lon]}>
+                    <Popup>
+                        <div dangerouslySetInnerHTML={{ __html: marker.popup }} />
+                    </Popup>
+                </Marker>
+            ))}
         </MapContainer>
     );
 });
-MapWrapper.displayName = 'MapWrapper';
+MapDisplay.displayName = 'MapDisplay';
 
 
 const LiveMap = () => {
@@ -162,7 +176,7 @@ const LiveMap = () => {
             </div>
         )}
 
-        <MapWrapper key={mapState.key} flights={flights} center={mapState.center} zoom={mapState.zoom} />
+        <MapDisplay key={mapState.key} flights={flights} center={mapState.center} zoom={mapState.zoom} />
       </div>
     );
 };

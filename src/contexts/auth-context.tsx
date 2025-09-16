@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               employeeId: userData.employeeId,
               joiningDate: userData.joiningDate,
               accountStatus: userData.accountStatus,
+              baseAirport: userData.baseAirport,
             };
           } else {
             // User exists in Auth but not Firestore, create a basic profile

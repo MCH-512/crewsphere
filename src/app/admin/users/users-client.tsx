@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"; 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; 
@@ -23,6 +23,9 @@ import { SortableHeader } from "@/components/custom/custom-sortable-header";
 import type { User, SpecificRole, AccountStatus, ManageUserFormValues } from "@/schemas/user-schema";
 import { manageUserFormSchema, getRoleBadgeVariant, getStatusBadgeVariant, availableRoles } from "@/schemas/user-schema";
 import { fetchUsers, manageUser } from "@/services/user-service";
+import { CustomAutocompleteAirport } from "@/components/custom/custom-autocomplete-airport";
+import { Airport, searchAirports } from "@/services/airport-service";
+import { useDebounce } from "@/hooks/use-debounce";
 
 const NO_ROLE_SENTINEL = "_NONE_"; 
 
@@ -48,6 +51,11 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
 
   const [sortColumn, setSortColumn] = React.useState<SortableColumn>("fullName");
   const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc");
+  
+  const [airportSearch, setAirportSearch] = React.useState("");
+  const [debouncedAirportSearch] = useDebounce(airportSearch, 300);
+  const [airportResults, setAirportResults] = React.useState<Airport[]>([]);
+  const [isSearchingAirports, setIsSearchingAirports] = React.useState(false);
 
   const form = useForm<ManageUserFormValues>({
     resolver: zodResolver(manageUserFormSchema),
@@ -60,7 +68,8 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
         employeeId: "",
         joiningDate: "",
         role: "", 
-        accountStatus: true, 
+        accountStatus: true,
+        baseAirport: "",
     }
   });
 
@@ -83,6 +92,12 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
       router.push('/login');
     }
   }, [authLoading, user, router]);
+
+  React.useEffect(() => {
+    if (!debouncedAirportSearch) { setAirportResults([]); return; }
+    setIsSearchingAirports(true);
+    searchAirports(debouncedAirportSearch).then(res => setAirportResults(res)).finally(() => setIsSearchingAirports(false));
+  }, [debouncedAirportSearch]);
 
 
   const filteredAndSortedUsers = React.useMemo(() => {
@@ -134,7 +149,8 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
         employeeId: "",
         joiningDate: new Date().toISOString().split('T')[0], 
         role: "",
-        accountStatus: true, 
+        accountStatus: true,
+        baseAirport: "",
     });
     setIsManageUserDialogOpen(true);
   };
@@ -152,7 +168,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                 formJoiningDate = dateObj.toISOString().split('T')[0];
             }
         } catch (e) {
-             console.error(`Error parsing joiningDate for user ${'${userToEdit.uid}'}:`, e);
+             console.error(`Error parsing joiningDate for user ${userToEdit.uid}:`, e);
         }
     }
 
@@ -164,9 +180,11 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
         joiningDate: formJoiningDate,
         role: userToEdit.role || "", 
         accountStatus: userToEdit.accountStatus === 'active' || userToEdit.accountStatus === undefined, 
+        baseAirport: userToEdit.baseAirport || "",
         password: "", 
         confirmPassword: "",
     });
+    setAirportSearch(userToEdit.baseAirport || "");
     setIsManageUserDialogOpen(true);
   };
 
@@ -179,11 +197,11 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
         try {
             if (isCreateMode) {
                 await manageUser({ isCreate: true, data, adminUser: user });
-                toast({ title: "User Created", description: `User ${'${data.email}'} has been created.` });
+                toast({ title: "User Created", description: `User ${data.email} has been created.` });
 
             } else if (currentUserToManage) {
                 await manageUser({ isCreate: false, data, userId: currentUserToManage.uid, adminUser: user });
-                toast({ title: "User Updated", description: `User ${'${data.email}'} has been updated.` });
+                toast({ title: "User Updated", description: `User ${data.email} has been updated.` });
             }
             loadUsers();
             setIsManageUserDialogOpen(false);
@@ -228,7 +246,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={loadUsers} disabled={isLoading} className="flex-1 sm:flex-auto">
-              <RefreshCw className={`mr-2 h-4 w-4 ${'${isLoading}' ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             <Button onClick={handleOpenCreateUserDialog} className="flex-1 sm:flex-auto">
@@ -308,7 +326,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                       <TableCell>{u.employeeId || 'N/A'}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button variant="ghost" size="icon" title="View User Details" asChild>
-                          <Link href={`/admin/users/${'${u.uid}'}`}><Eye className="h-4 w-4"/></Link>
+                          <Link href={`/admin/users/${u.uid}`}><Eye className="h-4 w-4"/></Link>
                         </Button>
                         <Button variant="ghost" size="icon" title="Edit User" onClick={() => handleOpenEditUserDialog(u)}>
                           <Edit className="h-4 w-4" />
@@ -353,6 +371,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                      <FormField control={form.control} name="displayName" render={({ field }) => (<FormItem><FormLabel>Display Name</FormLabel><FormControl><Input placeholder="e.g., John D." {...field} /></FormControl><FormDescription>This name will be shown publicly and in greetings.</FormDescription><FormMessage /></FormItem>)}/>
                      <FormField control={form.control} name="employeeId" render={({ field }) => (<FormItem><FormLabel>Employee ID</FormLabel><FormControl><Input placeholder="e.g., EMP12345" {...field} /></FormControl><FormDescription>Unique company identifier for the employee.</FormDescription><FormMessage /></FormItem>)}/>
                      <FormField control={form.control} name="joiningDate" render={({ field }) => (<FormItem><FormLabel>Joining Date</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Optional. When the user joined the company.</FormDescription><FormMessage /></FormItem>)}/>
+                     <Controller control={form.control} name="baseAirport" render={({ field }) => (<FormItem><FormLabel>Base Airport (ICAO)</FormLabel><CustomAutocompleteAirport value={field.value} onSelect={(airport) => field.onChange(airport?.icao || "")} airports={airportResults} isLoading={isSearchingAirports} onInputChange={setAirportSearch} currentSearchTerm={airportSearch} placeholder="Search base airport..." /><FormDescription>The user's primary base of operations.</FormDescription><FormMessage /></FormItem>)} />
                   </div>
 
                   <Separator />

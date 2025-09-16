@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
@@ -9,13 +10,12 @@ import type { User } from "@/schemas/user-schema";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, orderBy, limit, getDocs, Timestamp, writeBatch } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, AlertTriangle, ArrowLeft, User as UserIcon, Calendar, GraduationCap, Inbox, CheckCircle, XCircle, ShieldCheck, CalendarX, CalendarClock, CalendarCheck2, PlusCircle, Info, CalendarDays, Edit } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowLeft, User as UserIcon, Calendar, GraduationCap, Inbox, CheckCircle, XCircle, ShieldCheck, CalendarX, CalendarClock, CalendarCheck2, PlusCircle, Info, CalendarDays, Edit, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { format, formatDistanceToNowStrict, differenceInDays, startOfDay, eachDayOfInterval } from "date-fns";
-import { StoredUserQuizAttempt } from "@/schemas/course-schema";
-import { StoredCourse } from "@/schemas/course-schema";
+import { StoredUserQuizAttempt, StoredCourse } from "@/schemas/course-schema";
 import { StoredUserDocument, type UserDocumentStatus as CalculatedDocStatus } from "@/schemas/user-document-schema";
 import { cn } from "@/lib/utils";
 import { UserActivity, ActivityType } from "@/schemas/user-activity-schema";
@@ -29,6 +29,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
 import { logAuditEvent } from "@/lib/audit-logger";
+import { getAirportByCode, Airport } from "@/services/airport-service";
+
+const DynamicMap = dynamic(() => import('@/components/features/live-map').then(mod => mod.MapDisplay), {
+    ssr: false,
+    loading: () => <div className="flex justify-center items-center h-full"><Loader2 className="h-6 w-6 animate-spin" /></div>,
+});
+
 
 const EXPIRY_WARNING_DAYS = 30;
 
@@ -47,6 +54,12 @@ const statusConfig: Record<CalculatedDocStatus, { icon: React.ElementType, color
     'expiring-soon': { icon: CalendarClock, color: "text-yellow-600", label: "Expiring Soon" },
     approved: { icon: CalendarCheck2, color: "text-green-600", label: "Approved" },
     'pending-validation': { icon: CalendarClock, color: "text-blue-600", label: "Pending Validation"},
+};
+
+const getFlagEmoji = (countryCode: string | undefined) => {
+    if (!countryCode || countryCode.length !== 2) return '';
+    const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
 };
 
 
@@ -150,6 +163,7 @@ export default function UserDetailPage() {
     const userId = params.userId as string;
 
     const [profileData, setProfileData] = React.useState<any | null>(null);
+    const [baseAirport, setBaseAirport] = React.useState<Airport | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
 
@@ -170,6 +184,11 @@ export default function UserDetailPage() {
             
             if (!userSnap.exists()) throw new Error("User not found.");
             const fetchedUser = { uid: userSnap.id, ...userSnap.data() } as User;
+
+            if (fetchedUser.baseAirport) {
+                const airportData = await getAirportByCode(fetchedUser.baseAirport);
+                setBaseAirport(airportData);
+            }
             
             const activities = activitiesSnap.docs.map(d => ({ id: d.id, ...d.data() }) as UserActivity);
             const requests = requestsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -231,52 +250,71 @@ export default function UserDetailPage() {
     if (!profileData) return null;
 
     const { user, activities, trainings, requests, documents } = profileData;
+    const flagEmoji = getFlagEmoji(baseAirport?.countryCode);
 
     return (
-        <div className="space-y-6 max-w-5xl mx-auto">
+        <div className="space-y-6 max-w-6xl mx-auto">
              <Button variant="outline" onClick={() => router.push('/admin/users')}><ArrowLeft className="mr-2 h-4 w-4"/>Back to User List</Button>
             
-             <Card className="shadow-lg">
-                <CardHeader className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                    <Avatar className="h-20 w-20 border">
-                        <AvatarImage src={user.photoURL ?? undefined} data-ai-hint="user portrait" />
-                        <AvatarFallback className="text-2xl">{user.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <CardTitle className="text-3xl font-headline">{user.fullName || user.displayName}</CardTitle>
-                        <CardDescription>{user.email}</CardDescription>
-                        <div className="flex flex-wrap items-center gap-2 mt-2">
-                             <Badge variant="outline" className="capitalize">{user.role || "N/A"}</Badge>
-                             <Badge variant={user.accountStatus === 'active' ? 'success' : 'destructive'} className="capitalize">{user.accountStatus || "Unknown"}</Badge>
-                             <span>Employee ID: <span className="font-semibold">{user.employeeId || 'N/A'}</span></span>
-                             <span>Joined: <span className="font-semibold">{formatDateDisplay(user.joiningDate)}</span></span>
-                        </div>
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <Card className="shadow-lg">
+                        <CardHeader className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                            <Avatar className="h-20 w-20 border">
+                                <AvatarImage src={user.photoURL ?? undefined} data-ai-hint="user portrait" />
+                                <AvatarFallback className="text-2xl">{user.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                                <CardTitle className="text-3xl font-headline flex items-center gap-2">{user.fullName || user.displayName} {flagEmoji}</CardTitle>
+                                <CardDescription>{user.email}</CardDescription>
+                                <div className="flex flex-wrap items-center gap-2 mt-2">
+                                    <Badge variant="outline" className="capitalize">{user.role || "N/A"}</Badge>
+                                    <Badge variant={user.accountStatus === 'active' ? 'success' : 'destructive'} className="capitalize">{user.accountStatus || "Unknown"}</Badge>
+                                    <span>Employee ID: <span className="font-semibold">{user.employeeId || 'N/A'}</span></span>
+                                    <span>Joined: <span className="font-semibold">{formatDateDisplay(user.joiningDate)}</span></span>
+                                </div>
+                            </div>
+                            <Button onClick={() => router.push(`/admin/users`)}><Edit className="mr-2 h-4 w-4" />Edit Profile</Button>
+                        </CardHeader>
+                    </Card>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card>
+                            <CardHeader className="flex-row justify-between items-center pb-2">
+                                <CardTitle className="text-lg flex items-center gap-2"><Calendar className="h-5 w-5 text-primary"/>Recent Schedule</CardTitle>
+                                <AddManualActivityDialog userId={userId} onActivityAdded={fetchUserProfileData} adminUser={adminUser} />
+                            </CardHeader>
+                            <CardContent>
+                                {activities.length > 0 ? (
+                                    <ul className="space-y-2">{activities.map((act: UserActivity) => <li key={act.id} className="text-sm flex justify-between"><span>{act.activityType === 'flight' ? `Flight ${act.flightNumber}` : act.comments || act.activityType}</span> <span className="text-muted-foreground">{format(act.date.toDate(), 'PP')}</span></li>)}</ul>
+                                ) : (<p className="text-sm text-muted-foreground text-center py-4">No recent activities found.</p>)}
+                            </CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-lg flex items-center gap-2"><Inbox className="h-5 w-5 text-primary"/>Recent Requests</CardTitle></CardHeader>
+                            <CardContent>
+                                {requests.length > 0 ? (
+                                    <ul className="space-y-2">{requests.map((req: any) => <li key={req.id} className="text-sm flex justify-between">
+                                        <Link href={`/admin/user-requests`} className="hover:underline text-primary truncate pr-2">{req.subject}</Link>
+                                        <Badge variant="secondary" className="capitalize">{req.status}</Badge>
+                                    </li>)}</ul>
+                                ) : (<p className="text-sm text-muted-foreground text-center py-4">No recent requests found.</p>)}
+                            </CardContent>
+                        </Card>
                     </div>
-                     <Button onClick={() => router.push(`/admin/users`)}><Edit className="mr-2 h-4 w-4" />Edit User Profile</Button>
-                </CardHeader>
-             </Card>
-
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                    <CardHeader className="flex-row justify-between items-center">
-                        <CardTitle className="text-lg flex items-center gap-2"><Calendar className="h-5 w-5 text-primary"/>Recent Schedule</CardTitle>
-                        <AddManualActivityDialog userId={userId} onActivityAdded={fetchUserProfileData} adminUser={adminUser} />
+                </div>
+                <Card className="lg:col-span-1 h-full">
+                    <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2"><MapPin className="h-5 w-5 text-primary"/>Base of Operations</CardTitle>
+                         <CardDescription>{baseAirport ? `${baseAirport.name} (${baseAirport.iata})` : "Not Assigned"}</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        {activities.length > 0 ? (
-                             <ul className="space-y-2">{activities.map((act: UserActivity) => <li key={act.id} className="text-sm flex justify-between"><span>{act.activityType === 'flight' ? `Flight ${act.flightNumber}` : act.comments || act.activityType}</span> <span className="text-muted-foreground">{format(act.date.toDate(), 'PP')}</span></li>)}</ul>
-                        ) : (<p className="text-sm text-muted-foreground text-center py-4">No recent activities found.</p>)}
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Inbox className="h-5 w-5 text-primary"/>Recent Requests</CardTitle></CardHeader>
-                    <CardContent>
-                        {requests.length > 0 ? (
-                             <ul className="space-y-2">{requests.map((req: any) => <li key={req.id} className="text-sm flex justify-between">
-                                <Link href={`/admin/user-requests`} className="hover:underline text-primary truncate pr-2">{req.subject}</Link>
-                                <Badge variant="secondary" className="capitalize">{req.status}</Badge>
-                             </li>)}</ul>
-                        ) : (<p className="text-sm text-muted-foreground text-center py-4">No recent requests found.</p>)}
+                    <CardContent className="h-[350px] w-full p-0">
+                        {baseAirport ? (
+                            <DynamicMap 
+                                center={[baseAirport.lat, baseAirport.lon]} 
+                                zoom={8} 
+                                markers={[{lat: baseAirport.lat, lon: baseAirport.lon, popup: `<b>${baseAirport.name}</b><br/>${baseAirport.city}, ${baseAirport.country}`}]}
+                            />
+                        ) : <div className="flex items-center justify-center h-full text-muted-foreground">No base airport assigned.</div>}
                     </CardContent>
                 </Card>
              </div>
@@ -312,7 +350,7 @@ export default function UserDetailPage() {
                 <CardContent>
                      {documents.length > 0 ? (
                         <ul className="space-y-3">
-                            {documents.map(doc => {
+                            {documents.map((doc: StoredUserDocument) => {
                                 const expiryDate = doc.expiryDate.toDate();
                                 const status = getDocumentStatus(doc);
                                 const config = statusConfig[status];
@@ -340,5 +378,3 @@ export default function UserDetailPage() {
         </div>
     );
 }
-
-    

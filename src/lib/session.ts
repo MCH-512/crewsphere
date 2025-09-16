@@ -39,6 +39,7 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
           employeeId: userData.employeeId,
           joiningDate: userData.joiningDate,
           accountStatus: userData.accountStatus,
+          baseAirport: userData.baseAirport,
         } as User;
     }
     return null;
@@ -48,4 +49,3 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
     return null;
   }
 })
-

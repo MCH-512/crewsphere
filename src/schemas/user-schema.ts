@@ -23,6 +23,7 @@ export interface User {
   employeeId?: string;
   joiningDate?: string | null;
   accountStatus?: AccountStatus;
+  baseAirport?: string; // ICAO code
 }
 
 // Zod schema for the user management form
@@ -34,6 +35,7 @@ export const manageUserFormSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters.").max(100),
   employeeId: z.string().max(50).optional(), 
   joiningDate: z.string().optional().refine(val => val === "" || !val || !isNaN(new Date(val).getTime()), { message: "Invalid date format. Please use YYYY-MM-DD or leave empty."}), 
+  baseAirport: z.string().max(4, "Invalid ICAO code").optional(),
   role: z.string().optional(), 
   accountStatus: z.boolean().default(true), 
 })

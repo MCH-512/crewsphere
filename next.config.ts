@@ -48,8 +48,7 @@ const nextConfig: NextConfig = {
         hostname: 'firebasestorage.googleapis.com',
       },
       { // Allow Unsplash images
-        protocol: 'https'
-        ,
+        protocol: 'https',
         hostname: 'images.unsplash.com',
       },
     ],
