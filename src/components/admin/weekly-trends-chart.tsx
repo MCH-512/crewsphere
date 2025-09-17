@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import * as Sentry from "@sentry/nextjs";
-import { TrendingUp, AlertTriangle, RefreshCw } from "lucide-react";
+import { TrendingUp, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   Card,
@@ -43,10 +43,13 @@ interface WeeklyTrendsChartProps {
 export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps) {
     const [data, setData] = React.useState<WeeklyTrendDataPoint[] | null>(null);
     const [error, setError] = React.useState<string | null>(null);
-    const [key, setKey] = React.useState(0);
+    const [key, setKey] = React.useState(0); // Key to force re-running the promise
+    const [isRetrying, setIsRetrying] = React.useState(false);
 
     React.useEffect(() => {
         let isMounted = true;
+        setIsRetrying(true);
+        setError(null);
         
         initialDataPromise
             .then(resolvedData => {
@@ -59,6 +62,11 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
                 Sentry.captureException(e, { tags: { component: "WeeklyTrendsChart" } });
                 if (isMounted) {
                     setError("Could not load trend data.");
+                }
+            })
+            .finally(() => {
+                if (isMounted) {
+                    setIsRetrying(false);
                 }
             });
 
@@ -80,9 +88,9 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
                         <AlertTriangle className="h-8 w-8 mb-2"/>
                         <p className="font-semibold">{error}</p>
                         <p className="text-sm">Please try refreshing the page later.</p>
-                        <Button variant="outline" size="sm" onClick={() => setKey(k => k + 1)} className="mt-4">
-                            <RefreshCw className="mr-2 h-4 w-4"/>
-                            Retry
+                        <Button variant="outline" size="sm" onClick={() => setKey(k => k + 1)} className="mt-4" disabled={isRetrying}>
+                            {isRetrying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4"/>}
+                            {isRetrying ? 'Retrying...' : 'Retry'}
                         </Button>
                     </div>
                 </CardContent>
@@ -91,7 +99,7 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
     }
     
     // The data is passed via a promise which is handled by Suspense in the parent
-    const chartData = React.use(initialDataPromise);
+    const chartData = data ?? React.use(initialDataPromise);
 
   return (
     <Card className="col-span-1 lg:col-span-2">
