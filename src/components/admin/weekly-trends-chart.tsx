@@ -40,38 +40,53 @@ interface WeeklyTrendsChartProps {
     initialDataPromise: Promise<WeeklyTrendDataPoint[]>;
 }
 
+const MAX_RETRIES = 3;
+
 export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps) {
     const [data, setData] = React.useState<WeeklyTrendDataPoint[] | null>(null);
     const [error, setError] = React.useState<string | null>(null);
-    const [key, setKey] = React.useState(0); // Key to force re-running the promise
+    const [retryCount, setRetryCount] = React.useState(0);
     const [isRetrying, setIsRetrying] = React.useState(false);
 
-    React.useEffect(() => {
+    const fetchData = React.useCallback(async (attempt: number) => {
         let isMounted = true;
         setIsRetrying(true);
         setError(null);
         
-        initialDataPromise
-            .then(resolvedData => {
-                if (isMounted) {
-                    setData(resolvedData);
-                }
-            })
-            .catch(e => {
-                console.error("Failed to fetch weekly trends data:", e);
-                Sentry.captureException(e, { tags: { component: "WeeklyTrendsChart" } });
-                if (isMounted) {
-                    setError("Could not load trend data.");
-                }
-            })
-            .finally(() => {
-                if (isMounted) {
-                    setIsRetrying(false);
-                }
+        try {
+            const resolvedData = await initialDataPromise;
+            if (isMounted) {
+                setData(resolvedData);
+            }
+        } catch (e) {
+            console.error(`Failed to fetch weekly trends data (attempt ${attempt}):`, e);
+            Sentry.captureException(e, { 
+                tags: { component: "WeeklyTrendsChart" },
+                extra: { retryAttempt: attempt }
             });
+            if (isMounted) {
+                setError("Could not load trend data.");
+            }
+        } finally {
+            if (isMounted) {
+                setIsRetrying(false);
+            }
+        }
 
         return () => { isMounted = false; };
-    }, [initialDataPromise, key]);
+    }, [initialDataPromise]);
+
+    React.useEffect(() => {
+        fetchData(0);
+    }, [fetchData]);
+    
+    const handleRetry = () => {
+        if (retryCount < MAX_RETRIES) {
+            const newAttemptCount = retryCount + 1;
+            setRetryCount(newAttemptCount);
+            fetchData(newAttemptCount);
+        }
+    };
 
 
     if (error) {
@@ -87,19 +102,40 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
                     <div className="flex flex-col items-center justify-center h-[250px] text-destructive" role="alert">
                         <AlertTriangle className="h-8 w-8 mb-2"/>
                         <p className="font-semibold">{error}</p>
-                        <p className="text-sm">Please try refreshing the page later.</p>
-                        <Button variant="outline" size="sm" onClick={() => setKey(k => k + 1)} className="mt-4" disabled={isRetrying}>
-                            {isRetrying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4"/>}
-                            {isRetrying ? 'Retrying...' : 'Retry'}
-                        </Button>
+                        {retryCount < MAX_RETRIES ? (
+                            <>
+                                <p className="text-sm">Please try refreshing the data.</p>
+                                <Button variant="outline" size="sm" onClick={handleRetry} className="mt-4" disabled={isRetrying}>
+                                    {isRetrying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4"/>}
+                                    {isRetrying ? 'Retrying...' : `Retry (${retryCount}/${MAX_RETRIES})`}
+                                </Button>
+                            </>
+                        ) : (
+                            <p className="text-sm">Maximum retries reached. Please contact support or try again later.</p>
+                        )}
                     </div>
                 </CardContent>
             </Card>
         );
     }
     
-    // The data is passed via a promise which is handled by Suspense in the parent
-    const chartData = data ?? React.use(initialDataPromise);
+    if (!data) {
+         return (
+            <Card className="col-span-1 lg:col-span-2">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-primary" />
+                        Weekly Activity Trends
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div role="status" aria-label="Loading trends chart" className="flex items-center justify-center h-[250px]">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
   return (
     <Card className="col-span-1 lg:col-span-2">
@@ -113,7 +149,7 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
         </CardDescription>
       </CardHeader>
       <CardContent>
-         {!chartData || chartData.length === 0 ? (
+         {!data || data.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
                 <p className="font-semibold">No activity data available for the last 7 days.</p>
             </div>
@@ -121,7 +157,7 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
             <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
                 <AreaChart
                     accessibilityLayer
-                    data={chartData}
+                    data={data}
                     margin={{ left: 12, right: 12, top: 12 }}
                 >
                     <CartesianGrid vertical={false} />
