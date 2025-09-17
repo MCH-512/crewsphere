@@ -1,18 +1,13 @@
+
 {
-  "name": "crewsphere-watchdog",
-  "version": "0.1.0",
+  "name": "crewsphere-watchdog-legacy",
+  "version": "0.2.0",
+  "description": "Legacy watchdog package. The logic has been migrated to src/scripts.",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
     "start": "node index.js"
-  },
-  "dependencies": {
-    "@google-cloud/bigquery": "^6.0.0",
-    "@octokit/rest": "^19.0.0",
-    "firebase-admin": "^11.0.0",
-    "js-yaml": "^4.1.0",
-    "node-fetch": "^2.7.0",
-    "simple-git": "^3.18.0",
-    "uuid": "^9.0.0"
   }
 }
+
+    
