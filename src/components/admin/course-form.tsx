@@ -398,4 +398,3 @@ export function CourseForm({ isEditMode, currentCourse, onFormSubmitSuccess }: C
         </>
     );
 }
-
