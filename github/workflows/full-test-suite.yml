@@ -29,21 +29,11 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      - name: Run Unit Tests
-        run: npm run test:unit
+      - name: Run Full Test Suite
+        run: npm test
         env:
             NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
             NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
-
-      - name: Run E2E Tests (Playwright)
-        run: npx playwright test
-        
-      - name: Run Accessibility Tests
-        run: npm run test:accessibility
-      
-      - name: Run AI Validation Tests
-        run: npm run test:ai
-        env:
             GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
             
       - name: Run Performance Tests (Lighthouse)
