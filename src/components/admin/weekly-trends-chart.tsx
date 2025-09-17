@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -33,9 +34,13 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function WeeklyTrendsChart({ initialData }: { initialData: WeeklyTrendDataPoint[] | null }) {
-    const [chartData] = React.useState(initialData);
-    const [isLoading] = React.useState(!initialData);
+interface WeeklyTrendsChartProps {
+    initialDataPromise: Promise<WeeklyTrendDataPoint[] | null>;
+}
+
+export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps) {
+    const chartData = React.use(initialDataPromise);
+    const isLoading = !chartData;
 
   return (
     <Card className="col-span-1 lg:col-span-2">

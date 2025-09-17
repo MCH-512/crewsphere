@@ -1,3 +1,4 @@
+
 "use server";
 
 import * as React from "react";
@@ -27,10 +28,9 @@ const ChartSkeleton = () => (
 );
 
 export default async function AdminConsolePage() {
-  const [stats, weeklyTrends] = await Promise.all([
-    getAdminDashboardStats(),
-    getAdminDashboardWeeklyTrends(),
-  ]);
+  const stats = await getAdminDashboardStats();
+  // We separate the calls to allow Suspense to work on the slower one.
+  const weeklyTrendsData = getAdminDashboardWeeklyTrends();
 
   return (
     <div className="space-y-8">
@@ -50,7 +50,7 @@ export default async function AdminConsolePage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Suspense fallback={<ChartSkeleton />}>
-            <WeeklyTrendsChart initialData={weeklyTrends} />
+            <WeeklyTrendsChart initialDataPromise={weeklyTrendsData} />
         </Suspense>
       </div>
 
@@ -78,7 +78,7 @@ export default async function AdminConsolePage() {
                                           <CardTitle className="text-lg">{item.title}</CardTitle>
                                       </div>
                                        {statValue !== undefined && (
-                                            <Badge variant={shouldHighlight ? "destructive" : "secondary"} className="animate-pulse">
+                                            <Badge variant={shouldHighlight ? "destructive" : "secondary"} className={shouldHighlight ? 'animate-pulse' : ''}>
                                                 {statValue}
                                             </Badge>
                                         )}

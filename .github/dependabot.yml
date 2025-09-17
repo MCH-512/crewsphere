@@ -1,0 +1,39 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  # Maintain dependencies for npm
+  - package-ecosystem: "npm"
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "daily"
+    # Assign a reviewer for the PRs
+    reviewers:
+      - "project-admin" # Replace with actual GitHub username or team
+    # Add a label to the PRs
+    labels:
+      - "dependencies"
+      - "automated"
+    # Group dependencies into a single PR
+    groups:
+      # Group all patch and minor updates together
+      patch-and-minor:
+        applies-to: "version-updates"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "project-admin"
+    labels:
+      - "ci"
+      - "dependencies"
+      - "automated"
