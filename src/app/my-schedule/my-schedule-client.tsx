@@ -1,15 +1,14 @@
-
 "use client";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, Loader2, Plane, Briefcase, GraduationCap, Bed, Anchor, Users } from "lucide-react";
-import { useAuth, type User } from "@/contexts/auth-context";
+import { Calendar as CalendarIcon, Loader2, Plane, Briefcase, GraduationCap, Bed, Anchor, Users, Globe, User } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar";
-import { format, startOfMonth, isSameDay } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -17,32 +16,34 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { type StoredFlight } from "@/schemas/flight-schema";
 import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode, type Airport } from "@/services/airport-service";
-import { type UserActivity } from "@/schemas/user-activity-schema";
+import type { UserActivity } from "@/schemas/user-activity-schema";
 import Link from 'next/link';
-import { getUserActivitiesForMonth } from "@/services/user-activity-service";
+import { getUserActivitiesForMonth, type ActivityData } from "@/services/activity-service";
+import { Button } from "../ui/button";
+import { Separator } from "../ui/separator";
 
 // --- Data Structures ---
 interface FlightWithCrewDetails extends StoredFlight {
     departureAirportInfo?: Airport | null;
     arrivalAirportInfo?: Airport | null;
-    crew: User[];
+    crew: (import("@/schemas/user-schema").User)[];
 }
 interface TrainingWithAttendeesDetails extends StoredTrainingSession {
-    attendees: User[];
+    attendees: (import("@/schemas/user-schema").User)[];
 }
 type SheetActivityDetails = { type: 'flight', data: FlightWithCrewDetails } | { type: 'training', data: TrainingWithAttendeesDetails };
 
 // --- UI Configuration ---
-const activityConfig: Record<UserActivity['activityType'], { icon: React.ElementType; label: string; className: string; dotColor: string; }> = {
-    flight: { icon: Plane, label: "Flight", className: "border-primary", dotColor: "bg-primary" },
-    leave: { icon: Briefcase, label: "Leave", className: "border-green-500", dotColor: "bg-green-500" },
-    training: { icon: GraduationCap, label: "Training", className: "border-yellow-500", dotColor: "bg-yellow-500" },
-    'day-off': { icon: Bed, label: "Day Off", className: "border-gray-500", dotColor: "bg-gray-500" },
-    standby: { icon: Anchor, label: "Standby", className: "border-orange-500", dotColor: "bg-orange-500" },
+const activityConfig: Record<UserActivity['activityType'], { icon: React.ElementType; label: string; dotColor: string; }> = {
+    flight: { icon: Plane, label: "Flight", dotColor: "bg-primary" },
+    leave: { icon: Briefcase, label: "Leave", dotColor: "bg-green-500" },
+    training: { icon: GraduationCap, label: "Training", dotColor: "bg-yellow-500" },
+    'day-off': { icon: Bed, label: "Day Off", dotColor: "bg-gray-500" },
+    standby: { icon: Anchor, label: "Standby", dotColor: "bg-orange-500" },
 };
 
 // --- Sub-components ---
-const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authUser }: { isOpen: boolean, onOpenChange: (open: boolean) => void, activity: SheetActivityDetails | null, isLoading: boolean, authUser: User | null }) => {
+const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authUser }: { isOpen: boolean, onOpenChange: (open: boolean) => void, activity: SheetActivityDetails | null, isLoading: boolean, authUser: import("@/schemas/user-schema").User | null }) => {
     if (!isOpen) return null;
 
     const renderFlightDetails = (data: FlightWithCrewDetails) => (
@@ -104,60 +105,82 @@ const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authU
     );
 };
 
-const ActivityCard = ({ activity, onActivityClick }: { activity: UserActivity; onActivityClick: (activity: UserActivity) => void }) => {
+const ActivityCard = ({ activity, onActivityClick, view }: { activity: ActivityData; onActivityClick: (activity: UserActivity) => void; view: 'personal' | 'global' }) => {
     const config = activityConfig[activity.activityType];
     const Icon = config.icon;
     const isClickable = activity.activityType === 'flight' || activity.activityType === 'training';
     
     const content = (
-        <div className={cn('p-3 w-full border-l-4 rounded-r-md flex items-start gap-4 bg-muted/30 mb-2', config.className, isClickable ? 'hover:bg-muted/50 transition-colors' : 'cursor-default')}>
+        <div className={cn('p-3 w-full border-l-4 rounded-r-md flex items-start gap-4 bg-muted/30 mb-2', config.dotColor.replace('bg-', 'border-'), isClickable ? 'hover:bg-muted/50 transition-colors' : 'cursor-default')}>
             <Icon className="h-5 w-5 mt-1 text-muted-foreground" />
             <div className="flex-grow text-left">
-                <p className="font-semibold">{config.label}</p>
+                <p className="font-semibold">{config.label} {view === 'global' && activity.activityType === 'flight' ? `- ${activity.flightNumber}` : ''}</p>
                 <div className="text-sm text-muted-foreground">
-                    {activity.activityType === 'flight' ? `Flight ${activity.flightNumber || 'N/A'}: ${activity.departureAirport || 'N/A'} → ${activity.arrivalAirport || 'N/A'}` : activity.comments}
+                    {activity.activityType === 'flight' ? `${activity.departureAirport || 'N/A'} → ${activity.arrivalAirport || 'N/A'}` : activity.comments}
                 </div>
+                 {view === 'global' && activity.userId && (
+                    <p className="text-xs text-muted-foreground pt-1">User: {activity.userEmail}</p>
+                )}
             </div>
         </div>
     );
 
     if (isClickable) {
-        return <button className="w-full text-left" onClick={() => onActivityClick(activity)}>{content}</button>;
+        return <button className="w-full text-left" onClick={() => onActivityClick(activity as UserActivity)}>{content}</button>;
     }
     return content;
 };
 
 // --- Main Page Client Component ---
-export function MyScheduleClient({ initialActivities }: { initialActivities: UserActivity[] }) {
+export function MyScheduleClient({ initialActivities }: { initialActivities: ActivityData[] }) {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
-    const [activities, setActivities] = React.useState<UserActivity[]>(initialActivities);
+    const [view, setView] = React.useState<'personal' | 'global'>('personal');
+    const [activities, setActivities] = React.useState<ActivityData[]>(initialActivities);
     const [isLoading, setIsLoading] = React.useState(false); // For subsequent fetches
     const [currentMonth, setCurrentMonth] = React.useState(new Date());
     const [selectedDay, setSelectedDay] = React.useState<Date | undefined>(new Date());
     
-    // State for the details sheet
     const [sheetActivity, setSheetActivity] = React.useState<SheetActivityDetails | null>(null);
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
     const [isSheetLoading, setIsSheetLoading] = React.useState(false);
+    const [userMap, setUserMap] = React.useState<Map<string, import("@/schemas/user-schema").User>>(new Map());
+
+     React.useEffect(() => {
+        const fetchAllUsers = async () => {
+             const usersSnapshot = await getDocs(collection(db, "users"));
+             const map = new Map<string, import("@/schemas/user-schema").User>();
+             usersSnapshot.forEach(doc => {
+                 map.set(doc.id, { uid: doc.id, ...doc.data() } as import("@/schemas/user-schema").User);
+             });
+             setUserMap(map);
+        };
+        if(user) fetchAllUsers();
+    }, [user]);
 
     const handleMonthChange = React.useCallback(async (month: Date) => {
         if (!user) return;
         setIsLoading(true);
         try {
-            const fetchedActivities = await getUserActivitiesForMonth(user.uid, month);
+            const fetchedActivities = await getUserActivitiesForMonth(month, view === 'global' ? undefined : user.uid);
             setActivities(fetchedActivities);
         } catch (error) {
             console.error("Error fetching schedule:", error);
         } finally {
             setIsLoading(false);
         }
-    }, [user]);
+    }, [user, view]);
+    
+    React.useEffect(() => {
+        if (!authLoading && user) {
+            handleMonthChange(currentMonth);
+        }
+    }, [view, user, authLoading, currentMonth, handleMonthChange]);
+
 
     // Handle month change from the calendar component
     const onMonthChange = (month: Date) => {
         setCurrentMonth(month);
-        handleMonthChange(month);
     };
 
     const handleShowActivityDetails = async (activity: UserActivity) => {
@@ -170,21 +193,15 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Use
                 if (!flightSnap.exists()) throw new Error("Flight details not found.");
                 const flight = { id: flightSnap.id, ...flightSnap.data() } as StoredFlight;
                 
-                const crewPromises = (flight.allCrewIds || []).map(uid => getDoc(doc(db, "users", uid)));
-                const crewDocs = await Promise.all(crewPromises);
-                const crew = crewDocs.map(snap => snap.exists() ? { uid: snap.id, ...snap.data() } as User : null).filter(Boolean) as User[];
-                
+                const crew = (flight.allCrewIds || []).map(uid => userMap.get(uid)).filter(Boolean) as import("@/schemas/user-schema").User[];
                 const [depAirport, arrAirport] = await Promise.all([getAirportByCode(flight.departureAirport), getAirportByCode(flight.arrivalAirport)]);
+                
                 setSheetActivity({ type: 'flight', data: { ...flight, departureAirportInfo: depAirport, arrivalAirportInfo: arrAirport, crew } });
             } else if (activity.trainingSessionId) {
                 const sessionSnap = await getDoc(doc(db, "trainingSessions", activity.trainingSessionId));
                 if (!sessionSnap.exists()) throw new Error("Training session not found.");
                 const session = { id: sessionSnap.id, ...sessionSnap.data() } as StoredTrainingSession;
-
-                const attendeePromises = (session.attendeeIds || []).map(uid => getDoc(doc(db, "users", uid)));
-                const attendeeDocs = await Promise.all(attendeePromises);
-                const attendees = attendeeDocs.map(snap => snap.exists() ? { uid: snap.id, ...snap.data() } as User : null).filter(Boolean) as User[];
-                
+                const attendees = (session.attendeeIds || []).map(uid => userMap.get(uid)).filter(Boolean) as import("@/schemas/user-schema").User[];
                 setSheetActivity({ type: 'training', data: { ...session, attendees } });
             }
         } catch(err) {
@@ -214,7 +231,7 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Use
             {isLoading ? (
               <div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
             ) : selectedDayActivities.length > 0 ? (
-              selectedDayActivities.map(activity => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} />)
+              selectedDayActivities.map(activity => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} view={view}/>)
             ) : (
               <p className="text-sm text-muted-foreground text-center p-4">No activities scheduled for this day.</p>
             )}
@@ -231,7 +248,20 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Use
     return (
         <div className="space-y-6">
             <AnimatedCard>
-                <Card className="shadow-lg"><CardHeader><CardTitle className="text-2xl font-headline flex items-center"><CalendarIcon className="mr-3 h-7 w-7 text-primary" />My Schedule</CardTitle><CardDescription>View your monthly flight, training, and leave schedule. Click on a flight or training for more details.</CardDescription></CardHeader></Card>
+                <Card className="shadow-lg"><CardHeader>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                        <div>
+                             <CardTitle className="text-2xl font-headline flex items-center"><CalendarIcon className="mr-3 h-7 w-7 text-primary" />{view === 'personal' ? 'My Schedule' : 'Global Timeline'}</CardTitle>
+                             <CardDescription>View {view === 'personal' ? 'your monthly schedule.' : 'all crew activities.'} Click an event for details.</CardDescription>
+                        </div>
+                        {user?.role === 'admin' && (
+                            <div className="flex items-center gap-2 mt-4 sm:mt-0 p-1 bg-muted rounded-lg">
+                                <Button variant={view === 'personal' ? 'primary' : 'ghost'} size="sm" onClick={() => setView('personal')} className="flex items-center gap-1"><User className="h-4 w-4"/> Personal</Button>
+                                <Button variant={view === 'global' ? 'primary' : 'ghost'} size="sm" onClick={() => setView('global')} className="flex items-center gap-1"><Globe className="h-4 w-4"/> Global</Button>
+                            </div>
+                        )}
+                    </div>
+                </CardHeader></Card>
             </AnimatedCard>
             <Card className="shadow-sm">
                 <div className="grid grid-cols-1 lg:grid-cols-2">
@@ -265,6 +295,15 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Use
                         {footer}
                     </div>
                 </div>
+                 <Separator />
+                 <CardFooter className="p-4 text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                    {Object.entries(activityConfig).map(([key, { label, dotColor }]) => (
+                        <div key={key} className="flex items-center gap-2">
+                            <div className={cn("h-2.5 w-2.5 rounded-full", dotColor)} />
+                            <span>{label}</span>
+                        </div>
+                    ))}
+                </CardFooter>
             </Card>
             <ActivityDetailsSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} activity={sheetActivity} isLoading={isSheetLoading} authUser={user} />
         </div>

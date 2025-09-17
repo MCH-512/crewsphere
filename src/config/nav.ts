@@ -53,7 +53,6 @@ export const mainNavConfig: { sidebarNav: NavGroup[] } = {
       items: [
         { href: "/flight-swap", title: "Swap Board", icon: Handshake },
         { href: "/my-swaps", title: "My Swaps", icon: History },
-        { href: "/timeline", title: "Global Timeline", icon: Compass },
       ]
     },
     {
