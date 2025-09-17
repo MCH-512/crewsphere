@@ -1,3 +1,4 @@
+
 'use server';
 // src/services/predictive-analyzer.ts
 
@@ -14,32 +15,52 @@ interface SimulatedAlertHistory {
   resolvedAt: Date | null;
 }
 
-// Simulate fetching data from a database like Firestore or Prisma
+// This function simulates fetching data from a database like Firestore or Prisma.
+// It generates a more realistic, dynamic dataset than a hardcoded array.
 async function getAlertHistory(): Promise<SimulatedAlertHistory[]> {
-  // This is mock data. In a real app, this would be a database query.
+  console.log("...Simulating fetch of historical alert data...");
+  
+  const history: SimulatedAlertHistory[] = [];
   const now = new Date();
+  
+  // Helper to create a date `days` ago
   const daysAgo = (days: number) => new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
-  return [
-    // Simulate a noisy rule: many alerts, slow resolution
-    ...Array.from({ length: 15 }, (_, i) => ({
+  // --- Simulate PENDING_REQUESTS: A noisy, frequently triggered rule ---
+  // Generate about 12-18 alerts over 90 days.
+  for (let i = 0; i < 15; i++) {
+    const triggerDay = Math.random() * 90; // Random day in the last 90 days
+    const resolutionHours = 4 + Math.random() * 20; // Resolves between 4 and 24 hours
+    const triggeredAt = daysAgo(triggerDay);
+    history.push({
       key: 'PENDING_REQUESTS',
-      triggeredAt: daysAgo(i * 5),
-      resolvedAt: new Date(daysAgo(i * 5).getTime() + 8 * 60 * 60 * 1000), // 8-hour resolution
-    })),
-    // Simulate a quiet rule
-    ...Array.from({ length: 2 }, (_, i) => ({
+      triggeredAt: triggeredAt,
+      resolvedAt: new Date(triggeredAt.getTime() + resolutionHours * 60 * 60 * 1000),
+    });
+  }
+
+  // --- Simulate PENDING_DOC_VALIDATIONS: A less frequent rule ---
+  // Generate about 2-5 alerts over 90 days.
+  for (let i = 0; i < 3; i++) {
+    const triggerDay = Math.random() * 90;
+    const resolutionHours = 1 + Math.random() * 4; // Resolves quickly
+    const triggeredAt = daysAgo(triggerDay);
+    history.push({
       key: 'PENDING_DOC_VALIDATIONS',
-      triggeredAt: daysAgo(i * 30),
-      resolvedAt: new Date(daysAgo(i * 30).getTime() + 1 * 60 * 60 * 1000), // 1-hour resolution
-    })),
-     // Simulate a rule with no recent data
-    {
-      key: 'FAILED_SWAPS',
-      triggeredAt: daysAgo(100),
-      resolvedAt: daysAgo(99),
-    }
-  ];
+      triggeredAt: triggeredAt,
+      resolvedAt: new Date(triggeredAt.getTime() + resolutionHours * 60 * 60 * 1000),
+    });
+  }
+
+  // --- Simulate FAILED_SWAPS: A rare or well-tuned rule ---
+  // One old alert outside the recent analysis window.
+  history.push({
+    key: 'FAILED_SWAPS',
+    triggeredAt: daysAgo(100),
+    resolvedAt: daysAgo(99),
+  });
+
+  return history;
 }
 
 
@@ -63,23 +84,29 @@ export async function generateOptimizedAlertRules() {
       relevantAlerts.reduce((sum, a) => sum + (a.resolvedAt!.getTime() - a.triggeredAt.getTime()), 0) / relevantAlerts.length
     ) / (1000 * 60 * 60); // in hours
 
-    // Average number of alerts per week over the 90-day period (approx 12 weeks)
-    const avgWeeklyFrequency = Math.ceil(relevantAlerts.length / 12);
+    // Average number of alerts per week over the 90-day period (approx 12.8 weeks)
+    const avgWeeklyFrequency = Math.ceil(relevantAlerts.length / 12.8);
 
     let newThreshold = currentRule.threshold;
     let newTimeoutHours = currentRule.timeoutHours;
     let reason = "";
 
-    // If alerts are too frequent AND take a long time to resolve, the threshold might be too high (detects problem too late)
-    if (avgWeeklyFrequency > 5 && avgResolutionTime > 6) {
-      newThreshold = Math.max(1, Math.floor(currentRule.threshold * 0.8)); // Lower threshold to detect earlier
-      if(newTimeoutHours) newTimeoutHours = Math.max(1, Math.floor(newTimeoutHours / 2)); // Make it critical sooner
-      reason = `High frequency (${avgWeeklyFrequency}/week) and slow resolution (${avgResolutionTime.toFixed(1)}h). Suggesting earlier detection.`;
-    }
-    // If alerts are rare and resolve quickly, the threshold might be too low (too sensitive)
-    else if (avgWeeklyFrequency < 2 && avgResolutionTime < 1) {
-      newThreshold = Math.ceil(currentRule.threshold * 1.2); // Increase threshold to reduce noise
-      reason = `Low frequency (${avgWeeklyFrequency}/week) and fast resolution (${avgResolutionTime.toFixed(1)}h). Suggesting reduced sensitivity.`;
+    // --- AI-like Heuristic Logic ---
+    // If alerts are very frequent, it might be too sensitive.
+    if (avgWeeklyFrequency > 8) {
+      newThreshold = Math.ceil(currentRule.threshold * 1.5); // Increase threshold by 50% to reduce noise
+      reason = `High frequency (${avgWeeklyFrequency}/week). Suggesting increased threshold to reduce alert fatigue.`;
+    
+    // If alerts are somewhat frequent and take a long time to resolve, the threshold might be too high (detecting problems too late).
+    } else if (avgWeeklyFrequency > 3 && avgResolutionTime > (currentRule.timeoutHours || 24) / 2) {
+      newThreshold = Math.max(1, Math.floor(currentRule.threshold * 0.75)); // Lower threshold by 25% for earlier detection
+      if(newTimeoutHours) newTimeoutHours = Math.max(1, Math.floor(newTimeoutHours * 0.75)); // Make it critical sooner
+      reason = `Moderate frequency (${avgWeeklyFrequency}/week) and slow resolution (${avgResolutionTime.toFixed(1)}h). Suggesting earlier detection.`;
+
+    // If alerts are rare and resolve very quickly, the threshold might be too low.
+    } else if (avgWeeklyFrequency < 2 && avgResolutionTime < 1) {
+      newThreshold = Math.ceil(currentRule.threshold * 1.2); // Increase threshold slightly
+      reason = `Low frequency (${avgWeeklyFrequency}/week) and very fast resolution (${avgResolutionTime.toFixed(1)}h). Suggesting slightly reduced sensitivity.`;
     }
 
     if (newThreshold !== currentRule.threshold || newTimeoutHours !== currentRule.timeoutHours) {

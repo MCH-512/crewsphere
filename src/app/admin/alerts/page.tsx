@@ -171,7 +171,25 @@ export default function AdminAlertsPage() {
         }
     };
 
-    if (authLoading || isLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+    if (authLoading || isLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="ml-4 text-lg text-muted-foreground">Loading alerts...</p>
+        </div>
+      );
+    }
+    
+    if (!user || user.role !== 'admin') {
+       return (
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
+          <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+          <CardTitle className="text-xl mb-2">Access Denied</CardTitle>
+          <p className="text-muted-foreground">You do not have permission to view this page.</p>
+          <Button onClick={() => router.push('/')} className="mt-4">Go to Dashboard</Button>
+        </div>
+      );
+    }
 
     return (
         <div className="space-y-6">
