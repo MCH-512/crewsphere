@@ -3,8 +3,8 @@ name: Full Test Suite — CrewSphere
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  pull_request_target:
+    types: [ opened, synchronize, reopened ]
   schedule:
     # Run weekly on Sunday at 3 AM UTC for proactive code audits
     - cron: '0 3 * * 0'
@@ -16,6 +16,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          # For pull_request_target, we need to checkout the specific PR commit
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -25,6 +28,9 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
+
+      - name: Run Security Audit
+        run: npm audit --audit-level=high
 
       - name: Run Next.js Code Quality Audit
         id: audit
@@ -153,7 +159,8 @@ jobs:
         run: npm run audit:ai
         env:
             GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Pass token to the script
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: Create Pull Request for AI Refactoring
         if: steps.audit.outputs.pr_url
@@ -180,4 +187,3 @@ jobs:
           labels: "ai, refactor, automated, enhancement"
           reviewers: "project-admin"
           assignees: "project-admin"
-          

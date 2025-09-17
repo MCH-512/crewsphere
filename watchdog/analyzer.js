@@ -4,6 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 const simpleGit = require('simple-git');
 const fs = require('fs/promises');
 const path = require('path');
+const { Octokit } = require('@octokit/rest');
+
 
 /**
  * Parses a TypeScript Server log to extract structured information.
@@ -39,6 +41,9 @@ class Analyzer {
     this.apiKey = config.llm.apiKey;
     this.model = config.llm.model;
     this.repoPath = path.join(__dirname, '.tmp_repo');
+    this.octokit = new Octokit({ auth: config.github.token });
+    this.owner = config.github.repoOwner;
+    this.repo = config.github.repoName;
   }
   
   async setupRepo() {
@@ -51,6 +56,76 @@ class Analyzer {
     } catch {
         console.log('Cloning repository for the first time...');
         await simpleGit().clone(repoUrl, this.repoPath);
+    }
+  }
+  
+   async fetchSentryErrors() {
+    if (!this.config.sentry || !this.config.sentry.authToken) {
+      console.warn("Sentry config missing, skipping error fetch.");
+      return [];
+    }
+    try {
+      const url = `https://sentry.io/api/0/projects/${this.config.sentry.org}/${this.config.sentry.project}/issues/?statsPeriod=7d&query=is:unresolved`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${this.config.sentry.authToken}` },
+      });
+      if (!response.ok) {
+        console.error(`Sentry API request failed: ${response.status} ${response.statusText}`);
+        return [];
+      }
+      const data = await response.json();
+      return data.slice(0, 5).map(issue => ({ // Limit to top 5 issues
+        title: issue.title,
+        count: issue.count,
+        culprit: issue.culprit,
+      }));
+    } catch (error) {
+      console.error("Failed to fetch Sentry errors:", error);
+      return [];
+    }
+  }
+
+  async analyzeDependabotPRs() {
+    try {
+        const { data: pulls } = await this.octokit.pulls.list({
+            owner: this.owner,
+            repo: this.repo,
+            state: "open",
+            sort: "created",
+            direction: "desc",
+        });
+
+        const dependabotPRs = pulls.filter(pr => pr.user && pr.user.login === "dependabot[bot]");
+        const suggestions = [];
+
+        for (const pr of dependabotPRs) {
+            const { data: files } = await this.octokit.pulls.listFiles({
+                owner: this.owner,
+                repo: this.repo,
+                pull_number: pr.number,
+            });
+
+            if (files.some(file => file.filename === "package.json")) {
+                 const diffResponse = await this.octokit.pulls.get({
+                    owner: this.owner,
+                    repo: this.repo,
+                    pull_number: pr.number,
+                    mediaType: { format: "diff" },
+                });
+                const diff = diffResponse.data;
+
+                if (typeof diff === 'string' && diff.includes("recharts")) {
+                  suggestions.push(`Dependabot PR #${pr.number} updates 'recharts'. Recommend adding a regression test for WeeklyTrendsChart to ensure rendering stability.`);
+                }
+                 if (typeof diff === 'string' && diff.includes("firebase")) {
+                  suggestions.push(`Dependabot PR #${pr.number} updates 'firebase' SDK. Recommend verifying authentication and Firestore query components.`);
+                }
+            }
+        }
+        return suggestions.join("\n");
+    } catch (error) {
+      console.error("Failed to analyze Dependabot PRs:", error);
+      return "";
     }
   }
 
@@ -68,25 +143,39 @@ class Analyzer {
         console.warn(`Could not read file for proactive audit: ${filePath}`);
       }
     }
+    
+    const sentryErrors = await this.fetchSentryErrors();
+    const dependabotAnalysis = await this.analyzeDependabotPRs();
 
     const contextStr = Object.entries(contextFiles)
       .map(([name, content]) => `--- START FILE: ${name} ---\n${content}\n--- END FILE: ${name} ---`)
       .join('\n\n');
+      
+    const externalContext = `
+      Recent Sentry Errors (last 7 days):
+      ${sentryErrors.length > 0 ? JSON.stringify(sentryErrors, null, 2) : "No frequent errors detected."}
+
+      Pending Dependabot PR Analysis:
+      ${dependabotAnalysis || "No critical dependency updates pending."}
+    `;
 
     const prompt = `
 You are an expert software architect specializing in Next.js, React, and TypeScript.
-Analyze the following source code files. Identify any "code smells," violations of the DRY principle, anti-patterns, performance bottlenecks, or opportunities for significant refactoring to improve maintainability and robustness.
+Analyze the following source code files AND the external context (Sentry errors, Dependabot PRs) to propose high-impact fixes.
 
 Source Code:
 ${contextStr}
 
+External Context:
+${externalContext}
+
 Tasks (respond in JSON format only):
-1. actionable: boolean (true if you have a high-confidence, non-breaking refactoring suggestion).
-2. probable_root_cause: A short, high-level summary of the architectural issue identified (e.g., "Duplicated data-fetching logic," "Component with too many responsibilities").
-3. suggested_fixes: An array containing ONE action of type "code_patch". The 'patch' key MUST be a JSON object: {"files": {"path/to/file.ts": "THE FULL NEW CONTENT OF THE FILE"}}. Do not use diffs. Only propose changes for the files provided.
+1. actionable: boolean (true if you have a high-confidence, non-breaking refactoring suggestion based on code or external context).
+2. probable_root_cause: A short, high-level summary of the issue identified (e.g., "Duplicated data-fetching logic," "Frequent Firestore 'unavailable' errors in WeeklyTrendsChart," "Potential regression risk from 'recharts' update").
+3. suggested_fixes: An array containing ONE action of type "code_patch". The 'patch' key MUST be a JSON object: {"files": {"path/to/file.ts": "THE FULL NEW CONTENT OF THE FILE"}}. Do not use diffs. Only propose changes for the files provided. If no code change is needed but action is recommended (e.g. add a test), leave this empty.
 4. confidence: A float from 0.0 to 1.0 indicating your confidence in the proposed fix.
 5. quick_issue_title: A short, descriptive title for a GitHub pull request (e.g., "refactor: Centralize airport data fetching logic").
-6. quick_issue_body: A Markdown-formatted explanation of the problem and the proposed solution.
+6. quick_issue_body: A Markdown-formatted explanation of the problem and the proposed solution, referencing the Sentry or Dependabot context if applicable.
 `;
 
     return this.processLLMResponse(prompt, {});

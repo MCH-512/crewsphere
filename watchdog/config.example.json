@@ -6,6 +6,11 @@
     "table": "events"
   },
   "pollIntervalSeconds": 60,
+  "sentry": {
+    "authToken": "YOUR_SENTRY_AUTH_TOKEN",
+    "org": "YOUR_SENTRY_ORG_SLUG",
+    "project": "YOUR_SENTRY_PROJECT_SLUG"
+  },
   "llm": {
     "provider": "genkit",
     "apiKey": "GENKIT_OR_OPENAI_API_KEY",
