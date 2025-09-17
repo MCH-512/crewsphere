@@ -31,7 +31,6 @@ const ChartSkeleton = () => (
 
 export default async function AdminConsolePage() {
   const stats = await getAdminDashboardStats();
-  // We separate the calls to allow Suspense to work on the slower one.
   const weeklyTrendsDataPromise = getAdminDashboardWeeklyTrends();
 
   return (
@@ -50,11 +49,9 @@ export default async function AdminConsolePage() {
         </Card>
       </AnimatedCard>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Suspense fallback={<ChartSkeleton />}>
-            <WeeklyTrendsChart initialDataPromise={weeklyTrendsDataPromise} />
-        </Suspense>
-      </div>
+      <Suspense fallback={<ChartSkeleton />}>
+          <WeeklyTrendsChart initialDataPromise={weeklyTrendsDataPromise} />
+      </Suspense>
 
       {adminNavConfig.sidebarNav.map((group, groupIndex) => (
           <section key={groupIndex}>
@@ -65,7 +62,8 @@ export default async function AdminConsolePage() {
                       
                       const IconComponent = item.icon;
                       const animationDelay = 0.1 + (itemIndex * 0.05);
-                      const statValue = item.statKey ? stats[item.statKey] : undefined;
+                      
+                      const statValue = stats && item.statKey ? stats[item.statKey] : undefined;
                       const shouldHighlight = statValue !== undefined && item.highlightWhen ? item.highlightWhen(statValue) : false;
 
                       return (

@@ -10,7 +10,40 @@ import { getTrainingStatus } from "@/services/dashboard-service";
 
 export async function MyTrainingStatusCard() {
     const stats = await getTrainingStatus();
-    const coursesToDo = stats ? stats.totalMandatory - stats.completed : 0;
+    
+    // Handle the case where stats are null (error fetching)
+    if (stats === null) {
+        return (
+            <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
+                <CardHeader>
+                    <CardTitle className="font-headline text-xl flex items-center gap-2">
+                        <GraduationCap className="h-5 w-5 text-primary" />
+                        My Training Status
+                    </CardTitle>
+                     <CardDescription>Your mandatory training progress.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                     <div className="flex items-start gap-4 text-destructive">
+                        <AlertTriangle className="h-6 w-6 mt-1" />
+                         <div>
+                            <p className="font-semibold text-lg">Could not load status</p>
+                            <p className="text-sm">There was an error fetching your data.</p>
+                        </div>
+                    </div>
+                </CardContent>
+                <CardFooter>
+                    <Button asChild className="w-full" variant="secondary">
+                        <Link href='/training'>
+                            Go to E-Learning Center
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                </CardFooter>
+            </Card>
+        );
+    }
+
+    const coursesToDo = stats.totalMandatory - stats.completed;
 
     return (
         <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
@@ -22,15 +55,7 @@ export async function MyTrainingStatusCard() {
                  <CardDescription>Your mandatory training progress.</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
-                {!stats ? (
-                     <div className="flex items-start gap-4 text-destructive">
-                        <AlertTriangle className="h-6 w-6 mt-1" />
-                         <div>
-                            <p className="font-semibold text-lg">Could not load status</p>
-                            <p className="text-sm">There was an error fetching your data.</p>
-                        </div>
-                    </div>
-                ) : coursesToDo > 0 ? (
+                {coursesToDo > 0 ? (
                     <div className="flex items-start gap-4">
                         <AlertTriangle className="h-8 w-8 text-warning-foreground mt-1 flex-shrink-0" />
                         <div>
