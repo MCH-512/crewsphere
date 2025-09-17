@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview An AI flow to generate a dynamic hero image for the user's dashboard.
@@ -7,18 +6,8 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
+import { GenerateDashboardImageInputSchema, type GenerateDashboardImageInput, GenerateDashboardImageOutputSchema, type GenerateDashboardImageOutput } from '@/schemas/dashboard-image-schema';
 
-export const GenerateDashboardImageInputSchema = z.object({
-  destination: z.string().describe("The user's next flight destination city (e.g., Paris)."),
-  timeOfDay: z.enum(['sunrise', 'daylight', 'sunset', 'night']).describe("The time of day for the image scene."),
-});
-export type GenerateDashboardImageInput = z.infer<typeof GenerateDashboardImageInputSchema>;
-
-export const GenerateDashboardImageOutputSchema = z.object({
-  imageDataUri: z.string().describe("The generated image as a Base64 encoded data URI."),
-});
-export type GenerateDashboardImageOutput = z.infer<typeof GenerateDashboardImageOutputSchema>;
 
 export async function generateDashboardImage(input: GenerateDashboardImageInput): Promise<GenerateDashboardImageOutput> {
   console.log(`[AI-FLOW] generateDashboardImage called with input:`, input);
