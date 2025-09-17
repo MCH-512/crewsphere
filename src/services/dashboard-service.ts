@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
@@ -15,13 +14,13 @@ import { generateDashboardImage } from "@/ai/flows/generate-dashboard-image-flow
 import { getAirportByCode } from "./airport-service";
 import placeholderImages from "@/app/lib/placeholder-images.json";
 
-type TimeOfDay = "morning" | "afternoon" | "evening" | "night";
+type TimeOfDay = "sunrise" | "daylight" | "sunset" | "night";
 
 const getTimeOfDay = (): TimeOfDay => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return "morning";
-    if (hour >= 12 && hour < 18) return "afternoon";
-    if (hour >= 18 && hour < 22) return "evening";
+    if (hour >= 5 && hour < 12) return "sunrise"; // Simplified for effect
+    if (hour >= 12 && hour < 18) return "daylight";
+    if (hour >= 18 && hour < 22) return "sunset";
     return "night";
 };
 
@@ -46,11 +45,10 @@ export async function getDashboardHeroImage(): Promise<{ src: string; hint: stri
                 const nextFlight = nextFlightSnapshot.docs[0].data();
                 const destinationAirport = await getAirportByCode(nextFlight.arrivalAirport);
                 const destination = destinationAirport?.city || nextFlight.arrivalAirport;
-                const departureTimeOfDay = new Date(nextFlight.scheduledDepartureDateTimeUTC).getHours() < 12 ? 'sunrise' : 'daylight';
                 
                 const result = await generateDashboardImage({
                     destination,
-                    timeOfDay: departureTimeOfDay,
+                    timeOfDay: getTimeOfDay(),
                 });
                 
                 if (result.imageDataUri) {
@@ -172,4 +170,3 @@ export async function getRequestsChartData(): Promise<RequestsChartDataPoint[] |
         return null;
     }
 }
-

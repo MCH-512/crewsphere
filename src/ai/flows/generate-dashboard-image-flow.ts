@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to generate a dynamic hero image for the user's dashboard.
@@ -20,6 +21,7 @@ export const GenerateDashboardImageOutputSchema = z.object({
 export type GenerateDashboardImageOutput = z.infer<typeof GenerateDashboardImageOutputSchema>;
 
 export async function generateDashboardImage(input: GenerateDashboardImageInput): Promise<GenerateDashboardImageOutput> {
+  console.log(`[AI-FLOW] generateDashboardImage called with input:`, input);
   return generateDashboardImageFlow(input);
 }
 
@@ -30,18 +32,26 @@ const generateDashboardImageFlow = ai.defineFlow(
     outputSchema: GenerateDashboardImageOutputSchema,
   },
   async (input) => {
-    const { media } = await ai.generate({
-      model: 'googleai/imagen-4.0-fast-generate-001',
-      prompt: `Generate a photorealistic, cinematic image of an airplane wing view, looking out towards ${input.destination}. The scene should be at ${input.timeOfDay}. The image should be inspiring, professional, and suitable for a hero banner. Avoid text.`,
-      config: {
-        aspectRatio: '16:9',
-      },
-    });
+    try {
+      const { media } = await ai.generate({
+        model: 'googleai/imagen-4.0-fast-generate-001',
+        prompt: `Generate a photorealistic, cinematic image of an airplane wing view, looking out towards ${input.destination}. The scene should be at ${input.timeOfDay}. The image should be inspiring, professional, and suitable for a hero banner. Avoid text.`,
+        config: {
+          aspectRatio: '16:9',
+        },
+      });
 
-    if (!media?.url) {
-      throw new Error('Image generation failed to return a valid image.');
+      if (!media?.url) {
+        throw new Error('Image generation failed to return a valid image.');
+      }
+      
+      console.log(`[AI-FLOW] generateDashboardImage successfully generated an image.`);
+      return { imageDataUri: media.url };
+
+    } catch (error) {
+        console.error("Error in generateDashboardImageFlow:", error);
+        // Instead of throwing, return an empty object to allow fallback
+        return { imageDataUri: "" };
     }
-    
-    return { imageDataUri: media.url };
   }
 );

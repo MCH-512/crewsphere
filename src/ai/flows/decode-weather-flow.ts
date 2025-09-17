@@ -33,10 +33,15 @@ const decodeWeatherReportFlow = ai.defineFlow(
     outputSchema: DecodeWeatherReportOutputSchema,
   },
   async (input) => {
-    const {output} = await decodeWeatherReportPrompt(input);
-    if (!output) {
-      throw new Error('The AI model did not return a valid decoded report.');
+    try {
+      const {output} = await decodeWeatherReportPrompt(input);
+      if (!output) {
+        throw new Error('The AI model did not return a valid decoded report.');
+      }
+      return output;
+    } catch (error) {
+       console.error("Error in decodeWeatherReportFlow:", error);
+       throw new Error("Failed to decode weather report due to an AI service error.");
     }
-    return output;
   }
 );
