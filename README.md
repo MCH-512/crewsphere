@@ -53,29 +53,53 @@ CrewSphere est divisé en deux expériences : un portail complet pour les membre
 
 ## 🤖 Le Cycle d’Excellence Automatisée — "The Infinite Loop"
 
-Le véritable cœur de CrewSphere est son système d'auto-amélioration. Ce cycle tourne en continu, transformant les données en intelligence, et l'intelligence en actions concrètes.
+Le cœur de CrewSphere est son système d'auto-amélioration, un cycle continu qui transforme les données en intelligence et l'intelligence en code. Ce système repose sur deux piliers : un gardien réactif (CI/CD) et un architecte proactif (Watchdog Agent).
 
 ```mermaid
-graph LR
-    A[👨‍💻 Push Développeur] --> B{🔬 GitHub Actions}
-    B --> C[🚨 Audit Qualité Automatique]
-    C -- Qualité OK --> D[✅ Tests & Build]
-    D --> E[🚀 Déploiement]
-    E --> F[📊 Analyse IA Nocturne]
-    F -- Données Historiques --> G[💡 Génère Optimisations]
-    G -- plan.json --> H[🤖 Applique Changements au Code]
-    H --> I[🎁 Crée une Pull Request]
-    I --> J[🧑‍⚖️ Revue Humaine]
-    J -- Approuvé --> A
+graph TD
+    subgraph "CI/CD Réactive"
+        A[👨‍💻 Push Développeur] --> B{🔬 GitHub Actions};
+        B --> C{Audit Qualité Statique};
+        C -- Échec --> X[❌ Build Bloqué];
+        C -- Succès --> D[🧪 Tests & Build];
+        D --> E{Déploiement};
+        B --> F{Génération de Tests par IA};
+        F -- `feat:` commit --> G[🤖 commit auto];
+    end
+
+    subgraph "Agent Proactif (Hebdomadaire)"
+        H[⏰ Cron Job] --> I{🤖 Agent Watchdog};
+        I --> J[Analyse IA du Code];
+        J --> K[💡 Génère Optimisations/Refactorings];
+        K --> L[🎁 Crée une Pull Request];
+        L --> M[🧑‍⚖️ Revue Humaine];
+    end
+
+    E --> H;
+    M --> A;
 ```
 
-| Étape | Description | Statut |
-|---|---|---|
-| **Audit Automatique** | Chaque `push` est analysé. Un code de mauvaise qualité bloque la PR. | ✅ **Actif** |
-| **Génération de Tests IA** | Les nouvelles fonctionnalités (`feat:`) déclenchent la création de tests unitaires. | ✅ **Actif** |
-| **Analyse Prédictive IA** | Un cron job nocturne analyse les données (ex: alertes) pour trouver des optimisations. | ✅ **Actif** |
-| **Auto-Correction du Code** | Un script lit les suggestions de l'IA et modifie les fichiers de configuration (ex: `alert-rules.ts`). | ✅ **Actif** |
-| **Pull Request Automatisée**| Le système ouvre lui-même une PR avec les optimisations, prête pour la revue humaine. | ✅ **Actif** |
+### Pilier 1 : La Chaîne d'Intégration Continue - Le Gardien Réactif
+
+Ce pilier est déclenché à chaque `push` ou `pull_request` et agit comme un contrôle qualité immédiat.
+
+| Étape | Script | Déclencheur | Description |
+|---|---|---|---|
+| **Audit de Qualité** | `npm run audit` | Push / PR | Un script Node.js (`nextjs-audit.js`) analyse les fichiers modifiés à la recherche d'anti-patterns spécifiques à Next.js 14 (ex: `useEffect` avec `fetch` dans une `page.tsx`). Un score de violation trop élevé fait échouer le build. |
+| **Génération de Tests**| `npm run test:auto-generate` | Push avec `feat:` | Si un commit est préfixé par `feat:`, ce script (`generate-tests.js`) utilise l'IA Genkit pour analyser la description du commit et générer automatiquement des tests unitaires pertinents pour la nouvelle fonctionnalité. |
+| **Tests & Déploiement**| `npm test` | Push / PR | Exécution de la suite de tests complète (unitaire, E2E, accessibilité). Si tout passe, le déploiement est autorisé. |
+
+### Pilier 2 : L'Agent Watchdog - L'Architecte Proactif
+
+Ce pilier est un agent autonome qui s'exécute de manière programmée (`schedule`) pour améliorer la qualité de l'architecture à long terme, prévenant ainsi la dette technique.
+
+| Étape | Script / Outil | Déclencheur | Description |
+|---|---|---|---|
+| **Audit IA Proactif** | `npm run audit:ai` | `schedule: cron` (hebdomadaire) | Le workflow GitHub exécute le script `run-code-audit.js`. Ce dernier sélectionne des fichiers clés (services, composants complexes) et les envoie à un prompt d'IA expert. |
+| **Analyse & Suggestion**| `Genkit` (IA) | - | Le modèle d'IA agit comme un architecte logiciel, identifie les "code smells" (duplication, complexité inutile) et génère un patch JSON contenant le nouveau code source complet des fichiers à refactoriser. |
+| **Création de PR** | `peter-evans/create-pull-request` | Analyse réussie | Le workflow crée automatiquement une branche et une Pull Request avec les modifications suggérées par l'IA, assignées aux administrateurs pour une revue humaine. |
+| **Analyse Prédictive** | `npm run auto-optimize`| Push sur `main` | Un script (`run-analysis.js`) simule l'analyse de données historiques (ex: fréquence des alertes) et utilise l'IA pour suggérer des ajustements de seuils, écrits dans un fichier `suggested-optimizations.json`. |
+| **Auto-Correction** | `scripts/apply-optimizations.js` | Après l'analyse | Ce script lit le fichier JSON généré et applique directement les nouveaux seuils au fichier de configuration `src/lib/alert-rules.ts`. Une PR est ensuite créée. |
 
 ---
 
