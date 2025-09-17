@@ -76,6 +76,7 @@ export function MySwapsClient({ initialSwaps }: MySwapsClientProps) {
     if (authLoading && mySwaps.length === 0) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
+     if (!user) return null;
 
     return (
         <div className="space-y-6">
