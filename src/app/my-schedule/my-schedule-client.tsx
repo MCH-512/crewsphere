@@ -172,16 +172,20 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
         }
     }, [user, view]);
     
+    // This effect now only runs when the view ('personal'/'global') changes.
+    // The initial data is already provided by the server.
     React.useEffect(() => {
         if (!authLoading && user) {
             handleMonthChange(currentMonth);
         }
-    }, [view, user, authLoading, currentMonth, handleMonthChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [view, user, authLoading]);
 
 
     // Handle month change from the calendar component
     const onMonthChange = (month: Date) => {
         setCurrentMonth(month);
+        handleMonthChange(month); // Fetch data for the new month
     };
 
     const handleShowActivityDetails = async (activity: UserActivity) => {
