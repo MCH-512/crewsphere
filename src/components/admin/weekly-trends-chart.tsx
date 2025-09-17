@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/chart";
 import { Button } from "@/components/ui/button";
 import type { WeeklyTrendDataPoint } from "@/services/admin-dashboard-service";
+import { useToast } from "@/hooks/use-toast";
 
 const chartConfig = {
   Requests: {
@@ -43,7 +44,8 @@ interface WeeklyTrendsChartProps {
 const MAX_RETRIES = 3;
 
 export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps) {
-    const [key, setKey] = React.useState(0);
+    const { toast } = useToast();
+    const [key, setKey] = React.useState(0); // Used to trigger a re-fetch
     const [data, setData] = React.useState<WeeklyTrendDataPoint[] | null>(null);
     const [error, setError] = React.useState<string | null>(null);
     const [isRetrying, setIsRetrying] = React.useState(false);
@@ -51,15 +53,22 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
 
     const fetchData = React.useCallback(async (attempt: number) => {
         let isMounted = true;
-        setIsRetrying(true);
+        if (attempt > 0) setIsRetrying(true);
         setError(null);
         
         try {
             const resolvedData = await initialDataPromise;
             if (isMounted) {
                 setData(resolvedData);
+                if (attempt > 0) {
+                     toast({
+                        title: "Success",
+                        description: "Weekly trends data has been successfully reloaded.",
+                        variant: "success",
+                    });
+                }
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error(`Failed to fetch weekly trends data (attempt ${attempt}):`, e);
             Sentry.captureException(e, { 
                 tags: { component: "WeeklyTrendsChart" },
@@ -70,16 +79,18 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
             }
         } finally {
             if (isMounted) {
-                setIsRetrying(false);
+                if (attempt > 0) setIsRetrying(false);
             }
         }
 
         return () => { isMounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialDataPromise]);
 
     React.useEffect(() => {
-        fetchData(0);
-    }, [fetchData, key]);
+        fetchData(retryCount);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [key]); // Only re-run when `key` changes
     
     const handleRetry = () => {
         if (retryCount < MAX_RETRIES) {
@@ -100,7 +111,7 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-col items-center justify-center h-[250px] text-destructive" role="alert">
+                    <div className="flex flex-col items-center justify-center h-[250px] text-destructive" role="alert" aria-live="polite">
                         <AlertTriangle className="h-8 w-8 mb-2"/>
                         <p className="font-semibold">{error}</p>
                         {retryCount < MAX_RETRIES ? (
@@ -108,7 +119,7 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
                                 <p className="text-sm">Please try refreshing the data.</p>
                                 <Button variant="outline" size="sm" onClick={handleRetry} className="mt-4" disabled={isRetrying}>
                                     {isRetrying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4"/>}
-                                    {isRetrying ? 'Retrying...' : `Retry (${retryCount}/${MAX_RETRIES})`}
+                                    {isRetrying ? 'Retrying...' : `Retry (${retryCount + 1}/${MAX_RETRIES})`}
                                 </Button>
                             </>
                         ) : (
