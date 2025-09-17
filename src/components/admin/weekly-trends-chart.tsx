@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { TrendingUp, Loader2 } from "lucide-react";
+import { TrendingUp, Loader2, AlertTriangle } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   Card,
@@ -35,12 +35,14 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 interface WeeklyTrendsChartProps {
-    initialDataPromise: Promise<WeeklyTrendDataPoint[] | null>;
+    initialDataPromise: Promise<WeeklyTrendDataPoint[]>;
 }
 
 export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps) {
+    // React.use() is a hook that allows reading the value of a promise.
+    // It will suspend the component until the promise resolves.
+    // This requires the parent component to be wrapped in <Suspense>.
     const chartData = React.use(initialDataPromise);
-    const isLoading = !chartData;
 
   return (
     <Card className="col-span-1 lg:col-span-2">
@@ -54,15 +56,17 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
         </CardDescription>
       </CardHeader>
       <CardContent>
-         {isLoading ? (
-            <div className="flex items-center justify-center h-[250px]">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+         {!chartData ? (
+            <div className="flex flex-col items-center justify-center h-[250px] text-destructive">
+                <AlertTriangle className="h-8 w-8 mb-2"/>
+                <p className="font-semibold">Could not load trend data.</p>
+                <p className="text-sm">Please try refreshing the page later.</p>
             </div>
         ) : (
             <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
                 <AreaChart
                     accessibilityLayer
-                    data={chartData || []}
+                    data={chartData}
                     margin={{ left: 12, right: 12, top: 12 }}
                 >
                     <CartesianGrid vertical={false} />

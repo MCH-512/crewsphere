@@ -1,3 +1,4 @@
+
 # To get started with Dependabot version updates, you'll need to specify which
 # package ecosystems to update and where the package manifests are located.
 # Please see the documentation for all configuration options:
@@ -17,14 +18,17 @@ updates:
     labels:
       - "dependencies"
       - "automated"
-    # Group dependencies into a single PR
+    # Group patch and minor updates into a single PR for easier management.
+    # Major updates will still get their own PRs.
     groups:
-      # Group all patch and minor updates together
-      patch-and-minor:
+      all-minor-and-patch:
         applies-to: "version-updates"
         update-types:
           - "minor"
           - "patch"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
 
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -37,3 +41,6 @@ updates:
       - "ci"
       - "dependencies"
       - "automated"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"

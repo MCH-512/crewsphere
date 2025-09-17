@@ -22,7 +22,9 @@ const ChartSkeleton = () => (
              <Skeleton className="h-4 w-3/4" />
         </CardHeader>
         <CardContent>
-            <Skeleton className="h-[250px] w-full" />
+            <div role="status" aria-label="Loading trends chart">
+                <Skeleton className="h-[250px] w-full" />
+            </div>
         </CardContent>
     </Card>
 );
@@ -30,7 +32,7 @@ const ChartSkeleton = () => (
 export default async function AdminConsolePage() {
   const stats = await getAdminDashboardStats();
   // We separate the calls to allow Suspense to work on the slower one.
-  const weeklyTrendsData = getAdminDashboardWeeklyTrends();
+  const weeklyTrendsDataPromise = getAdminDashboardWeeklyTrends();
 
   return (
     <div className="space-y-8">
@@ -50,7 +52,7 @@ export default async function AdminConsolePage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Suspense fallback={<ChartSkeleton />}>
-            <WeeklyTrendsChart initialDataPromise={weeklyTrendsData} />
+            <WeeklyTrendsChart initialDataPromise={weeklyTrendsDataPromise} />
         </Suspense>
       </div>
 
