@@ -2,7 +2,8 @@
 "use client";
 
 import * as React from "react";
-import { TrendingUp, Loader2, AlertTriangle } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";
+import { TrendingUp, AlertTriangle, RefreshCw } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   Card,
@@ -17,6 +18,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { Button } from "@/components/ui/button";
 import type { WeeklyTrendDataPoint } from "@/services/admin-dashboard-service";
 
 const chartConfig = {
@@ -39,9 +41,56 @@ interface WeeklyTrendsChartProps {
 }
 
 export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps) {
-    // React.use() is a hook that allows reading the value of a promise.
-    // It will suspend the component until the promise resolves.
-    // This requires the parent component to be wrapped in <Suspense>.
+    const [data, setData] = React.useState<WeeklyTrendDataPoint[] | null>(null);
+    const [error, setError] = React.useState<string | null>(null);
+    const [key, setKey] = React.useState(0);
+
+    React.useEffect(() => {
+        let isMounted = true;
+        
+        initialDataPromise
+            .then(resolvedData => {
+                if (isMounted) {
+                    setData(resolvedData);
+                }
+            })
+            .catch(e => {
+                console.error("Failed to fetch weekly trends data:", e);
+                Sentry.captureException(e, { tags: { component: "WeeklyTrendsChart" } });
+                if (isMounted) {
+                    setError("Could not load trend data.");
+                }
+            });
+
+        return () => { isMounted = false; };
+    }, [initialDataPromise, key]);
+
+
+    if (error) {
+        return (
+             <Card className="col-span-1 lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      Weekly Activity Trends
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col items-center justify-center h-[250px] text-destructive" role="alert">
+                        <AlertTriangle className="h-8 w-8 mb-2"/>
+                        <p className="font-semibold">{error}</p>
+                        <p className="text-sm">Please try refreshing the page later.</p>
+                        <Button variant="outline" size="sm" onClick={() => setKey(k => k + 1)} className="mt-4">
+                            <RefreshCw className="mr-2 h-4 w-4"/>
+                            Retry
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    // The data is passed via a promise which is handled by Suspense in the parent
     const chartData = React.use(initialDataPromise);
 
   return (
@@ -56,11 +105,9 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
         </CardDescription>
       </CardHeader>
       <CardContent>
-         {!chartData ? (
-            <div className="flex flex-col items-center justify-center h-[250px] text-destructive">
-                <AlertTriangle className="h-8 w-8 mb-2"/>
-                <p className="font-semibold">Could not load trend data.</p>
-                <p className="text-sm">Please try refreshing the page later.</p>
+         {!chartData || chartData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
+                <p className="font-semibold">No activity data available for the last 7 days.</p>
             </div>
         ) : (
             <ChartContainer config={chartConfig} className="min-h-[250px] w-full">

@@ -19,6 +19,12 @@ const cspHeader = `
 
 
 const nextConfig = {
+  sentry: {
+    widenClientFileUpload: true,
+    transpileClientSDK: true,
+    hideSourceMaps: true,
+    tunnelRoute: '/monitoring',
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '4.5mb',
@@ -85,10 +91,14 @@ const nextConfig = {
 };
 
 const sentryWebpackPluginOptions = {
-  widenClientFileUpload: true,
-  transpileClientSDK: true,
-  hideSourceMaps: true,
-  tunnelRoute: '/monitoring',
+    // For all available options, see:
+    // https://github.com/getsentry/sentry-webpack-plugin#options
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+    // An auth token is required for uploading source maps.
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    silent: true, // Suppresses all logs
 };
 
 module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions);
+
