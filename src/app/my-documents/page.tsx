@@ -9,7 +9,7 @@ import { collection, getDocs, query, where, orderBy, doc, addDoc, updateDoc, ser
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Loader2, AlertTriangle, CalendarX, CalendarClock, CalendarCheck2, PlusCircle, Edit, Trash2 } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import { format } from "date-fns";
 import { StoredUserDocument, userDocumentCreateFormSchema, userDocumentUpdateFormSchema, userDocumentTypes, getDocumentStatus, getStatusBadgeVariant } from "@/schemas/user-document-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";

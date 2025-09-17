@@ -97,8 +97,8 @@ export interface StoredUserDocument {
  * @returns The calculated UserDocumentStatus.
  */
 export const getDocumentStatus = (doc: StoredUserDocument, warningDays: number = 30): UserDocumentStatus => {
+    const today = startOfDay(new Date());
     if (doc.status === 'pending-validation') return 'pending-validation';
-    const today = new Date();
     const daysUntilExpiry = differenceInDays(doc.expiryDate.toDate(), today);
     if (daysUntilExpiry < 0) return 'expired';
     if (daysUntilExpiry <= warningDays) return 'expiring-soon';

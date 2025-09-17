@@ -12,6 +12,7 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 import { ActiveAlerts } from "@/components/features/active-alerts";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import placeholderImages from "@/app/lib/placeholder-images.json";
 
 const WidgetSkeleton = () => (
     <Card className="h-full shadow-md">

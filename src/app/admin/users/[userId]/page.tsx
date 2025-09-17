@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { format, formatDistanceToNowStrict, differenceInDays, startOfDay, eachDayOfInterval } from "date-fns";
 import { StoredUserQuizAttempt, StoredCourse } from "@/schemas/course-schema";
-import { StoredUserDocument, type UserDocumentStatus as CalculatedDocStatus } from "@/schemas/user-document-schema";
+import { StoredUserDocument, type UserDocumentStatus as CalculatedDocStatus, getDocumentStatus } from "@/schemas/user-document-schema";
 import { cn } from "@/lib/utils";
 import { UserActivity, ActivityType } from "@/schemas/user-activity-schema";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -36,18 +36,6 @@ const DynamicMap = dynamic(() => import('@/components/features/live-map').then(m
     loading: () => <div className="flex justify-center items-center h-full"><Loader2 className="h-6 w-6 animate-spin" /></div>,
 });
 
-
-const EXPIRY_WARNING_DAYS = 30;
-
-const getDocumentStatus = (doc: StoredUserDocument): CalculatedDocStatus => {
-    if (doc.status === 'pending-validation') return 'pending-validation';
-    const today = new Date();
-    const daysUntilExpiry = differenceInDays(doc.expiryDate.toDate(), today);
-
-    if (daysUntilExpiry < 0) return 'expired';
-    if (daysUntilExpiry <= EXPIRY_WARNING_DAYS) return 'expiring-soon';
-    return 'approved';
-};
 
 const statusConfig: Record<CalculatedDocStatus, { icon: React.ElementType, color: string, label: string }> = {
     expired: { icon: CalendarX, color: "text-destructive", label: "Expired" },
@@ -352,7 +340,7 @@ export default function UserDetailPage() {
                         <ul className="space-y-3">
                             {documents.map((doc: StoredUserDocument) => {
                                 const expiryDate = doc.expiryDate.toDate();
-                                const status = getDocumentStatus(doc);
+                                const status = getDocumentStatus(doc, 30);
                                 const config = statusConfig[status];
                                 const Icon = config.icon;
                                 return (
@@ -378,5 +366,3 @@ export default function UserDetailPage() {
         </div>
     );
 }
-
-    
