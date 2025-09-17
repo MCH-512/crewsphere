@@ -3,7 +3,7 @@
 
 | Status | Qualité du Code | Tests | Déploiement | Auto-Amélioration |
 |---|---|---|---|---|
-| ![Statut du Build](https://img.shields.io/github/actions/workflow/status/VOTRE_USER/VOTRE_REPO/full-test-suite.yml?branch=main&style=for-the-badge&logo=github) | ![Audit de Code](https://img.shields.io/badge/Audit-PASSÉ-brightgreen?style=for-the-badge) | ![Couverture de Tests](https://img.shields.io/badge/Tests-100%25-success?style=for-the-badge) | ![Déploiement Vercel](https://img.shields.io/badge/Vercel-Déployé-blue?style=for-the-badge&logo=vercel) | ![IA Active](https://img.shields.io/badge/IA-Active-blueviolet?style=for-the-badge&logo=google) |
+| ![Statut du Build](https://img.shields.io/github/actions/workflow/status/VOTRE_USER/VOTRE_REPO/full-test-suite.yml?branch=main&style=for-the-badge&logo=github) | ![Audit de Code](https://img.shields.io/badge/Audit-PASSÉ-brightgreen?style=for-the-badge&logo=google-cloud) | ![Couverture de Tests](https://img.shields.io/badge/Tests-100%25-success?style=for-the-badge) | ![Déploiement Vercel](https://img.shields.io/badge/Vercel-Déployé-blue?style=for-the-badge&logo=vercel) | ![IA Active](https://img.shields.io/badge/IA-Active-blueviolet?style=for-the-badge&logo=google) |
 
 > **CrewSphere n’est pas une application. C’est un gardien qui apprend.**  
 > Un système organique de pilotage pour équipages, où la technologie s’efface pour laisser place à la clarté, à la sécurité et à l’intelligence collective.
