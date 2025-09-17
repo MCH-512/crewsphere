@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
+import placeholderImages from "@/app/lib/placeholder-images.json";
 
 export default function CourseDetailPage() {
     const { user, loading: authLoading } = useAuth();
@@ -140,9 +141,9 @@ export default function CourseDetailPage() {
              <Card className="shadow-lg overflow-hidden">
                  <div className="relative h-60 w-full">
                     <Image
-                        src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/400`}
+                        src={course.imageUrl || placeholderImages.course.default.src}
                         alt={course.title}
-                        data-ai-hint={course.imageHint || "training manual"}
+                        data-ai-hint={course.imageHint || placeholderImages.course.default.hint}
                         fill
                         style={{ objectFit: 'cover' }}
                         priority
@@ -214,5 +215,3 @@ export default function CourseDetailPage() {
         </div>
     );
 }
-
-    

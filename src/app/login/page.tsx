@@ -23,6 +23,7 @@ import { auth, isConfigValid } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AuthLayout } from "@/components/layout/auth-layout";
+import placeholderImages from "@/app/lib/placeholder-images.json";
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -95,8 +96,8 @@ export default function LoginPage() {
     <AuthLayout
         title="Welcome Back"
         description="Enter your email below to login to your account"
-        imageUrl="https://images.unsplash.com/photo-1542296332-2e4473faf563?q=80&w=1974&auto=format&fit=crop"
-        imageHint="airplane wing"
+        imageUrl={placeholderImages.auth.login.src}
+        imageHint={placeholderImages.auth.login.hint}
     >
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">

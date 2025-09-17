@@ -19,7 +19,7 @@ import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
+import placeholderImages from "@/app/lib/placeholder-images.json";
 
 interface CourseWithProgress extends StoredCourse {
     progress?: StoredUserQuizAttempt;
@@ -35,11 +35,13 @@ const CourseProgressCard = ({ course, delay }: { course: CourseWithProgress; del
              <Card className="shadow-sm h-full flex flex-col hover:shadow-lg transition-shadow overflow-hidden">
                 <div className="relative h-40 w-full">
                     <Image 
-                      src={course.imageUrl || `https://picsum.photos/seed/${course.id}/600/400`}
+                      src={course.imageUrl || placeholderImages.course.default.src}
                       alt={course.title}
-                      data-ai-hint={course.imageHint || "training manual"}
-                      fill
+                      data-ai-hint={course.imageHint || placeholderImages.course.default.hint}
+                      width={placeholderImages.course.default.width}
+                      height={placeholderImages.course.default.height}
                       style={{ objectFit: 'cover' }}
+                      className="w-full h-full"
                     />
                      {status && (
                         <Badge variant={status === 'passed' ? 'success' : 'destructive'} className="absolute top-2 right-2 capitalize font-semibold">
@@ -297,5 +299,3 @@ export default function TrainingPage() {
         </div>
     );
 }
-
-    

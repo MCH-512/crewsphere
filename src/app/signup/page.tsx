@@ -23,6 +23,7 @@ import { auth, isConfigValid } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AuthLayout } from "@/components/layout/auth-layout";
+import placeholderImages from "@/app/lib/placeholder-images.json";
 
 const signupFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -101,8 +102,8 @@ export default function SignupPage() {
     <AuthLayout
         title="Create an Account"
         description="Join AirCrew Hub to streamline your operations."
-        imageUrl="https://images.unsplash.com/photo-1436891620584-46f6e5398dd8?q=80&w=2070&auto=format&fit=crop"
-        imageHint="airplane tail"
+        imageUrl={placeholderImages.auth.signup.src}
+        imageHint={placeholderImages.auth.signup.hint}
     >
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

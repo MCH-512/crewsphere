@@ -13,6 +13,7 @@ import type { RequestsChartDataPoint } from "@/components/features/charts/reques
 import type { TrainingChartDataPoint } from "@/components/features/charts/training-progress-pie-chart";
 import { generateDashboardImage } from "@/ai/flows/generate-dashboard-image-flow";
 import { getAirportByCode } from "./airport-service";
+import placeholderImages from "@/app/lib/placeholder-images.json";
 
 type TimeOfDay = "morning" | "afternoon" | "evening" | "night";
 
@@ -26,7 +27,7 @@ const getTimeOfDay = (): TimeOfDay => {
 
 
 export async function getDashboardHeroImage(): Promise<{ src: string; hint: string; }> {
-    const defaultImage = { src: "/images/default-hero.jpg", hint: "airplane tail wing" };
+    const defaultImage = { src: placeholderImages.dashboard.hero.src, hint: placeholderImages.dashboard.hero.hint };
     const user = await getCurrentUser();
 
     if (user && isConfigValid && db) {
