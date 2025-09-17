@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -8,10 +9,6 @@
 import { ai } from '@/ai/genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { GenerateVideoInputSchema, type GenerateVideoInput, GenerateVideoOutputSchema, type GenerateVideoOutput } from '@/schemas/video-schema';
-import * as fs from 'fs';
-import { Readable } from 'stream';
-import type { MediaPart } from 'genkit';
-
 
 /**
  * Generates a video from a text prompt and/or an image.
