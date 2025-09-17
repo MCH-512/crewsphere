@@ -1,152 +1,141 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Fonction pour vérifier si un utilisateur est authentifié
-    function isAuthenticated() {
+
+    // --- Helper Functions ---
+    function isSignedIn() {
       return request.auth != null;
     }
 
-    // Fonction pour vérifier si l'utilisateur est un admin
-    function isAdmin() {
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Fonction pour vérifier si l'utilisateur est le propriétaire du document
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return request.auth.uid == userId;
     }
-    
-    // Les utilisateurs peuvent lire/modifier leurs propres données. Les admins peuvent tout lire/écrire.
+
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return getRole() == 'admin';
+    }
+
+    // --- Default Deny ---
+    // Uncommenting this is the final step once all rules are verified.
+    // For now, we allow more specific rules to take precedence.
+    // match /{document=**} {
+    //   allow read, write: if false;
+    // }
+
+    // --- Users Collection ---
     match /users/{userId} {
+      // Users can read/update their own profile. Admins can read/write any.
       allow read, update: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated(); // N'importe qui peut créer son profil au signup.
-      // Pas de suppression de profil pour le moment
+      allow create, delete: if isAdmin();
+    }
+
+    // --- Alerts Collection ---
+    match /alerts/{alertId} {
+      // Anyone signed in can read alerts. Only admins can create/modify.
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
     
-    // Tout le monde peut lire les documents de la bibliothèque et les cours publiés
-    match /documents/{docId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin(); // Seuls les admins peuvent ajouter/modifier des documents.
-      allow update: if isAuthenticated() && request.auth.uid in resource.data.readBy == false; // Permet d'ajouter son uid à readBy
+    // --- Audit Logs ---
+    match /auditLogs/{logId} {
+      // Only admins can read audit logs. Nobody can modify them.
+      allow read: if isAdmin();
+      allow write: if false; // Immutable
     }
     
-    match /courses/{courseId} {
-        allow read: if isAuthenticated() && resource.data.published == true;
-        allow write: if isAdmin();
-    }
-    
-    // Logique pour les quiz, questions, et règles de certificat
-    match /quizzes/{quizId} {
-        allow read: if isAuthenticated();
-        allow write: if isAdmin();
-    }
-    match /questions/{questionId} {
-        allow read: if isAuthenticated();
-        allow write: if isAdmin();
-    }
-     match /certificateRules/{ruleId} {
-        allow read: if isAuthenticated();
+    // --- System Configuration ---
+    match /systemConfiguration/{configId} {
+        allow read: if isSignedIn();
         allow write: if isAdmin();
     }
 
-    // Logique pour les tentatives de quiz utilisateur
+    // --- Community Posts ---
+    match /communityPosts/{postId} {
+      allow read: if isSignedIn();
+      // Users can create posts. They can only update/delete their own posts. Admins have full access.
+      allow create: if isSignedIn();
+      allow update, delete: if (isOwner(resource.data.authorId) && isSignedIn()) || isAdmin();
+    }
+
+    // --- Courses, Quizzes, Questions, CertificateRules ---
+    match /courses/{courseId} {
+      // Published courses are public. All courses are accessible by admins.
+      allow read: if resource.data.published == true || isAdmin();
+      allow write: if isAdmin();
+    }
+    match /quizzes/{quizId} {
+      allow read, write: if isAdmin();
+    }
+     match /questions/{questionId} {
+      allow read: if isSignedIn(); // Users need to read questions for quizzes
+      allow write: if isAdmin();
+    }
+    match /certificateRules/{ruleId} {
+      allow read, write: if isAdmin();
+    }
     match /userQuizAttempts/{attemptId} {
-        allow read: if isOwner(resource.data.userId) || isAdmin();
-        allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+        allow read, create: if isSignedIn() && isOwner(request.resource.data.userId);
         allow update, delete: if isAdmin();
     }
+     match /userProgress/{userId}/courses/{courseId} {
+        allow read, write: if isOwner(userId);
+     }
 
-    // Logique pour la progression des cours utilisateur
-    match /userProgress/courses/{courseId} {
-       allow read, write: if isOwner(request.auth.uid);
+
+    // --- Documents & User Documents ---
+    match /documents/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
-    
-    // Les utilisateurs peuvent lire/écrire leurs propres documents, les admins peuvent tout faire.
-    match /userDocuments/{docId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+    match /userDocuments/{userDocId} {
+        allow read: if isSignedIn();
+        // Users can create/update their own documents. Admins can do anything.
+        allow create: if isOwner(request.resource.data.userId);
         allow update: if isOwner(resource.data.userId) || isAdmin();
         allow delete: if isAdmin();
     }
-    
-    // Les utilisateurs authentifiés peuvent voir et créer des posts communautaires.
-    // Seuls les propriétaires ou les admins peuvent supprimer (à affiner plus tard).
-    match /communityPosts/{postId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated() && isOwner(request.resource.data.authorId);
-        allow update: if isAuthenticated() && (isOwner(resource.data.authorId) || request.auth.uid in resource.data.likes == false || request.auth.uid in request.resource.data.likes);
-        allow delete: if isOwner(resource.data.authorId) || isAdmin();
-    }
-    
-    // Idem pour les suggestions
-    match /suggestions/{suggestionId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
-        allow update: if isAuthenticated() && (isOwner(resource.data.userId) || request.auth.uid in resource.data.upvotes == false || request.auth.uid in request.resource.data.upvotes);
-        allow write: if isAdmin();
-    }
 
-    // Les utilisateurs authentifiés peuvent créer des requêtes.
-    // Seuls les propriétaires peuvent lire leurs requêtes, les admins peuvent tout faire.
-    match /requests/{requestId} {
-        allow read: if isOwner(resource.data.userId) || isAdmin();
-        allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
-        allow update: if isAdmin(); // Seuls les admins peuvent changer le statut.
-    }
-    
-    // Les admins peuvent gérer les vols, les équipages peuvent les lire s'ils y sont assignés.
+    // --- Flights, Swaps, Reports ---
     match /flights/{flightId} {
-      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid in resource.data.allCrewIds);
+      // Users can only read flights they are assigned to. Admins can read all.
+      allow read: if request.auth.uid in resource.data.allCrewIds || isAdmin();
       allow write: if isAdmin();
     }
-
-    // Les membres d'équipage peuvent participer aux échanges. Les admins peuvent tout gérer.
-    match /flightSwaps/{swapId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated() && isOwner(request.resource.data.initiatingUserId);
-        allow update: if isAuthenticated() && (isAdmin() || request.resource.data.status == 'pending_approval'); // Un user peut demander un swap
+     match /flightSwaps/{swapId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn();
+        allow update, delete: if isOwner(resource.data.initiatingUserId) || isAdmin();
+    }
+     match /purserReports/{reportId} {
+        allow read: if (isSignedIn() && isOwner(resource.data.userId)) || isAdmin();
+        allow create: if isSignedIn();
+        allow update: if isAdmin();
+     }
+     
+    // --- Other User-Specific Data ---
+    match /requests/{reqId} {
+      allow read, create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+    match /suggestions/{suggestionId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn();
+        // Allow anyone signed in to upvote (update), but only admins to change status/notes.
+        allow update: if isSignedIn();
         allow delete: if isAdmin();
     }
-    
-    // Les pursers peuvent soumettre des rapports. Les admins peuvent tout lire.
-    match /purserReports/{reportId} {
-      allow read: if isAuthenticated() && (isAdmin() || isOwner(resource.data.userId));
-      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
-      allow update: if isAdmin();
-    }
-
-    // Les admins peuvent gérer les sessions de formation. Les participants peuvent les lire.
     match /trainingSessions/{sessionId} {
-      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid in resource.data.attendeeIds);
+      allow read: if request.auth.uid in resource.data.attendeeIds || isAdmin();
       allow write: if isAdmin();
     }
-
-    // Activités utilisateur : seul le propriétaire peut les lire. Les services serveur peuvent les écrire.
-    match /userActivities/{activityId} {
-        allow read: if isOwner(resource.data.userId);
-        // L'écriture est gérée par les fonctions serveur (Server-side)
-        allow create, update, delete: if false; // Pour les clients
-    }
-    
-    // Les admins peuvent créer et lire toutes les alertes.
-    match /alerts/{alertId} {
-        allow read: if isAuthenticated();
-        allow write: if isAdmin();
-    }
-    
-    // Les logs d'audit sont en lecture seule pour les admins, et inscriptibles uniquement par des fonctions serveur.
-    match /auditLogs/{logId} {
-      allow read: if isAdmin();
-      allow write: if false; // Only server-side logic can write logs
-    }
-
-    // Configuration système modifiable uniquement par les admins.
-     match /systemConfiguration/{configId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+     match /userActivities/{activityId} {
+       allow read, create: if isOwner(request.resource.data.userId);
+       allow write: if isAdmin();
     }
   }
 }
