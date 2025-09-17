@@ -13,6 +13,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      // Check for custom claim (set by server) OR role in user document.
       return isAuthenticated() && 
         (
           request.auth.token.admin == true ||
@@ -158,11 +159,6 @@ service cloud.firestore {
     match /systemConfiguration/{configId} {
         allow read: if isAuthenticated();
         allow write: if isAdmin();
-    }
-
-    // Default deny all other collections
-    match /{document=**} {
-      allow read, write: if false;
     }
   }
 }
