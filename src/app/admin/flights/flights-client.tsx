@@ -810,7 +810,3 @@ export function AdminFlightsClient({
         </div>
     );
 }
-
-    
-
-    
