@@ -1,4 +1,6 @@
 
+const { withSentryConfig } = require('@sentry/nextjs');
+
 /** @type {import('next').NextConfig} */
 
 const cspHeader = `
@@ -17,10 +19,17 @@ const cspHeader = `
 
 
 const nextConfig = {
+  sentry: {
+    widenClientFileUpload: true,
+    transpileClientSDK: true,
+    hideSourceMaps: true,
+    tunnelRoute: '/monitoring',
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '4.5mb',
     },
+    serverActionsTimeout: 120,
   },
   typescript: {
     ignoreBuildErrors: false,
@@ -82,4 +91,15 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+const sentryWebpackPluginOptions = {
+    // For all available options, see:
+    // https://github.com/getsentry/sentry-webpack-plugin#options
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+    // An auth token is required for uploading source maps.
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    silent: true, // Suppresses all logs
+};
+
+module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions);
+

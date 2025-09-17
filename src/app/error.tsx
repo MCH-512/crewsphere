@@ -15,8 +15,7 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
-    console.error(error);
+    // Log the error to Sentry
     Sentry.captureException(error);
   }, [error])
 
@@ -27,7 +26,7 @@ export default function Error({
             <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
           <CardTitle className="mt-4 text-2xl">Something went wrong!</CardTitle>
           <CardDescription>
-            An unexpected error occurred. You can try to recover from this error by clicking the button below.
+            An unexpected error occurred. Our team has been notified. You can try to recover from this error by clicking the button below.
           </CardDescription>
         </CardHeader>
         <CardContent>
