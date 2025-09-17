@@ -1,0 +1,19 @@
+
+{
+  "name": "crewsphere-watchdog",
+  "version": "0.1.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google-cloud/bigquery": "^6.0.0",
+    "firebase-admin": "^11.0.0",
+    "@octokit/rest": "^19.0.0",
+    "node-fetch": "^3.0.0",
+    "simple-git": "^3.18.0",
+    "js-yaml": "^4.1.0",
+    "uuid": "^9.0.0"
+  }
+}

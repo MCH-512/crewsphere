@@ -1,0 +1,27 @@
+
+{
+  "projectId": "YOUR_GCP_PROJECT",
+  "bigQuery": {
+    "dataset": "crew_logs",
+    "table": "events"
+  },
+  "pollIntervalSeconds": 60,
+  "llm": {
+    "provider": "genkit",
+    "apiKey": "GENKIT_OR_OPENAI_API_KEY",
+    "model": "gpt-4o"
+  },
+  "github": {
+    "repoOwner": "your-org-or-user",
+    "repoName": "crew-repo",
+    "token": "GITHUB_TOKEN_WITH_repo_scope",
+    "defaultBase": "main"
+  },
+  "firebaseAdmin": {
+    "serviceAccountKeyPath": "./serviceAccountKey.json",
+    "auditCollection": "auditLogs"
+  },
+  "policies": {
+    "noAutoMergePaths": ["firestore.rules", "firebase.json", "src/server/auth/*.js"]
+  }
+}
