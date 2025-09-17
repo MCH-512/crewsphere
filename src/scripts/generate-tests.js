@@ -1,7 +1,8 @@
 // scripts/generate-tests.js
-const { ai } = require('../ai/genkit');
-const fs = require('fs');
 const path = require('path');
+// Correctly resolve the genkit entry point from the script's location
+const { ai } = require(path.resolve(__dirname, '../ai/genkit'));
+const fs = require('fs');
 
 // This is a simplified placeholder. In a real-world scenario, you might have a more robust
 // way to configure and call the Genkit AI object from a script.
