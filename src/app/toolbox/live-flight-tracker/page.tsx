@@ -8,6 +8,12 @@ import dynamic from 'next/dynamic';
 
 const DynamicMap = dynamic(() => import('@/components/features/live-map'), {
     ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full items-center justify-center bg-muted">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="ml-2">Loading Map...</p>
+      </div>
+    ),
 });
 
 export default function LiveFlightTrackerPage() {
@@ -24,7 +30,7 @@ export default function LiveFlightTrackerPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="h-[600px] w-full">
+                    <div className="h-[600px] w-full rounded-lg overflow-hidden">
                        <DynamicMap />
                     </div>
                 </CardContent>

@@ -1,3 +1,4 @@
+
 name: Full Test Suite — CrewSphere
 on:
   push:
@@ -21,6 +22,9 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
+
+      - name: Run Security Audit
+        run: npm audit --audit-level=high
 
       - name: Run Next.js Code Quality Audit
         id: audit
@@ -63,7 +67,7 @@ jobs:
             
       - name: Upload Test Reports
         if: always() # Always run this step to upload reports even if previous steps fail
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4-alpha.1
         with:
           name: test-reports
           path: |
@@ -124,4 +128,3 @@ jobs:
           labels: "ai, enhancement, automated"
           reviewers: "project-admin" # Replace with actual GitHub usernames
           assignees: "project-admin"
-          
