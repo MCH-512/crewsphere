@@ -9,7 +9,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCWx8oTDso4ueIN56DJimo8hAUxRKPOy4Q",
   authDomain: "aircrew-hub.firebaseapp.com",
   projectId: "aircrew-hub",
-  storageBucket: "aircrew-hub.appspot.com",
+  storageBucket: "aircrew-hub.firebasestorage.app",
   messagingSenderId: "390858189228",
   appId: "1:390858189228:web:d5acc01380d0ff2fa67209"
 };
