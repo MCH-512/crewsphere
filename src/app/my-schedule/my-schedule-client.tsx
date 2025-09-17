@@ -20,8 +20,8 @@ import { getAirportByCode, type Airport } from "@/services/airport-service";
 import type { UserActivity } from "@/schemas/user-activity-schema";
 import Link from 'next/link';
 import { getUserActivitiesForMonth, type ActivityData } from "@/services/activity-service";
-import { Button } from "../ui/button";
-import { Separator } from "../ui/separator";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 // --- Data Structures ---
 interface FlightWithCrewDetails extends StoredFlight {
