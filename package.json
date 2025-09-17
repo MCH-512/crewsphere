@@ -9,7 +9,13 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "audit": "node nextjs-audit.js",
-    "auto-optimize": "node scripts/run-analysis.js"
+    "test": "node src/scripts/run-all-tests.js",
+    "test:unit": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:accessibility": "playwright test tests/accessibility/accessibility.spec.ts",
+    "test:ai": "jest --testPathPattern=tests/ai-validation",
+    "test:auto-generate": "node src/scripts/generate-tests.js",
+    "auto-optimize": "node src/scripts/run-analysis.js"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.0.0",
