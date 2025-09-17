@@ -26,6 +26,7 @@ export interface StoredFlightSwap {
       departureAirport: string;
       arrivalAirport: string;
       scheduledDepartureDateTimeUTC: string;
+      scheduledArrivalDateTimeUTC: string;
   };
   
   // Requesting User/Flight (the one proposed in exchange)
@@ -37,6 +38,7 @@ export interface StoredFlightSwap {
       departureAirport: string;
       arrivalAirport: string;
       scheduledDepartureDateTimeUTC: string;
+      scheduledArrivalDateTimeUTC: string;
   };
   
   // New field for simplified queries and security rules

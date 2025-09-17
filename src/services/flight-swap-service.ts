@@ -31,6 +31,7 @@ export async function postFlightSwap(flightToPost: StoredFlight, user: User): Pr
                 departureAirport: flightToPost.departureAirport,
                 arrivalAirport: flightToPost.arrivalAirport,
                 scheduledDepartureDateTimeUTC: flightToPost.scheduledDepartureDateTimeUTC,
+                scheduledArrivalDateTimeUTC: flightToPost.scheduledArrivalDateTimeUTC,
             },
             status: "posted",
             createdAt: serverTimestamp(),
@@ -81,13 +82,14 @@ export async function requestFlightSwap(swapId: string, requestingFlight: Stored
                 departureAirport: requestingFlight.departureAirport,
                 arrivalAirport: requestingFlight.arrivalAirport,
                 scheduledDepartureDateTimeUTC: requestingFlight.scheduledDepartureDateTimeUTC,
+                scheduledArrivalDateTimeUTC: requestingFlight.scheduledArrivalDateTimeUTC,
             },
             updatedAt: serverTimestamp(),
         });
         
         await logAuditEvent({
             userId: user.uid,
-            userEmail: user.email || 'N/A',
+            userEmail: user.email || 'N𝘢un',
             actionType: 'REQUEST_FLIGHT_SWAP',
             entityType: 'FLIGHT_SWAP',
             entityId: swapId,

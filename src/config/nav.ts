@@ -116,7 +116,7 @@ export const adminNavConfig: { sidebarNav: NavGroup[] } = {
          { href: "/admin/audio-studio", title: "Audio Studio", icon: AudioWaveform, description: "Generate voice announcements and audio messages using AI.", buttonText: "Open Studio" },
          { href: "/admin/video-studio", title: "Video Studio", icon: Video, description: "Generate short videos from text or by animating an image.", buttonText: "Open Studio" },
          { href: "/admin/system-settings", title: "System Settings", icon: Settings, description: "Configure application-wide settings and maintenance mode.", buttonText: "Configure Settings" },
-         { href: "/admin/audit-logs", title: "Audit Logs", icon: Activity, description: "Review a chronological record of system activities and changes.", buttonText: "View Logs" },
+         { href: "/admin/audit-logs", title: "Audit Logs", icon: Activity, description: "A chronological record of system activities and changes.", buttonText: "View Logs" },
        ]
     }
   ]

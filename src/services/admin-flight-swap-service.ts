@@ -143,7 +143,7 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
         const initiatorConflicts = await checkCrewAvailability(
             [swap.initiatingUserId],
             new Date(swap.requestingFlightInfo.scheduledDepartureDateTimeUTC),
-            new Date(swap.requestingFlightInfo.scheduledArrivalDateTimeUTC || swap.requestingFlightInfo.scheduledDepartureDateTimeUTC),
+            new Date(swap.requestingFlightInfo.scheduledArrivalDateTimeUTC),
             swap.initiatingFlightId // Ignore the original flight
         );
         if (Object.keys(initiatorConflicts).length > 0) {
@@ -154,7 +154,7 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
         const requesterConflicts = await checkCrewAvailability(
             [swap.requestingUserId],
             new Date(swap.flightInfo.scheduledDepartureDateTimeUTC),
-            new Date(swap.flightInfo.scheduledArrivalDateTimeUTC || swap.flightInfo.scheduledDepartureDateTimeUTC),
+            new Date(swap.flightInfo.scheduledArrivalDateTimeUTC),
             swap.requestingFlightId // Ignore the original flight
         );
          if (Object.keys(requesterConflicts).length > 0) {
@@ -169,5 +169,3 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
         return "Could not automatically check for conflicts due to a server error.";
     }
 }
-
-    

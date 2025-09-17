@@ -13,5 +13,3 @@ export default async function MySwapsPage() {
 
     return <MySwapsClient initialSwaps={initialSwaps} />;
 }
-
-    
