@@ -1,3 +1,4 @@
+
 "use server";
 
 import * as React from "react";
@@ -9,29 +10,9 @@ import { format, parseISO } from "date-fns";
 import { StoredPurserReport } from "@/schemas/purser-report-schema";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
-import { getCurrentUser } from "@/lib/session";
 import { redirect } from "next/navigation";
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-
-async function getMyReports() {
-    const user = await getCurrentUser();
-    if (!user) {
-        redirect('/login');
-    }
-
-    const q = query(
-        collection(db, "purserReports"),
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc")
-    );
-    const querySnapshot = await getDocs(q);
-    const reports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredPurserReport));
-    
-    // Convert Timestamps to strings for serialization to client components if needed,
-    // but here we render directly on the server.
-    return reports;
-}
+import { getMyReports } from "@/services/report-service";
+import { getCurrentUser } from "@/lib/session";
 
 const getStatusBadgeVariant = (status: StoredPurserReport['status']) => {
     switch (status) {
@@ -43,6 +24,10 @@ const getStatusBadgeVariant = (status: StoredPurserReport['status']) => {
 };
 
 export default async function PurserReportsHistoryPage() {
+    const user = await getCurrentUser();
+    if (!user) {
+        redirect('/login');
+    }
     const reports = await getMyReports();
 
     return (
