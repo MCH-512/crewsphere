@@ -18,13 +18,12 @@ import { db, storage } from "@/lib/firebase";
 import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { collection, getDocs, query, orderBy, writeBatch, doc, serverTimestamp, where, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion, Search, Filter, Sparkles } from "lucide-react";
+import { GraduationCap, Loader2, AlertTriangle, RefreshCw, PlusCircle, Trash2, Edit, CheckSquare, ListOrdered, FileQuestion, Search, Filter, Sparkles, ArrowLeft, ArrowRight, BookOpen, Send, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { courseFormSchema, CourseFormValues, courseCategories, courseTypes } from "@/schemas/course-schema";
 import { StoredCourse } from "@/schemas/course-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StoredQuiz, StoredCertificateRule } from "@/schemas/course-schema";
 import { generateCourseImage } from "@/ai/flows/generate-course-image-flow";
@@ -32,12 +31,22 @@ import { generateQuizFromContent } from "@/ai/flows/generate-quiz-flow";
 import { Badge } from "@/components/ui/badge";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
 import { StoredQuestion } from "@/schemas/quiz-question-schema";
+import { Progress } from "@/components/ui/progress";
+import { AnimatedCard } from "@/components/motion/animated-card";
+import { cn } from "@/lib/utils";
 
 type SortableColumn = 'title' | 'category' | 'courseType' | 'published';
 type SortDirection = 'asc' | 'desc';
 type CourseCategory = StoredCourse["category"];
 type CourseType = StoredCourse["courseType"];
 type StatusFilter = "all" | "published" | "draft";
+
+const steps = [
+    { id: 1, title: 'Course Details', fields: ['title', 'description', 'category', 'courseType', 'referenceBody', 'duration', 'imageHint', 'mandatory', 'published'], icon: BookOpen },
+    { id: 2, title: 'Chapters', fields: ['chapters'], icon: ListOrdered },
+    { id: 3, title: 'Quiz & Certificate', fields: ['quizTitle', 'passingThreshold', 'certificateExpiryDays'], icon: Shield },
+    { id: 4, title: 'Quiz Questions', fields: ['questions'], icon: FileQuestion },
+];
 
 export default function AdminCoursesPage() {
     const { user, loading: authLoading } = useAuth();
@@ -52,6 +61,7 @@ export default function AdminCoursesPage() {
     const [currentCourse, setCurrentCourse] = React.useState<StoredCourse | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
     const [courseToDelete, setCourseToDelete] = React.useState<StoredCourse | null>(null);
+    const [currentStep, setCurrentStep] = React.useState(0);
 
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>("title");
     const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc");
@@ -70,6 +80,7 @@ export default function AdminCoursesPage() {
             questions: [{ questionText: "", options: ["", "", "", ""], correctAnswer: "" }],
             quizTitle: "", passingThreshold: 80, certificateExpiryDays: 365
         },
+        mode: "onChange",
     });
 
     const { fields: chapterFields, append: appendChapter, remove: removeChapter } = useFieldArray({ control: form.control, name: "chapters" });
@@ -133,6 +144,7 @@ export default function AdminCoursesPage() {
     };
 
     const handleOpenDialog = async (courseToEdit?: StoredCourse) => {
+        setCurrentStep(0); // Reset to first step
         if (courseToEdit) {
             setIsEditMode(true);
             setCurrentCourse(courseToEdit);
@@ -180,21 +192,20 @@ export default function AdminCoursesPage() {
     const handleFormSubmit = async (data: CourseFormValues) => {
         if (!user) return;
         setIsSubmitting(true);
-        try {
-            const batch = writeBatch(db);
-            let imageUrl: string | undefined = undefined;
+        let imageUrl: string | undefined = undefined;
 
+        try {
             const courseRef = isEditMode && currentCourse ? doc(db, "courses", currentCourse.id) : doc(collection(db, "courses"));
             
             if (data.imageHint && (!currentCourse?.imageUrl || data.imageHint !== currentCourse.imageHint)) {
+                toast({ title: "Generating AI Image...", description: "This may take a moment. Please wait." });
                 try {
-                    toast({ title: "Generating AI Image...", description: "This may take a moment. Please wait." });
                     const result = await generateCourseImage({ prompt: data.imageHint });
                     if (result.imageDataUri) {
                         const storageRef = ref(storage, `course-images/${courseRef.id}/${Date.now()}.png`);
                         await uploadString(storageRef, result.imageDataUri, 'data_url');
                         imageUrl = await getDownloadURL(storageRef);
-                         toast({ title: "AI Image Generated", description: "The course image has been successfully created." });
+                        toast({ title: "AI Image Generated", description: "The course image has been successfully created." });
                     }
                 } catch (imageError) {
                     console.error("AI Image generation/upload failed:", imageError);
@@ -202,6 +213,7 @@ export default function AdminCoursesPage() {
                 }
             }
 
+            const batch = writeBatch(db);
             const quizRef = isEditMode && currentCourse ? doc(db, "quizzes", currentCourse.quizId) : doc(collection(db, "quizzes"));
             const certRuleRef = isEditMode && currentCourse ? doc(db, "certificateRules", currentCourse.certificateRuleId) : doc(collection(db, "certificateRules"));
 
@@ -320,6 +332,30 @@ export default function AdminCoursesPage() {
         }
     };
 
+    const triggerValidation = async (fields: (keyof CourseFormValues)[]) => {
+        return await form.trigger(fields);
+    };
+
+    const nextStep = async () => {
+        const fieldsToValidate = steps[currentStep].fields as (keyof CourseFormValues)[];
+        const isValid = await triggerValidation(fieldsToValidate);
+        if (isValid) {
+          if (currentStep < steps.length - 1) {
+            setCurrentStep(prev => prev + 1);
+          }
+        } else {
+            toast({ title: "Incomplete Section", description: "Please fill all required fields before continuing.", variant: "destructive"})
+        }
+    };
+
+    const prevStep = () => {
+        if (currentStep > 0) {
+            setCurrentStep(prev => prev - 1);
+        }
+    };
+
+    const progressPercentage = ((currentStep + 1) / steps.length) * 100;
+
     if (authLoading || isLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     if (!user || user.role !== 'admin') return <div className="text-center p-4"><AlertTriangle className="mx-auto h-12 w-12 text-destructive" /><CardTitle>Access Denied</CardTitle></div>;
 
@@ -397,28 +433,40 @@ export default function AdminCoursesPage() {
                     <DialogHeader>
                         <DialogTitle>{isEditMode ? "Edit Course" : "Create New Course"}</DialogTitle>
                         <DialogDescription>{isEditMode ? "Update course details, chapters, and quiz questions below." : "Fill out all details for the new course."}</DialogDescription>
+                         <Progress value={progressPercentage} className="mt-4"/>
+                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                            <span>Step {currentStep + 1} of {steps.length}: <strong>{steps[currentStep].title}</strong></span>
+                            <span>{Math.round(progressPercentage)}% Complete</span>
+                        </div>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleFormSubmit)}>
-                            <ScrollArea className="h-[70vh] p-4">
-                                <div className="space-y-6">
-                                    <FormField control={form.control} name="title" render={({ field }) => <FormItem><FormLabel>Course Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                                    <FormField control={form.control} name="description" render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} className="min-h-[100px]" /></FormControl><FormMessage /></FormItem>} />
-                                    <div className="grid md:grid-cols-2 gap-4">
-                                        <FormField control={form.control} name="category" render={({ field }) => <FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course category" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
-                                        <FormField control={form.control} name="courseType" render={({ field }) => <FormItem><FormLabel>Course Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course type" /></SelectTrigger></FormControl><SelectContent>{courseTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
-                                        <FormField control={form.control} name="referenceBody" render={({ field }) => <FormItem><FormLabel>Reference</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                                        <FormField control={form.control} name="duration" render={({ field }) => <FormItem><FormLabel>Duration</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                                        <FormField control={form.control} name="imageHint" render={({ field }) => <FormItem><FormLabel>AI Image Hint</FormLabel><FormControl><Input {...field} placeholder="e.g. cockpit, safety manual" /></FormControl><FormMessage /></FormItem>} />
-                                    </div>
-                                    <div className="grid md:grid-cols-2 gap-4">
-                                       <FormField control={form.control} name="mandatory" render={({ field }) => <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3"><div className="space-y-0.5"><FormLabel>Mandatory</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>} />
-                                       <FormField control={form.control} name="published" render={({ field }) => <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3"><div className="space-y-0.5"><FormLabel>Published</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>} />
-                                    </div>
+                            <ScrollArea className="h-[60vh] p-4">
 
-                                    <Separator />
+                                {/* Step 1: Course Details */}
+                                <AnimatedCard delay={0.1} className={cn(currentStep !== 0 && "hidden")}>
+                                     <div className="space-y-6">
+                                        <h3 className="text-lg font-semibold flex items-center gap-2"><BookOpen/>Course Details</h3>
+                                        <FormField control={form.control} name="title" render={({ field }) => <FormItem><FormLabel>Course Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField control={form.control} name="description" render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} className="min-h-[100px]" /></FormControl><FormMessage /></FormItem>} />
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="category" render={({ field }) => <FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course category" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                            <FormField control={form.control} name="courseType" render={({ field }) => <FormItem><FormLabel>Course Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course type" /></SelectTrigger></FormControl><SelectContent>{courseTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                            <FormField control={form.control} name="referenceBody" render={({ field }) => <FormItem><FormLabel>Reference</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                                            <FormField control={form.control} name="duration" render={({ field }) => <FormItem><FormLabel>Duration</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                                            <FormField control={form.control} name="imageHint" render={({ field }) => <FormItem><FormLabel>AI Image Hint</FormLabel><FormControl><Input {...field} placeholder="e.g. cockpit, safety manual" /></FormControl><FormMessage /></FormItem>} />
+                                        </div>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                           <FormField control={form.control} name="mandatory" render={({ field }) => <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3"><div className="space-y-0.5"><FormLabel>Mandatory</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>} />
+                                           <FormField control={form.control} name="published" render={({ field }) => <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3"><div className="space-y-0.5"><FormLabel>Published</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>} />
+                                        </div>
+                                    </div>
+                                </AnimatedCard>
+                                
+                                {/* Step 2: Chapters */}
+                                 <AnimatedCard delay={0.1} className={cn(currentStep !== 1 && "hidden")}>
                                     <div className="space-y-4">
-                                        <FormLabel className="font-semibold text-base flex items-center gap-2"><ListOrdered/>Chapters</FormLabel>
+                                        <h3 className="font-semibold text-lg flex items-center gap-2"><ListOrdered/>Chapters</h3>
                                         {chapterFields.map((field, index) => (
                                             <div key={field.id} className="p-4 border rounded-lg space-y-4 relative">
                                                 <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeChapter(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -428,10 +476,12 @@ export default function AdminCoursesPage() {
                                         ))}
                                         <Button type="button" variant="outline" size="sm" onClick={() => appendChapter({ title: "", content: "" })}>Add Chapter</Button>
                                     </div>
-                                    
-                                    <Separator />
-                                    <div className="space-y-4">
-                                        <FormLabel className="font-semibold text-base flex items-center gap-2"><CheckSquare/>Quiz & Certificate</FormLabel>
+                                </AnimatedCard>
+
+                                {/* Step 3: Quiz & Certificate */}
+                                <AnimatedCard delay={0.1} className={cn(currentStep !== 2 && "hidden")}>
+                                     <div className="space-y-4">
+                                        <h3 className="font-semibold text-lg flex items-center gap-2"><Shield/>Quiz & Certificate Settings</h3>
                                          <FormField control={form.control} name="quizTitle" render={({ field }) => <FormItem><FormLabel>Quiz Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
                                          <div className="grid md:grid-cols-2 gap-4">
                                             <Controller
@@ -462,11 +512,13 @@ export default function AdminCoursesPage() {
                                             />
                                          </div>
                                     </div>
-
-                                    <Separator />
+                                </AnimatedCard>
+                                
+                                {/* Step 4: Quiz Questions */}
+                                <AnimatedCard delay={0.1} className={cn(currentStep !== 3 && "hidden")}>
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center">
-                                            <FormLabel className="font-semibold text-base flex items-center gap-2"><FileQuestion/>Quiz Questions</FormLabel>
+                                            <h3 className="font-semibold text-lg flex items-center gap-2"><FileQuestion/>Quiz Questions</h3>
                                             <Button type="button" variant="outline" onClick={handleGenerateQuiz} disabled={isGeneratingQuiz}>
                                                 {isGeneratingQuiz ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}
                                                 Generate with AI
@@ -495,11 +547,24 @@ export default function AdminCoursesPage() {
                                         })}
                                         <Button type="button" variant="outline" size="sm" onClick={() => appendQuestion({ questionText: "", options: ["", "", "", ""], correctAnswer: "" })}>Add Question</Button>
                                     </div>
-                                </div>
+                                </AnimatedCard>
+
                             </ScrollArea>
-                            <DialogFooter className="mt-4 pt-4 border-t">
-                                <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                                <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}{isEditMode ? "Save Changes" : "Create Course"}</Button>
+                            <DialogFooter className="mt-4 pt-4 border-t flex justify-between w-full">
+                                <Button type="button" variant="outline" onClick={prevStep} disabled={currentStep === 0}>
+                                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+                                </Button>
+                                
+                                {currentStep < steps.length - 1 ? (
+                                    <Button type="button" onClick={nextStep}>
+                                        Next <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                ) : (
+                                    <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>
+                                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
+                                        {isEditMode ? "Save Changes" : "Create Course"}
+                                    </Button>
+                                )}
                             </DialogFooter>
                         </form>
                     </Form>
