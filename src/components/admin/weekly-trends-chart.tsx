@@ -43,10 +43,11 @@ interface WeeklyTrendsChartProps {
 const MAX_RETRIES = 3;
 
 export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps) {
+    const [key, setKey] = React.useState(0);
     const [data, setData] = React.useState<WeeklyTrendDataPoint[] | null>(null);
     const [error, setError] = React.useState<string | null>(null);
-    const [retryCount, setRetryCount] = React.useState(0);
     const [isRetrying, setIsRetrying] = React.useState(false);
+    const [retryCount, setRetryCount] = React.useState(0);
 
     const fetchData = React.useCallback(async (attempt: number) => {
         let isMounted = true;
@@ -78,13 +79,13 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
 
     React.useEffect(() => {
         fetchData(0);
-    }, [fetchData]);
+    }, [fetchData, key]);
     
     const handleRetry = () => {
         if (retryCount < MAX_RETRIES) {
             const newAttemptCount = retryCount + 1;
             setRetryCount(newAttemptCount);
-            fetchData(newAttemptCount);
+            setKey(prev => prev + 1); // Trigger useEffect re-fetch
         }
     };
 
