@@ -5,7 +5,7 @@ import { db, isConfigValid } from "@/lib/firebase";
 import { collection, getDocs, query, where, getCountFromServer, Timestamp, orderBy } from "firebase/firestore";
 import type { AdminDashboardStats } from "@/config/nav";
 import { getCurrentUser } from "@/lib/session";
-import { startOfDay, subDays, format, eachDayOfInterval, startOfWeek } from 'date-fns';
+import { startOfDay, subDays, format, eachDayOfInterval } from 'date-fns';
 
 
 export interface WeeklyTrendDataPoint {
@@ -96,7 +96,7 @@ export async function getAdminDashboardWeeklyTrends(): Promise<WeeklyTrendDataPo
     }
 
     const endDate = new Date();
-    const startDate = startOfWeek(subDays(endDate, 1), { weekStartsOn: 1 }); // Start from last Monday
+    const startDate = startOfDay(subDays(endDate, 6)); // Get data for the last 7 days including today
 
     try {
         const logsQuery = query(
