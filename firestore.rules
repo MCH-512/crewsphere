@@ -13,12 +13,16 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // Check for custom claim (set by server) OR role in user document.
       return isAuthenticated() && 
         (
           request.auth.token.admin == true ||
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
         );
+    }
+    
+    // Helper function to check if all crew members in a list exist.
+    function crewExists(crewIds) {
+      return crewIds.size() == 0 || crewIds.map(uid => exists(/databases/$(database)/documents/users/$(uid))).reduce(true, (acc, val) => acc && val);
     }
     
     // --- Collection Rules ---
@@ -77,7 +81,9 @@ service cloud.firestore {
     // Crew members assigned to a flight can read its details.
     match /flights/{flightId} {
       allow read: if isAuthenticated() && (request.auth.uid in resource.data.allCrewIds || isAdmin());
-      allow write: if isAdmin();
+      allow create: if isAdmin() && crewExists(request.resource.data.allCrewIds);
+      allow update: if isAdmin() && crewExists(request.resource.data.allCrewIds);
+      allow delete: if isAdmin();
     }
     
     // Flight swaps can be created/read by any authenticated user.
@@ -111,9 +117,9 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId) || isAdmin();
     }
     
-    // Admins manage sessions. Authenticated users can read them (e.g., for calendar view).
+    // Admins manage sessions. Users can only read sessions they are assigned to.
     match /trainingSessions/{sessionId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid in resource.data.attendeeIds);
       allow write: if isAdmin();
     }
 
@@ -159,6 +165,11 @@ service cloud.firestore {
     match /systemConfiguration/{configId} {
         allow read: if isAuthenticated();
         allow write: if isAdmin();
+    }
+
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
