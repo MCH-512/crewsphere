@@ -9,6 +9,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "audit": "node nextjs-audit.js",
+    "audit:ai": "node src/scripts/run-code-audit.js",
     "test": "node src/scripts/run-all-tests.js",
     "test:unit": "jest --coverage",
     "test:e2e": "playwright test",

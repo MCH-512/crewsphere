@@ -54,6 +54,44 @@ class Analyzer {
     }
   }
 
+  async analyzeCodeForImprovements(filesToAudit) {
+    console.log(`Analyzing code for improvements in files: ${filesToAudit.join(', ')}`);
+    await this.setupRepo();
+    
+    let contextFiles = {};
+    for (const filePath of filesToAudit) {
+      try {
+        const fullPath = path.join(this.repoPath, filePath);
+        const content = await fs.readFile(fullPath, 'utf8');
+        contextFiles[filePath] = content;
+      } catch (e) {
+        console.warn(`Could not read file for proactive audit: ${filePath}`);
+      }
+    }
+
+    const contextStr = Object.entries(contextFiles)
+      .map(([name, content]) => `--- START FILE: ${name} ---\n${content}\n--- END FILE: ${name} ---`)
+      .join('\n\n');
+
+    const prompt = `
+You are an expert software architect specializing in Next.js, React, and TypeScript.
+Analyze the following source code files. Identify any "code smells," violations of the DRY principle, anti-patterns, performance bottlenecks, or opportunities for significant refactoring to improve maintainability and robustness.
+
+Source Code:
+${contextStr}
+
+Tasks (respond in JSON format only):
+1. actionable: boolean (true if you have a high-confidence, non-breaking refactoring suggestion).
+2. probable_root_cause: A short, high-level summary of the architectural issue identified (e.g., "Duplicated data-fetching logic," "Component with too many responsibilities").
+3. suggested_fixes: An array containing ONE action of type "code_patch". The 'patch' key MUST be a JSON object: {"files": {"path/to/file.ts": "THE FULL NEW CONTENT OF THE FILE"}}. Do not use diffs. Only propose changes for the files provided.
+4. confidence: A float from 0.0 to 1.0 indicating your confidence in the proposed fix.
+5. quick_issue_title: A short, descriptive title for a GitHub pull request (e.g., "refactor: Centralize airport data fetching logic").
+6. quick_issue_body: A Markdown-formatted explanation of the problem and the proposed solution.
+`;
+
+    return this.processLLMResponse(prompt, {});
+  }
+
   async analyzeEvent(event) {
     const isTsServerLog = event.service && (event.service.includes('tsserver') || event.service.includes('vscode.typescript-language-features'));
     
@@ -62,26 +100,22 @@ class Analyzer {
 
     // --- CONTEXT GATHERING ---
     await this.setupRepo();
-    // Heuristic to find file paths in the error message or stack trace
     const fileRegex = /(\/[a-zA-Z0-9\._-\/]+|[a-zA-Z]:\\[a-zA-Z0-9\._-\\]+)/g;
     const stack = (isTsServerLog ? parseTsServerLog(event.message).stack : '') || event.message;
     const paths = (stack.match(fileRegex) || []).filter(p => p.includes('src/'));
 
-    for (const p of paths.slice(0, 3)) { // Limit to 3 files to keep context small
+    for (const p of paths.slice(0, 3)) {
         const cleanPath = p.split('src/')[1];
         if (cleanPath) {
-            const fullPath = path.join(this.repoPath, 'src', cleanPath.split(':')[0]); // remove line numbers
+            const fullPath = path.join(this.repoPath, 'src', cleanPath.split(':')[0]);
             try {
                 await fs.access(fullPath);
                 const content = await fs.readFile(fullPath, 'utf8');
                 contextFiles[`src/${cleanPath}`] = content;
-            } catch (e) {
-                console.warn(`Could not read context file: ${fullPath}`);
-            }
+            } catch (e) { console.warn(`Could not read context file: ${fullPath}`); }
         }
     }
     
-    // --- PROMPT CONSTRUCTION ---
     const contextStr = Object.entries(contextFiles)
       .map(([name, content]) => `--- START FILE: ${name} ---\n${content}\n--- END FILE: ${name} ---`)
       .join('\n\n');
@@ -104,12 +138,12 @@ ${parsedLog.messages.join('\n')}
 Relevant Source Code:
 ${contextStr || "No relevant files could be automatically read."}
 
-Tasks (respond JSON only):
+Tasks (respond in JSON format only):
 1. actionable: boolean (true if a code patch is possible)
 2. category: one of ["tsserver_crash","performance","plugin_conflict","config_error","memory","other"]
 3. probable_root_cause: Short sentence describing the likely cause.
-4. suggested_fixes: Array of actions. For a code fix, use type "code_patch". The 'patch' key should be a JSON object like {"files": {"path/to/file.ts": "FULL NEW CONTENT OF THE FILE"}}.
-5. confidence: 0.0-1.0
+4. suggested_fixes: An array of actions. For a code fix, use type "code_patch". The 'patch' key MUST be a JSON object: {"files": {"path/to/file.ts": "THE FULL NEW CONTENT OF THE FILE"}}. Do not use diffs.
+5. confidence: A float from 0.0 to 1.0.
 6. quick_issue_title: Short title for a GitHub issue.
 7. quick_issue_body: Markdown body for a GitHub issue, including reproduction steps if possible.
 `;
@@ -125,18 +159,21 @@ Error Log:
 Relevant Source Code:
 ${contextStr || "No relevant files could be automatically read."}
 
-Tasks (respond JSON only):
+Tasks (respond in JSON format only):
 1. actionable: boolean (true if a code patch is possible)
 2. probable_root_cause: Short sentence describing the likely cause.
-3. suggested_fixes: Array of actions. For a code fix, use type "code_patch". The 'patch' key should be a JSON object like {"files": {"path/to/file.ts": "FULL NEW CONTENT OF THE FILE"}}.
-4. confidence: 0.0-1.0
+3. suggested_fixes: An array of actions. For a code fix, use type "code_patch". The 'patch' key MUST be a JSON object: {"files": {"path/to/file.ts": "THE FULL NEW CONTENT OF THE FILE"}}. Do not use diffs.
+4. confidence: A float from 0.0 to 1.0.
 5. quick_issue_title: Short title for a GitHub issue.
 6. quick_issue_body: Markdown body for a GitHub issue.
 `;
     }
+    
+    return this.processLLMResponse(prompt, event);
+  }
 
+  async processLLMResponse(prompt, event) {
     const llmResp = await this.callLLM(prompt);
-
     try {
       const parsed = JSON.parse(llmResp);
       parsed.id = uuidv4();
@@ -150,18 +187,12 @@ Tasks (respond JSON only):
         description: parsed.probable_root_cause,
         filesTouched: fix?.type === 'code_patch' ? Object.keys(fix.patch?.files || {}) : [],
         patch: fix?.type === 'code_patch' ? JSON.stringify(fix.patch) : null,
-        raw: parsed
+        raw: parsed,
+        analysisId: parsed.id
       };
     } catch (err) {
       console.error("LLM output was not valid JSON:", llmResp);
-      return {
-        actionable: false,
-        severity: event.severity,
-        description: 'LLM output non-JSON; manual review needed',
-        filesTouched: [],
-        patch: null,
-        raw: llmResp
-      };
+      return { actionable: false, description: 'LLM output non-JSON', raw: llmResp };
     }
   }
 
@@ -169,14 +200,11 @@ Tasks (respond JSON only):
     if (this.llmProvider === 'openai') {
       const resp = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: this.model,
           messages: [{ role: 'user', content: prompt }],
-          max_tokens: 2500,
+          max_tokens: 4000,
           temperature: 0.1,
           response_format: { type: "json_object" },
         })
@@ -187,8 +215,8 @@ Tasks (respond JSON only):
           throw new Error(`LLM API error: ${json.error?.message || 'No response'}`);
       }
       return json.choices[0].message.content;
-    } else {
-      return JSON.stringify({ actionable: false, severity: 'info', description: 'Provider not configured' });
+    } else { // Fallback for genkit or other providers
+      return JSON.stringify({ actionable: false, description: 'LLM Provider not configured for direct call in Watchdog.' });
     }
   }
 }
