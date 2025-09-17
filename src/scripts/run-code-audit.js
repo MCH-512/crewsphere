@@ -1,4 +1,5 @@
 
+
 'use server';
 
 /**
@@ -95,10 +96,12 @@ async function fetchDependabotContext() {
       });
 
       if (files.some(file => file.filename === "package.json")) {
-        if (files[0].patch?.includes("recharts")) {
+        // In a real scenario, we'd parse the patch more carefully. Here, we simplify.
+        const patchContent = files[0].patch || '';
+        if (patchContent.includes("recharts")) {
           suggestions.push(`- PR #${pr.number} updates 'recharts'. This could impact 'WeeklyTrendsChart'. Suggest adding regression tests.`);
         }
-        if (files[0].patch?.includes("firebase")) {
+        if (patchContent.includes("firebase")) {
           suggestions.push(`- PR #${pr.number} updates 'firebase'. Recommend verifying authentication and Firestore query components.`);
         }
       }
@@ -164,6 +167,8 @@ async function main() {
 
     ## Instructions ##
     Based on ALL the context, provide a single, high-impact optimization.
+
+    - **Critical Security Rule**: Under no circumstances should you ever include secrets, API keys, tokens, or environment variables in your JSON response. Always use placeholders like 'process.env.SECRET_NAME'.
     - If Sentry shows frequent 'resource-exhausted' errors for 'getAdminDashboardWeeklyTrends', suggest implementing 'unstable_cache' from 'next/cache' on that function.
     - If a Dependabot PR updates 'recharts', suggest adding a specific Jest snapshot test for 'WeeklyTrendsChart' to prevent visual regressions.
     - If no specific external context applies, look for code smells like duplicated logic, performance bottlenecks, or opportunities for better state management.
@@ -187,42 +192,53 @@ async function main() {
 
   // 3. Call the AI model
   console.log("🧠 Sending context to AI for analysis...");
-  const { text } = await ai.generate({
-    model: 'googleai/gemini-1.5-pro-latest',
-    prompt: prompt,
-    output: { format: "json" },
-    config: { temperature: 0.1 },
-  });
+  try {
+    const { text } = await ai.generate({
+        model: 'googleai/gemini-1.5-pro-latest',
+        prompt: prompt,
+        output: { format: "json" },
+        config: { temperature: 0.1 },
+    });
 
-  if (!text) {
-    console.log("✅ AI analysis complete. No actionable improvements suggested.");
-    return;
+    if (!text) {
+        console.log("✅ AI analysis complete. No actionable improvements suggested.");
+        return;
+    }
+    
+    const analysisResult = JSON.parse(text);
+
+    if (!analysisResult.actionable || !analysisResult.suggested_patch?.files) {
+        console.log("✅ AI analysis complete. No code patch suggested.");
+        return;
+    }
+    
+    // 4. Output the analysis for the GitHub Action to pick up
+    console.log("💡 AI suggested an actionable patch. Creating outputs for GitHub Actions...");
+    // The ::set-output command is deprecated. We will write to a file and have the workflow read it.
+    const outputs = {
+        pr_title: analysisResult.quick_issue_title,
+        pr_body: analysisResult.quick_issue_body,
+        analysis_id: analysisResult.analysis_id
+    };
+
+    // Write outputs to a file for GitHub Actions to read
+    const outputsPath = path.join(process.cwd(), 'workflow_outputs.json');
+    await fs.writeFile(outputsPath, JSON.stringify(outputs));
+    console.log(`::set-output name=outputs_file::${outputsPath}`);
+
+    const patchFilePath = path.join(process.cwd(), 'suggested_patch.json');
+    await fs.writeFile(patchFilePath, JSON.stringify(analysisResult.suggested_patch, null, 2));
+    console.log(`::set-output name=patch_file_path::${patchFilePath}`);
+
+    console.log("✅ Audit finished successfully.");
+
+  } catch (error) {
+    console.error("AI analysis failed:", error);
+    process.exit(1);
   }
-  
-  const analysisResult = JSON.parse(text);
-
-  if (!analysisResult.actionable || !analysisResult.suggested_patch?.files) {
-    console.log("✅ AI analysis complete. No code patch suggested.");
-    return;
-  }
-  
-  // 4. Output the analysis for the GitHub Action to pick up
-  console.log("💡 AI suggested an actionable patch. Creating outputs for GitHub Actions...");
-  console.log(`::set-output name=pr_title::${analysisResult.quick_issue_title}`);
-  console.log(`::set-output name=pr_body::${analysisResult.quick_issue_body.replace(/\n/g, '%0A')}`);
-  console.log(`::set-output name=analysis_id::${analysisResult.analysis_id}`);
-  
-  // Write the patch to a file to be applied in the next step of the workflow
-  const patchFilePath = path.join(process.cwd(), 'suggested_patch.json');
-  await fs.writeFile(patchFilePath, JSON.stringify(analysisResult.suggested_patch, null, 2));
-  console.log(`::set-output name=patch_file_path::${patchFilePath}`);
-
-  console.log("✅ Audit finished successfully.");
 }
 
 main().catch(error => {
   console.error("Watchdog agent failed:", error);
   process.exit(1);
 });
-
-    
