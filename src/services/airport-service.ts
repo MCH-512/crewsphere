@@ -1,7 +1,7 @@
 
 'use server';
 
-import airportsData from '@/data/airports.json';
+import airportsData from '../../data/airports.json';
 
 export interface Airport {
   name: string;
