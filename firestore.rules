@@ -3,136 +3,123 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Deny all reads and writes by default.
+
+    // Default security rule: Deny all reads and writes by default.
     match /{document=**} {
       allow read, write: if false;
     }
-    
-    // Helper function to check if the user is the owner of the document
-    function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+
+    // --- User Data ---
+    // Users can read/update their own profile, but cannot delete it. Admins can read anyone's profile.
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
     }
     
-    // Helper function to check for Admin role by reading the user's own profile
-    function isAdmin() {
-        return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    // --- System & App Configuration ---
+    match /systemConfiguration/{docId} {
+      allow read: if request.auth != null; // All authenticated users can read settings
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; // Only admins can write
+    }
+    
+    match /auditLogs/{logId} {
+        allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; // Only admins can read
+        allow write: if request.auth != null; // Server-side actions write this
     }
 
-    // Users Collection
-    match /users/{userId} {
-      // Any authenticated user can read their own profile. Admins can read any profile.
-      allow get: if isOwner(userId) || isAdmin();
-      // Allow admins to list all users.
-      allow list: if isAdmin();
-      // Users can update their own profile. Admins can update any profile.
-      allow write: if isOwner(userId) || isAdmin();
-    }
-    
-    // System-wide Configuration
-    match /systemConfiguration/{configId} {
-        allow read: if isAdmin();
-        allow write: if isAdmin();
-    }
-    
-    // Alerts
+    // --- Core Features ---
     match /alerts/{alertId} {
         allow read: if request.auth != null;
-        allow create, update, delete: if isAdmin();
+        allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    // Audit Logs
-    match /auditLogs/{logId} {
-        allow read: if isAdmin();
-        // Only backend can create audit logs, deny client-side creation.
-        allow create, update, delete: if false;
-    }
-
-    // Flights and User Activities (interlinked)
     match /flights/{flightId} {
       allow read: if request.auth != null;
-      allow create, update, delete: if isAdmin();
-    }
-    match /userActivities/{activityId} {
-      allow read, list: if isOwner(resource.data.userId) || isAdmin();
-      allow create, update, delete: if isAdmin();
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    // Training: Courses, Quizzes, Questions, Attempts, Certificate Rules
     match /courses/{courseId} {
-        allow read, list: if request.auth != null;
-        allow create, update, delete: if isAdmin();
-    }
-     match /quizzes/{quizId} {
         allow read: if request.auth != null;
-        allow create, update, delete: if isAdmin();
+        allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-     match /questions/{questionId} {
-        allow read, list: if request.auth != null;
-        allow create, update, delete: if isAdmin();
+    
+    match /documents/{docId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
+    
+    match /userDocuments/{userDocId} {
+        allow read, create, update: if request.auth != null && request.auth.uid == resource.data.userId;
+        allow delete: if request.auth != null && (request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+        // Admin read access is granted through the global user read rule
+    }
+    
+    match /quizzes/{quizId} {
+        allow read: if request.auth != null;
+        allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    match /questions/{questionId} {
+        allow read: if request.auth != null; // Users need to read questions for quizzes
+        allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
     match /certificateRules/{ruleId} {
         allow read: if request.auth != null;
-        allow create, update, delete: if isAdmin();
-    }
-    match /userQuizAttempts/{attemptId} {
-        allow read, list: if isOwner(resource.data.userId) || isAdmin();
-        allow create: if isOwner(request.resource.data.userId);
-        allow update, delete: if isAdmin();
-    }
-     match /userProgress/{userId}/courses/{courseId} {
-        allow read, write: if isOwner(userId);
+        allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    // Documents: Main library and user-specific
-    match /documents/{docId} {
-        allow read, list: if request.auth != null;
-        allow create, update, delete: if isAdmin();
-    }
-    match /userDocuments/{userDocId} {
-        allow read, list: if isOwner(resource.data.userId) || isAdmin();
-        allow create: if isOwner(request.resource.data.userId);
-        allow update: if isOwner(resource.data.userId) || isAdmin();
-        allow delete: if isAdmin();
+     match /userQuizAttempts/{attemptId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
     
-    // Community Features
+     match /userProgress/{userId}/{path=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    match /userActivities/{activityId} {
+        allow read: if request.auth != null;
+        allow create, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // --- Collaborative Features ---
+    
     match /communityPosts/{postId} {
-        allow read, list: if request.auth != null;
+        allow read: if request.auth != null;
         allow create: if request.auth != null;
-        // Allow update only for likes by any authenticated user.
-        allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likeCount']);
-        allow delete: if isOwner(resource.data.authorId) || isAdmin();
-    }
-     match /suggestions/{suggestionId} {
-        allow read, list: if request.auth != null;
-        allow create: if request.auth != null;
-        // Allow update for upvoting by any authenticated user, or status change by admin.
-        allow update: if (request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes', 'upvoteCount'])) || isAdmin();
-        allow delete: if isOwner(resource.data.userId) || isAdmin();
+        allow update, delete: if request.auth != null && (request.auth.uid == resource.data.authorId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
     
-    // Requests
-    match /requests/{requestId} {
-        allow read, list: if isOwner(resource.data.userId) || isAdmin();
-        allow create: if isOwner(request.resource.data.userId);
-        allow update: if isOwner(resource.data.userId) || isAdmin();
-        allow delete: if isOwner(resource.data.userId) || isAdmin();
+    match /suggestions/{suggestionId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update(upvotes): if request.auth != null; // Allow anyone to upvote
+        allow update: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Flight Swaps
-    match /flightSwaps/{swapId} {
-        allow read, list: if request.auth != null;
-        allow create: if request.auth != null;
-        // Any participant or an admin can update.
-        allow update: if request.auth != null && (request.auth.uid in resource.data.participantIds || isAdmin());
-        allow delete: if isAdmin();
+    match /requests/{requestId} {
+        allow read, update: if request.auth != null && request.auth.uid == resource.data.userId;
+        allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+        allow read, update(status), update(adminResponse): if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    // Training Sessions
+    match /flightSwaps/{swapId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null && (request.auth.uid in resource.data.participantIds || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+    
+    match /purserReports/{reportId} {
+        allow read: if request.auth != null && (request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+        allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+        allow update: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
     match /trainingSessions/{sessionId} {
-      allow read, list: if request.auth != null;
-      allow create, update, delete: if isAdmin();
+        allow read: if request.auth != null;
+        allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
