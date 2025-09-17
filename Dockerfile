@@ -1,18 +1,20 @@
-# Use a lightweight Node.js image
-FROM node:20-alpine AS audit-runner
+# Use an official Node.js runtime as a parent image
+FROM node:20-slim
 
-# Set working directory
+# Set the working directory in the container
 WORKDIR /app
 
-# Install only what we need
-RUN apk add --no-cache git curl
+# Copy package.json and package-lock.json (or yarn.lock)
+COPY package*.json ./
 
-# Copy only the audit script and dependencies
-COPY nextjs-audit.js .
+# Install app dependencies
+RUN npm ci
 
-# Install minimal required packages
-RUN npm init -y && \
-    npm install acorn@10.3.0 glob@8.1.0 --save-dev --omit=dev
+# Bundle app source
+COPY . .
 
-# Define entrypoint
-ENTRYPOINT ["node", "nextjs-audit.js"]
+# The app binds to port 9002 by default, so we'll expose it
+EXPOSE 9002
+
+# The default command to run when starting the container
+CMD [ "npm", "run", "dev" ]
