@@ -201,11 +201,19 @@
         { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
     },
-     {
+    {
       "collectionGroup": "auditLogs",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "timestamp", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "auditLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+          { "fieldPath": "timestamp", "order": "ASCENDING" },
+          { "fieldPath": "actionType", "order": "ASCENDING" }
       ]
     },
     {

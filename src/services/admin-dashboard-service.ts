@@ -1,10 +1,11 @@
+
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
-import { collection, getDocs, query, where, getCountFromServer, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, where, getCountFromServer, Timestamp, orderBy } from "firebase/firestore";
 import type { AdminDashboardStats } from "@/config/nav";
 import { getCurrentUser } from "@/lib/session";
-import { startOfDay, subDays, format, eachDayOfInterval } from 'date-fns';
+import { startOfDay, subDays, format, eachDayOfInterval, startOfWeek } from 'date-fns';
 
 
 export interface WeeklyTrendDataPoint {
@@ -95,20 +96,21 @@ export async function getAdminDashboardWeeklyTrends(): Promise<WeeklyTrendDataPo
     }
 
     const endDate = new Date();
-    const startDate = subDays(endDate, 6);
+    const startDate = startOfWeek(subDays(endDate, 1), { weekStartsOn: 1 }); // Start from last Monday
 
     try {
         const logsQuery = query(
             collection(db, "auditLogs"),
             where("timestamp", ">=", startDate),
             where("timestamp", "<=", endDate),
-            where("actionType", "in", ["CREATE_REQUEST", "SUBMIT_SUGGESTION", "REQUEST_FLIGHT_SWAP"])
+            where("actionType", "in", ["CREATE_REQUEST", "SUBMIT_SUGGESTION", "REQUEST_FLIGHT_SWAP"]),
+            orderBy("timestamp", "asc")
         );
 
         const logsSnapshot = await getDocs(logsQuery);
         const logs = logsSnapshot.docs.map(doc => doc.data() as { timestamp: Timestamp, actionType: string });
         
-        const dateInterval = eachDayOfInterval({ start: startOfDay(startDate), end: startOfDay(endDate) });
+        const dateInterval = eachDayOfInterval({ start: startDate, end: endDate });
         const dailyCounts = new Map<string, { Requests: number, Suggestions: number, Swaps: number }>();
 
         // Initialize map for all days in the interval

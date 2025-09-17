@@ -2,9 +2,9 @@
 import {
   LayoutDashboard, Settings, Plane, ServerCog, Users, ClipboardList, 
   ClipboardCheck, MessageSquare, Activity, FileSignature, 
-  Calendar as CalendarIcon, Library, GraduationCap, CheckSquare, Compass, BellRing, 
+  Calendar as CalendarIcon, Library, GraduationCap, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Wrench, 
-  Handshake, Inbox, Lightbulb, FileCheck2, History, CloudSun, AudioWaveform, Video
+  Handshake, Inbox, Lightbulb, FileCheck2, History, AudioWaveform, Video
 } from "lucide-react";
 import type { ElementType } from 'react';
 
