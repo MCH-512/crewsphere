@@ -19,17 +19,10 @@ const cspHeader = `
 
 
 const nextConfig = {
-  sentry: {
-    widenClientFileUpload: true,
-    transpileClientSDK: true,
-    hideSourceMaps: true,
-    tunnelRoute: '/monitoring',
-  },
   experimental: {
     serverActions: {
       bodySizeLimit: '4.5mb',
     },
-    serverActionsTimeout: 120,
   },
   typescript: {
     ignoreBuildErrors: false,
@@ -114,5 +107,11 @@ const sentryWebpackPluginOptions = {
     silent: true, // Suppresses all logs
 };
 
-module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions);
+const sentryBuildOptions = {
+    widenClientFileUpload: true,
+    transpileClientSDK: true,
+    hideSourceMaps: true,
+    tunnelRoute: '/monitoring',
+};
 
+module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions, sentryBuildOptions);
