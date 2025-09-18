@@ -1,18 +1,18 @@
 {
     "auth": {
         "login": {
-            "src": "https://images.unsplash.com/photo-1542296332-2e4473faf563?q=80&w=1974&auto=format&fit=crop",
+            "src": "https://picsum.photos/seed/login/1920/1080",
             "hint": "airplane wing"
         },
         "signup": {
-            "src": "https://images.unsplash.com/photo-1436891620584-46f6e5398dd8?q=80&w=2070&auto=format&fit=crop",
+            "src": "https://picsum.photos/seed/signup/1920/1080",
             "hint": "airplane tail"
         }
     },
     "dashboard": {
         "hero": {
-            "src": "https://images.unsplash.com/photo-1570213892-33406f0b4845?q=80&w=2070&auto=format&fit=crop",
-            "hint": "airplane tail wing"
+            "src": "https://picsum.photos/seed/dash-hero/2070/400",
+            "hint": "airplane cockpit view"
         }
     },
     "course": {
