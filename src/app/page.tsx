@@ -2,7 +2,6 @@
 "use server";
 
 import * as React from "react";
-import placeholderImages from "@/app/lib/placeholder-images.json";
 import DashboardClientPage from "@/dashboard-client-page";
 
 // Server Components for data fetching

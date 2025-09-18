@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to generate a dynamic hero image for the user's dashboard.
@@ -10,9 +11,13 @@ import { GenerateDashboardImageInputSchema, type GenerateDashboardImageInput, Ge
 
 
 export async function generateDashboardImage(input: GenerateDashboardImageInput): Promise<GenerateDashboardImageOutput> {
-  console.log(`[AI-FLOW] generateDashboardImage called with input:`, input);
-  return generateDashboardImageFlow(input);
+  console.log(`[AI-STUB] AI image generation is temporarily disabled. Returning fallback for input:`, input);
+  // Return an empty object to allow the service to fall back to the default placeholder.
+  return { imageDataUri: "" };
 }
+
+/*
+// Original Genkit Flow - Temporarily disabled
 
 const generateDashboardImageFlow = ai.defineFlow(
   {
@@ -44,3 +49,4 @@ const generateDashboardImageFlow = ai.defineFlow(
     }
   }
 );
+*/

@@ -5,11 +5,14 @@
  * This `ai` object is then used throughout the application to define flows, prompts, etc.
  */
 
-import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+// import {genkit} from 'genkit';
+// import {googleAI} from '@genkit-ai/googleai';
 
 // Initialize and export the AI object.
 // All flows and tools should import and use this `ai` object.
-export const ai = genkit({
-  plugins: [googleAI()],
-});
+// export const ai = genkit({
+//   plugins: [googleAI()],
+// });
+
+// STUB: Temporarily disabled to prevent server startup issues.
+export const ai = {} as any;
