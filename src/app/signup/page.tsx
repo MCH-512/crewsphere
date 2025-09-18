@@ -83,7 +83,7 @@ export default function SignupPage() {
       await createUserWithEmailAndPassword(auth, data.email, data.password);
       toast({
         title: "Account Created",
-        description: "Welcome to AirCrew Hub! You are now signed in.",
+        description: "Welcome to CrewSphere! You are now signed in.",
       });
       router.push("/"); // Redirect to dashboard
     } catch (error: any) {
@@ -101,7 +101,7 @@ export default function SignupPage() {
   return (
     <AuthLayout
         title="Create an Account"
-        description="Join AirCrew Hub to streamline your operations."
+        description="Join CrewSphere to streamline your operations."
         imageUrl={placeholderImages.auth.signup.src}
         imageHint={placeholderImages.auth.signup.hint}
     >

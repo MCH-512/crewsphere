@@ -1,6 +1,5 @@
 import Image from "next/image";
 import { Plane } from "lucide-react";
-import placeholderImages from "@/app/lib/placeholder-images.json";
 
 interface AuthLayoutProps {
     title: string;
@@ -23,13 +22,12 @@ export function AuthLayout({ title, description, imageUrl, imageHint, children }
                     {children}
                 </div>
             </div>
-            <div className="hidden bg-muted lg:block">
+            <div className="hidden bg-muted lg:block relative">
                 <Image
                     src={imageUrl}
                     alt="Authentication page background image"
                     data-ai-hint={imageHint}
-                    width={1920}
-                    height={1080}
+                    fill
                     className="h-full w-full object-cover dark:brightness-[0.3] dark:grayscale"
                     priority
                 />
