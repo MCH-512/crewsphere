@@ -22,7 +22,7 @@ import { SendHorizonal, Loader2, AlertTriangle, Info, Zap, Inbox, ListTodo, Mess
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, Timestamp } from "firebase/firestore";
 import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,7 +34,7 @@ import {
     type StoredUserRequest, getStatusBadgeVariant, getUrgencyBadgeVariant, getAdminResponseAlertVariant
 } from "@/schemas/request-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
-import { logAuditEvent } from "@/lib/audit-logger";
+import { submitUserRequest } from "@/services/request-service";
 
 
 // --- Form Default Values ---
@@ -105,46 +105,19 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
     setShowConfirmDialog(false);
 
     try {
-      const submissionData = { ...formDataToSubmit };
-      if (!submissionData.subject && submissionData.specificRequestType) {
-        submissionData.subject = submissionData.specificRequestType;
-      }
-      
-      const requestData = {
-        userId: user.uid,
-        userEmail: user.email,
-        requestType: submissionData.requestCategory,
-        specificRequestType: submissionData.specificRequestType || null,
-        urgencyLevel: submissionData.urgencyLevel,
-        subject: submissionData.subject,
-        details: submissionData.details,
-        startDate: isLeaveCategory ? submissionData.startDate : null,
-        endDate: isLeaveCategory ? submissionData.endDate : null,
-        createdAt: serverTimestamp(),
-        status: "pending",
-      };
-      const docRef = await addDoc(collection(db, "requests"), requestData);
-
-      await logAuditEvent({
-        userId: user.uid,
-        userEmail: user.email!,
-        actionType: 'CREATE_REQUEST',
-        entityType: 'REQUEST',
-        entityId: docRef.id,
-        details: { subject: submissionData.subject, category: submissionData.requestCategory },
-      });
+      await submitUserRequest(formDataToSubmit);
 
       toast({
         title: "Request Submitted Successfully",
-        description: `Your ${submissionData.requestCategory.toLowerCase()} request for "${submissionData.subject}" has been saved.`,
+        description: `Your ${formDataToSubmit.requestCategory.toLowerCase()} request for "${formDataToSubmit.subject || formDataToSubmit.specificRequestType}" has been saved.`,
       });
       form.reset(defaultValues);
       setSpecificTypes([]);
       setFormDataToSubmit(null);
       refreshHistory(); // Refresh the history tab
-    } catch (error) {
-      console.error("Error submitting request to Firestore:", error);
-      toast({ title: "Submission Failed", description: "Could not save your request. Please try again.", variant: "destructive" });
+    } catch (error: any) {
+      console.error("Error submitting request:", error);
+      toast({ title: "Submission Failed", description: error.message || "Could not save your request.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
