@@ -57,7 +57,7 @@ const nextConfig = {
   },
   productionBrowserSourceMaps: true, // For Lighthouse: Missing source maps
   async headers() {
-    return [
+    const defaultHeaders = [
       {
         source: '/(.*)', // Apply to all routes
         headers: [
@@ -88,6 +88,21 @@ const nextConfig = {
         ],
       },
     ];
+
+    // Add aggressive caching for static assets
+    const staticCacheHeaders = [
+        {
+            source: '/_next/static/(.*)',
+            headers: [
+                {
+                    key: 'Cache-Control',
+                    value: 'public, max-age=31536000, immutable',
+                },
+            ],
+        },
+    ];
+
+    return [...defaultHeaders, ...staticCacheHeaders];
   },
 };
 
