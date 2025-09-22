@@ -18,21 +18,23 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html>
+    <html lang="en">
       <body>
-        <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
-            <Card className="w-full max-w-lg text-center shadow-xl">
-                <CardHeader>
-                    <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
-                    <CardTitle className="mt-4 text-2xl">Application Error</CardTitle>
-                    <CardDescription>
-                        An unexpected error occurred. Our team has been notified.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button onClick={() => reset()}>Try to recover</Button>
-                </CardContent>
-            </Card>
+        <div className="flex min-h-screen items-center justify-center bg-background p-4">
+          <Card className="w-full max-w-md text-center shadow-lg">
+            <CardHeader>
+              <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
+              <CardTitle className="mt-4 text-2xl font-headline">Something Went Wrong</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                An unexpected error occurred. Our team has been notified, and we&apos;re working to fix it.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="default" onClick={() => reset()}>
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </body>
     </html>
