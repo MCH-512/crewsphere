@@ -58,7 +58,10 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
 
     } catch (error) {
         console.error("Error fetching admin dashboard stats:", error);
-        return null; // Return null on any error to be handled by the UI
+        return {
+            pendingRequests: 0, pendingDocValidations: 0, newSuggestions: 0,
+            pendingSwaps: 0, pendingReports: 0, activeAlerts: 0,
+        };
     }
 }
 
