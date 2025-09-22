@@ -21,15 +21,13 @@ export interface WeeklyTrendDataPoint {
  * This function performs several count queries in parallel.
  * @returns A promise that resolves to an AdminDashboardStats object or null on error.
  */
-export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
+export async function getAdminDashboardStats(): Promise<AdminDashboardStats | null> {
     const user = await getCurrentUser();
-    const zeroStats: AdminDashboardStats = {
-        pendingRequests: 0, pendingDocValidations: 0, newSuggestions: 0,
-        pendingSwaps: 0, pendingReports: 0, activeAlerts: 0,
-    };
-
     if (!user || user.role !== 'admin' || !isConfigValid || !db) {
-        return zeroStats;
+        return {
+            pendingRequests: 0, pendingDocValidations: 0, newSuggestions: 0,
+            pendingSwaps: 0, pendingReports: 0, activeAlerts: 0,
+        };
     }
 
     try {
@@ -60,7 +58,10 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
 
     } catch (error) {
         console.error("Error fetching admin dashboard stats:", error);
-        return zeroStats;
+        return {
+            pendingRequests: 0, pendingDocValidations: 0, newSuggestions: 0,
+            pendingSwaps: 0, pendingReports: 0, activeAlerts: 0,
+        };
     }
 }
 
