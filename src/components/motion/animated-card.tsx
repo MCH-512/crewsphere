@@ -24,7 +24,7 @@ export function AnimatedCard({ children, className, delay = 0 }: AnimatedCardPro
       initial="hidden"
       animate="visible"
       transition={{ duration: 0.4, delay: delay, ease: "easeInOut" }}
-      whileHover={{ scale: 1.02 }} // Simplified hover effect with CSS transitions if needed, but framer-motion is fine here
+      whileHover={{ scale: 1.02 }}
     >
       {children}
     </motion.div>
