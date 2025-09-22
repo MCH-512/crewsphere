@@ -2,7 +2,6 @@
 const { withSentryConfig } = require('@sentry/nextjs');
 
 /** @type {import('next').NextConfig} */
-
 const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com;
@@ -16,7 +15,6 @@ const cspHeader = `
     base-uri 'self';
     upgrade-insecure-requests;
 `.replace(/\s{2,}/g, ' ').trim();
-
 
 const nextConfig = {
   experimental: {
@@ -34,23 +32,23 @@ const nextConfig = {
   images: {
     domains: ['picsum.photos', 'firebasestorage.googleapis.com', 'images.unsplash.com', 'placehold.co'],
   },
-  productionBrowserSourceMaps: true, // For Lighthouse: Missing source maps
+  productionBrowserSourceMaps: true,
   async headers() {
     const defaultHeaders = [
       {
-        source: '/(.*)', // Apply to all routes
+        source: '/(.*)',
         headers: [
           {
             key: 'Access-Control-Allow-Origin',
-            value: '*', // Allow all origins
+            value: '*',
           },
           {
             key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, PUT, DELETE, OPTIONS', // Allowed methods
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
           },
           {
             key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization', // Allowed headers
+            value: 'Content-Type, Authorization',
           },
           {
             key: 'Content-Security-Policy',
@@ -58,11 +56,11 @@ const nextConfig = {
           },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload', // For HSTS
+            value: 'max-age=63072000; includeSubDomains; preload',
           },
           {
             key: 'X-Frame-Options',
-            value: 'DENY', // For Clickjacking
+            value: 'DENY',
           },
           {
             key: 'X-Content-Type-Options',
@@ -74,41 +72,38 @@ const nextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: "camera=(), microphone=(), geolocation=(), payment=()", // Example: disable features by default
+            value: 'camera=(), microphone=(), geolocation=(), payment=()',
           }
         ],
       },
     ];
-
-    // Add aggressive caching for static assets
     const staticCacheHeaders = [
-        {
-            source: '/_next/static/(.*)',
-            headers: [
-                {
-                    key: 'Cache-Control',
-                    value: 'public, max-age=31536000, immutable',
-                },
-            ],
-        },
+      {
+        source: '/_next/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
     ];
-
     return [...defaultHeaders, ...staticCacheHeaders];
   },
 };
 
 const sentryWebpackPluginOptions = {
-    org: process.env.SENTRY_ORG,
-    project: process.env.SENTRY_PROJECT,
-    authToken: process.env.SENTRY_AUTH_TOKEN,
-    silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
 };
 
 const sentryBuildOptions = {
-    widenClientFileUpload: true,
-    transpileClientSDK: true,
-    hideSourceMaps: true,
-    tunnelRoute: '/monitoring',
+  widenClientFileUpload: true,
+  transpileClientSDK: true,
+  hideSourceMaps: true,
+  tunnelRoute: '/monitoring',
 };
 
 module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions, sentryBuildOptions);
