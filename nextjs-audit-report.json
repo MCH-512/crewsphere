@@ -1,0 +1,746 @@
+{
+  "timestamp": "2025-09-22T14:23:49.928Z",
+  "totalViolations": 123,
+  "totalScore": 1226,
+  "status": "ÉCHOUÉ",
+  "violations": [
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/weather-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/weather-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/weather-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/weather-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/video-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/video-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/video-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/video-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/user-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/user-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/user-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/user-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/services/user-service.ts",
+      "message": "Found 2 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/user-activity-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/user-activity-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/user-activity-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/user-activity-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/training-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/training-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/training-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/training-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/toolbox-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/toolbox-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/toolbox-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/toolbox-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/request-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/request-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/request-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/request-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/report-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/report-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/report-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/report-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/predictive-analyzer.ts",
+      "message": "Server Action file found outside allowed directories: src/services/predictive-analyzer.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/predictive-analyzer.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/predictive-analyzer.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/logbook-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/logbook-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/logbook-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/logbook-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/services/logbook-service.ts",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/flight-swap-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/flight-swap-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/flight-swap-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/flight-swap-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/flight-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/flight-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/flight-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/flight-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/document-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/document-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/document-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/document-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/dashboard-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/dashboard-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/dashboard-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/dashboard-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/alert-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/alert-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/alert-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/alert-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/airport-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/airport-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/airport-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/airport-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/admin-flight-swap-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/admin-flight-swap-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/admin-flight-swap-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/admin-flight-swap-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/admin-dashboard-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/admin-dashboard-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/admin-dashboard-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/admin-dashboard-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/services/activity-service.ts",
+      "message": "Server Action file found outside allowed directories: src/services/activity-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/services/activity-service.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/activity-service.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/lib/seed.ts",
+      "message": "Server Action file found outside allowed directories: src/lib/seed.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/lib/seed.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/lib/seed.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/components/ui/chart.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/components/layout/app-layout.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/components/features/training-progress-chart.tsx",
+      "message": "Server Action file found outside allowed directories: src/components/features/training-progress-chart.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/components/features/training-progress-chart.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/components/features/training-progress-chart.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/components/features/todays-schedule.tsx",
+      "message": "Server Action file found outside allowed directories: src/components/features/todays-schedule.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/components/features/todays-schedule.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/components/features/todays-schedule.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/components/features/requests-status-chart.tsx",
+      "message": "Server Action file found outside allowed directories: src/components/features/requests-status-chart.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/components/features/requests-status-chart.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/components/features/requests-status-chart.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/components/features/my-training-status.tsx",
+      "message": "Server Action file found outside allowed directories: src/components/features/my-training-status.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/components/features/my-training-status.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/components/features/my-training-status.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/components/features/my-requests-status.tsx",
+      "message": "Server Action file found outside allowed directories: src/components/features/my-requests-status.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/components/features/my-requests-status.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/components/features/my-requests-status.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/components/features/live-map.tsx",
+      "message": "Found 4 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/components/admin/weekly-trends-chart.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/components/admin/user-form.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/training/quiz/[quizId]/page.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/training/certificate/[attemptId]/page.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-004",
+      "file": "src/app/toolbox/live-flight-tracker/page.tsx",
+      "message": "Suspense not used around dynamic client component",
+      "severity": 8
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/toolbox/guides/page.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/toolbox/airport-weather/page.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/signup/page.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/settings/settings-client-page.tsx",
+      "message": "Found 4 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/settings/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/settings/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/settings/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/settings/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/requests/page.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/purser-reports/submit/[flightId]/page.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/purser-reports/history/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/purser-reports/history/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/purser-reports/history/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/purser-reports/history/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/purser-reports/history/[reportId]/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/purser-reports/history/[reportId]/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/purser-reports/history/[reportId]/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/purser-reports/history/[reportId]/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/my-swaps/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/my-swaps/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/my-swaps/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/my-swaps/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/my-swaps/my-swaps-client.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/my-schedule/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/my-schedule/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/my-schedule/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/my-schedule/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/my-schedule/my-schedule-client.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/my-logbook/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/my-logbook/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/my-logbook/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/my-logbook/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/login/page.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/layout/app-layout.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/flight-swap/page.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/admin/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/admin/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/admin/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-018",
+      "file": "src/app/admin/video-studio/page.tsx",
+      "message": "Found <img> tag — use next/image instead",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/admin/video-studio/page.tsx",
+      "message": "Found 2 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/admin/users/users-client.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/admin/users/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/admin/users/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/admin/users/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/users/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-004",
+      "file": "src/app/admin/users/[userId]/page.tsx",
+      "message": "Suspense not used around dynamic client component",
+      "severity": 8
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/admin/users/[userId]/page.tsx",
+      "message": "Found 5 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/admin/user-requests/user-requests-client.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/admin/user-requests/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/admin/user-requests/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/admin/user-requests/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/user-requests/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/admin/training-sessions/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/admin/training-sessions/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/admin/training-sessions/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/training-sessions/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/admin/purser-reports/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/admin/purser-reports/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/admin/purser-reports/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/purser-reports/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/admin/purser-reports/[reportId]/page.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/admin/flights/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/admin/flights/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/admin/flights/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/flights/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/admin/flights/flights-client.tsx",
+      "message": "Found 2 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/admin/documents/[documentId]/page.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/admin/document-validations/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/admin/document-validations/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/admin/document-validations/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/document-validations/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/app/admin/audio-studio/page.tsx",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/app/admin/alerts/page.tsx",
+      "message": "Server Action file found outside allowed directories: src/app/admin/alerts/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/app/admin/alerts/page.tsx",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/alerts/page.tsx",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/ai/flows/summarize-report-flow.ts",
+      "message": "Server Action file found outside allowed directories: src/ai/flows/summarize-report-flow.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/ai/flows/summarize-report-flow.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/ai/flows/summarize-report-flow.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/ai/flows/generate-quiz-flow.ts",
+      "message": "Server Action file found outside allowed directories: src/ai/flows/generate-quiz-flow.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/ai/flows/generate-dashboard-image-flow.ts",
+      "message": "Server Action file found outside allowed directories: src/ai/flows/generate-dashboard-image-flow.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/ai/flows/generate-dashboard-image-flow.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/ai/flows/generate-dashboard-image-flow.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/ai/flows/generate-course-image-flow.ts",
+      "message": "Server Action file found outside allowed directories: src/ai/flows/generate-course-image-flow.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/ai/flows/generate-course-image-flow.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/ai/flows/generate-course-image-flow.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/ai/flows/generate-audio-flow.ts",
+      "message": "Server Action file found outside allowed directories: src/ai/flows/generate-audio-flow.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/ai/flows/generate-audio-flow.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/ai/flows/generate-audio-flow.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-023",
+      "file": "src/ai/flows/generate-audio-flow.ts",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-021",
+      "file": "src/ai/flows/decode-weather-flow.ts",
+      "message": "Server Action file found outside allowed directories: src/ai/flows/decode-weather-flow.ts",
+      "severity": 10
+    },
+    {
+      "ruleId": "NX-007",
+      "file": "src/ai/flows/decode-weather-flow.ts",
+      "message": "Zod validation missing or incomplete in Server Action/Flow: src/ai/flows/decode-weather-flow.ts",
+      "severity": 10
+    }
+  ]
+}
