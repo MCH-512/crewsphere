@@ -9,9 +9,6 @@ import { AlertTriangle } from "lucide-react";
 export default function GlobalError({
   error,
   reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
 }) {
   useEffect(() => {
     Sentry.captureException(error);
