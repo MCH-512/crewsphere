@@ -31,20 +31,7 @@ const nextConfig = {
     ignoreDuringBuilds: false, 
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'picsum.photos',
-      },
-      { // Allow Firebase Storage images
-        protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com',
-      },
-      { // Allow Unsplash images
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-    ],
+    domains: ['picsum.photos', 'firebasestorage.googleapis.com', 'images.unsplash.com'],
   },
   productionBrowserSourceMaps: true, // For Lighthouse: Missing source maps
   async headers() {
@@ -98,13 +85,10 @@ const nextConfig = {
 };
 
 const sentryWebpackPluginOptions = {
-    // For all available options, see:
-    // https://github.com/getsentry/sentry-webpack-plugin#options
     org: process.env.SENTRY_ORG,
     project: process.env.SENTRY_PROJECT,
-    // An auth token is required for uploading source maps.
     authToken: process.env.SENTRY_AUTH_TOKEN,
-    silent: true, // Suppresses all logs
+    silent: true,
 };
 
 const sentryBuildOptions = {
