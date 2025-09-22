@@ -7,7 +7,7 @@ const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' https://picsum.photos https://*.tile.openstreetmap.org https://unpkg.com https://images.unsplash.com data: blob:;
+    img-src 'self' https://placehold.co https://picsum.photos https://*.tile.openstreetmap.org https://unpkg.com https://images.unsplash.com data: blob:;
     font-src 'self' https://fonts.gstatic.com;
     connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://storage.googleapis.com https://www.googleapis.com https://opensky-network.org https://www.aviationweather.gov *.sentry.io;
     frame-src 'self';
@@ -23,6 +23,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '4.5mb',
     },
+    instrumentationHook: true,
   },
   typescript: {
     ignoreBuildErrors: false,
@@ -31,7 +32,7 @@ const nextConfig = {
     ignoreDuringBuilds: false, 
   },
   images: {
-    domains: ['picsum.photos', 'firebasestorage.googleapis.com', 'images.unsplash.com'],
+    domains: ['picsum.photos', 'firebasestorage.googleapis.com', 'images.unsplash.com', 'placehold.co'],
   },
   productionBrowserSourceMaps: true, // For Lighthouse: Missing source maps
   async headers() {
@@ -39,6 +40,18 @@ const nextConfig = {
       {
         source: '/(.*)', // Apply to all routes
         headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*', // Allow all origins
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS', // Allowed methods
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization', // Allowed headers
+          },
           {
             key: 'Content-Security-Policy',
             value: cspHeader,

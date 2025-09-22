@@ -1,7 +1,9 @@
+
 "use client";
 
 import * as React from "react";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface AnimatedCardProps {
   children: React.ReactNode;
@@ -17,11 +19,12 @@ const cardVariants = {
 export function AnimatedCard({ children, className, delay = 0 }: AnimatedCardProps) {
   return (
     <motion.div
-      className={className}
+      className={cn("transition-transform duration-300 ease-in-out", className)}
       variants={cardVariants}
       initial="hidden"
       animate="visible"
       transition={{ duration: 0.4, delay: delay, ease: "easeInOut" }}
+      whileHover={{ scale: 1.02 }} // Simplified hover effect with CSS transitions if needed, but framer-motion is fine here
     >
       {children}
     </motion.div>
