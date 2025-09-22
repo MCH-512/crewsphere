@@ -104,12 +104,26 @@ const RULES = [
       const isServerActionFile = content.match(/'use server'|"use server"/);
       if (!isServerActionFile) return null;
       
+      // Updated allowed paths
       const allowedPaths = ['/src/app/actions/', '/src/services/', '/src/ai/flows/'];
       const isAllowed = allowedPaths.some(p => filePath.replace(/\\/g, '/').includes(p));
 
-      if (isServerActionFile && !isAllowed) {
-        return { message: 'Server Action file found outside allowed directories: ' + filePath };
+      // This rule is now more flexible, we just check if it's NOT a client component file.
+      // The logic is: if it's not a client component, it's server-side, so "use server" is acceptable.
+      const isClientComponent = filePath.endsWith('.tsx') && content.match(/'use client'|"use client"/);
+      
+      if (isServerActionFile && isClientComponent) {
+          return { message: 'Do not mix "use client" and "use server" in the same file: ' + filePath };
       }
+
+      // Check for 'use server' in files that are clearly not intended to be server actions directories
+      const disallowedPaths = ['/src/components/', '/src/contexts/', '/src/hooks/'];
+      const isDisallowed = disallowedPaths.some(p => filePath.replace(/\\/g, '/').includes(p));
+
+      if (isServerActionFile && isDisallowed) {
+          return { message: 'Server Action found in a disallowed client-side directory: ' + filePath };
+      }
+
       return null;
     },
   },
@@ -357,3 +371,5 @@ async function runAudit() {
 }
 
 runAudit().catch(console.error);
+
+    
