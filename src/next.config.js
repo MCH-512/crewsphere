@@ -7,7 +7,7 @@ const cspHeader = `
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' https://placehold.co https://*.tile.openstreetmap.org https://unpkg.com https://images.unsplash.com data: blob:;
+    img-src 'self' https://picsum.photos https://*.tile.openstreetmap.org https://unpkg.com https://images.unsplash.com data: blob:;
     font-src 'self' https://fonts.gstatic.com;
     connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://storage.googleapis.com https://www.googleapis.com https://opensky-network.org https://www.aviationweather.gov *.sentry.io;
     frame-src 'self';
@@ -19,12 +19,6 @@ const cspHeader = `
 
 
 const nextConfig = {
-  sentry: {
-    widenClientFileUpload: true,
-    transpileClientSDK: true,
-    hideSourceMaps: true,
-    tunnelRoute: '/monitoring',
-  },
   experimental: {
     serverActions: {
       bodySizeLimit: '4.5mb',
@@ -40,9 +34,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
+        hostname: 'picsum.photos',
       },
       { // Allow Firebase Storage images
         protocol: 'https',
@@ -56,7 +48,7 @@ const nextConfig = {
   },
   productionBrowserSourceMaps: true, // For Lighthouse: Missing source maps
   async headers() {
-    return [
+    const defaultHeaders = [
       {
         source: '/(.*)', // Apply to all routes
         headers: [
@@ -87,6 +79,21 @@ const nextConfig = {
         ],
       },
     ];
+
+    // Add aggressive caching for static assets
+    const staticCacheHeaders = [
+        {
+            source: '/_next/static/(.*)',
+            headers: [
+                {
+                    key: 'Cache-Control',
+                    value: 'public, max-age=31536000, immutable',
+                },
+            ],
+        },
+    ];
+
+    return [...defaultHeaders, ...staticCacheHeaders];
   },
 };
 
@@ -100,5 +107,11 @@ const sentryWebpackPluginOptions = {
     silent: true, // Suppresses all logs
 };
 
-module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions);
+const sentryBuildOptions = {
+    widenClientFileUpload: true,
+    transpileClientSDK: true,
+    hideSourceMaps: true,
+    tunnelRoute: '/monitoring',
+};
 
+module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions, sentryBuildOptions);
