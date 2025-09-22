@@ -37,6 +37,13 @@ const nextConfig = {
       {
         source: '/(.*)',
         headers: [
+          // CORS Headers
+          { key: "Access-Control-Allow-Credentials", value: "true" },
+          { key: "Access-Control-Allow-Origin", value: "*" }, // Replace with specific origin in production if needed
+          { key: "Access-Control-Allow-Methods", value: "GET,DELETE,PATCH,POST,PUT" },
+          { key: "Access-Control-Allow-Headers", value: "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version" },
+          
+          // Security Headers
           {
             key: 'Content-Security-Policy',
             value: cspHeader,
