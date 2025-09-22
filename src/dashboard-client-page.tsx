@@ -14,32 +14,32 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const WidgetSkeleton = () => (
-    <Card className="h-full shadow-md">
-      <CardHeader>
-        <Skeleton className="h-5 w-2/4 mb-2" />
-        <Skeleton className="h-4 w-3/4" />
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="h-10 w-full" />
-      </CardContent>
-       <CardFooter>
-         <Skeleton className="h-9 w-full" />
-      </CardFooter>
-    </Card>
+  <Card className="h-full shadow-md">
+    <CardHeader>
+      <Skeleton className="h-5 w-2/4 mb-2" />
+      <Skeleton className="h-4 w-3/4" />
+    </CardHeader>
+    <CardContent>
+      <Skeleton className="h-10 w-full" />
+    </CardContent>
+    <CardFooter>
+      <Skeleton className="h-9 w-full" />
+    </CardFooter>
+  </Card>
 );
 
 const ChartSkeleton = () => (
-    <Card className="h-full shadow-sm">
-        <CardHeader>
-            <Skeleton className="h-5 w-3/4 mb-2" />
-            <Skeleton className="h-4 w-1/2" />
-        </CardHeader>
-        <CardContent>
-            <div className="flex items-center justify-center h-[250px]">
-                <Skeleton className="h-48 w-48 rounded-full" />
-            </div>
-        </CardContent>
-    </Card>
+  <Card className="h-full shadow-sm">
+    <CardHeader>
+      <Skeleton className="h-5 w-3/4 mb-2" />
+      <Skeleton className="h-4 w-1/2" />
+    </CardHeader>
+    <CardContent>
+      <div className="flex items-center justify-center h-[250px]">
+        <Skeleton className="h-48 w-48 rounded-full" />
+      </div>
+    </CardContent>
+  </Card>
 );
 
 interface DashboardClientPageProps {
@@ -57,7 +57,7 @@ export default function DashboardClientPage({ children, heroImage }: DashboardCl
       setUserNameForGreeting(name.charAt(0).toUpperCase() + name.slice(1));
     }
   }, [user]);
-  
+
   const quickActions = [
     { href: "/requests", label: "Make a Request", icon: SendHorizonal },
     { href: "/suggestion-box", label: "Submit an Idea", icon: Lightbulb },
@@ -66,8 +66,9 @@ export default function DashboardClientPage({ children, heroImage }: DashboardCl
 
   const [scheduleWidget, trainingWidget, requestsWidget, trainingChart, requestsChart] = React.Children.toArray(children);
 
+  // Verification of heroImage.src
   console.log('heroImage:', heroImage, 'typeof heroImage.src:', typeof heroImage.src);
-  if (!heroImage.src || typeof heroImage.src !== 'string') {
+  if (!heroImage || !heroImage.src || typeof heroImage.src !== 'string') {
     return <div>Error: heroImage.src is invalid or undefined</div>;
   }
 
@@ -77,12 +78,12 @@ export default function DashboardClientPage({ children, heroImage }: DashboardCl
         <Card className="shadow-lg border-none relative overflow-hidden min-h-[220px] flex flex-col justify-end p-6">
           <div className="absolute inset-0">
             <Image
-                src={heroImage.src}
-                alt="Dashboard hero image"
-                data-ai-hint={heroImage.hint}
-                fill
-                priority
-                className="object-cover"
+              src={heroImage.src}
+              alt="Dashboard hero image"
+              data-ai-hint={heroImage.hint}
+              fill
+              priority
+              className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
           </div>
