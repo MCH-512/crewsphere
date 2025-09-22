@@ -31,20 +31,8 @@ const nextConfig = {
     ignoreDuringBuilds: false, 
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'picsum.photos',
-      },
-      { // Allow Firebase Storage images
-        protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com',
-      },
-      { // Allow Unsplash images
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-    ],
+    // Switched to the simpler `domains` property for robustness.
+    domains: ['picsum.photos', 'firebasestorage.googleapis.com', 'images.unsplash.com'],
   },
   productionBrowserSourceMaps: true, // For Lighthouse: Missing source maps
   async headers() {
