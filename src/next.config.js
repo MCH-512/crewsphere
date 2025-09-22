@@ -31,7 +31,6 @@ const nextConfig = {
     ignoreDuringBuilds: false, 
   },
   images: {
-    // Switched to the simpler `domains` property for robustness.
     domains: ['picsum.photos', 'firebasestorage.googleapis.com', 'images.unsplash.com'],
   },
   productionBrowserSourceMaps: true, // For Lighthouse: Missing source maps

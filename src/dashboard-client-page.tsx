@@ -69,24 +69,24 @@ export default function DashboardClientPage({ children, heroImage }: DashboardCl
   return (
     <div className="space-y-6">
       <AnimatedCard>
-        <Card className="shadow-lg border-none relative overflow-hidden min-h-[220px] flex flex-col justify-between">
-            <div className="absolute inset-0 h-full w-full">
-                <Image
-                    src={heroImage.src}
-                    alt="Dashboard hero image"
-                    data-ai-hint={heroImage.hint}
-                    fill
-                    priority
-                    className="object-cover z-0"
-                />
-            </div>
+        <Card className="shadow-lg border-none relative overflow-hidden min-h-[220px] flex flex-col justify-between p-6">
+          <div className="absolute inset-0 h-full w-full">
+            <Image
+                src={heroImage.src}
+                alt="Dashboard hero image"
+                data-ai-hint={heroImage.hint}
+                fill
+                priority
+                className="object-cover z-0"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-10" />
-            <div className="relative z-20 text-white w-full flex justify-between items-end p-6">
-                 <div>
-                    <CardTitle as="h1" className="text-4xl font-headline text-primary-foreground">Welcome Back, {userNameForGreeting}!</CardTitle>
-                    <CardDescription className="text-primary-foreground/80 text-lg mt-1 max-w-4xl">Your unified dashboard for real-time schedule updates, essential alerts, and direct access to training modules and operational resources. Stay informed, compliant, and connected with everything you need for your duty period.</CardDescription>
-                </div>
+          </div>
+          <div className="relative z-20 text-white w-full flex justify-between items-end">
+              <div>
+                <CardTitle as="h1" className="text-4xl font-headline text-primary-foreground">Welcome Back, {userNameForGreeting}!</CardTitle>
+                <CardDescription className="text-primary-foreground/80 text-lg mt-1 max-w-4xl">Your unified dashboard for real-time schedule updates, essential alerts, and direct access to training modules and operational resources. Stay informed, compliant, and connected with everything you need for your duty period.</CardDescription>
             </div>
+          </div>
         </Card>
       </AnimatedCard>
 
