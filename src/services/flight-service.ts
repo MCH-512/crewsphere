@@ -8,6 +8,7 @@ import { StoredFlight, type FlightFormValues } from "@/schemas/flight-schema";
 import { StoredFlightSwap } from "@/schemas/flight-swap-schema";
 import { User } from "@/schemas/user-schema";
 import { getAirportByCode } from "./airport-service";
+import { getCurrentUser } from "@/lib/session";
 
 export interface FlightForDisplay extends StoredFlight {
     departureAirportName?: string;
@@ -18,8 +19,14 @@ export interface FlightForDisplay extends StoredFlight {
 }
 
 export async function getFlightsForAdmin() {
-    if (!isConfigValid || !db) {
-        throw new Error("Firebase is not configured.");
+    const user = await getCurrentUser();
+    // Security check: only admins can fetch this data.
+    if (!user || user.role !== 'admin' || !isConfigValid || !db) {
+        console.warn("Unauthorized or unconfigured attempt to fetch flights for admin.");
+        return {
+            flights: [], allUsers: [], pilots: [], pursers: [], cabinCrew: [],
+            instructors: [], trainees: [], userMap: new Map()
+        };
     }
     
     // Fetch all user data once
