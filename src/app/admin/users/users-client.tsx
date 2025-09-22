@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
-import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Eye, Filter } from "lucide-react"; 
+import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Eye, Filter, Search } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge"; 
 import Link from 'next/link';
@@ -264,3 +264,4 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   );
 }
 
+    
