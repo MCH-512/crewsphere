@@ -4,9 +4,10 @@
 import 'server-only';
 import { db, isConfigValid } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
-import type { StoredUserRequest, RequestFormValues } from "@/schemas/request-schema";
+import { requestFormSchema, type StoredUserRequest, type RequestFormValues } from "@/schemas/request-schema";
 import { getCurrentUser } from "@/lib/session";
 import { logAuditEvent } from "@/lib/audit-logger";
+import { z } from 'zod';
 
 /**
  * Submits a new request for a user.
@@ -15,24 +16,25 @@ import { logAuditEvent } from "@/lib/audit-logger";
  * @returns The ID of the newly created request document.
  */
 export async function submitUserRequest(data: RequestFormValues): Promise<string> {
+    const validatedData = requestFormSchema.parse(data);
     const user = await getCurrentUser();
     if (!user || !isConfigValid || !db) {
         throw new Error("User is not authenticated or Firebase is not configured.");
     }
 
     try {
-        const isLeaveRequest = data.requestCategory === "Leave & Absences";
+        const isLeaveRequest = validatedData.requestCategory === "Leave & Absences";
         
         const requestData = {
             userId: user.uid,
             userEmail: user.email,
-            requestType: data.requestCategory,
-            specificRequestType: data.specificRequestType || null,
-            urgencyLevel: data.urgencyLevel,
-            subject: data.subject || data.specificRequestType, // Fallback to specific type for subject
-            details: data.details,
-            startDate: isLeaveRequest ? data.startDate : null,
-            endDate: isLeaveRequest ? data.endDate : null,
+            requestType: validatedData.requestCategory,
+            specificRequestType: validatedData.specificRequestType || null,
+            urgencyLevel: validatedData.urgencyLevel,
+            subject: validatedData.subject || validatedData.specificRequestType, // Fallback to specific type for subject
+            details: validatedData.details,
+            startDate: isLeaveRequest ? validatedData.startDate : null,
+            endDate: isLeaveRequest ? validatedData.endDate : null,
             createdAt: serverTimestamp(),
             status: "pending" as const,
         };
@@ -63,6 +65,7 @@ export async function submitUserRequest(data: RequestFormValues): Promise<string
  * @returns A promise that resolves to an array of StoredUserRequest.
  */
 export async function fetchUserRequests(): Promise<StoredUserRequest[]> {
+    z.object({}).parse({}); // Zod validation for function with no args
     const user = await getCurrentUser();
     if (!user || user.role !== 'admin' || !isConfigValid || !db) {
         console.error("Unauthorized or unconfigured attempt to fetch user requests.");

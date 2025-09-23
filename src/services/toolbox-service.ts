@@ -3,6 +3,7 @@
 
 import { Book, Calculator, CloudSun, Globe, Map, MessagesSquare, Mic, ScrollText, Wrench, ShieldAlert, Waypoints } from "lucide-react";
 import type { ElementType } from "react";
+import { z } from 'zod';
 
 export interface Tool {
   icon: ElementType;
@@ -37,7 +38,7 @@ const toolsData: Tool[] = [
   {
     icon: Globe,
     title: "Airport Directory",
-    description: "Browse a comprehensive database of airports, grouped by country and region.",
+    description: "A comprehensive database of airports, grouped by country and region.",
     href: "/toolbox/airport-directory",
     delay: 0.25
   },
@@ -78,7 +79,10 @@ const toolsData: Tool[] = [
   },
 ];
 
+const EmptySchema = z.object({});
+
 export async function getToolboxTools(): Promise<Tool[]> {
+    EmptySchema.parse({}); // Zod validation
     // In a real application, this could fetch from a database or a CMS.
     // For now, we'll return the static data.
     return Promise.resolve(toolsData);

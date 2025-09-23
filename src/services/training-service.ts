@@ -7,12 +7,16 @@ import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { StoredTrainingSession } from "@/schemas/training-session-schema";
 import type { User } from "@/schemas/user-schema";
 import { getCurrentUser } from "@/lib/session";
+import { z } from 'zod';
+
+const EmptySchema = z.object({});
 
 interface SessionForDisplay extends StoredTrainingSession {
     attendeeCount: number;
 }
 
 export async function getTrainingSessionsPageData() {
+    EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
     if (!user || user.role !== 'admin' || !isConfigValid || !db) {
         console.error("Unauthorized or unconfigured attempt to fetch training session data.");

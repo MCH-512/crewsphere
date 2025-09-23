@@ -6,6 +6,9 @@ import { db, isConfigValid } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp, where } from "firebase/firestore";
 import type { StoredPurserReport } from "@/schemas/purser-report-schema";
 import { getCurrentUser } from "@/lib/session";
+import { z } from 'zod';
+
+const EmptySchema = z.object({});
 
 /**
  * Fetches all purser reports, ordered by creation date.
@@ -13,6 +16,7 @@ import { getCurrentUser } from "@/lib/session";
  * @returns A promise that resolves to an array of StoredPurserReport.
  */
 export async function fetchPurserReports(): Promise<StoredPurserReport[]> {
+    EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
     if (!user || user.role !== 'admin' || !isConfigValid || !db) {
         console.error("Unauthorized or unconfigured attempt to fetch reports.");
@@ -38,6 +42,7 @@ export async function fetchPurserReports(): Promise<StoredPurserReport[]> {
  * @returns A promise that resolves to an array of StoredPurserReport.
  */
 export async function getMyReports(): Promise<StoredPurserReport[]> {
+    EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
     if (!user || !isConfigValid || !db) {
         console.warn("User not authenticated or DB not configured. Cannot fetch reports.");
