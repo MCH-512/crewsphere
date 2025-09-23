@@ -193,8 +193,8 @@ export function AdminFlightsClient({
         try {
             const { flights } = await getFlightsForAdmin();
             setFlights(flights);
-        } catch (err: unknown) {
-            const e = err as Error;
+        } catch (error: unknown) {
+            const e = error as Error;
             toast({ title: "Error Refreshing Data", description: e.message || "Could not fetch updated flight data.", variant: "destructive" });
         } finally {
             setIsLoading(false);

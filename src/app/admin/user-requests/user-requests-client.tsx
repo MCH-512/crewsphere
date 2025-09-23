@@ -219,8 +219,8 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
 
         toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. User's schedule has been updated accordingly.` });
         setIsManageDialogOpen(false);
-    } catch (err: unknown) {
-        const e = err as Error;
+    } catch (error: unknown) {
+        const e = error as Error;
         console.error("Error updating status:", e);
         toast({ title: "Update Failed", description: e.message || "Could not update request status/response.", variant: "destructive" });
     } finally {
