@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -368,7 +369,7 @@ export default function RequestsPage() {
     try {
       const q = query(collection(db, "requests"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
-      const fetchedRequests = querySnapshot.docs.map(doc => {
+      const fetchedRequests: any[] = querySnapshot.docs.map(doc => {
           const data = doc.data() as StoredUserRequest;
           return {
               ...data,
@@ -379,8 +380,9 @@ export default function RequestsPage() {
           };
       });
       setMyRequests(fetchedRequests);
-    } catch (err) {
-      console.error("Error fetching user requests:", err);
+    } catch (err: unknown) {
+        const e = err as Error;
+      console.error("Error fetching user requests:", e);
       setError("Failed to load your requests. Please try again.");
       toast({ title: "Loading Error", description: "Could not fetch your requests.", variant: "destructive" });
     } finally {
@@ -430,7 +432,7 @@ export default function RequestsPage() {
                     <SubmitRequestTab refreshHistory={fetchMyRequests} />
                   </TabsContent>
                   <TabsContent value="history">
-                    <RequestHistoryTab myRequests={myRequests} isLoading={isLoading} error={error} fetchMyRequests={fetchMyRequests} />
+                    <RequestHistoryTab myRequests={myRequests as any} isLoading={isLoading} error={error} fetchMyRequests={fetchMyRequests} />
                   </TabsContent>
                 </Tabs>
               )}
