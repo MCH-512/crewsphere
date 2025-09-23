@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input"; 
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query as firestoreQuery, orderBy, Timestamp, doc, updateDoc, serverTimestamp, writeBatch, where, onSnapshot } from "firebase/firestore";
+import { collection, query as firestoreQuery, orderBy, Timestamp, doc, updateDoc, serverTimestamp, writeBatch, where, onSnapshot, getDocs } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, Info, MessageSquareText, CheckCircle } from "lucide-react";
 import { format, eachDayOfInterval, startOfDay } from "date-fns";
@@ -301,7 +301,7 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
           
           {isLoading && allRequests.length === 0 && <div className="flex items-center justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-3 text-muted-foreground">Loading request list...</p></div>}
           
-          {!isLoading && filteredAndSortedRequests.length === 0 && !error && <p className="text-muted-foreground text-center py-8">No user requests found{statusFilter !== "all" ? ` for status: ${statusFilter}` : ""}{searchTerm ? ` matching "${searchTerm}"` : ""}.</p>}
+          {!isLoading && filteredAndSortedRequests.length === 0 && !error && <p className="text-muted-foreground text-center py-8">No user requests found{statusFilter !== "all" ? ` with status: ${statusFilter}` : ""}{searchTerm ? ` matching "${searchTerm}"` : ""}.</p>}
 
           {filteredAndSortedRequests.length > 0 && (
             <div className="rounded-md border">
@@ -451,3 +451,5 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
     </div>
   );
 }
+
+    
