@@ -55,7 +55,7 @@ export function MySwapsClient({ initialSwaps }: MySwapsClientProps) {
             await cancelMySwap(swapId, user.uid);
             toast({ title: "Swap Cancelled", description: "Your flight swap posting has been removed." });
             fetchData();
-        } catch (error: unknown) {
+        } catch (error) {
             const e = error as Error;
             toast({ title: "Cancellation Failed", description: e.message, variant: "destructive" });
         } finally {
@@ -160,5 +160,3 @@ export function MySwapsClient({ initialSwaps }: MySwapsClientProps) {
         </div>
     );
 }
-
-    

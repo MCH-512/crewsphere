@@ -220,7 +220,7 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
                 const attendees = (session.attendeeIds || []).map(uid => userMap.get(uid)).filter(Boolean) as AuthUser[];
                 setSheetActivity({ type: 'training', data: { ...session, attendees } });
             }
-        } catch(err: unknown) {
+        } catch(err) {
             const e = err as Error;
             console.error("Error fetching activity details:", e);
             setSheetError(e.message || "An unexpected error occurred.");
@@ -326,5 +326,3 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
         </div>
     );
 }
-
-    

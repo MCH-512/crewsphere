@@ -115,7 +115,7 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
       setSpecificTypes([]);
       setFormDataToSubmit(null);
       refreshHistory(); // Refresh the history tab
-    } catch (error: unknown) {
+    } catch (error) {
         const e = error as Error;
       console.error("Error submitting request:", e);
       toast({ title: "Submission Failed", description: e.message || "Could not save your request.", variant: "destructive" });
@@ -369,7 +369,7 @@ export default function RequestsPage() {
     try {
       const q = query(collection(db, "requests"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
-      const fetchedRequests: any[] = querySnapshot.docs.map(doc => {
+      const fetchedRequests: StoredUserRequest[] = querySnapshot.docs.map(doc => {
           const data = doc.data() as StoredUserRequest;
           return {
               ...data,
@@ -377,10 +377,10 @@ export default function RequestsPage() {
               // Convert timestamps to ISO strings for serialization
               createdAt: data.createdAt.toDate().toISOString(),
               updatedAt: data.updatedAt ? data.updatedAt.toDate().toISOString() : undefined,
-          };
+          } as StoredUserRequest;
       });
       setMyRequests(fetchedRequests);
-    } catch (err: unknown) {
+    } catch (err) {
         const e = err as Error;
       console.error("Error fetching user requests:", e);
       setError("Failed to load your requests. Please try again.");
@@ -443,5 +443,3 @@ export default function RequestsPage() {
     </div>
   );
 }
-
-    

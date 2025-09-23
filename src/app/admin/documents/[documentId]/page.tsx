@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -57,7 +58,7 @@ export default function DocumentDetailPage() {
                 }));
                 setUsersWithStatus(usersWithReadStatus);
 
-            } catch (err: unknown) {
+            } catch (err) {
                 const e = err as Error;
                 setError(e.message);
                 toast({ title: "Error", description: e.message, variant: "destructive" });

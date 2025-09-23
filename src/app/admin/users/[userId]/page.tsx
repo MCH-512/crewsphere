@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -105,7 +106,7 @@ const AddManualActivityDialog = ({ userId, onActivityAdded, adminUser }: { userI
             toast({ title: "Activity Added", description: `The new activity has been added to the user's schedule.` });
             onActivityAdded();
             setIsOpen(false);
-        } catch (error: unknown) {
+        } catch (error) {
             const e = error as Error;
             toast({ title: "Error", description: e.message || "Could not add activity.", variant: "destructive" });
         } finally {
@@ -206,7 +207,7 @@ export default function UserDetailPage() {
 
             setProfileData({ user: fetchedUser, activities, trainings, requests, documents });
 
-        } catch (err: unknown) {
+        } catch (err) {
             const e = err as Error;
             setError(e.message || "Failed to load user profile.");
             toast({ title: "Loading Error", description: e.message, variant: "destructive" });
