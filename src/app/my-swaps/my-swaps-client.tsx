@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -55,8 +54,9 @@ export function MySwapsClient({ initialSwaps }: MySwapsClientProps) {
             await cancelMySwap(swapId, user.uid);
             toast({ title: "Swap Cancelled", description: "Your flight swap posting has been removed." });
             fetchData();
-        } catch (error: any) {
-            toast({ title: "Cancellation Failed", description: error.message, variant: "destructive" });
+        } catch (error: unknown) {
+            const e = error as Error;
+            toast({ title: "Cancellation Failed", description: e.message, variant: "destructive" });
         } finally {
             setIsCancelling(null);
         }
@@ -159,3 +159,5 @@ export function MySwapsClient({ initialSwaps }: MySwapsClientProps) {
         </div>
     );
 }
+
+    

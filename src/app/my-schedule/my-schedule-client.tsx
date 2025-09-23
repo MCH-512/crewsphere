@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -220,9 +219,10 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
                 const attendees = (session.attendeeIds || []).map(uid => userMap.get(uid)).filter(Boolean) as AuthUser[];
                 setSheetActivity({ type: 'training', data: { ...session, attendees } });
             }
-        } catch(err: any) {
-            console.error("Error fetching activity details:", err);
-            setSheetError(err.message || "An unexpected error occurred.");
+        } catch(err: unknown) {
+            const e = err as Error;
+            console.error("Error fetching activity details:", e);
+            setSheetError(e.message || "An unexpected error occurred.");
         } finally {
             setIsSheetLoading(false);
         }
@@ -325,3 +325,5 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
         </div>
     );
 }
+
+    

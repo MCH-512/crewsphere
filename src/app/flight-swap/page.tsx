@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -222,8 +221,9 @@ export default function FlightSwapPage() {
             await requestFlightSwap(selectedSwapToRequest.id, flightToOffer, user);
             toast({ title: "Request Sent!", description: "Your swap request has been sent for admin approval."});
             fetchData();
-        } catch (error: any) {
-            toast({ title: "Request Failed", description: error.message, variant: "destructive"});
+        } catch (error: unknown) {
+            const e = error as Error;
+            toast({ title: "Request Failed", description: e.message, variant: "destructive"});
         }
     };
     
@@ -321,3 +321,5 @@ export default function FlightSwapPage() {
         </div>
     );
 }
+
+    

@@ -1,10 +1,10 @@
-
 "use client";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Map as MapIcon, Loader2 } from "lucide-react";
 import dynamic from 'next/dynamic';
+import { Suspense } from "react";
 
 const DynamicMap = dynamic(() => import('@/components/features/live-map'), {
     ssr: false,
@@ -31,10 +31,14 @@ export default function LiveFlightTrackerPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="h-[600px] w-full rounded-lg overflow-hidden">
-                       <DynamicMap />
+                        <Suspense fallback={<div className="flex h-full w-full items-center justify-center bg-muted"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-2">Initializing Map...</p></div>}>
+                           <DynamicMap />
+                       </Suspense>
                     </div>
                 </CardContent>
             </Card>
         </div>
     );
 }
+
+    

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -115,9 +114,10 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
       setSpecificTypes([]);
       setFormDataToSubmit(null);
       refreshHistory(); // Refresh the history tab
-    } catch (error: any) {
-      console.error("Error submitting request:", error);
-      toast({ title: "Submission Failed", description: error.message || "Could not save your request.", variant: "destructive" });
+    } catch (error: unknown) {
+        const e = error as Error;
+      console.error("Error submitting request:", e);
+      toast({ title: "Submission Failed", description: e.message || "Could not save your request.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -353,7 +353,7 @@ const RequestHistoryTab = ({ myRequests, isLoading, error, fetchMyRequests }: Re
 export default function RequestsPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [myRequests, setMyRequests] = React.useState<any[]>([]);
+  const [myRequests, setMyRequests] = React.useState<StoredUserRequest[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -441,3 +441,5 @@ export default function RequestsPage() {
     </div>
   );
 }
+
+    
