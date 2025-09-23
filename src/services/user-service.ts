@@ -3,7 +3,7 @@
 
 import { db, auth, isConfigValid } from "@/lib/firebase";
 import { collection, doc, getDocs, query, orderBy, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, type AuthError } from "firebase/auth";
 import type { User, ManageUserFormValues } from "@/schemas/user-schema";
 import { manageUserFormSchema } from "@/schemas/user-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
@@ -89,16 +89,17 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
                 details: { email: validatedData.email, role: validatedData.role, displayName: validatedData.displayName },
             });
 
-        } catch (error: any) {
+        } catch (error: unknown) {
              // Rollback logic would be more complex and require Admin SDK.
              // For now, we log the critical failure.
             if (newUid) {
                 console.error(`CRITICAL: Auth user ${newUid} was created but Firestore document failed. Manual cleanup required.`);
             }
-            if (error.code === 'auth/email-already-in-use') {
+            const authError = error as AuthError;
+            if (authError.code === 'auth/email-already-in-use') {
                 throw new Error("This email address is already in use by another account.");
             }
-            throw new Error(error.message || "Failed to create user.");
+            throw new Error(authError.message || "Failed to create user.");
         }
     } else {
         if (!userId) {
@@ -124,8 +125,9 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
                 entityId: userId,
                 details: { email: validatedData.email, role: validatedData.role },
             });
-        } catch (error: any) {
-            throw new Error(error.message || "Failed to update user.");
+        } catch (error: unknown) {
+            const authError = error as AuthError;
+            throw new Error(authError.message || "Failed to update user.");
         }
     }
 }

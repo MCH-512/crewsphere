@@ -63,7 +63,7 @@ export async function getLogbookEntries(userId: string | undefined): Promise<Log
             };
         });
         return entries;
-    } catch (err) {
+    } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
         console.error("Error fetching logbook:", errorMessage);
         // Avoid throwing on server to prevent crashing the page, return empty array instead.
