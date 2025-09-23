@@ -80,7 +80,7 @@ export default function LoginPage() {
         description: "Welcome back!",
       });
       router.push("/");
-    } catch (error: unknown) {
+    } catch (error) {
       const authError = error as AuthError;
       console.error("Login error:", authError);
       toast({
@@ -149,5 +149,3 @@ export default function LoginPage() {
     </AuthLayout>
   );
 }
-
-    

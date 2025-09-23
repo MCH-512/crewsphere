@@ -86,7 +86,7 @@ export default function SignupPage() {
         description: "Welcome to CrewSphere! You are now signed in.",
       });
       router.push("/"); // Redirect to dashboard
-    } catch (error: unknown) {
+    } catch (error) {
       const authError = error as AuthError;
       console.error("Signup error:", authError);
       toast({
@@ -168,5 +168,3 @@ export default function SignupPage() {
     </AuthLayout>
   );
 }
-
-    

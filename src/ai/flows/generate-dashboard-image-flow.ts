@@ -27,10 +27,11 @@ const generateDashboardImageFlow = ai.defineFlow(
     outputSchema: GenerateDashboardImageOutputSchema,
   },
   async (input) => {
+    const validatedInput = GenerateDashboardImageInputSchema.parse(input);
     try {
       const { media } = await ai.generate({
         model: 'googleai/imagen-4.0-fast-generate-001',
-        prompt: `Generate a photorealistic, cinematic image of an airplane wing view, looking out towards ${input.destination}. The scene should be at ${input.timeOfDay}. The image should be inspiring, professional, and suitable for a hero banner. Avoid text.`,
+        prompt: `Generate a photorealistic, cinematic image of an airplane wing view, looking out towards ${validatedInput.destination}. The scene should be at ${validatedInput.timeOfDay}. The image should be inspiring, professional, and suitable for a hero banner. Avoid text.`,
         config: {
           aspectRatio: '16:9',
         },

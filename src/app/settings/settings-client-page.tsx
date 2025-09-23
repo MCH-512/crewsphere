@@ -131,7 +131,7 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
 
       toast({ title: "Profile & Preferences Updated", description: "Your information has been successfully updated." });
       profileForm.reset(data); // Resets the form's "dirty" state
-    } catch (error: unknown) {
+    } catch (error) {
       const authError = error as AuthError;
       console.error("Error updating profile:", authError);
       toast({ title: "Update Failed", description: authError.message || "Could not update your profile.", variant: "destructive" });
@@ -166,7 +166,7 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
         
         toast({ title: "Avatar Updated", description: "Your new profile picture has been saved. The page will now refresh." });
         setTimeout(() => window.location.reload(), 1500);
-    } catch (error: unknown) {
+    } catch (error) {
       const authError = error as AuthError;
         toast({ title: "Upload Failed", description: authError.message, variant: "destructive" });
     } finally {
@@ -189,7 +189,7 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
       toast({ title: "Password Changed", description: "Your password has been successfully updated." });
       setIsChangePasswordDialogOpen(false);
       changePasswordForm.reset();
-    } catch (error: unknown) {
+    } catch (error) {
       const authError = error as AuthError;
       console.error("Error changing password:", authError);
       let errorMessage = "Could not change password. Please try again.";
@@ -402,5 +402,3 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
     </div>
   );
 }
-
-    

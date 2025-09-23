@@ -22,9 +22,10 @@ const generateCourseImageFlow = ai.defineFlow(
     outputSchema: GenerateCourseImageOutputSchema,
   },
   async (input) => {
+    const validatedInput = GenerateCourseImageInputSchema.parse(input);
     const { media } = await ai.generate({
       model: 'googleai/imagen-4.0-fast-generate-001',
-      prompt: `Generate a professional, high-quality image suitable for an e-learning course cover on the topic of: ${input.prompt}. The style should be clean, modern, and relevant to the aviation industry. Avoid text in the image.`,
+      prompt: `Generate a professional, high-quality image suitable for an e-learning course cover on the topic of: ${validatedInput.prompt}. The style should be clean, modern, and relevant to the aviation industry. Avoid text in the image.`,
     });
 
     if (!media?.url) {

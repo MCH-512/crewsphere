@@ -37,8 +37,9 @@ const summarizeReportFlow = ai.defineFlow(
     outputSchema: SummarizeReportOutputSchema,
   },
   async (input) => {
+    const validatedInput = SummarizeReportInputSchema.parse(input);
     try {
-        const {output} = await summarizeReportPrompt(input);
+        const {output} = await summarizeReportPrompt(validatedInput);
         if (!output) {
           console.warn('AI summary returned no output for summarizeReportFlow.');
           return { summary: '', keyPoints: [], potentialRisks: [] };

@@ -27,17 +27,18 @@ const generateAudioFlow = ai.defineFlow({
     inputSchema: GenerateAudioInputSchema,
     outputSchema: GenerateAudioOutputSchema,
 }, async (validatedInput) => {
+    const parsedInput = GenerateAudioInputSchema.parse(validatedInput);
     const { media } = await ai.generate({
         model: googleAI.model('gemini-2.5-flash-preview-tts'),
         config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
             voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: validatedInput.voice },
+            prebuiltVoiceConfig: { voiceName: parsedInput.voice },
             },
         },
         },
-        prompt: validatedInput.prompt,
+        prompt: parsedInput.prompt,
     });
 
     if (!media) {
