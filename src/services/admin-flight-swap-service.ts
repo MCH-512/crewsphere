@@ -8,6 +8,7 @@ import type { StoredFlightSwap } from "@/schemas/flight-swap-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { startOfDay } from "date-fns";
 import { checkCrewAvailability } from "@/services/user-activity-service";
+import { z } from 'zod';
 
 const findUserRoleOnFlight = (flight: StoredFlight, userId: string): { role: string; field: string } | null => {
     if (flight.purserId === userId) return { role: 'purser', field: 'purserId' };
@@ -26,7 +27,14 @@ const updateCrewArray = (crewArray: string[], userToRemove: string, userToAdd: s
     return newArray;
 };
 
+const ApproveSwapInputSchema = z.object({
+  swapId: z.string().min(1),
+  adminId: z.string().min(1),
+  adminEmail: z.string().email(),
+});
+
 export async function approveFlightSwap(swapId: string, adminId: string, adminEmail: string) {
+    ApproveSwapInputSchema.parse({ swapId, adminId, adminEmail });
     if (!db) throw new Error("Database not configured");
 
     try {
@@ -52,7 +60,6 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             if (!user1Role || !user2Role) throw new Error("Could not determine user role on one of the flights.");
             if (user1Role.role !== user2Role.role) throw new Error(`Role mismatch: Cannot swap a ${user1Role.role} with a ${user2Role.role}.`);
             
-            // --- Prepare Flight Updates ---
             const flight1Update: Partial<StoredFlight> = { allCrewIds: updateCrewArray(flight1Data.allCrewIds, swapData.initiatingUserId, swapData.requestingUserId) };
             const flight2Update: Partial<StoredFlight> = { allCrewIds: updateCrewArray(flight2Data.allCrewIds, swapData.requestingUserId, swapData.initiatingUserId) };
             
@@ -64,7 +71,6 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
                  (flight2Update as any)[user2Role.field] = updateCrewArray((flight2Data as any)[user2Role.field], swapData.requestingUserId, swapData.initiatingUserId);
             }
             
-            // --- Prepare Activity Updates ---
             const activity1Id = flight1Data.activityIds?.[swapData.initiatingUserId];
             const activity2Id = flight2Data.activityIds?.[swapData.requestingUserId];
 
@@ -78,7 +84,6 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             if (activity1Id) newActivityIdsF2[swapData.initiatingUserId] = activity1Id;
             flight2Update.activityIds = newActivityIdsF2;
 
-            // --- Execute all updates within the transaction ---
             transaction.update(flight1Ref, flight1Update as any);
             transaction.update(flight2Ref, flight2Update as any);
 
@@ -114,9 +119,16 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
     }
 }
 
+const RejectSwapInputSchema = z.object({
+  swapId: z.string().min(1),
+  adminId: z.string().min(1),
+  adminEmail: z.string().email(),
+  notes: z.string().min(1, "Rejection notes are required."),
+});
+
 export async function rejectFlightSwap(swapId: string, adminId: string, adminEmail: string, notes: string) {
+    RejectSwapInputSchema.parse({ swapId, adminId, adminEmail, notes });
     if (!db) throw new Error("Database not configured");
-    if (!notes) throw new Error("Rejection notes are required.");
     
     const swapRef = doc(db, "flightSwaps", swapId);
     
@@ -144,7 +156,7 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
             [swap.initiatingUserId],
             new Date(swap.requestingFlightInfo.scheduledDepartureDateTimeUTC),
             new Date(swap.requestingFlightInfo.scheduledArrivalDateTimeUTC),
-            swap.initiatingFlightId // Ignore the original flight
+            swap.initiatingFlightId
         );
         if (Object.keys(initiatorConflicts).length > 0) {
             const conflict = Object.values(initiatorConflicts)[0];
@@ -155,7 +167,7 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
             [swap.requestingUserId],
             new Date(swap.flightInfo.scheduledDepartureDateTimeUTC),
             new Date(swap.flightInfo.scheduledArrivalDateTimeUTC),
-            swap.requestingFlightId // Ignore the original flight
+            swap.requestingFlightId
         );
          if (Object.keys(requesterConflicts).length > 0) {
             const conflict = Object.values(requesterConflicts)[0];

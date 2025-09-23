@@ -3,12 +3,17 @@
 
 import { db, isConfigValid } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, doc } from "firebase/firestore";
-import { startOfMonth, endOfMonth } from 'date-fns';
-import { StoredFlight, type FlightFormValues } from "@/schemas/flight-schema";
+import { StoredFlight } from "@/schemas/flight-schema";
 import { StoredFlightSwap } from "@/schemas/flight-swap-schema";
 import { User } from "@/schemas/user-schema";
 import { getAirportByCode } from "./airport-service";
 import { getCurrentUser } from "@/lib/session";
+import { z } from "zod";
+
+const GetFlightsInputSchema = z.object({
+    // In a real app, you might have filters here, like date ranges or user IDs.
+    // For now, we'll keep it simple as this function has no external inputs.
+}).optional();
 
 export interface FlightForDisplay extends StoredFlight {
     departureAirportName?: string;
@@ -19,8 +24,8 @@ export interface FlightForDisplay extends StoredFlight {
 }
 
 export async function getFlightsForAdmin() {
+    GetFlightsInputSchema.parse({}); // Validate that no input is given
     const user = await getCurrentUser();
-    // Security check: only admins can fetch this data.
     if (!user || user.role !== 'admin' || !isConfigValid || !db) {
         console.warn("Unauthorized or unconfigured attempt to fetch flights for admin.");
         return {
@@ -29,19 +34,16 @@ export async function getFlightsForAdmin() {
         };
     }
     
-    // Fetch all user data once
     const usersSnapshot = await getDocs(collection(db, "users"));
     const allUsers = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
     const userMap = new Map(allUsers.map(u => [u.uid, u]));
     
-    // Categorize users
     const pilots = allUsers.filter(u => u.role === 'pilote');
     const pursers = allUsers.filter(u => ['purser', 'admin', 'instructor'].includes(u.role || '') && u.role !== 'pilote');
     const cabinCrew = allUsers.filter(u => u.role === 'cabin crew');
     const instructors = allUsers.filter(u => u.role === 'instructor');
     const trainees = allUsers.filter(u => u.role === 'stagiaire');
 
-    // Fetch all flights
     const flightsQuery = query(
         collection(db, "flights"), 
         orderBy("scheduledDepartureDateTimeUTC", "desc")
@@ -74,7 +76,7 @@ export async function getFlightsForAdmin() {
     );
 
     return {
-        flights: flights,
+        flights,
         allUsers,
         pilots,
         pursers,

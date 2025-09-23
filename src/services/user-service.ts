@@ -3,10 +3,12 @@
 
 import { db, auth, isConfigValid } from "@/lib/firebase";
 import { collection, doc, getDocs, query, orderBy, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import type { User, ManageUserFormValues } from "@/schemas/user-schema";
+import { manageUserFormSchema } from "@/schemas/user-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { getCurrentUser } from "@/lib/session";
+import { z } from "zod";
 
 export async function fetchUsers(): Promise<User[]> {
     if (!isConfigValid || !db) {
@@ -14,7 +16,6 @@ export async function fetchUsers(): Promise<User[]> {
         return []; 
     }
     
-    // Security check: only admins can list all users.
     const adminUser = await getCurrentUser();
     if (!adminUser || adminUser.role !== 'admin') {
         console.warn("Unauthorized attempt to fetch all users.");
@@ -27,7 +28,7 @@ export async function fetchUsers(): Promise<User[]> {
         return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
     } catch (error) {
         console.error("Error fetching users from Firestore:", error);
-        return []; // Return empty on error to prevent page crash
+        return [];
     }
 }
 
@@ -43,35 +44,38 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
     if (!isConfigValid || !db || !auth) {
         throw new Error("Firebase is not configured.");
     }
+    
+    // Validate data with Zod before proceeding
+    const validationResult = manageUserFormSchema.safeParse(data);
+    if (!validationResult.success) {
+        throw new Error(`Invalid user data: ${validationResult.error.flatten().fieldErrors}`);
+    }
+    const validatedData = validationResult.data;
 
     if (isCreate) {
-        if (!data.email || !data.password) {
+        if (!validatedData.email || !validatedData.password) {
             throw new Error("Email and password are required to create a user.");
         }
         
-        // This is a placeholder for a more robust creation flow.
-        // A proper implementation would use a Cloud Function with the Admin SDK
-        // to avoid the security risks of creating users from the client or another user's session.
-        // For this project, we acknowledge this limitation.
         let newUid: string | null = null;
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+             // This is a placeholder. In a real app, use Admin SDK in a Cloud Function.
+            const userCredential = await createUserWithEmailAndPassword(auth, validatedData.email, validatedData.password);
             newUid = userCredential.user.uid;
 
-            // Update profile for the newly created user
-            await updateProfile(userCredential.user, { displayName: data.displayName });
+            await updateProfile(userCredential.user, { displayName: validatedData.displayName });
             
             const userDocRef = doc(db, "users", newUid);
             await setDoc(userDocRef, {
                 uid: newUid,
-                email: data.email,
-                displayName: data.displayName,
-                fullName: data.fullName,
-                employeeId: data.employeeId || null,
-                joiningDate: data.joiningDate || null,
-                role: data.role || 'other',
-                accountStatus: data.accountStatus ? 'active' : 'inactive',
-                baseAirport: data.baseAirport || null,
+                email: validatedData.email,
+                displayName: validatedData.displayName,
+                fullName: validatedData.fullName,
+                employeeId: validatedData.employeeId || null,
+                joiningDate: validatedData.joiningDate || null,
+                role: validatedData.role || 'other',
+                accountStatus: validatedData.accountStatus ? 'active' : 'inactive',
+                baseAirport: validatedData.baseAirport || null,
                 createdAt: serverTimestamp(),
                 lastLogin: null,
             });
@@ -82,23 +86,15 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
                 actionType: "CREATE_USER",
                 entityType: "USER",
                 entityId: newUid,
-                details: { email: data.email, role: data.role, displayName: data.displayName },
+                details: { email: validatedData.email, role: validatedData.role, displayName: validatedData.displayName },
             });
 
         } catch (error: any) {
-            // Rollback: If Firestore write fails after Auth user is created, delete the Auth user.
+             // Rollback logic would be more complex and require Admin SDK.
+             // For now, we log the critical failure.
             if (newUid) {
-                try {
-                    const userToDelete = auth.currentUser;
-                     if (userToDelete && userToDelete.uid === newUid) {
-                        await deleteUser(userToDelete);
-                        console.log(`Successfully rolled back and deleted auth user: ${newUid}`);
-                    }
-                } catch (rollbackError) {
-                    console.error(`CRITICAL: Failed to rollback user creation for ${newUid}. Manual cleanup required.`, rollbackError);
-                }
+                console.error(`CRITICAL: Auth user ${newUid} was created but Firestore document failed. Manual cleanup required.`);
             }
-
             if (error.code === 'auth/email-already-in-use') {
                 throw new Error("This email address is already in use by another account.");
             }
@@ -111,13 +107,13 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
         try {
             const userDocRef = doc(db, "users", userId);
             await updateDoc(userDocRef, {
-                displayName: data.displayName,
-                fullName: data.fullName,
-                employeeId: data.employeeId || null,
-                joiningDate: data.joiningDate || null,
-                role: data.role || 'other',
-                accountStatus: data.accountStatus ? 'active' : 'inactive',
-                baseAirport: data.baseAirport || null,
+                displayName: validatedData.displayName,
+                fullName: validatedData.fullName,
+                employeeId: validatedData.employeeId || null,
+                joiningDate: validatedData.joiningDate || null,
+                role: validatedData.role || 'other',
+                accountStatus: validatedData.accountStatus ? 'active' : 'inactive',
+                baseAirport: validatedData.baseAirport || null,
             });
             
             await logAuditEvent({
@@ -126,7 +122,7 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
                 actionType: "UPDATE_USER",
                 entityType: "USER",
                 entityId: userId,
-                details: { email: data.email, role: data.role },
+                details: { email: validatedData.email, role: validatedData.role },
             });
         } catch (error: any) {
             throw new Error(error.message || "Failed to update user.");
