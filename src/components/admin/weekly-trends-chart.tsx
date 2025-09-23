@@ -228,5 +228,3 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
     </Card>
   );
 }
-
-    
