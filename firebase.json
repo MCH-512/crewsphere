@@ -23,6 +23,7 @@
     }
   },
   "hosting": {
+    "public": "public",
     "source": ".",
     "ignore": [
       "firebase.json",
@@ -32,10 +33,6 @@
     "frameworksBackend": {
       "region": "us-central1"
     },
-    "site": "aircrew-hub-68d34",
-    "dev": {
-      "command": "npm run dev",
-      "targetPort": 9002
-    }
+    "site": "aircrew-hub-68d34"
   }
 }
