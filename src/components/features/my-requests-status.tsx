@@ -9,8 +9,12 @@ import Link from "next/link";
 import { Badge } from "../ui/badge";
 import { getStatusBadgeVariant } from "@/schemas/request-schema";
 import { getRequestsStatus } from "@/services/dashboard-service";
+import { z } from 'zod';
+
+const EmptySchema = z.object({});
 
 export async function MyRequestsStatusCard() {
+    EmptySchema.parse({});
     const stats = await getRequestsStatus();
 
     // Handle the case where stats are null (error fetching)

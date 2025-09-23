@@ -1,3 +1,4 @@
+
 "use server";
 
 import * as React from "react";
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
 import { ArrowLeft, Shield, AlertCircle, UserCheck, Wrench, MessageSquare, CheckCircle, Users, PersonStanding, Plane, AlertTriangle, FileSignature } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { StoredPurserReport } from "@/schemas/purser-report-schema";
@@ -16,6 +17,11 @@ import { getCurrentUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { z } from 'zod';
+
+// Zod schema for functions that take no arguments
+const EmptySchema = z.object({});
+
 
 type ReportStatus = "submitted" | "under-review" | "closed";
 
@@ -84,6 +90,7 @@ async function getReportData(reportId: string) {
 
 
 export default async function PurserReportHistoryDetailPage({ params }: { params: { reportId: string } }) {
+    EmptySchema.parse({});
     const report = await getReportData(params.reportId);
 
     return (

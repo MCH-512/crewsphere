@@ -7,8 +7,12 @@ import { GraduationCap, AlertTriangle, CheckCircle, ArrowRight } from "lucide-re
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { getTrainingStatus } from "@/services/dashboard-service";
+import { z } from 'zod';
+
+const EmptySchema = z.object({});
 
 export async function MyTrainingStatusCard() {
+    EmptySchema.parse({});
     const stats = await getTrainingStatus();
     
     // Handle the case where stats are null (error fetching)

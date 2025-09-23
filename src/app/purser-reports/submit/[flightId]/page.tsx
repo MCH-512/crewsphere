@@ -164,11 +164,11 @@ export default function SubmitPurserReportPage() {
     try {
       const reportRef = doc(collection(db, "purserReports"));
 
-      const reportData: any = { 
+      const reportData: Partial<StoredPurserReport> = { 
         ...data, 
         userId: user.uid, 
         userEmail: user.email, 
-        createdAt: serverTimestamp(), 
+        createdAt: serverTimestamp() as Timestamp, 
         status: 'submitted', 
         adminNotes: '',
         departureAirport: flightData.departureAirport, 
@@ -189,7 +189,7 @@ export default function SubmitPurserReportPage() {
           toast({ title: "AI Summary Skipped", description: "Could not generate AI summary, but your report will still be submitted.", variant: "default" });
       }
 
-      batch.set(reportRef, reportData);
+      batch.set(reportRef, reportData as StoredPurserReport);
       const flightRef = doc(db, "flights", data.flightId);
       batch.update(flightRef, { purserReportSubmitted: true, purserReportId: reportRef.id });
       

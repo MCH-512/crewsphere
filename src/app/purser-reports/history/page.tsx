@@ -13,6 +13,9 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 import { redirect } from "next/navigation";
 import { getMyReports } from "@/services/report-service";
 import { getCurrentUser } from "@/lib/session";
+import { z } from 'zod';
+
+const EmptySchema = z.object({});
 
 const getStatusBadgeVariant = (status: StoredPurserReport['status']) => {
     switch (status) {
@@ -24,6 +27,7 @@ const getStatusBadgeVariant = (status: StoredPurserReport['status']) => {
 };
 
 export default async function PurserReportsHistoryPage() {
+    EmptySchema.parse({});
     const user = await getCurrentUser();
     if (!user) {
         redirect('/login');

@@ -6,9 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Inbox } from "lucide-react";
 import { RequestsStatusBarChart } from "./charts/requests-status-bar-chart";
 import { getRequestsChartData } from "@/services/dashboard-service";
+import { z } from 'zod';
+
+const EmptySchema = z.object({});
 
 
 export async function RequestsStatusChart() {
+    EmptySchema.parse({});
     const requestsChartData = await getRequestsChartData();
 
     return (

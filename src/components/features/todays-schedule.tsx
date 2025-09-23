@@ -1,5 +1,4 @@
 
-
 "use server";
 
 import * as React from "react";
@@ -8,6 +7,9 @@ import { CalendarCheck, Plane, Briefcase, GraduationCap, Bed, Anchor } from "luc
 import { format } from "date-fns";
 import { getTodayActivities } from "@/services/activity-service";
 import type { TodayActivity } from "@/services/activity-service";
+import { z } from 'zod';
+
+const EmptySchema = z.object({});
 
 
 const activityConfig: Record<TodayActivity['activityType'], { icon: React.ElementType; label: string; }> = {
@@ -19,6 +21,7 @@ const activityConfig: Record<TodayActivity['activityType'], { icon: React.Elemen
 };
 
 export async function TodaysScheduleCard() {
+    EmptySchema.parse({});
     const activities = await getTodayActivities();
 
     const renderContent = () => {

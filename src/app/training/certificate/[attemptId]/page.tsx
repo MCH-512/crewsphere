@@ -6,14 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
 import { Loader2, AlertTriangle, ArrowLeft, ShieldCheck, Download, Plane } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
 import { StoredCourse, StoredCertificateRule } from "@/schemas/course-schema";
 import { format, add } from "date-fns";
-import { cn } from "@/lib/utils";
 
 interface CertificateData {
     attempt: StoredUserQuizAttempt;
@@ -73,14 +72,15 @@ export default function CertificatePage() {
 
                 setData({
                     attempt,
-                    user: { ...userSnap.data(), uid: userSnap.id, email: userSnap.data().email || '' } as User,
+                    user: { ...userSnap.data(), uid: userSnap.id } as User,
                     course,
                     certRule: { id: certRuleSnap.id, ...certRuleSnap.data() } as StoredCertificateRule,
                 });
 
-            } catch (err: any) {
-                setError(err.message || "An unknown error occurred while loading the certificate.");
-                toast({ title: "Loading Error", description: err.message, variant: "destructive" });
+            } catch (err: unknown) {
+                const e = err as Error;
+                setError(e.message || "An unknown error occurred while loading the certificate.");
+                toast({ title: "Loading Error", description: e.message, variant: "destructive" });
             } finally {
                 setIsLoading(false);
             }
@@ -153,5 +153,3 @@ export default function CertificatePage() {
         </div>
     );
 }
-
-    

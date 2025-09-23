@@ -6,8 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { GraduationCap } from "lucide-react";
 import { TrainingProgressPieChart } from "@/components/features/charts/training-progress-pie-chart";
 import { getTrainingChartData } from "@/services/dashboard-service";
+import { z } from 'zod';
+
+const EmptySchema = z.object({});
 
 export async function TrainingProgressChart() {
+    EmptySchema.parse({});
     const trainingChartData = await getTrainingChartData();
     
     return (
