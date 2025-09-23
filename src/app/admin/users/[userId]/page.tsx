@@ -30,6 +30,8 @@ import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { getAirportByCode, Airport } from "@/services/airport-service";
+import type { StoredUserRequest } from "@/schemas/request-schema";
+import { Suspense } from "react";
 
 const DynamicMap = dynamic(() => import('@/components/features/live-map').then(mod => mod.MapDisplay), {
     ssr: false,
@@ -104,8 +106,9 @@ const AddManualActivityDialog = ({ userId, onActivityAdded, adminUser }: { userI
             toast({ title: "Activity Added", description: `The new activity has been added to the user's schedule.` });
             onActivityAdded();
             setIsOpen(false);
-        } catch (error: any) {
-            toast({ title: "Error", description: error.message || "Could not add activity.", variant: "destructive" });
+        } catch (error: unknown) {
+            const e = error as Error;
+            toast({ title: "Error", description: e.message || "Could not add activity.", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
         }
@@ -142,6 +145,14 @@ const AddManualActivityDialog = ({ userId, onActivityAdded, adminUser }: { userI
     );
 }
 
+interface ProfileData {
+  user: User;
+  activities: UserActivity[];
+  trainings: (StoredUserQuizAttempt & { courseTitle: string })[];
+  requests: StoredUserRequest[];
+  documents: StoredUserDocument[];
+}
+
 // --- Page Component ---
 export default function UserDetailPage() {
     const { user: adminUser, loading: authLoading } = useAuth();
@@ -150,7 +161,7 @@ export default function UserDetailPage() {
     const { toast } = useToast();
     const userId = params.userId as string;
 
-    const [profileData, setProfileData] = React.useState<any | null>(null);
+    const [profileData, setProfileData] = React.useState<ProfileData | null>(null);
     const [baseAirport, setBaseAirport] = React.useState<Airport | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
@@ -179,13 +190,13 @@ export default function UserDetailPage() {
             }
             
             const activities = activitiesSnap.docs.map(d => ({ id: d.id, ...d.data() }) as UserActivity);
-            const requests = requestsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const requests = requestsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserRequest);
             const documents = documentsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserDocument);
 
             const trainingAttempts = trainingsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserQuizAttempt);
             const courseIds = [...new Set(trainingAttempts.map(t => t.courseId))];
             
-            let trainings: any[] = [];
+            let trainings: (StoredUserQuizAttempt & { courseTitle: string })[] = [];
             if(courseIds.length > 0) {
               const coursePromises = courseIds.map(id => getDoc(doc(db, "courses", id)));
               const courseDocs = await Promise.all(coursePromises);
@@ -196,9 +207,10 @@ export default function UserDetailPage() {
 
             setProfileData({ user: fetchedUser, activities, trainings, requests, documents });
 
-        } catch (err: any) {
-            setError(err.message || "Failed to load user profile.");
-            toast({ title: "Loading Error", description: err.message, variant: "destructive" });
+        } catch (err: unknown) {
+            const e = err as Error;
+            setError(e.message || "Failed to load user profile.");
+            toast({ title: "Loading Error", description: e.message, variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
@@ -216,15 +228,22 @@ export default function UserDetailPage() {
         }
     }, [userId, adminUser, authLoading, router, fetchUserProfileData]);
     
-    const formatDateDisplay = (dateString?: string | null) => {
-        if (!dateString) return "N/A"; 
-        try {
-            const dateObj = new Date(dateString);
-            if (isNaN(dateObj.getTime())) return "Invalid Date";
-            return format(dateObj, "PPP"); 
-        } catch (e) {
-            return dateString; 
+    const formatDateDisplay = (dateValue?: string | null | Timestamp) => {
+        if (!dateValue) return "N/A";
+        
+        let dateObj: Date;
+        if (dateValue instanceof Timestamp) {
+            dateObj = dateValue.toDate();
+        } else {
+            try {
+                dateObj = new Date(dateValue);
+                 if (isNaN(dateObj.getTime())) return "Invalid Date";
+            } catch(e) {
+                 return String(dateValue);
+            }
         }
+        
+        return format(dateObj, "PPP");
     };
 
     if (isLoading || authLoading) {
@@ -273,7 +292,7 @@ export default function UserDetailPage() {
                             </CardHeader>
                             <CardContent>
                                 {activities.length > 0 ? (
-                                    <ul className="space-y-2">{activities.map((act: UserActivity) => <li key={act.id} className="text-sm flex justify-between"><span>{act.activityType === 'flight' ? `Flight ${act.flightNumber}` : act.comments || act.activityType}</span> <span className="text-muted-foreground">{format(act.date.toDate(), 'PP')}</span></li>)}</ul>
+                                    <ul className="space-y-2">{activities.map((act) => <li key={act.id} className="text-sm flex justify-between"><span>{act.activityType === 'flight' ? `Flight ${act.flightNumber}` : act.comments || act.activityType}</span> <span className="text-muted-foreground">{format(act.date.toDate(), 'PP')}</span></li>)}</ul>
                                 ) : (<p className="text-sm text-muted-foreground text-center py-4">No recent activities found.</p>)}
                             </CardContent>
                         </Card>
@@ -281,7 +300,7 @@ export default function UserDetailPage() {
                             <CardHeader className="pb-2"><CardTitle className="text-lg flex items-center gap-2"><Inbox className="h-5 w-5 text-primary"/>Recent Requests</CardTitle></CardHeader>
                             <CardContent>
                                 {requests.length > 0 ? (
-                                    <ul className="space-y-2">{requests.map((req: any) => <li key={req.id} className="text-sm flex justify-between">
+                                    <ul className="space-y-2">{requests.map((req) => <li key={req.id} className="text-sm flex justify-between">
                                         <Link href={`/admin/user-requests`} className="hover:underline text-primary truncate pr-2">{req.subject}</Link>
                                         <Badge variant="secondary" className="capitalize">{req.status}</Badge>
                                     </li>)}</ul>
@@ -297,11 +316,13 @@ export default function UserDetailPage() {
                     </CardHeader>
                     <CardContent className="h-[350px] w-full p-0">
                         {baseAirport ? (
-                            <DynamicMap 
-                                center={[baseAirport.lat, baseAirport.lon]} 
-                                zoom={8} 
-                                markers={[{lat: baseAirport.lat, lon: baseAirport.lon, popup: `<b>${baseAirport.name}</b><br/>${baseAirport.city}, ${baseAirport.country}`}]}
-                            />
+                            <Suspense fallback={<div className="flex justify-center items-center h-full"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
+                                <DynamicMap 
+                                    center={[baseAirport.lat, baseAirport.lon]} 
+                                    zoom={8} 
+                                    markers={[{lat: baseAirport.lat, lon: baseAirport.lon, popup: `<b>${baseAirport.name}</b><br/>${baseAirport.city}, ${baseAirport.country}`}]}
+                                />
+                            </Suspense>
                         ) : <div className="flex items-center justify-center h-full text-muted-foreground">No base airport assigned.</div>}
                     </CardContent>
                 </Card>
@@ -312,7 +333,7 @@ export default function UserDetailPage() {
                 <CardContent>
                      {trainings.length > 0 ? (
                         <div className="space-y-3">
-                            {trainings.map((t: any) => (
+                            {trainings.map((t) => (
                                 <div key={t.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
                                     <div>
                                         <p className="font-medium">

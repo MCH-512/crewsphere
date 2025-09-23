@@ -52,9 +52,10 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
     try {
       const fetchedUsers = await fetchUsers();
       setUsersList(fetchedUsers);
-    } catch (err: any) {
-      setError(err.message || "Failed to load users.");
-      toast({ title: "Loading Error", description: err.message, variant: "destructive" });
+    } catch (err) {
+        const typedError = err as Error;
+        setError(typedError.message || "Failed to load users.");
+        toast({ title: "Loading Error", description: typedError.message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -179,7 +180,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-            <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as any)}>
+            <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as SpecificRole | 'all')}>
                 <SelectTrigger className="w-full md:w-[180px]">
                     <Filter className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="Filter by role" />
@@ -189,7 +190,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                     {availableRoles.map(role => <SelectItem key={role} value={role} className="capitalize">{role}</SelectItem>)}
                 </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as AccountStatus | 'all')}>
                 <SelectTrigger className="w-full md:w-[180px]">
                      <Filter className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="Filter by status" />

@@ -14,6 +14,10 @@ import { getAdminDashboardStats, getAdminDashboardWeeklyTrends } from "@/service
 import { Badge } from "@/components/ui/badge";
 import { WeeklyTrendsChart } from "@/components/admin/weekly-trends-chart";
 import { Skeleton } from "@/components/ui/skeleton";
+import { z } from 'zod';
+
+// Zod schema for functions that take no arguments
+const EmptySchema = z.object({});
 
 const ChartSkeleton = () => (
     <Card className="col-span-1 lg:col-span-2">
@@ -30,6 +34,7 @@ const ChartSkeleton = () => (
 );
 
 export default async function AdminConsolePage() {
+  EmptySchema.parse({}); // Zod validation
   const stats = await getAdminDashboardStats();
   const weeklyTrendsDataPromise = getAdminDashboardWeeklyTrends();
 

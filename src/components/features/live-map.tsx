@@ -2,9 +2,9 @@
 "use client";
 
 import * as React from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import L, { type LatLngExpression } from 'leaflet';
 import { Plane, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Button } from '@/components/ui/button';
@@ -30,15 +30,21 @@ const BARO_ALTITUDE = 7;
 const VELOCITY = 9;
 const TRUE_TRACK = 10;
 
+type FlightStateVector = (string | number | boolean | null)[];
+
 const planeIconSVG = renderToStaticMarkup(<Plane className="h-5 w-5 text-primary stroke-[2.5]" />);
 
-const FlightMarkers = ({ flights }: { flights: any[] }) => {
+const FlightMarkers = ({ flights }: { flights: FlightStateVector[] }) => {
     return (
         <>
             {flights.map((flight) => {
-                const callsign = flight[CALLSIGN]?.trim() || 'N/A';
-                const rotation = flight[TRUE_TRACK] || 0;
-
+                const callsign = (flight[CALLSIGN] as string)?.trim() || 'N/A';
+                const rotation = (flight[TRUE_TRACK] as number) || 0;
+                const lat = flight[LATITUDE] as number;
+                const lon = flight[LONGITUDE] as number;
+                const velocity = flight[VELOCITY] as number;
+                const baroAltitude = flight[BARO_ALTITUDE] as number;
+                
                 const planeIcon = L.divIcon({
                   html: `<div style="transform: rotate(${rotation}deg);">${planeIconSVG}</div>`,
                   className: 'bg-transparent border-0',
@@ -48,17 +54,17 @@ const FlightMarkers = ({ flights }: { flights: any[] }) => {
 
                 return (
                     <Marker
-                        key={flight[ICAO24]}
-                        position={[flight[LATITUDE], flight[LONGITUDE]]}
+                        key={flight[ICAO24] as string}
+                        position={[lat, lon]}
                         icon={planeIcon}
                     >
                         <Popup>
                             <div className="text-sm">
                                 <p><strong>Flight:</strong> {callsign}</p>
                                 <p><strong>Origin:</strong> {flight[ORIGIN_COUNTRY]}</p>
-                                <p><strong>Altitude:</strong> {flight[BARO_ALTITUDE] ? `${(flight[BARO_ALTITUDE] * 3.28084).toFixed(0)} ft` : 'N/A'}</p>
-                                <p><strong>Speed:</strong> {flight[VELOCITY] ? `${(flight[VELOCITY] * 1.94384).toFixed(0)} kts` : 'N/A'}</p>
-                                <p><strong>Heading:</strong> {flight[TRUE_TRACK] ? `${flight[TRUE_TRACK].toFixed(0)}°` : 'N/A'}</p>
+                                <p><strong>Altitude:</strong> {baroAltitude ? `${(baroAltitude * 3.28084).toFixed(0)} ft` : 'N/A'}</p>
+                                <p><strong>Speed:</strong> {velocity ? `${(velocity * 1.94384).toFixed(0)} kts` : 'N/A'}</p>
+                                <p><strong>Heading:</strong> {rotation ? `${rotation.toFixed(0)}°` : 'N/A'}</p>
                             </div>
                         </Popup>
                         <Tooltip direction="top" offset={[0, -10]} opacity={0.9} permanent={false}>
@@ -72,8 +78,8 @@ const FlightMarkers = ({ flights }: { flights: any[] }) => {
 };
 
 interface MapDisplayProps {
-    flights?: any[];
-    center: L.LatLngExpression;
+    flights?: FlightStateVector[];
+    center: LatLngExpression;
     zoom: number;
     markers?: { lat: number; lon: number; popup: string }[];
 }
@@ -106,11 +112,11 @@ MapDisplay.displayName = 'MapDisplay';
 
 
 const LiveMap = () => {
-    const [flights, setFlights] = React.useState<any[]>([]);
+    const [flights, setFlights] = React.useState<FlightStateVector[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
-    const [mapState, setMapState] = React.useState({ center: [40, 0] as L.LatLngExpression, zoom: 3, key: Date.now() });
+    const [mapState, setMapState] = React.useState<{ center: LatLngExpression; zoom: number; key: number }>({ center: [40, 0], zoom: 3, key: Date.now() });
 
     const fetchFlights = React.useCallback(async (isManualRefresh = false) => {
         setIsLoading(true);
@@ -125,14 +131,15 @@ const LiveMap = () => {
                 throw new Error(`Failed to fetch flight data: ${response.statusText}`);
             }
             const data = await response.json();
-            const positionedFlights = data.states
-              ?.filter((s: any) => s[LONGITUDE] !== null && s[LATITUDE] !== null)
+            const positionedFlights = (data.states as FlightStateVector[] | null)
+              ?.filter((s) => s[LONGITUDE] !== null && s[LATITUDE] !== null)
               .slice(0, 300) || []; // Limit for performance and handle null states
             setFlights(positionedFlights);
             setLastUpdated(new Date());
             setError(null); // Clear previous errors on successful fetch
-        } catch (err: any) {
-            setError(err.message || "An unknown error occurred.");
+        } catch (err) {
+            const typedError = err as Error;
+            setError(typedError.message || "An unknown error occurred.");
         } finally {
             setIsLoading(false);
         }

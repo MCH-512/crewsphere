@@ -17,9 +17,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { type StoredFlight } from "@/schemas/flight-schema";
 import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode, type Airport } from "@/services/airport-service";
-import type { UserActivity } from "@/schemas/user-activity-schema";
+import type { UserActivity, ActivityData } from "@/schemas/user-activity-schema";
+import type { User as AuthUser } from "@/schemas/user-schema";
 import Link from 'next/link';
-import { getUserActivitiesForMonth, type ActivityData } from "@/services/activity-service";
+import { getUserActivitiesForMonth } from "@/services/activity-service";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -27,10 +28,10 @@ import { Separator } from "@/components/ui/separator";
 interface FlightWithCrewDetails extends StoredFlight {
     departureAirportInfo?: Airport | null;
     arrivalAirportInfo?: Airport | null;
-    crew: (import("@/schemas/user-schema").User)[];
+    crew: AuthUser[];
 }
 interface TrainingWithAttendeesDetails extends StoredTrainingSession {
-    attendees: (import("@/schemas/user-schema").User)[];
+    attendees: AuthUser[];
 }
 type SheetActivityDetails = { type: 'flight', data: FlightWithCrewDetails } | { type: 'training', data: TrainingWithAttendeesDetails };
 
@@ -44,7 +45,7 @@ const activityConfig: Record<UserActivity['activityType'], { icon: React.Element
 };
 
 // --- Sub-components ---
-const FlightDetails = ({ data, authUser }: { data: FlightWithCrewDetails, authUser: import("@/schemas/user-schema").User | null }) => (
+const FlightDetails = ({ data, authUser }: { data: FlightWithCrewDetails, authUser: AuthUser | null }) => (
     <div className="space-y-4">
         <Card><CardHeader className="pb-2"><CardDescription>Flight Info</CardDescription><CardTitle className="flex items-center gap-2"><Plane className="h-5 w-5"/> {data.flightNumber}</CardTitle></CardHeader>
             <CardContent className="text-sm space-y-1"><p><strong>Route:</strong> {data.departureAirportInfo?.iata || data.departureAirport} → {data.arrivalAirportInfo?.iata || data.arrivalAirport}</p><p><strong>Departure:</strong> {format(new Date(data.scheduledDepartureDateTimeUTC), "PPP HH:mm")} UTC</p><p><strong>Arrival:</strong> {format(new Date(data.scheduledArrivalDateTimeUTC), "PPP HH:mm")} UTC</p><p><strong>Aircraft:</strong> {data.aircraftType}</p></CardContent>
@@ -66,7 +67,7 @@ const FlightDetails = ({ data, authUser }: { data: FlightWithCrewDetails, authUs
     </div>
 );
 
-const TrainingDetails = ({ data, authUser }: { data: TrainingWithAttendeesDetails, authUser: import("@/schemas/user-schema").User | null }) => {
+const TrainingDetails = ({ data, authUser }: { data: TrainingWithAttendeesDetails, authUser: AuthUser | null }) => {
     const sessionDate = typeof data.sessionDateTimeUTC === 'string'
         ? new Date(data.sessionDateTimeUTC)
         : data.sessionDateTimeUTC.toDate();
@@ -92,7 +93,7 @@ const TrainingDetails = ({ data, authUser }: { data: TrainingWithAttendeesDetail
     );
 };
 
-const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authUser, error }: { isOpen: boolean, onOpenChange: (open: boolean) => void, activity: SheetActivityDetails | null, isLoading: boolean, authUser: import("@/schemas/user-schema").User | null, error: string | null }) => {
+const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authUser, error }: { isOpen: boolean, onOpenChange: (open: boolean) => void, activity: SheetActivityDetails | null, isLoading: boolean, authUser: AuthUser | null, error: string | null }) => {
     if (!isOpen) return null;
 
     return (
@@ -157,14 +158,14 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
     const [isSheetOpen, setIsSheetOpen] = React.useState(false);
     const [isSheetLoading, setIsSheetLoading] = React.useState(false);
     const [sheetError, setSheetError] = React.useState<string | null>(null);
-    const [userMap, setUserMap] = React.useState<Map<string, import("@/schemas/user-schema").User>>(new Map());
+    const [userMap, setUserMap] = React.useState<Map<string, AuthUser>>(new Map());
 
      React.useEffect(() => {
         const fetchAllUsers = async () => {
              const usersSnapshot = await getDocs(collection(db, "users"));
-             const map = new Map<string, import("@/schemas/user-schema").User>();
+             const map = new Map<string, AuthUser>();
              usersSnapshot.forEach(doc => {
-                 map.set(doc.id, { uid: doc.id, ...doc.data() } as import("@/schemas/user-schema").User);
+                 map.set(doc.id, { uid: doc.id, ...doc.data() } as AuthUser);
              });
              setUserMap(map);
         };
@@ -208,7 +209,7 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
                 if (!flightSnap.exists()) throw new Error("Flight details not found. It may have been deleted.");
                 const flight = { id: flightSnap.id, ...flightSnap.data() } as StoredFlight;
                 
-                const crew = (flight.allCrewIds || []).map(uid => userMap.get(uid)).filter(Boolean) as import("@/schemas/user-schema").User[];
+                const crew = (flight.allCrewIds || []).map(uid => userMap.get(uid)).filter(Boolean) as AuthUser[];
                 const [depAirport, arrAirport] = await Promise.all([getAirportByCode(flight.departureAirport), getAirportByCode(flight.arrivalAirport)]);
                 
                 setSheetActivity({ type: 'flight', data: { ...flight, departureAirportInfo: depAirport, arrivalAirportInfo: arrAirport, crew } });
@@ -216,7 +217,7 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
                 const sessionSnap = await getDoc(doc(db, "trainingSessions", activity.trainingSessionId));
                 if (!sessionSnap.exists()) throw new Error("Training session not found. It may have been deleted.");
                 const session = { id: sessionSnap.id, ...sessionSnap.data() } as StoredTrainingSession;
-                const attendees = (session.attendeeIds || []).map(uid => userMap.get(uid)).filter(Boolean) as import("@/schemas/user-schema").User[];
+                const attendees = (session.attendeeIds || []).map(uid => userMap.get(uid)).filter(Boolean) as AuthUser[];
                 setSheetActivity({ type: 'training', data: { ...session, attendees } });
             }
         } catch(err: any) {
