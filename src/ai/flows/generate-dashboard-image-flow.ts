@@ -12,13 +12,9 @@ import { GenerateDashboardImageInputSchema, type GenerateDashboardImageInput, Ge
 
 export async function generateDashboardImage(input: GenerateDashboardImageInput): Promise<GenerateDashboardImageOutput> {
   const validatedInput = GenerateDashboardImageInputSchema.parse(input);
-  console.log(`[AI-STUB] AI image generation is temporarily disabled. Returning fallback for input:`, validatedInput);
-  // Return an empty object to allow the service to fall back to the default placeholder.
-  return { imageDataUri: "" };
+  return generateDashboardImageFlow(validatedInput);
 }
 
-/*
-// Original Genkit Flow - Temporarily disabled
 
 const generateDashboardImageFlow = ai.defineFlow(
   {
@@ -51,4 +47,3 @@ const generateDashboardImageFlow = ai.defineFlow(
     }
   }
 );
-*/

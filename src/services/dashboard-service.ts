@@ -50,7 +50,6 @@ export async function getDashboardHeroImage(): Promise<{ src: string; hint: stri
                 const destinationAirport = await getAirportByCode(nextFlight.arrivalAirport);
                 const destination = destinationAirport?.city || nextFlight.arrivalAirport;
                 
-                // The underlying AI flow is temporarily stubbed out, so this call will be fast and won't fail.
                 const result = await generateDashboardImage({
                     destination,
                     timeOfDay: getTimeOfDay(),
