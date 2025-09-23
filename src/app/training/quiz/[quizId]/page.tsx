@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -267,5 +268,3 @@ export default function QuizPage() {
     
     return null; // Should not be reached
 }
-
-    

@@ -1,4 +1,5 @@
 
+
 'use server';
 /**
  * @fileOverview A service for generating audio from text.
@@ -26,19 +27,19 @@ const generateAudioFlow = ai.defineFlow({
     name: 'generateAudioFlow',
     inputSchema: GenerateAudioInputSchema,
     outputSchema: GenerateAudioOutputSchema,
-}, async (validatedInput) => {
-    const parsedInput = GenerateAudioInputSchema.parse(validatedInput);
+}, async (input) => {
+    const validatedInput = GenerateAudioInputSchema.parse(input);
     const { media } = await ai.generate({
         model: googleAI.model('gemini-2.5-flash-preview-tts'),
         config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
             voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: parsedInput.voice },
+            prebuiltVoiceConfig: { voiceName: validatedInput.voice },
             },
         },
         },
-        prompt: parsedInput.prompt,
+        prompt: validatedInput.prompt,
     });
 
     if (!media) {

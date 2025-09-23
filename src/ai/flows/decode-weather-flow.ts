@@ -1,4 +1,5 @@
 
+
 'use server';
 /**
  * @fileOverview An AI flow to decode METAR/TAF weather reports.
@@ -41,9 +42,10 @@ const decodeWeatherReportFlow = ai.defineFlow(
         throw new Error('The AI model did not return a valid decoded report.');
       }
       return output;
-    } catch (error) {
-       console.error("Error in decodeWeatherReportFlow:", error);
-       throw new Error("Failed to decode weather report due to an AI service error.");
+    } catch (error: unknown) {
+       const e = error as Error;
+       console.error("Error in decodeWeatherReportFlow:", e);
+       throw new Error(`Failed to decode weather report due to an AI service error: ${e.message}`);
     }
   }
 );
