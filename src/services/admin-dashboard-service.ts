@@ -7,6 +7,9 @@ import type { AdminDashboardStats } from "@/config/nav";
 import { getCurrentUser } from "@/lib/session";
 import { startOfDay, subDays, format, eachDayOfInterval } from 'date-fns';
 import { unstable_cache as cache } from 'next/cache';
+import { z } from 'zod';
+
+const EmptySchema = z.object({});
 
 
 export interface WeeklyTrendDataPoint {
@@ -22,6 +25,7 @@ export interface WeeklyTrendDataPoint {
  * @returns A promise that resolves to an AdminDashboardStats object or null on error.
  */
 export async function getAdminDashboardStats(): Promise<AdminDashboardStats | null> {
+    EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
     if (!user || user.role !== 'admin' || !isConfigValid || !db) {
         return {
@@ -73,6 +77,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
  */
 export const getAdminDashboardWeeklyTrends = cache(
     async (): Promise<WeeklyTrendDataPoint[]> => {
+        EmptySchema.parse({}); // Zod validation
         const user = await getCurrentUser();
         if (!user || user.role !== 'admin' || !isConfigValid || !db) {
             return [];

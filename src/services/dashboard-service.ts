@@ -13,6 +13,9 @@ import type { TrainingChartDataPoint } from "@/components/features/charts/traini
 import { generateDashboardImage } from "@/ai/flows/generate-dashboard-image-flow";
 import { getAirportByCode } from "./airport-service";
 import placeholderImages from "@/app/lib/placeholder-images.json";
+import { z } from "zod";
+
+const EmptySchema = z.object({});
 
 type TimeOfDay = "sunrise" | "daylight" | "sunset" | "night";
 
@@ -26,6 +29,7 @@ const getTimeOfDay = (): TimeOfDay => {
 
 
 export async function getDashboardHeroImage(): Promise<{ src: string; hint: string; }> {
+    EmptySchema.parse({}); // Zod validation
     const defaultImage = { src: placeholderImages.dashboard.hero.src, hint: placeholderImages.dashboard.hero.hint };
     const user = await getCurrentUser();
 
@@ -66,6 +70,7 @@ export async function getDashboardHeroImage(): Promise<{ src: string; hint: stri
 }
 
 export async function getTrainingStatus(): Promise<{ totalMandatory: number; completed: number; nextCourseId?: string; } | null> {
+    EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
     if (!user || !isConfigValid || !db) {
         return null;
@@ -94,6 +99,7 @@ export async function getTrainingStatus(): Promise<{ totalMandatory: number; com
 }
 
 export async function getRequestsStatus(): Promise<{ pendingCount: number; latestRequest: { subject: string; status: string; } | null; } | null> {
+    EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
     if (!user || !isConfigValid || !db) {
         return null;
@@ -127,6 +133,7 @@ export async function getRequestsStatus(): Promise<{ pendingCount: number; lates
 
 
 export async function getTrainingChartData(): Promise<TrainingChartDataPoint[] | null> {
+    EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
     if (!user || !isConfigValid || !db) return null;
     try {
@@ -151,6 +158,7 @@ export async function getTrainingChartData(): Promise<TrainingChartDataPoint[] |
 
 
 export async function getRequestsChartData(): Promise<RequestsChartDataPoint[] | null> {
+    EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
     if (!user || !isConfigValid || !db) return null;
     try {
