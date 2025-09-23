@@ -8,7 +8,6 @@ import type { User, ManageUserFormValues } from "@/schemas/user-schema";
 import { manageUserFormSchema } from "@/schemas/user-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { getCurrentUser } from "@/lib/session";
-import { z } from "zod";
 
 export async function fetchUsers(): Promise<User[]> {
     if (!isConfigValid || !db) {
@@ -48,7 +47,7 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
     // Validate data with Zod before proceeding
     const validationResult = manageUserFormSchema.safeParse(data);
     if (!validationResult.success) {
-        throw new Error(`Invalid user data: ${validationResult.error.flatten().fieldErrors}`);
+        throw new Error(`Invalid user data: ${JSON.stringify(validationResult.error.flatten().fieldErrors)}`);
     }
     const validatedData = validationResult.data;
 
