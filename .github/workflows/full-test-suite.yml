@@ -82,6 +82,45 @@ jobs:
             *.json
           retention-days: 7
 
+  deploy-to-firebase:
+    name: 🚀 Deploy to Firebase Hosting
+    needs: test-all
+    runs-on: ubuntu-latest
+    # Only run on pushes to the main branch
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Next.js App
+        run: npm run build
+        env:
+            NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+            NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+            GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+            SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+            SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+            SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_AIRCREW_HUB }}'
+          channelId: live
+          projectId: aircrew-hub
+          target: aircrew-hub-68d34
+
   auto-optimize-and-pr:
     name: 🤖 AI Auto-Optimization
     needs: test-all
