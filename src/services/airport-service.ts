@@ -2,6 +2,7 @@
 'use server';
 
 import airportsData from '../../data/airports.json';
+import { z } from 'zod';
 
 export interface Airport {
   name: string;
@@ -32,17 +33,26 @@ airports.forEach(airport => {
   }
 });
 
+const AirportCodeSchema = z.string().min(3).max(4);
+
 /**
  * Finds an airport by its ICAO or IATA code.
  * @param code The ICAO or IATA code (case-insensitive).
  * @returns The Airport object or null if not found.
  */
 export async function getAirportByCode(code: string): Promise<Airport | null> {
-    if (!code) return null;
+    const validatedCode = AirportCodeSchema.safeParse(code);
+    if (!validatedCode.success || !code) return null;
+
     const upperCode = code.toUpperCase();
     const airport = airportByIcao.get(upperCode) || airportByIata.get(upperCode);
     return airport || null;
 }
+
+const SearchAirportsSchema = z.object({
+  query: z.string(),
+  limit: z.number().int().min(1).max(50).optional().default(10),
+});
 
 /**
  * Searches for airports based on a query string.
@@ -52,14 +62,17 @@ export async function getAirportByCode(code: string): Promise<Airport | null> {
  * @returns An array of matching Airport objects.
  */
 export async function searchAirports(query: string, limit: number = 10): Promise<Airport[]> {
-    if (!query) {
-        return [];
+    const validatedInput = SearchAirportsSchema.safeParse({ query, limit });
+    if (!validatedInput.success) {
+      return [];
     }
-    const lowerCaseQuery = query.toLowerCase();
+    const { query: validatedQuery, limit: validatedLimit } = validatedInput.data;
+
+    const lowerCaseQuery = validatedQuery.toLowerCase();
     const results: Airport[] = [];
 
     for (const airport of airports) {
-        if (results.length >= limit) {
+        if (results.length >= validatedLimit) {
             break;
         }
 

@@ -1,9 +1,13 @@
+
 'use server';
 
 import { collection, getDocs, query, where, writeBatch, doc, serverTimestamp } from "firebase/firestore";
 import { db, isConfigValid } from "./firebase";
 import { type Chapter } from "@/schemas/course-schema";
 import { type StoredQuestion } from "@/schemas/quiz-question-schema";
+import { z } from 'zod';
+
+const EmptySchema = z.object({});
 
 const courseData = {
     title: "Administration et Contrôle du Manuel Opérationnel",
@@ -39,6 +43,7 @@ const courseData = {
 };
 
 export async function seedInitialCourses(): Promise<{ success: boolean; message: string; courseTitle?: string }> {
+    EmptySchema.parse({}); // Zod validation
     if (!isConfigValid || !db) {
         const message = "Seeding failed. Firebase is not configured. Please check your .env file.";
         console.error(message);

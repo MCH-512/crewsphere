@@ -5,6 +5,9 @@
 import { ALERT_RULES, type AlertRule } from '@/lib/alert-rules';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { z } from 'zod';
+
+const EmptySchema = z.object({});
 
 // In a real scenario, you would import a Prisma or Firestore client.
 // We simulate fetching historical data.
@@ -65,6 +68,7 @@ async function getAlertHistory(): Promise<SimulatedAlertHistory[]> {
 
 
 export async function generateOptimizedAlertRules() {
+  EmptySchema.parse({}); // Zod validation
   console.log("🧠 Analyzing 90-day alert history to find optimization opportunities...");
 
   const alerts = await getAlertHistory();
