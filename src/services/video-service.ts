@@ -19,12 +19,9 @@ export async function generateVideo(input: GenerateVideoInput): Promise<Generate
   const validatedInput = GenerateVideoInputSchema.parse(input);
 
   const { operation } = await ai.generate({
-    model: googleAI.model('veo-2.0-generate-001'),
+    model: googleAI.model('veo-3.0-generate-preview'), // Use the latest Veo 3 model
     prompt: validatedInput.prompt,
-    config: {
-      durationSeconds: 5,
-      aspectRatio: '16:9',
-    },
+    // Config options like durationSeconds and aspectRatio are not needed for Veo 3
   });
 
   if (!operation) {
@@ -48,8 +45,6 @@ export async function generateVideo(input: GenerateVideoInput): Promise<Generate
   }
 
   // The URL provided by the operation is a temporary, signed URL.
-  // It is secure to be passed to the client for direct download or display.
-  // Note: The key for this URL is NOT the Gemini API key, it's a temporary signature key.
   // The Gemini API key needs to be appended for the download/display to work from the browser.
   const videoUrlWithKey = `${video.media.url}&key=${process.env.GEMINI_API_KEY}`;
   
