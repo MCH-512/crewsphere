@@ -16,7 +16,7 @@ const firebaseConfig = {
 
 // Check if all config values are provided
 export const isConfigValid = Object.values(firebaseConfig).every(
-  (value) => Boolean(value)
+  (value) => Boolean(value) && !value.startsWith("{{")
 );
 
 let app: FirebaseApp;
