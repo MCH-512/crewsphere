@@ -1,3 +1,4 @@
+
 // nextjs-audit.js
 const fs = require('fs');
 const path = require('path');
@@ -92,7 +93,7 @@ const RULES = [
     },
   },
 
-  // NX-006 & NX-021: Server Actions only in /src/actions/ or /src/services/ or /src/ai/flows/
+  // NX-021: Server Actions in correct directories
   {
     id: 'NX-021',
     type: 'FILE',
@@ -104,20 +105,18 @@ const RULES = [
       const isServerActionFile = content.match(/'use server'|"use server"/);
       if (!isServerActionFile) return null;
       
-      // Updated allowed paths. We relax this rule as "use server" can be at the top of many files.
-      // The new logic is to check for *disallowed* patterns instead of strictly enforcing allowed ones.
       const isClientComponent = filePath.endsWith('.tsx') && content.match(/'use client'|"use client"/);
       
       if (isServerActionFile && isClientComponent) {
           return { message: 'Do not mix "use client" and "use server" in the same file: ' + filePath };
       }
 
-      // We allow `use server` in page routes, layouts, and our defined service/action layers.
-      // Let's check for "use server" in places where it's definitely wrong, like simple UI components or hooks.
+      // We allow `use server` in many places. Check for disallowed patterns instead.
       const disallowedPatterns = [
           /src\/components\/ui\//,
           /src\/hooks\//,
           /src\/contexts\//,
+          // Add other strictly client-side directories here
       ];
 
       const isDisallowed = disallowedPatterns.some(pattern => pattern.test(filePath.replace(/\\/g, '/')));
@@ -126,8 +125,6 @@ const RULES = [
           return { message: 'Server Action directive "use server" found in a disallowed client-side directory: ' + filePath };
       }
       
-      // If it's not a client component and not in a strictly disallowed directory, we'll allow it.
-      // This is a more flexible approach for a modern Next.js app.
       return null;
     },
   },
