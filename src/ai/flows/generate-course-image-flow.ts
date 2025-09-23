@@ -11,7 +11,8 @@ import { GenerateCourseImageInputSchema, GenerateCourseImageOutputSchema, type G
 
 
 export async function generateCourseImage(input: GenerateCourseImageInput): Promise<GenerateCourseImageOutput> {
-  return generateCourseImageFlow(input);
+  const validatedInput = GenerateCourseImageInputSchema.parse(input);
+  return generateCourseImageFlow(validatedInput);
 }
 
 const generateCourseImageFlow = ai.defineFlow(

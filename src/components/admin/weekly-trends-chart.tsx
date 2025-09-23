@@ -68,9 +68,10 @@ export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps
                     });
                 }
             }
-        } catch (e: any) {
-            console.error(`Failed to fetch weekly trends data (attempt ${attempt}):`, e);
-            Sentry.captureException(e, { 
+        } catch (e: unknown) {
+            const err = e as Error;
+            console.error(`Failed to fetch weekly trends data (attempt ${attempt}):`, err);
+            Sentry.captureException(err, { 
                 tags: { component: "WeeklyTrendsChart" },
                 extra: { retryAttempt: attempt }
             });

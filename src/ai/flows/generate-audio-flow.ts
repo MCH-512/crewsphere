@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A service for generating audio from text.
@@ -18,29 +19,37 @@ import { z } from 'zod';
  */
 export async function generateAudio(input: GenerateAudioInput): Promise<GenerateAudioOutput> {
   const validatedInput = GenerateAudioInputSchema.parse(input);
-  const { media } = await ai.generate({
-    model: googleAI.model('gemini-2.5-flash-preview-tts'),
-    config: {
-      responseModalities: ['AUDIO'],
-      speechConfig: {
-        voiceConfig: {
-          prebuiltVoiceConfig: { voiceName: validatedInput.voice },
-        },
-      },
-    },
-    prompt: validatedInput.prompt,
-  });
-
-  if (!media) {
-    throw new Error('Audio generation failed to return valid media.');
-  }
-
-  const audioBuffer = Buffer.from(media.url.substring(media.url.indexOf(',') + 1), 'base64');
-  
-  const wavDataUri = 'data:audio/wav;base64,' + (await toWav(audioBuffer));
-
-  return { audioUrl: wavDataUri };
+  return generateAudioFlow(validatedInput);
 }
+
+const generateAudioFlow = ai.defineFlow({
+    name: 'generateAudioFlow',
+    inputSchema: GenerateAudioInputSchema,
+    outputSchema: GenerateAudioOutputSchema,
+}, async (validatedInput) => {
+    const { media } = await ai.generate({
+        model: googleAI.model('gemini-2.5-flash-preview-tts'),
+        config: {
+        responseModalities: ['AUDIO'],
+        speechConfig: {
+            voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: validatedInput.voice },
+            },
+        },
+        },
+        prompt: validatedInput.prompt,
+    });
+
+    if (!media) {
+        throw new Error('Audio generation failed to return valid media.');
+    }
+
+    const audioBuffer = Buffer.from(media.url.substring(media.url.indexOf(',') + 1), 'base64');
+    
+    const wavDataUri = 'data:audio/wav;base64,' + (await toWav(audioBuffer));
+
+    return { audioUrl: wavDataUri };
+});
 
 
 /**

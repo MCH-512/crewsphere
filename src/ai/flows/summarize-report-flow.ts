@@ -10,7 +10,8 @@ import {ai} from '@/ai/genkit';
 import { SummarizeReportInputSchema, SummarizeReportOutputSchema, type SummarizeReportInput, type SummarizeReportOutput } from '@/schemas/purser-report-schema';
 
 export async function summarizeReport(input: SummarizeReportInput): Promise<SummarizeReportOutput> {
-  return summarizeReportFlow(input);
+  const validatedInput = SummarizeReportInputSchema.parse(input);
+  return summarizeReportFlow(validatedInput);
 }
 
 const summarizeReportPrompt = ai.definePrompt({

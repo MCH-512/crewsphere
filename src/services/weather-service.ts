@@ -2,6 +2,9 @@
 'use server';
 
 import { XMLParser } from 'fast-xml-parser';
+import { z } from 'zod';
+
+const IcaoSchema = z.string().length(4, "ICAO code must be 4 characters.").regex(/^[A-Z]{4}$/, "Invalid ICAO format.");
 
 /**
  * Fetches the latest METAR data for a given airport ICAO code.
@@ -9,19 +12,20 @@ import { XMLParser } from 'fast-xml-parser';
  * @returns The raw METAR string or null if not found or an error occurs.
  */
 export async function getLiveWeather(icao: string): Promise<string | null> {
-    if (!icao || icao.length !== 4) {
-        throw new Error("Invalid ICAO code provided.");
+    const validatedIcao = IcaoSchema.safeParse(icao);
+    if (!validatedIcao.success) {
+        throw new Error(validatedIcao.error.issues[0].message);
     }
+    
+    const code = validatedIcao.data;
 
-    const url = `https://www.aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&stationString=${icao.toUpperCase()}&hoursBeforeNow=2`;
+    const url = `https://www.aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&stationString=${code.toUpperCase()}&hoursBeforeNow=2`;
 
     try {
         const response = await fetch(url, {
-            // Using a user-agent can help avoid being blocked by some services.
             headers: {
                 'User-Agent': 'CrewSphere-App/1.0'
             },
-            // Revalidate every 5 minutes
             next: { revalidate: 300 } 
         });
 

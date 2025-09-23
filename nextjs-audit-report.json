@@ -1,7 +1,7 @@
 {
-  "timestamp": "2025-09-23T09:01:53.565Z",
-  "totalViolations": 74,
-  "totalScore": 736,
+  "timestamp": "2025-09-23T09:42:21.936Z",
+  "totalViolations": 36,
+  "totalScore": 358,
   "status": "ÉCHOUÉ",
   "violations": [
     {
@@ -17,57 +17,9 @@
       "severity": 10
     },
     {
-      "ruleId": "NX-007",
-      "file": "src/services/user-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/user-service.ts",
-      "severity": 10
-    },
-    {
       "ruleId": "NX-023",
       "file": "src/services/user-service.ts",
       "message": "Found 2 \"any\" or \"unknown\" type(s)",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/user-activity-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/user-activity-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/training-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/training-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/toolbox-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/toolbox-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/request-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/request-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/report-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/report-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/predictive-analyzer.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/predictive-analyzer.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/logbook-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/logbook-service.ts",
       "severity": 10
     },
     {
@@ -78,44 +30,8 @@
     },
     {
       "ruleId": "NX-007",
-      "file": "src/services/flight-swap-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/flight-swap-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/flight-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/flight-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/document-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/document-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
       "file": "src/services/dashboard-service.ts",
       "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/dashboard-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/alert-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/alert-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/airport-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/airport-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/admin-flight-swap-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/admin-flight-swap-service.ts",
       "severity": 10
     },
     {
@@ -128,54 +44,6 @@
       "ruleId": "NX-007",
       "file": "src/services/activity-service.ts",
       "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/activity-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/lib/seed.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/lib/seed.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-023",
-      "file": "src/components/layout/app-layout.tsx",
-      "message": "Found 1 \"any\" or \"unknown\" type(s)",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/components/features/training-progress-chart.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/components/features/training-progress-chart.tsx",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/components/features/todays-schedule.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/components/features/todays-schedule.tsx",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/components/features/requests-status-chart.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/components/features/requests-status-chart.tsx",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/components/features/my-training-status.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/components/features/my-training-status.tsx",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/components/features/my-requests-status.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/components/features/my-requests-status.tsx",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-023",
-      "file": "src/components/features/live-map.tsx",
-      "message": "Found 4 \"any\" or \"unknown\" type(s)",
       "severity": 10
     },
     {
@@ -235,13 +103,7 @@
     {
       "ruleId": "NX-023",
       "file": "src/app/settings/settings-client-page.tsx",
-      "message": "Found 4 \"any\" or \"unknown\" type(s)",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/app/settings/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/settings/page.tsx",
+      "message": "Found 3 \"any\" or \"unknown\" type(s)",
       "severity": 10
     },
     {
@@ -252,38 +114,8 @@
     },
     {
       "ruleId": "NX-023",
-      "file": "src/app/purser-reports/submit/[flightId]/page.tsx",
-      "message": "Found 1 \"any\" or \"unknown\" type(s)",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/app/purser-reports/history/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/purser-reports/history/page.tsx",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/app/purser-reports/history/[reportId]/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/purser-reports/history/[reportId]/page.tsx",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/app/my-swaps/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/my-swaps/page.tsx",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-023",
       "file": "src/app/my-swaps/my-swaps-client.tsx",
       "message": "Found 1 \"any\" or \"unknown\" type(s)",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/app/my-schedule/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/my-schedule/page.tsx",
       "severity": 10
     },
     {
@@ -317,12 +149,6 @@
       "severity": 10
     },
     {
-      "ruleId": "NX-007",
-      "file": "src/app/admin/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/page.tsx",
-      "severity": 10
-    },
-    {
       "ruleId": "NX-023",
       "file": "src/app/admin/video-studio/page.tsx",
       "message": "Found 1 \"any\" or \"unknown\" type(s)",
@@ -330,26 +156,8 @@
     },
     {
       "ruleId": "NX-023",
-      "file": "src/app/admin/users/users-client.tsx",
-      "message": "Found 1 \"any\" or \"unknown\" type(s)",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/app/admin/users/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/users/page.tsx",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-004",
       "file": "src/app/admin/users/[userId]/page.tsx",
-      "message": "Suspense not used around dynamic client component",
-      "severity": 8
-    },
-    {
-      "ruleId": "NX-023",
-      "file": "src/app/admin/users/[userId]/page.tsx",
-      "message": "Found 5 \"any\" or \"unknown\" type(s)",
+      "message": "Found 2 \"any\" or \"unknown\" type(s)",
       "severity": 10
     },
     {
@@ -359,33 +167,9 @@
       "severity": 10
     },
     {
-      "ruleId": "NX-007",
-      "file": "src/app/admin/user-requests/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/user-requests/page.tsx",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/app/admin/training-sessions/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/training-sessions/page.tsx",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/app/admin/purser-reports/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/purser-reports/page.tsx",
-      "severity": 10
-    },
-    {
       "ruleId": "NX-023",
       "file": "src/app/admin/purser-reports/[reportId]/page.tsx",
       "message": "Found 1 \"any\" or \"unknown\" type(s)",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/app/admin/flights/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/flights/page.tsx",
       "severity": 10
     },
     {
@@ -401,21 +185,9 @@
       "severity": 10
     },
     {
-      "ruleId": "NX-007",
-      "file": "src/app/admin/document-validations/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/document-validations/page.tsx",
-      "severity": 10
-    },
-    {
       "ruleId": "NX-023",
       "file": "src/app/admin/audio-studio/page.tsx",
       "message": "Found 1 \"any\" or \"unknown\" type(s)",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/app/admin/alerts/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/admin/alerts/page.tsx",
       "severity": 10
     },
     {

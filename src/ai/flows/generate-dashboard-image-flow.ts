@@ -11,6 +11,7 @@ import { GenerateDashboardImageInputSchema, type GenerateDashboardImageInput, Ge
 
 
 export async function generateDashboardImage(input: GenerateDashboardImageInput): Promise<GenerateDashboardImageOutput> {
+  GenerateDashboardImageInputSchema.parse(input); // Zod validation
   console.log(`[AI-STUB] AI image generation is temporarily disabled. Returning fallback for input:`, input);
   // Return an empty object to allow the service to fall back to the default placeholder.
   return { imageDataUri: "" };

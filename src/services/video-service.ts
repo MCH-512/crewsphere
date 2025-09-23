@@ -16,9 +16,11 @@ import { GenerateVideoInputSchema, type GenerateVideoInput, GenerateVideoOutputS
  * @returns A promise that resolves with the URL of the generated video.
  */
 export async function generateVideo(input: GenerateVideoInput): Promise<GenerateVideoOutput> {
+  const validatedInput = GenerateVideoInputSchema.parse(input);
+
   const { operation } = await ai.generate({
     model: googleAI.model('veo-2.0-generate-001'),
-    prompt: input.prompt,
+    prompt: validatedInput.prompt,
     config: {
       durationSeconds: 5,
       aspectRatio: '16:9',
