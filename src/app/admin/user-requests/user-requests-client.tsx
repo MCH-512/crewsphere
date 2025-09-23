@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input"; 
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query as firestoreQuery, orderBy, Timestamp, doc, updateDoc, serverTimestamp, writeBatch, where } from "firebase/firestore";
+import { collection, query as firestoreQuery, orderBy, Timestamp, doc, updateDoc, serverTimestamp, writeBatch, where, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { ClipboardList, Loader2, AlertTriangle, RefreshCw, Eye, Zap, Filter, Search, Info, MessageSquareText, CheckCircle } from "lucide-react";
 import { format, eachDayOfInterval, startOfDay } from "date-fns";
@@ -33,8 +33,6 @@ import {
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
 import type { ActivityType } from "@/schemas/user-activity-schema";
 import { checkCrewAvailability, type Conflict } from "@/services/user-activity-service";
-import { fetchUserRequests } from "@/services/request-service";
-
 
 type SortableColumn = "createdAt" | "status" | "urgencyLevel";
 type SortDirection = "asc" | "desc";
@@ -48,7 +46,7 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
   const { toast } = useToast();
   const [allRequests, setAllRequests] = React.useState<StoredUserRequest[]>(initialRequests); 
   const [filteredAndSortedRequests, setFilteredAndSortedRequests] = React.useState<StoredUserRequest[]>(initialRequests); 
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
   const [selectedRequest, setSelectedRequest] = React.useState<StoredUserRequest | null>(null);
@@ -65,21 +63,25 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
   const [sortColumn, setSortColumn] = React.useState<SortableColumn>("createdAt");
   const [sortDirection, setSortDirection] = React.useState<SortDirection>("desc");
 
-  const refreshRequests = React.useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const fetchedRequests = await fetchUserRequests();
-      setAllRequests(fetchedRequests);
-      toast({ title: "Refreshed", description: "Request list has been updated."});
-    } catch (err) {
-      console.error("Error fetching requests:", err);
-      setError("Failed to load user requests. Please try again.");
-      toast({ title: "Loading Error", description: "Could not fetch requests.", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
+  React.useEffect(() => {
+      if (!user) return;
+      setIsLoading(true);
+      const q = firestoreQuery(collection(db, "requests"), orderBy("createdAt", "desc"));
+      const unsubscribe = onSnapshot(q,
+          (snapshot) => {
+              const fetchedRequests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserRequest));
+              setAllRequests(fetchedRequests);
+              setIsLoading(false);
+          },
+          (err) => {
+              console.error("Error fetching requests in real-time:", err);
+              setError("Could not fetch real-time request updates.");
+              toast({ title: "Real-time Error", description: "Could not fetch real-time request updates.", variant: "destructive" });
+              setIsLoading(false);
+          }
+      );
+      return () => unsubscribe();
+  }, [user, toast]);
 
   React.useEffect(() => {
     if (!authLoading && (!user || user.role !== 'admin')) {
@@ -216,7 +218,6 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
         });
 
         toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. User's schedule has been updated accordingly.` });
-        refreshRequests(); 
         setIsManageDialogOpen(false);
     } catch (err: any) {
         console.error("Error updating status:", err);
@@ -235,7 +236,7 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
     }
   };
 
-  if (authLoading || (isLoading && !user)) {
+  if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -265,12 +266,6 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
               Manage User Requests
             </CardTitle>
             <CardDescription>Review, prioritize, and respond to all requests submitted by users.</CardDescription>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={refreshRequests} disabled={isLoading} className="w-full sm:w-auto">
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -303,15 +298,11 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
               <AlertTriangle className="h-5 w-5" /> {error}
             </div>
           )}
-          {isLoading && allRequests.length === 0 && (
-             <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="ml-3 text-muted-foreground">Loading request list...</p>
-            </div>
-          )}
-          {!isLoading && filteredAndSortedRequests.length === 0 && !error && (
-            <p className="text-muted-foreground text-center py-8">No user requests found{statusFilter !== "all" ? ` for status: ${statusFilter}` : ""}{searchTerm ? ` matching "${searchTerm}"` : ""}.</p>
-          )}
+          
+          {isLoading && allRequests.length === 0 && <div className="flex items-center justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-3 text-muted-foreground">Loading request list...</p></div>}
+          
+          {!isLoading && filteredAndSortedRequests.length === 0 && !error && <p className="text-muted-foreground text-center py-8">No user requests found{statusFilter !== "all" ? ` for status: ${statusFilter}` : ""}{searchTerm ? ` matching "${searchTerm}"` : ""}.</p>}
+
           {filteredAndSortedRequests.length > 0 && (
             <div className="rounded-md border">
               <Table>

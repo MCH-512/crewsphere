@@ -17,9 +17,9 @@ import Link from 'next/link';
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
 import type { User, SpecificRole, AccountStatus } from "@/schemas/user-schema";
 import { getRoleBadgeVariant, getStatusBadgeVariant, availableRoles } from "@/schemas/user-schema";
-import { fetchUsers } from "@/services/user-service";
 import { UserForm } from "@/components/admin/user-form";
-
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const NO_ROLE_SENTINEL = "_NONE_"; 
 
@@ -31,7 +31,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   const router = useRouter();
   const { toast } = useToast();
   const [usersList, setUsersList] = React.useState<User[]>(initialUsers);
-  const [isLoading, setIsLoading] = React.useState(false); // Only for client-side re-fetches
+  const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
   const [isManageUserDialogOpen, setIsManageUserDialogOpen] = React.useState(false);
@@ -45,21 +45,30 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   const [sortColumn, setSortColumn] = React.useState<SortableColumn>("fullName");
   const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc");
   
-
   const loadUsers = React.useCallback(async () => {
+    if (!user) return;
     setIsLoading(true);
-    setError(null);
-    try {
-      const fetchedUsers = await fetchUsers();
-      setUsersList(fetchedUsers);
-    } catch (err) {
-        const typedError = err as Error;
-        setError(typedError.message || "Failed to load users.");
-        toast({ title: "Loading Error", description: typedError.message, variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
+    const q = query(collection(db, "users"), orderBy("email", "asc"));
+    const unsubscribe = onSnapshot(q,
+        (snapshot) => {
+            const fetchedUsers = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
+            setUsersList(fetchedUsers);
+            setIsLoading(false);
+            setError(null);
+        },
+        (err) => {
+            console.error("Error fetching users in real-time:", err);
+            setError("Could not fetch real-time user updates.");
+            toast({ title: "Real-time Error", description: "Could not fetch user updates.", variant: "destructive" });
+            setIsLoading(false);
+        }
+    );
+    return () => unsubscribe();
+  }, [user, toast]);
+
+  React.useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
   
   React.useEffect(() => {
     if (!authLoading && !user) {
@@ -117,11 +126,11 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   };
   
   const onFormSubmitSuccess = () => {
-      loadUsers();
+      // The real-time listener will automatically update the state, no need for manual refresh.
       setIsManageUserDialogOpen(false);
   }
 
-  if (authLoading || (isLoading && usersList.length === 0)) {
+  if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -153,10 +162,6 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
             <CardDescription>View, create, and manage user accounts, their roles, and status.</CardDescription>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={loadUsers} disabled={isLoading} className="flex-1 sm:flex-auto">
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
             <Button onClick={handleOpenCreateUserDialog} className="flex-1 sm:flex-auto">
               <PlusCircle className="mr-2 h-4 w-4" /> Create User
             </Button>

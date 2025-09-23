@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, orderBy, Timestamp, doc, updateDoc, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { MessageSquare, Loader2, AlertTriangle, RefreshCw, Edit, ThumbsUp, Filter, Search } from "lucide-react";
 import { format } from "date-fns";
@@ -47,20 +47,26 @@ export default function AdminSuggestionsPage() {
     const [statusFilter, setStatusFilter] = React.useState<SuggestionStatus | "all">("all");
     const [categoryFilter, setCategoryFilter] = React.useState<SuggestionCategory | "all">("all");
 
-    const fetchSuggestions = React.useCallback(async () => {
+    React.useEffect(() => {
+        if (!user) return;
         setIsLoading(true);
-        try {
-            const q = query(collection(db, "suggestions"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
-            const fetched = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredSuggestion));
-            setSuggestions(fetched);
-        } catch (err) {
-            console.error("Error fetching suggestions:", err);
-            toast({ title: "Loading Error", description: "Could not fetch suggestions.", variant: "destructive" });
-        } finally {
-            setIsLoading(false);
-        }
-    }, [toast]);
+        const q = query(collection(db, "suggestions"), orderBy("createdAt", "desc"));
+        
+        const unsubscribe = onSnapshot(q,
+            (snapshot) => {
+                const fetchedSuggestions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredSuggestion));
+                setSuggestions(fetchedSuggestions);
+                setIsLoading(false);
+            },
+            (err) => {
+                console.error("Error fetching suggestions in real-time:", err);
+                toast({ title: "Real-time Error", description: "Could not fetch suggestion updates.", variant: "destructive" });
+                setIsLoading(false);
+            }
+        );
+        
+        return () => unsubscribe();
+    }, [user, toast]);
     
     const filteredAndSortedSuggestions = React.useMemo(() => {
         let filtered = suggestions.filter(s => {
@@ -105,11 +111,9 @@ export default function AdminSuggestionsPage() {
         if (!authLoading) {
             if (!user || user.role !== 'admin') {
                 router.push('/');
-            } else {
-                fetchSuggestions();
             }
         }
-    }, [user, authLoading, router, fetchSuggestions]);
+    }, [user, authLoading, router]);
     
     const handleOpenManageDialog = (suggestion: StoredSuggestion) => {
         setSelectedSuggestion(suggestion);
@@ -139,7 +143,6 @@ export default function AdminSuggestionsPage() {
             });
 
             toast({ title: "Suggestion Updated", description: "Status and notes have been saved." });
-            fetchSuggestions();
             setIsManageDialogOpen(false);
         } catch (error) {
             console.error("Error updating suggestion:", error);
@@ -160,7 +163,7 @@ export default function AdminSuggestionsPage() {
         }
     };
 
-    if (authLoading || (isLoading && !user)) {
+    if (authLoading || isLoading) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
      if (!user || user.role !== 'admin') {
@@ -175,7 +178,6 @@ export default function AdminSuggestionsPage() {
                         <CardTitle className="text-2xl font-headline flex items-center"><MessageSquare className="mr-3 h-7 w-7 text-primary" />Suggestion Box Management</CardTitle>
                         <CardDescription>Review, categorize, and manage all user suggestions.</CardDescription>
                     </div>
-                    <Button variant="outline" onClick={fetchSuggestions} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -234,7 +236,7 @@ export default function AdminSuggestionsPage() {
                                 <TableBody>
                                     {filteredAndSortedSuggestions.map((s) => (
                                         <TableRow key={s.id}>
-                                            <TableCell className="text-xs">{format(s.createdAt.toDate(), "PPp")}</TableCell>
+                                            <TableCell className="text-xs">{s.createdAt ? format(s.createdAt.toDate(), "PPp") : 'N/A'}</TableCell>
                                             <TableCell className="text-xs">
                                                 {s.isAnonymous ? (
                                                     "Anonymous"

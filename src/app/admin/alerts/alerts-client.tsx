@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, orderBy, Timestamp, doc, addDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { BellRing, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Search, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -25,7 +25,6 @@ import { logAuditEvent } from "@/lib/audit-logger";
 import { Switch } from "@/components/ui/switch";
 import { StoredAlert, alertFormSchema, AlertFormValues, alertTypes, alertAudiences } from "@/schemas/alert-schema";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
-import { getAlerts } from "@/services/alert-service";
 
 type SortableColumn = 'title' | 'type' | 'targetAudience' | 'isActive' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
@@ -37,7 +36,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
     const router = useRouter();
     const { toast } = useToast();
     const [alerts, setAlerts] = React.useState<StoredAlert[]>(initialAlerts);
-    const [isLoading, setIsLoading] = React.useState(false);
+    const [isLoading, setIsLoading] = React.useState(true);
     
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -56,18 +55,25 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
         defaultValues: { title: "", message: "", type: "info", targetAudience: "all", isActive: true },
     });
     
-    const fetchAlerts = React.useCallback(async () => {
+    React.useEffect(() => {
+        if (!user) return;
         setIsLoading(true);
-        try {
-            const freshAlerts = await getAlerts();
-            setAlerts(freshAlerts);
-            toast({ title: "Refreshed", description: "Alert list has been updated." });
-        } catch (err) {
-            toast({ title: "Loading Error", description: "Could not fetch alerts.", variant: "destructive" });
-        } finally {
-            setIsLoading(false);
-        }
-    }, [toast]);
+        const q = query(collection(db, "alerts"), orderBy("createdAt", "desc"));
+        const unsubscribe = onSnapshot(q, 
+            (snapshot) => {
+                const fetchedAlerts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAlert));
+                setAlerts(fetchedAlerts);
+                setIsLoading(false);
+            },
+            (err) => {
+                console.error("Error fetching alerts in real-time:", err);
+                toast({ title: "Real-time Error", description: "Could not fetch real-time alert updates.", variant: "destructive" });
+                setIsLoading(false);
+            }
+        );
+
+        return () => unsubscribe(); // Unsubscribe when component unmounts
+    }, [user, toast]);
 
 
     React.useEffect(() => {
@@ -142,7 +148,6 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
                 await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "CREATE_ALERT", entityType: "ALERT", entityId: newAlertRef.id, details: { title: data.title } });
                 toast({ title: "Alert Created", description: `Alert "${data.title}" has been published.` });
             }
-            fetchAlerts();
             setIsManageDialogOpen(false);
         } catch (error) {
             toast({ title: "Submission Failed", variant: "destructive" });
@@ -157,7 +162,6 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
             await deleteDoc(doc(db, "alerts", alertToDelete.id));
             await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "DELETE_ALERT", entityType: "ALERT", entityId: alertToDelete.id, details: { title: alertToDelete.title } });
             toast({ title: "Alert Deleted", description: `"${alertToDelete.title}" has been removed.` });
-            fetchAlerts();
         } catch (error) {
             toast({ title: "Deletion Failed", variant: "destructive" });
         }
@@ -172,7 +176,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
         }
     };
 
-    if (authLoading) {
+    if (authLoading || isLoading) {
       return (
         <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -201,7 +205,6 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
                         <CardDescription>Create, manage, and broadcast alerts to specific user groups.</CardDescription>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" onClick={fetchAlerts} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
                         <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4" />Create Alert</Button>
                     </div>
                 </CardHeader>
@@ -255,7 +258,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
                                     <TableCell><Badge variant={getTypeBadgeVariant(alert.type)} className="capitalize">{alert.type}</Badge></TableCell>
                                     <TableCell><Badge variant="outline" className="capitalize">{alert.targetAudience}</Badge></TableCell>
                                     <TableCell>{alert.isActive ? <Badge variant="success">Active</Badge> : <Badge variant="secondary">Inactive</Badge>}</TableCell>
-                                    <TableCell className="text-xs">{format(alert.createdAt.toDate(), "PPp")}</TableCell>
+                                    <TableCell className="text-xs">{alert.createdAt ? format(alert.createdAt.toDate(), "PPp") : 'N/A'}</TableCell>
                                     <TableCell className="space-x-1">
                                         <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(alert)}><Edit className="h-4 w-4" /></Button>
                                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(alert)}><Trash2 className="h-4 w-4" /></Button>
