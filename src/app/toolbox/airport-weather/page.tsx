@@ -78,12 +78,13 @@ export default function AirportWeatherPage() {
       toast({ title: "Decoding Weather Report...", description: "The AI is analyzing the METAR data."});
       const decodedData = await decodeWeatherReport({ reportCode: rawMetar });
       setResult(decodedData);
-    } catch (err: any) {
-      console.error("Error fetching or decoding weather:", err);
-      setError(err.message || "An unexpected error occurred.");
+    } catch (err: unknown) {
+      const e = err as Error;
+      console.error("Error fetching or decoding weather:", e);
+      setError(e.message || "An unexpected error occurred.");
       toast({
         title: "Operation Failed",
-        description: err.message,
+        description: e.message,
         variant: "destructive",
       });
     } finally {

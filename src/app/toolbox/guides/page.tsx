@@ -66,8 +66,7 @@ export default function GuidesPage() {
         const lowercasedTerm = searchTerm.toLowerCase();
         return guides.filter(guide => 
             guide.title.toLowerCase().includes(lowercasedTerm) ||
-            guide.keywords.toLowerCase().includes(lowercasedTerm) ||
-            (guide.content as React.ReactElement).props.children.map((child: any) => typeof child.props.children === 'string' ? child.props.children : '').join(' ').toLowerCase().includes(lowercasedTerm)
+            guide.keywords.toLowerCase().includes(lowercasedTerm)
         );
       }, [searchTerm]);
 
