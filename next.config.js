@@ -30,7 +30,24 @@ const nextConfig = {
     ignoreDuringBuilds: false, 
   },
   images: {
-    domains: ['picsum.photos', 'firebasestorage.googleapis.com', 'images.unsplash.com', 'placehold.co'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+      },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
+    ],
   },
   productionBrowserSourceMaps: true,
   async headers() {
