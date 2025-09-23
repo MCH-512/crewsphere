@@ -222,7 +222,7 @@ export default function FlightSwapPage() {
             await requestFlightSwap(selectedSwapToRequest.id, flightToOffer, user);
             toast({ title: "Request Sent!", description: "Your swap request has been sent for admin approval."});
             fetchData();
-        } catch (error: unknown) {
+        } catch (error) {
             const e = error as Error;
             toast({ title: "Request Failed", description: e.message, variant: "destructive"});
         }

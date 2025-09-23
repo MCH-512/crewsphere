@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -76,7 +77,7 @@ export default function PurserReportDetailPage() {
             const reportData = { id: reportSnap.id, ...reportSnap.data() } as StoredPurserReport;
             setReport(reportData);
             setAdminNotes(reportData.adminNotes || "");
-        } catch (err: unknown) {
+        } catch (err) {
             const e = err as Error;
             console.error("Error fetching report:", e);
             setError(e.message || "Failed to load the report.");
