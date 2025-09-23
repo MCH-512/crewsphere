@@ -71,3 +71,4 @@ export async function getLogbookEntries(userId: string | undefined): Promise<Log
         return [];
     }
 }
+
