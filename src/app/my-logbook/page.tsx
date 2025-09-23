@@ -5,9 +5,12 @@ import * as React from "react";
 import { getCurrentUser } from "@/lib/session";
 import { MyLogbookClient } from "./my-logbook-client";
 import { getLogbookEntries } from "@/services/logbook-service";
+import { z } from 'zod';
 
+const EmptySchema = z.object({});
 
 export default async function MyLogbookPage() {
+    EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
     // Fetch initial entries on the server to provide immediate data to the client component
     const initialEntries = user ? await getLogbookEntries(user.uid) : [];

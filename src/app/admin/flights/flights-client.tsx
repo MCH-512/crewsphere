@@ -192,8 +192,9 @@ export function AdminFlightsClient({
         try {
             const { flights } = await getFlightsForAdmin();
             setFlights(flights);
-        } catch (err) {
-            toast({ title: "Error Refreshing Data", description: "Could not fetch updated flight data.", variant: "destructive" });
+        } catch (err: unknown) {
+            const e = err as Error;
+            toast({ title: "Error Refreshing Data", description: e.message || "Could not fetch updated flight data.", variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
@@ -305,9 +306,9 @@ export function AdminFlightsClient({
             await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "DELETE_FLIGHT", entityType: "FLIGHT", entityId: flightToDelete.id, details: { flightNumber: flightToDelete.flightNumber } });
             toast({ title: "Flight Deleted", description: `Flight "${flightToDelete.flightNumber}" and associated schedule entries have been removed.` });
             fetchPageData();
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
-            toast({ title: "Deletion Failed", description: errorMessage, variant: "destructive" });
+        } catch (error: unknown) {
+            const e = error as Error;
+            toast({ title: "Deletion Failed", description: e.message || "An unexpected error occurred.", variant: "destructive" });
         }
     };
 
