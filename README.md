@@ -1,4 +1,4 @@
-# 🛩️ CrewSphere: Le Système d’Excellence Automatisée
+firebase projects:list# 🛩️ CrewSphere: Le Système d’Excellence Automatisée
 
 | Status | Qualité du Code | Tests | Déploiement | Auto-Amélioration |
 |---|---|---|---|---|
