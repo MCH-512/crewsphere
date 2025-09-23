@@ -14,10 +14,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { generateVideo } from "@/services/video-service";
+import Image from "next/image";
 
 const formSchema = z.object({
   prompt: z.string().min(10, 'Prompt must be at least 10 characters long.').max(500, 'Prompt is too long.'),
-  imageFile: z.any().optional(),
+  imageFile: z.instanceof(File).optional(),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -53,7 +54,7 @@ export default function VideoStudioPage() {
   };
   
   const clearImage = () => {
-    form.setValue('imageFile', null);
+    form.setValue('imageFile', undefined);
     setPreviewImage(null);
   };
 
@@ -65,7 +66,7 @@ export default function VideoStudioPage() {
     try {
       toast({ title: "Generating Video...", description: "This is a complex task and may take up to a minute. Please be patient." });
       
-      let promptPayload: any = data.prompt;
+      let promptPayload: string | (object | { media: { url: string; contentType: string | undefined; }; })[] = data.prompt;
 
       if (data.imageFile) {
         const imageBase64 = await toBase64(data.imageFile);
@@ -143,7 +144,7 @@ export default function VideoStudioPage() {
                                  <CardDescription className="mb-2">Animate a static image by providing it as a reference.</CardDescription>
                                 {previewImage ? (
                                     <div className="relative w-fit">
-                                        <img src={previewImage} alt="Image preview" className="h-32 w-auto rounded-md border" />
+                                        <Image src={previewImage} alt="Image preview" width={128} height={128} className="h-32 w-auto rounded-md border" />
                                         <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={clearImage}>
                                             <X className="h-4 w-4" />
                                         </Button>

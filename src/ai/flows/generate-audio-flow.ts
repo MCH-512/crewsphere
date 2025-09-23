@@ -8,6 +8,7 @@ import { ai } from '@/ai/genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { GenerateAudioInputSchema, type GenerateAudioInput, GenerateAudioOutputSchema, type GenerateAudioOutput } from '@/schemas/audio-schema';
 import wav from 'wav';
+import { z } from 'zod';
 
 
 /**
@@ -16,17 +17,18 @@ import wav from 'wav';
  * @returns A promise that resolves with the data URI of the generated WAV audio file.
  */
 export async function generateAudio(input: GenerateAudioInput): Promise<GenerateAudioOutput> {
+  const validatedInput = GenerateAudioInputSchema.parse(input);
   const { media } = await ai.generate({
     model: googleAI.model('gemini-2.5-flash-preview-tts'),
     config: {
       responseModalities: ['AUDIO'],
       speechConfig: {
         voiceConfig: {
-          prebuiltVoiceConfig: { voiceName: input.voice },
+          prebuiltVoiceConfig: { voiceName: validatedInput.voice },
         },
       },
     },
-    prompt: input.prompt,
+    prompt: validatedInput.prompt,
   });
 
   if (!media) {
@@ -62,7 +64,7 @@ async function toWav(
       bitDepth: sampleWidth * 8,
     });
 
-    const bufs: any[] = [];
+    const bufs: Buffer[] = [];
     writer.on('error', reject);
     writer.on('data', (d) => bufs.push(d));
     writer.on('end', () => resolve(Buffer.concat(bufs).toString('base64')));

@@ -10,7 +10,8 @@ import {ai} from '@/ai/genkit';
 import { DecodeWeatherReportInputSchema, DecodeWeatherReportOutputSchema, type DecodeWeatherReportInput, type DecodeWeatherReportOutput } from '@/schemas/weather-schema';
 
 export async function decodeWeatherReport(input: DecodeWeatherReportInput): Promise<DecodeWeatherReportOutput> {
-  return decodeWeatherReportFlow(input);
+  const validatedInput = DecodeWeatherReportInputSchema.parse(input);
+  return decodeWeatherReportFlow(validatedInput);
 }
 
 const decodeWeatherReportPrompt = ai.definePrompt({
