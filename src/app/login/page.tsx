@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -18,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, type AuthError } from "firebase/auth";
 import { auth, isConfigValid } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -80,11 +79,12 @@ export default function LoginPage() {
         description: "Welcome back!",
       });
       router.push("/");
-    } catch (error: any) {
-      console.error("Login error:", error);
+    } catch (error: unknown) {
+      const authError = error as AuthError;
+      console.error("Login error:", authError);
       toast({
         title: "Login Failed",
-        description: error.message || "Please check your credentials and try again.",
+        description: authError.message || "Please check your credentials and try again.",
         variant: "destructive",
       });
     } finally {

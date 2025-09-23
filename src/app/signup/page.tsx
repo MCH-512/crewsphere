@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -18,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, type AuthError } from "firebase/auth";
 import { auth, isConfigValid } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -86,11 +85,12 @@ export default function SignupPage() {
         description: "Welcome to CrewSphere! You are now signed in.",
       });
       router.push("/"); // Redirect to dashboard
-    } catch (error: any) {
-      console.error("Signup error:", error);
+    } catch (error: unknown) {
+      const authError = error as AuthError;
+      console.error("Signup error:", authError);
       toast({
         title: "Signup Failed",
-        description: error.message || "Could not create account. Please try again.",
+        description: authError.message || "Could not create account. Please try again.",
         variant: "destructive",
       });
     } finally {

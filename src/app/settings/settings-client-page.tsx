@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -15,8 +14,8 @@ import { Form, FormControl, FormDescription as UiFormDescription, FormField, For
 import { User as UserIcon, Bell, Shield, Palette, Loader2, Info, CalendarDays, KeyRound, Camera } from "lucide-react";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { updateProfile as updateAuthProfile, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { updateProfile as updateAuthProfile, EmailAuthProvider, reauthenticateWithCredential, updatePassword, type AuthError } from "firebase/auth";
+import { doc, updateDoc } from "firebase/firestore";
 import { auth, db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { format } from "date-fns";
@@ -50,6 +49,12 @@ interface SettingsClientPageProps {
   initialUser: User;
 }
 
+// Extends the User type from auth-context to include preference fields for type safety
+interface UserWithPrefs extends User {
+    prefsEmailNotifications?: boolean;
+    prefsScheduleChangeAlerts?: boolean;
+}
+
 export default function SettingsClientPage({ initialUser }: SettingsClientPageProps) {
   const { user, loading: authLoading } = useAuth(); // Still using useAuth for re-auth and other client-side needs
   const { toast } = useToast();
@@ -69,9 +74,8 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
     defaultValues: {
       displayName: initialUser.displayName || "",
       fullName: initialUser.fullName || "",
-      // Placeholder for preferences, assuming they would be part of the initialUser object
-      emailNotifications: (initialUser as any).prefsEmailNotifications === undefined ? true : (initialUser as any).prefsEmailNotifications,
-      scheduleChangeAlerts: (initialUser as any).prefsScheduleChangeAlerts === undefined ? true : (initialUser as any).prefsScheduleChangeAlerts,
+      emailNotifications: (initialUser as UserWithPrefs).prefsEmailNotifications === undefined ? true : (initialUser as UserWithPrefs).prefsEmailNotifications,
+      scheduleChangeAlerts: (initialUser as UserWithPrefs).prefsScheduleChangeAlerts === undefined ? true : (initialUser as UserWithPrefs).prefsScheduleChangeAlerts,
     }
   });
   
@@ -87,11 +91,12 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
   React.useEffect(() => {
     // If the user object from context updates, resync form if needed (e.g., after a name change)
     if (user) {
+        const userWithPrefs = user as UserWithPrefs;
        profileForm.reset({
           displayName: user.displayName || "",
-          fullName: (user as any).fullName || "",
-          emailNotifications: (user as any).prefsEmailNotifications === undefined ? true : (user as any).prefsEmailNotifications,
-          scheduleChangeAlerts: (user as any).prefsScheduleChangeAlerts === undefined ? true : (user as any).prefsScheduleChangeAlerts,
+          fullName: user.fullName || "",
+          emailNotifications: userWithPrefs.prefsEmailNotifications === undefined ? true : userWithPrefs.prefsEmailNotifications,
+          scheduleChangeAlerts: userWithPrefs.prefsScheduleChangeAlerts === undefined ? true : userWithPrefs.prefsScheduleChangeAlerts,
        });
     }
   }, [user, profileForm]);
@@ -109,7 +114,6 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
         fullName: string; 
         prefsEmailNotifications: boolean;
         prefsScheduleChangeAlerts: boolean;
-        [key: string]: any 
       } = {
         displayName: data.displayName.trim(),
         fullName: data.fullName.trim(),
@@ -126,9 +130,10 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
 
       toast({ title: "Profile & Preferences Updated", description: "Your information has been successfully updated." });
       profileForm.reset(data); // Resets the form's "dirty" state
-    } catch (error: any) {
-      console.error("Error updating profile:", error);
-      toast({ title: "Update Failed", description: error.message || "Could not update your profile.", variant: "destructive" });
+    } catch (error: unknown) {
+      const authError = error as AuthError;
+      console.error("Error updating profile:", authError);
+      toast({ title: "Update Failed", description: authError.message || "Could not update your profile.", variant: "destructive" });
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -160,8 +165,9 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
         
         toast({ title: "Avatar Updated", description: "Your new profile picture has been saved. The page will now refresh." });
         setTimeout(() => window.location.reload(), 1500);
-    } catch (error: any) {
-        toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      const authError = error as AuthError;
+        toast({ title: "Upload Failed", description: authError.message, variant: "destructive" });
     } finally {
         setIsUploading(false);
         setSelectedFile(null);
@@ -182,12 +188,13 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
       toast({ title: "Password Changed", description: "Your password has been successfully updated." });
       setIsChangePasswordDialogOpen(false);
       changePasswordForm.reset();
-    } catch (error: any) {
-      console.error("Error changing password:", error);
+    } catch (error: unknown) {
+      const authError = error as AuthError;
+      console.error("Error changing password:", authError);
       let errorMessage = "Could not change password. Please try again.";
-      if (error.code === 'auth/wrong-password') {
+      if (authError.code === 'auth/wrong-password') {
         errorMessage = "Incorrect current password.";
-      } else if (error.code === 'auth/weak-password') {
+      } else if (authError.code === 'auth/weak-password') {
         errorMessage = "The new password is too weak.";
       }
       toast({ title: "Password Change Failed", description: errorMessage, variant: "destructive" });

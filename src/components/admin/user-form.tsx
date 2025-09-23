@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -49,7 +48,7 @@ export function UserForm({ isCreateMode, currentUser, onFormSubmitSuccess }: Use
         displayName: currentUser?.displayName || "",
         fullName: currentUser?.fullName || "",
         employeeId: currentUser?.employeeId || "",
-        joiningDate: currentUser?.joiningDate ? new Date(currentUser.joiningDate as any).toISOString().split('T')[0] : "",
+        joiningDate: currentUser?.joiningDate ? new Date(currentUser.joiningDate).toISOString().split('T')[0] : "",
         role: currentUser?.role || "",
         accountStatus: currentUser?.accountStatus === 'active',
         baseAirport: currentUser?.baseAirport || "",
@@ -74,9 +73,10 @@ export function UserForm({ isCreateMode, currentUser, onFormSubmitSuccess }: Use
         await manageUser({ isCreate: isCreateMode, data, userId: currentUser?.uid, adminUser });
         toast({ title: isCreateMode ? "User Created" : "User Updated", description: `User ${data.email} has been saved.` });
         onFormSubmitSuccess();
-    } catch (error: any) {
-        console.error("Error managing user:", error);
-        toast({ title: "Operation Failed", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+        const err = error as Error;
+        console.error("Error managing user:", err);
+        toast({ title: "Operation Failed", description: err.message, variant: "destructive" });
     } finally {
         setIsSubmitting(false);
     }
