@@ -1,7 +1,7 @@
 {
-  "timestamp": "2025-09-23T08:48:54.837Z",
-  "totalViolations": 77,
-  "totalScore": 766,
+  "timestamp": "2025-09-23T09:01:53.565Z",
+  "totalViolations": 74,
+  "totalScore": 736,
   "status": "ÉCHOUÉ",
   "violations": [
     {
@@ -134,12 +134,6 @@
       "ruleId": "NX-007",
       "file": "src/lib/seed.ts",
       "message": "Zod validation missing or incomplete in Server Action/Flow: src/lib/seed.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-023",
-      "file": "src/components/ui/chart.tsx",
-      "message": "Found 1 \"any\" or \"unknown\" type(s)",
       "severity": 10
     },
     {
@@ -329,15 +323,9 @@
       "severity": 10
     },
     {
-      "ruleId": "NX-018",
-      "file": "src/app/admin/video-studio/page.tsx",
-      "message": "Found <img> tag — use next/image instead",
-      "severity": 10
-    },
-    {
       "ruleId": "NX-023",
       "file": "src/app/admin/video-studio/page.tsx",
-      "message": "Found 2 \"any\" or \"unknown\" type(s)",
+      "message": "Found 1 \"any\" or \"unknown\" type(s)",
       "severity": 10
     },
     {
@@ -452,12 +440,6 @@
       "ruleId": "NX-007",
       "file": "src/ai/flows/generate-audio-flow.ts",
       "message": "Zod validation missing or incomplete in Server Action/Flow: src/ai/flows/generate-audio-flow.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-023",
-      "file": "src/ai/flows/generate-audio-flow.ts",
-      "message": "Found 1 \"any\" or \"unknown\" type(s)",
       "severity": 10
     },
     {
