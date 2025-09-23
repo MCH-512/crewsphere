@@ -1,15 +1,9 @@
 {
-  "timestamp": "2025-09-23T09:42:21.936Z",
-  "totalViolations": 36,
-  "totalScore": 358,
+  "timestamp": "2025-09-23T10:06:12.524Z",
+  "totalViolations": 28,
+  "totalScore": 280,
   "status": "ÉCHOUÉ",
   "violations": [
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/weather-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/weather-service.ts",
-      "severity": 10
-    },
     {
       "ruleId": "NX-007",
       "file": "src/services/video-service.ts",
@@ -29,24 +23,6 @@
       "severity": 10
     },
     {
-      "ruleId": "NX-007",
-      "file": "src/services/dashboard-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/dashboard-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/admin-dashboard-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/admin-dashboard-service.ts",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-007",
-      "file": "src/services/activity-service.ts",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/services/activity-service.ts",
-      "severity": 10
-    },
-    {
       "ruleId": "NX-023",
       "file": "src/components/admin/weekly-trends-chart.tsx",
       "message": "Found 1 \"any\" or \"unknown\" type(s)",
@@ -59,12 +35,6 @@
       "severity": 10
     },
     {
-      "ruleId": "NX-007",
-      "file": "src/app/page.tsx",
-      "message": "Zod validation missing or incomplete in Server Action/Flow: src/app/page.tsx",
-      "severity": 10
-    },
-    {
       "ruleId": "NX-023",
       "file": "src/app/training/quiz/[quizId]/page.tsx",
       "message": "Found 1 \"any\" or \"unknown\" type(s)",
@@ -73,18 +43,6 @@
     {
       "ruleId": "NX-023",
       "file": "src/app/training/certificate/[attemptId]/page.tsx",
-      "message": "Found 1 \"any\" or \"unknown\" type(s)",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-004",
-      "file": "src/app/toolbox/live-flight-tracker/page.tsx",
-      "message": "Suspense not used around dynamic client component",
-      "severity": 8
-    },
-    {
-      "ruleId": "NX-023",
-      "file": "src/app/toolbox/guides/page.tsx",
       "message": "Found 1 \"any\" or \"unknown\" type(s)",
       "severity": 10
     },
@@ -133,12 +91,6 @@
     {
       "ruleId": "NX-023",
       "file": "src/app/login/page.tsx",
-      "message": "Found 1 \"any\" or \"unknown\" type(s)",
-      "severity": 10
-    },
-    {
-      "ruleId": "NX-023",
-      "file": "src/app/layout/app-layout.tsx",
       "message": "Found 1 \"any\" or \"unknown\" type(s)",
       "severity": 10
     },
