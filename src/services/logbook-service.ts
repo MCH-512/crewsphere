@@ -5,6 +5,7 @@ import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { parseISO, differenceInMinutes } from "date-fns";
 import { db, isConfigValid } from "@/lib/firebase";
 import { StoredFlight } from "@/schemas/flight-schema";
+import { z } from "zod";
 
 export interface LogbookEntry {
     id: string;
@@ -19,15 +20,19 @@ export interface LogbookEntry {
     scheduledArrivalDateTimeUTC: string;
 }
 
+const GetLogbookInputSchema = z.string().min(1, "User ID is required.");
+
+
 export async function getLogbookEntries(userId: string | undefined): Promise<LogbookEntry[]> {
-    if (!userId || !isConfigValid || !db) {
+    const validatedUserId = GetLogbookInputSchema.safeParse(userId);
+    if (!validatedUserId.success || !isConfigValid || !db) {
         return [];
     }
 
     try {
         const flightsQuery = query(
             collection(db, "flights"),
-            where("allCrewIds", "array-contains", userId),
+            where("allCrewIds", "array-contains", validatedUserId.data),
             orderBy("scheduledDepartureDateTimeUTC", "desc")
         );
 
@@ -40,10 +45,10 @@ export async function getLogbookEntries(userId: string | undefined): Promise<Log
 
             let userRoleOnFlight = "Crew";
             if (data.purserId === userId) userRoleOnFlight = "Purser";
-            else if (data.pilotIds?.includes(userId)) userRoleOnFlight = "Pilot";
-            else if (data.cabinCrewIds?.includes(userId)) userRoleOnFlight = "Cabin Crew";
-            else if (data.instructorIds?.includes(userId)) userRoleOnFlight = "Instructor";
-            else if (data.traineeIds?.includes(userId)) userRoleOnFlight = "Stagiaire";
+            else if (data.pilotIds?.includes(userId as string)) userRoleOnFlight = "Pilot";
+            else if (data.cabinCrewIds?.includes(userId as string)) userRoleOnFlight = "Cabin Crew";
+            else if (data.instructorIds?.includes(userId as string)) userRoleOnFlight = "Instructor";
+            else if (data.traineeIds?.includes(userId as string)) userRoleOnFlight = "Stagiaire";
 
             return { 
                 id: doc.id,
@@ -58,8 +63,9 @@ export async function getLogbookEntries(userId: string | undefined): Promise<Log
             };
         });
         return entries;
-    } catch (err: any) {
-        console.error("Error fetching logbook:", err);
+    } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
+        console.error("Error fetching logbook:", errorMessage);
         // Avoid throwing on server to prevent crashing the page, return empty array instead.
         // Client can show an error message.
         return [];

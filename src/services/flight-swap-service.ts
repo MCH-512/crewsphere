@@ -8,7 +8,18 @@ import { User } from "@/contexts/auth-context";
 import { logAuditEvent } from "@/lib/audit-logger";
 import type { StoredFlightSwap } from "@/schemas/flight-swap-schema";
 import { checkCrewAvailability } from "./user-activity-service";
+import { z } from "zod";
 
+
+const FlightSwapInputSchema = z.object({
+  flightId: z.string().min(1),
+});
+
+const RequestSwapInputSchema = z.object({
+  swapId: z.string().min(1),
+  requestingFlight: z.custom<StoredFlight>(), // Basic validation, can be improved
+  user: z.custom<User>(),
+});
 
 /**
  * Posts a flight for swapping.
@@ -16,6 +27,11 @@ import { checkCrewAvailability } from "./user-activity-service";
  * @param user The user posting the swap.
  */
 export async function postFlightSwap(flightToPost: StoredFlight, user: User): Promise<void> {
+    const validatedInput = FlightSwapInputSchema.safeParse({ flightId: flightToPost.id });
+    if (!validatedInput.success) {
+      throw new Error(`Invalid input for posting flight swap: ${validatedInput.error.message}`);
+    }
+
     if (!isConfigValid || !db) {
         throw new Error("Firebase is not configured.");
     }
@@ -60,6 +76,11 @@ export async function postFlightSwap(flightToPost: StoredFlight, user: User): Pr
  * @param user The user making the request.
  */
 export async function requestFlightSwap(swapId: string, requestingFlight: StoredFlight, user: User): Promise<void> {
+    const validatedInput = RequestSwapInputSchema.safeParse({ swapId, requestingFlight, user });
+    if (!validatedInput.success) {
+      throw new Error(`Invalid input for requesting flight swap: ${validatedInput.error.message}`);
+    }
+
     if (!isConfigValid || !db) {
         throw new Error("Firebase is not configured.");
     }
