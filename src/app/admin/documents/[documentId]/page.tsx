@@ -57,9 +57,10 @@ export default function DocumentDetailPage() {
                 }));
                 setUsersWithStatus(usersWithReadStatus);
 
-            } catch (err: any) {
-                setError(err.message);
-                toast({ title: "Error", description: err.message, variant: "destructive" });
+            } catch (err: unknown) {
+                const e = err as Error;
+                setError(e.message);
+                toast({ title: "Error", description: e.message, variant: "destructive" });
             } finally {
                 setIsLoading(false);
             }

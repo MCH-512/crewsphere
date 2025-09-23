@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -219,9 +218,10 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
 
         toast({ title: "Request Updated", description: `Request status changed to ${newStatus}. User's schedule has been updated accordingly.` });
         setIsManageDialogOpen(false);
-    } catch (err: any) {
-        console.error("Error updating status:", err);
-        toast({ title: "Update Failed", description: err.message || "Could not update request status/response.", variant: "destructive" });
+    } catch (err: unknown) {
+        const e = err as Error;
+        console.error("Error updating status:", e);
+        toast({ title: "Update Failed", description: e.message || "Could not update request status/response.", variant: "destructive" });
     } finally {
         setIsUpdatingStatus(false);
     }
@@ -451,5 +451,3 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
     </div>
   );
 }
-
-    

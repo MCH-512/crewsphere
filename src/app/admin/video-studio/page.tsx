@@ -81,8 +81,9 @@ export default function VideoStudioPage() {
       toast({ title: "Video Generated!", description: "Your video is ready for preview." });
 
     } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred during video generation.";
-        console.error("Error generating video:", err);
+        const e = err as Error;
+        const errorMessage = e.message || "An unexpected error occurred during video generation.";
+        console.error("Error generating video:", e);
         setError(errorMessage);
         toast({
             title: "Generation Failed",

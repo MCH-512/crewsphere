@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -10,7 +9,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, doc, writeBatch, serverTimestamp, query, where, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, ArrowRightLeft, Handshake, FileSignature, Filter, BellOff, Search } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, ArrowRightLeft, Handshake, FileSignature, Filter, BellOff, Search, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import type { StoredFlight } from "@/schemas/flight-schema";
@@ -27,6 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { aircraftTypes } from "@/schemas/flight-schema";
 import { Input } from "@/components/ui/input";
 import { FlightForm } from "@/components/admin/flight-form";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 const SwapApprovalDialog = ({ swap, onClose, onAction }: { swap: StoredFlightSwap, onClose: () => void, onAction: () => void }) => {
@@ -61,8 +61,9 @@ const SwapApprovalDialog = ({ swap, onClose, onAction }: { swap: StoredFlightSwa
             toast({ title: "Swap Approved", description: "The flight schedules have been updated." });
             onAction();
             onClose();
-        } catch (error: any) {
-            toast({ title: "Approval Failed", description: error.message, variant: "destructive" });
+        } catch (error: unknown) {
+            const e = error as Error;
+            toast({ title: "Approval Failed", description: e.message, variant: "destructive" });
         } finally {
             setIsSubmitting(false);
         }
@@ -79,8 +80,9 @@ const SwapApprovalDialog = ({ swap, onClose, onAction }: { swap: StoredFlightSwa
             toast({ title: "Swap Rejected" });
             onAction();
             onClose();
-        } catch (error: any) {
-            toast({ title: "Rejection Failed", description: error.message, variant: "destructive" });
+        } catch (error: unknown) {
+            const e = error as Error;
+            toast({ title: "Rejection Failed", description: e.message, variant: "destructive" });
         } finally {
             setIsSubmitting(false);
             setIsRejecting(false);
@@ -416,5 +418,3 @@ export function AdminFlightsClient({
         </div>
     );
 }
-
-    

@@ -37,12 +37,13 @@ export default function AudioStudioPage() {
       const audioResult = await generateAudio(data);
       setResult(audioResult.audioUrl);
       toast({ title: "Audio Generated", description: "Your audio is ready for preview." });
-    } catch (err: any) {
-      console.error("Error generating audio:", err);
-      setError(err.message || "An unexpected error occurred.");
+    } catch (err: unknown) {
+      const e = err as Error;
+      console.error("Error generating audio:", e);
+      setError(e.message || "An unexpected error occurred.");
       toast({
         title: "Generation Failed",
-        description: err.message,
+        description: e.message,
         variant: "destructive",
       });
     } finally {
