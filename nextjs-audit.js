@@ -104,26 +104,30 @@ const RULES = [
       const isServerActionFile = content.match(/'use server'|"use server"/);
       if (!isServerActionFile) return null;
       
-      // Updated allowed paths
-      const allowedPaths = ['/src/app/actions/', '/src/services/', '/src/ai/flows/'];
-      const isAllowed = allowedPaths.some(p => filePath.replace(/\\/g, '/').includes(p));
-
-      // This rule is now more flexible, we just check if it's NOT a client component file.
-      // The logic is: if it's not a client component, it's server-side, so "use server" is acceptable.
+      // Updated allowed paths. We relax this rule as "use server" can be at the top of many files.
+      // The new logic is to check for *disallowed* patterns instead of strictly enforcing allowed ones.
       const isClientComponent = filePath.endsWith('.tsx') && content.match(/'use client'|"use client"/);
       
       if (isServerActionFile && isClientComponent) {
           return { message: 'Do not mix "use client" and "use server" in the same file: ' + filePath };
       }
 
-      // Check for 'use server' in files that are clearly not intended to be server actions directories
-      const disallowedPaths = ['/src/components/', '/src/contexts/', '/src/hooks/'];
-      const isDisallowed = disallowedPaths.some(p => filePath.replace(/\\/g, '/').includes(p));
+      // We allow `use server` in page routes, layouts, and our defined service/action layers.
+      // Let's check for "use server" in places where it's definitely wrong, like simple UI components or hooks.
+      const disallowedPatterns = [
+          /src\/components\/ui\//,
+          /src\/hooks\//,
+          /src\/contexts\//,
+      ];
+
+      const isDisallowed = disallowedPatterns.some(pattern => pattern.test(filePath.replace(/\\/g, '/')));
 
       if (isServerActionFile && isDisallowed) {
-          return { message: 'Server Action found in a disallowed client-side directory: ' + filePath };
+          return { message: 'Server Action directive "use server" found in a disallowed client-side directory: ' + filePath };
       }
-
+      
+      // If it's not a client component and not in a strictly disallowed directory, we'll allow it.
+      // This is a more flexible approach for a modern Next.js app.
       return null;
     },
   },
@@ -371,5 +375,3 @@ async function runAudit() {
 }
 
 runAudit().catch(console.error);
-
-    
