@@ -4,7 +4,8 @@ import {
   ClipboardCheck, MessageSquare, Activity, FileSignature, 
   Calendar as CalendarIcon, Library, GraduationCap, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Wrench, 
-  Handshake, Inbox, Lightbulb, FileCheck2, History, AudioWaveform, Video
+  Handshake, Inbox, Lightbulb, FileCheck2, History, AudioWaveform, Video,
+  GitPullRequest
 } from "lucide-react";
 import type { ElementType } from 'react';
 
@@ -15,6 +16,7 @@ export interface AdminDashboardStats {
   pendingSwaps: number;
   activeAlerts: number;
   pendingReports: number;
+  openPullRequests?: number; // Added for GitHub PRs
   [key: string]: number | undefined;
 }
 

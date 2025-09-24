@@ -11,6 +11,7 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 import { adminNavConfig } from "@/config/nav";
 import { cn } from "@/lib/utils";
 import { getAdminDashboardStats, getAdminDashboardWeeklyTrends } from "@/services/admin-dashboard-service";
+import { getOpenPullRequests } from "@/services/github-service"; // Import the new service
 import { Badge } from "@/components/ui/badge";
 import { WeeklyTrendsChart } from "@/components/admin/weekly-trends-chart";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,6 +38,27 @@ export default async function AdminConsolePage() {
   EmptySchema.parse({}); // Zod validation
   const stats = await getAdminDashboardStats();
   const weeklyTrendsDataPromise = getAdminDashboardWeeklyTrends();
+  const pullRequests = await getOpenPullRequests(); // Fetch PR data
+
+  // Manually add the PR card to the system group for display
+  const systemNavGroup = adminNavConfig.sidebarNav.find(group => group.title === "System");
+  if (systemNavGroup) {
+      // Add PR item if it doesn't already exist to avoid duplicates on re-renders
+      if (!systemNavGroup.items.find(item => item.statKey === 'openPullRequests')) {
+          systemNavGroup.items.push({
+              href: pullRequests.url,
+              title: "Pull Requests",
+              icon: require("lucide-react").GitPullRequest,
+              description: "Review and merge pending pull requests on GitHub.",
+              buttonText: "Review PRs",
+              statKey: "openPullRequests",
+              highlightWhen: v => v > 0,
+          });
+      }
+  }
+  // Add the PR count to the stats object
+  const displayStats = stats ? { ...stats, openPullRequests: pullRequests.count } : { openPullRequests: pullRequests.count };
+
 
   return (
     <div className="space-y-8">
@@ -68,7 +90,7 @@ export default async function AdminConsolePage() {
                       const IconComponent = item.icon;
                       const animationDelay = 0.1 + (itemIndex * 0.05);
                       
-                      const statValue = stats && item.statKey ? stats[item.statKey] : undefined;
+                      const statValue = displayStats && item.statKey ? displayStats[item.statKey] : undefined;
                       const shouldHighlight = statValue !== undefined && item.highlightWhen ? item.highlightWhen(statValue) : false;
 
                       return (
@@ -93,7 +115,7 @@ export default async function AdminConsolePage() {
                                   </CardContent>
                                   <CardFooter>
                                       <Button asChild className="w-full mt-auto">
-                                          <Link href={item.href}>
+                                          <Link href={item.href} target={item.href.startsWith('http') ? '_blank' : '_self'}>
                                               {item.buttonText || 'Manage'}
                                               <ArrowRight className="ml-2 h-4 w-4" />
                                           </Link>
