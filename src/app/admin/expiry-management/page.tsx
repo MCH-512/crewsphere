@@ -95,8 +95,8 @@ export default function AdminExpiryManagementPage() {
         });
 
         return processedDocs.sort((a, b) => {
-            let valA: string | number | Date = a[sortColumn];
-            let valB: string | number | Date = b[sortColumn];
+            let valA: string | number | Date | Timestamp = a[sortColumn];
+            let valB: string | number | Date | Timestamp = b[sortColumn];
 
             if (sortColumn === 'status') {
                 valA = statusOrder[getDocumentStatus(a, EXPIRY_WARNING_DAYS)];
@@ -166,7 +166,7 @@ export default function AdminExpiryManagementPage() {
 
             if (isEditMode && currentDocument) {
                 const docRef = doc(db, "userDocuments", currentDocument.id);
-                await updateDoc(docRef, documentData);
+                await updateDoc(docRef, documentData as any);
                 await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email!, actionType: "UPDATE_USER_DOCUMENT", entityType: "USER_DOCUMENT", entityId: currentDocument.id, details: { user: selectedUser.email, doc: data.documentName } });
                 toast({ title: "Document Updated", description: "The user's document has been updated." });
             } else {
@@ -296,4 +296,5 @@ export default function AdminExpiryManagementPage() {
             </Dialog>
         </div>
     );
-}
+
+    
