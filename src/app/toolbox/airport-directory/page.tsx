@@ -9,7 +9,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Airport } from "@/services/airport-service";
-import airportsData from '@/data/airports.json';
+import airportsData from "../../../../data/airports.json";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
 // Group airports by continent and then by country

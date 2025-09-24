@@ -297,5 +297,3 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
         </div>
     );
 }
-
-    
