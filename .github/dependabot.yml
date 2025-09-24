@@ -18,6 +18,14 @@ updates:
     labels:
       - "dependencies"
       - "automated"
+    # Enable auto-merging for patch updates to ensure security fixes are applied quickly.
+    automerge: true
+    allow:
+      # Allow auto-merging for patch-level updates
+      - dependency-type: "direct"
+        update-types: ["patch"]
+      - dependency-type: "indirect"
+        update-types: ["patch"]
     # Group patch and minor updates into a single PR for easier management.
     # Major updates will still get their own PRs.
     groups:
