@@ -25,6 +25,7 @@ import { logAuditEvent } from "@/lib/audit-logger";
 import { Switch } from "@/components/ui/switch";
 import { StoredAlert, alertFormSchema, AlertFormValues, alertTypes, alertAudiences } from "@/schemas/alert-schema";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
+import { badgeVariants } from "@/components/ui/badge";
 
 type SortableColumn = 'title' | 'type' | 'targetAudience' | 'isActive' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
@@ -244,11 +245,11 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
 
                     <Table>
                         <TableHeader><TableRow>
-                            <SortableHeader<SortableColumn> column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                            <SortableHeader<SortableColumn> column="type" label="Type" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                            <SortableHeader<SortableColumn> column="targetAudience" label="Audience" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                            <SortableHeader<SortableColumn> column="isActive" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
-                            <SortableHeader<SortableColumn> column="createdAt" label="Created" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="type" label="Type" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="targetAudience" label="Audience" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="isActive" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="createdAt" label="Created" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
                             <TableHead>Actions</TableHead>
                         </TableRow></TableHeader>
                         <TableBody>
@@ -297,3 +298,5 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
         </div>
     );
 }
+
+    
