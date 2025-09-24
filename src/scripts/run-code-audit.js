@@ -214,23 +214,23 @@ async function main() {
     
     // 4. Output the analysis for the GitHub Action to pick up
     console.log("💡 AI suggested an actionable patch. Creating outputs for GitHub Actions...");
-    // The ::set-output command is deprecated. We will write to a file and have the workflow read it.
-    const outputs = {
-        pr_title: analysisResult.quick_issue_title,
-        pr_body: analysisResult.quick_issue_body,
-        analysis_id: analysisResult.analysis_id
-    };
+    const GITHUB_OUTPUT = process.env.GITHUB_OUTPUT;
+    if (GITHUB_OUTPUT) {
+        await fs.appendFile(GITHUB_OUTPUT, `pr_title=${analysisResult.quick_issue_title}\n`);
+        await fs.appendFile(GITHUB_OUTPUT, `pr_body=${analysisResult.quick_issue_body}\n`);
+        await fs.appendFile(GITHUB_OUTPUT, `analysis_id=${analysisResult.analysis_id}\n`);
+    }
 
-    // Write outputs to a file for GitHub Actions to read
-    const outputsPath = path.join(process.cwd(), 'workflow_outputs.json');
-    await fs.writeFile(outputsPath, JSON.stringify(outputs));
-    console.log(`::set-output name=outputs_file::${outputsPath}`);
+    // Apply the patch by overwriting files
+    for (const [filePath, content] of Object.entries(analysisResult.suggested_patch.files)) {
+        const fullPath = path.resolve(process.cwd(), filePath);
+        await fs.mkdir(path.dirname(fullPath), { recursive: true });
+        await fs.writeFile(fullPath, content as string);
+        console.log(`Patched file: ${filePath}`);
+    }
 
-    const patchFilePath = path.join(process.cwd(), 'suggested_patch.json');
-    await fs.writeFile(patchFilePath, JSON.stringify(analysisResult.suggested_patch, null, 2));
-    console.log(`::set-output name=patch_file_path::${patchFilePath}`);
 
-    console.log("✅ Audit finished successfully.");
+    console.log("✅ Audit finished successfully. Pull Request will be created by the workflow.");
 
   } catch (error) {
     console.error("AI analysis failed:", error);

@@ -205,14 +205,6 @@ jobs:
             GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
             GITHUB_REPOSITORY: ${{ github.repository }}
 
-      - name: Apply AI Patch and Create PR
-        if: steps.audit.outputs.patch_file_path
-        run: |
-          # This is a placeholder for a more robust script
-          # In a real scenario, a dedicated script would parse the patch file and apply it
-          echo "A patch was suggested. A more advanced workflow would apply it and create a PR."
-          # For example: node scripts/apply-ai-patch.js ${{ steps.audit.outputs.patch_file_path }}
-        
       - name: Create Pull Request for AI Refactoring
         if: steps.audit.outputs.pr_title # Check if a PR title was outputted
         uses: peter-evans/create-pull-request@v6
