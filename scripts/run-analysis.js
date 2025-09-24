@@ -1,4 +1,5 @@
 // scripts/run-analysis.js
+const path = require('path');
 
 // This script simulates a cron job that would run nightly.
 // It imports the server-side analysis function and executes it.
@@ -6,7 +7,7 @@
 // We need to use dynamic import for an ES module ('use server') in a CommonJS file.
 async function main() {
   try {
-    const { generateOptimizedAlertRules } = await import('../src/services/predictive-analyzer.ts');
+    const { generateOptimizedAlertRules } = await import(path.resolve(__dirname, '../src/services/predictive-analyzer.ts'));
     
     const improvements = await generateOptimizedAlertRules();
 

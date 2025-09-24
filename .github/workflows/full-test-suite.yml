@@ -123,9 +123,8 @@ jobs:
 
   auto-optimize-and-pr:
     name: 🤖 AI Auto-Optimization
-    needs: test-all
+    needs: deploy-to-firebase # Runs after successful deployment
     runs-on: ubuntu-latest
-    # Only run this job after a successful push to the main branch
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
@@ -228,3 +227,4 @@ jobs:
           labels: "ai, refactor, automated, enhancement"
           reviewers: "project-admin"
           assignees: "project-admin"
+
