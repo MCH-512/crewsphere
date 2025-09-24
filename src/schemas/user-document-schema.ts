@@ -61,7 +61,7 @@ export const userDocumentCreateFormSchema = baseUserDocumentObject.extend({
 
 // A schema for when a user is updating a document
 export const userDocumentUpdateFormSchema = baseUserDocumentObject.extend({
-    file: fileSchema.optional() // File is optional on update
+    file: z.any().optional() // File is optional on update, and we don't need the full file schema validation if it's not present
 }).refine(dateRefinement, {
     message: "Expiry date must be after the issue date.",
     path: ["expiryDate"],
@@ -97,7 +97,8 @@ export interface StoredUserDocument {
  * @returns The calculated UserDocumentStatus.
  */
 export const getDocumentStatus = (doc: StoredUserDocument, warningDays: number = 30): UserDocumentStatus => {
-    const today = startOfDay(new Date());
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize today to the start of the day
     if (doc.status === 'pending-validation') return 'pending-validation';
     const daysUntilExpiry = differenceInDays(doc.expiryDate.toDate(), today);
     if (daysUntilExpiry < 0) return 'expired';

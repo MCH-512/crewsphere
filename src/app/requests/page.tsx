@@ -22,7 +22,7 @@ import { SendHorizonal, Loader2, AlertTriangle, Info, Zap, Inbox, ListTodo, Mess
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, type Timestamp } from "firebase/firestore";
 import { Alert, AlertTitle, AlertDescription as ShadAlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,7 +31,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { format } from "date-fns";
 import {
     requestFormSchema, type RequestFormValues, allRequestCategories, requestCategoriesAndTypes, urgencyLevels,
-    type StoredUserRequest, getStatusBadgeVariant, getUrgencyBadgeVariant, getAdminResponseAlertVariant
+    type StoredUserRequest, type RequestStatus, getStatusBadgeVariant, getUrgencyBadgeVariant, getAdminResponseAlertVariant
 } from "@/schemas/request-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { submitUserRequest } from "@/services/request-service";
@@ -70,16 +70,17 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
 
   React.useEffect(() => {
     if (categoryHasSpecificTypes) {
-      setSpecificTypes(requestCategoriesAndTypes[watchedRequestCategory as keyof typeof requestCategoriesAndTypes]);
-       if (!specificTypes.includes(form.getValues('specificRequestType'))) {
+      const newSpecificTypes = requestCategoriesAndTypes[watchedRequestCategory as keyof typeof requestCategoriesAndTypes];
+      setSpecificTypes(newSpecificTypes);
+       if (!newSpecificTypes.includes(form.getValues('specificRequestType'))) {
           form.setValue('specificRequestType', '', { shouldValidate: true });
       }
     } else {
       setSpecificTypes([]);
       form.setValue('specificRequestType', '', { shouldValidate: true });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedRequestCategory, form, categoryHasSpecificTypes]);
+
 
   // Autofill subject when a specific request type is selected
   React.useEffect(() => {
@@ -259,7 +260,7 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
 
 // Interface for props with serialized dates
 interface RequestHistoryTabProps {
-    myRequests: (Omit<StoredUserRequest, 'createdAt' | 'updatedAt'> & { createdAt: string; updatedAt?: string; })[];
+    myRequests: StoredUserRequest[];
     isLoading: boolean;
     error: string | null;
     fetchMyRequests: () => void;
@@ -320,8 +321,8 @@ const RequestHistoryTab = ({ myRequests, isLoading, error, fetchMyRequests }: Re
                   </CardHeader>
                   <CardContent>
                     <div className="text-sm text-muted-foreground mb-3">
-                      Submitted: {request.createdAt ? format(new Date(request.createdAt), "PPp") : 'N/A'}
-                      {request.updatedAt && new Date(request.updatedAt).getTime() !== new Date(request.createdAt).getTime() && (<span className="ml-2 italic">(Last updated: {format(new Date(request.updatedAt), "PPpp")})</span>)}
+                      Submitted: {request.createdAt ? format(request.createdAt.toDate(), "PPp") : 'N/A'}
+                      {request.updatedAt && request.updatedAt.toMillis() !== request.createdAt.toMillis() && (<span className="ml-2 italic">(Last updated: {format(request.updatedAt.toDate(), "PPpp")})</span>)}
                     </div>
 
                     <Accordion type="single" collapsible className="w-full">
@@ -369,16 +370,7 @@ export default function RequestsPage() {
     try {
       const q = query(collection(db, "requests"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
-      const fetchedRequests: StoredUserRequest[] = querySnapshot.docs.map(doc => {
-          const data = doc.data() as StoredUserRequest;
-          return {
-              ...data,
-              id: doc.id,
-              // Convert timestamps to ISO strings for serialization
-              createdAt: data.createdAt.toDate().toISOString(),
-              updatedAt: data.updatedAt ? data.updatedAt.toDate().toISOString() : undefined,
-          } as StoredUserRequest;
-      });
+      const fetchedRequests = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserRequest));
       setMyRequests(fetchedRequests);
     } catch (err) {
         const e = err as Error;
@@ -432,7 +424,7 @@ export default function RequestsPage() {
                     <SubmitRequestTab refreshHistory={fetchMyRequests} />
                   </TabsContent>
                   <TabsContent value="history">
-                    <RequestHistoryTab myRequests={myRequests as any} isLoading={isLoading} error={error} fetchMyRequests={fetchMyRequests} />
+                    <RequestHistoryTab myRequests={myRequests} isLoading={isLoading} error={error} fetchMyRequests={fetchMyRequests} />
                   </TabsContent>
                 </Tabs>
               )}

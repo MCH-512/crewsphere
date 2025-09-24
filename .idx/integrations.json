@@ -1,6 +1,1 @@
-{
-  "firebase_hosting": {
-    "deploymentHostingUrl": "https://aircrew-hub.web.app"
-  },
-  "cloud_run_deploy": {}
-}
+{}

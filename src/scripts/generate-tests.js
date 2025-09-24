@@ -5,10 +5,10 @@ const path = require('path');
 const { ai } = require(path.resolve(__dirname, '../ai/genkit'));
 const fs = require('fs');
 
-// This is a simplified placeholder. In a real-world scenario, you might have a more robust
-// way to configure and call the Genkit AI object from a script.
-// For this example, we assume it's configured and can be used directly.
-
+/**
+ * @param {string} featureName
+ * @param {string} description
+ */
 async function generateTestsForFeature(featureName, description) {
   console.log(`🤖 Generating tests for feature: ${featureName}...`);
   const prompt = `

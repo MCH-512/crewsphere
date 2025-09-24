@@ -7,7 +7,7 @@ import { collection, getDocs, query, where, Timestamp, orderBy, limit } from "fi
 import { startOfDay, endOfDay } from "date-fns";
 import type { StoredCourse } from "@/schemas/course-schema";
 import type { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
-import type { StoredUserRequest } from "@/schemas/request-schema";
+import type { StoredUserRequest, RequestStatus } from "@/schemas/request-schema";
 import type { RequestsChartDataPoint } from "@/components/features/charts/requests-status-bar-chart";
 import type { TrainingChartDataPoint } from "@/components/features/charts/training-progress-pie-chart";
 import { generateDashboardImage } from "@/ai/flows/generate-dashboard-image-flow";
@@ -97,7 +97,7 @@ export async function getTrainingStatus(): Promise<{ totalMandatory: number; com
     }
 }
 
-export async function getRequestsStatus(): Promise<{ pendingCount: number; latestRequest: { subject: string; status: string; } | null; } | null> {
+export async function getRequestsStatus(): Promise<{ pendingCount: number; latestRequest: { subject: string; status: RequestStatus; } | null; } | null> {
     EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
     if (!user || !isConfigValid || !db) {

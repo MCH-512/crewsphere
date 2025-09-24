@@ -35,7 +35,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
     }
 
     try {
-        const requestsQuery = query(collection(db, "requests"), where("status", "==", "pending"));
+        const requestsQuery = query(collection(db, "requests"), where("status", "in", ["pending", "in-progress"]));
         const validationsQuery = query(collection(db, "userDocuments"), where("status", "==", "pending-validation"));
         const suggestionsQuery = query(collection(db, "suggestions"), where("status", "==", "new"));
         const swapsQuery = query(collection(db, "flightSwaps"), where("status", "==", "pending_approval"));

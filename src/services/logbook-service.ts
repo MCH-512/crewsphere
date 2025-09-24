@@ -20,7 +20,7 @@ export interface LogbookEntry {
     scheduledArrivalDateTimeUTC: string;
 }
 
-const GetLogbookInputSchema = z.string().min(1, "User ID is required.");
+const GetLogbookInputSchema = z.string().min(1, "User ID is required.").optional();
 
 
 export async function getLogbookEntries(userId: string | undefined): Promise<LogbookEntry[]> {

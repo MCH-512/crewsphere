@@ -1,5 +1,4 @@
 
-
 'use server';
 
 /**
@@ -225,7 +224,7 @@ async function main() {
     for (const [filePath, content] of Object.entries(analysisResult.suggested_patch.files)) {
         const fullPath = path.resolve(process.cwd(), filePath);
         await fs.mkdir(path.dirname(fullPath), { recursive: true });
-        await fs.writeFile(fullPath, content as string);
+        await fs.writeFile(fullPath, content);
         console.log(`Patched file: ${filePath}`);
     }
 

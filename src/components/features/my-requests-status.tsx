@@ -7,7 +7,7 @@ import { Inbox, AlertTriangle, CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Badge } from "../ui/badge";
-import { getStatusBadgeVariant } from "@/schemas/request-schema";
+import { getStatusBadgeVariant, type RequestStatus } from "@/schemas/request-schema";
 import { getRequestsStatus } from "@/services/dashboard-service";
 import { z } from 'zod';
 
@@ -64,7 +64,7 @@ export async function MyRequestsStatusCard() {
                         </div>
                          {stats.latestRequest && (
                             <div className="text-sm text-muted-foreground truncate p-2 border-l-2 border-warning/80">
-                                Latest: "{stats.latestRequest.subject}" <Badge variant={getStatusBadgeVariant(stats.latestRequest.status as any)} className="capitalize">{stats.latestRequest.status.replace('-', ' ')}</Badge>
+                                Latest: "{stats.latestRequest.subject}" <Badge variant={getStatusBadgeVariant(stats.latestRequest.status)} className="capitalize">{stats.latestRequest.status.replace('-', ' ')}</Badge>
                             </div>
                         )}
                     </div>

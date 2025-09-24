@@ -12,6 +12,7 @@ import { z } from "zod";
 
 
 export async function fetchUsers(): Promise<User[]> {
+    z.object({}).parse({});
     if (!isConfigValid || !db) {
         console.error("User fetch failed: Firebase is not configured.");
         return []; 
