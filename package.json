@@ -1,12 +1,13 @@
-
 {
   "name": "nextn",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "npm-run-all --parallel dev:next dev:emulators",
+    "dev:core": "npm-run-all --parallel dev:next emulators:core",
     "dev:next": "next dev --port 9002 --hostname 0.0.0.0",
     "dev:emulators": "firebase emulators:start --only functions,firestore,hosting,extensions",
+    "emulators:core": "firebase emulators:start --only firestore,functions,hosting",
     "build": "next build",
     "start": "next start --port 9002 --hostname 0.0.0.0",
     "lint": "next lint",
@@ -19,8 +20,7 @@
     "test:accessibility": "playwright test tests/accessibility/accessibility.spec.ts",
     "test:ai": "jest --testPathPattern=tests/ai-validation",
     "test:auto-generate": "node src/scripts/generate-tests.js",
-    "auto-optimize": "node src/scripts/run-analysis.js",
-    "emulators:core": "firebase emulators:start --only firestore,functions,hosting"
+    "auto-optimize": "node src/scripts/run-analysis.js"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.0.0",
