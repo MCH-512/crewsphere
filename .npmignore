@@ -1,6 +1,4 @@
-# Logs
-logs
-*.log
+# Log files
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -8,48 +6,42 @@ lerna-debug.log*
 
 # Build output
 .next/
+dist/
+build/
 out/
 
-# Cache
-.npm/
-.yarn/
-.pnpm-store/
-
-# Dependencies
+# Dependency directories
 node_modules/
-
-# Local Environment Variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# IDE and editor directories
-.vscode/
-.idea/
 
 # Test files
 tests/
+__tests__/
 coverage/
 *.test.ts
 *.spec.ts
-
-# Configuration files
-.github/
-firebase.json
-firestore.indexes.json
-docker-compose.yml
-next.config.js
-nextjs-audit-report.json
 jest.config.js
 playwright.config.ts
 
-# Scripts
-scripts/
-src/scripts/
+# Configuration files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.vscode/
+.github/
+.idea/
+firebase.json
+firestore.rules
+firestore.indexes.json
+docker-compose.yml
 
-# Misc
-*.md
-.DS_Store
-*.pem
+# Miscellaneous
+*.DS_Store
+README.md
+nextjs-audit.js
+nextjs-audit-report.json
+suggested-optimizations.json
+scripts/
+apphosting.yaml
+*~
