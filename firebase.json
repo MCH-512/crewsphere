@@ -7,11 +7,11 @@
   "emulators": {
     "firestore": {
       "host": "0.0.0.0",
-      "port": 8080
+      "port": 8081
     },
     "ui": {
       "host": "0.0.0.0",
-      "port": 4000
+      "port": 4001
     },
     "functions": {
       "host": "0.0.0.0",
@@ -19,7 +19,11 @@
     },
     "logging": {
       "host": "0.0.0.0",
-      "port": 4500
+      "port": 4501
+    },
+    "hosting": {
+      "host": "0.0.0.0",
+      "port": 5002
     }
   },
   "hosting": {
@@ -34,5 +38,3 @@
     }
   }
 }
-
-    
