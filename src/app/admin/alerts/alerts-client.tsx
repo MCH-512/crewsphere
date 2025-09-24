@@ -257,7 +257,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
                                 <TableRow key={alert.id}>
                                     <TableCell className="font-medium max-w-sm truncate" title={alert.title}>{alert.title}</TableCell>
                                     <TableCell><Badge variant={getTypeBadgeVariant(alert.type)} className="capitalize">{alert.type}</Badge></TableCell>
-                                    <TableCell><Badge variant="outline" className="capitalize">{alert.targetAudience}</TableCell></TableCell>
+                                    <TableCell><Badge variant="outline" className="capitalize">{alert.targetAudience}</Badge></TableCell>
                                     <TableCell>{alert.isActive ? <Badge variant="success">Active</Badge> : <Badge variant="secondary">Inactive</Badge>}</TableCell>
                                     <TableCell className="text-xs">{alert.createdAt ? format(alert.createdAt.toDate(), "PPp") : 'N/A'}</TableCell>
                                     <TableCell className="space-x-1">
@@ -298,5 +298,4 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
         </div>
     );
 }
-
     
