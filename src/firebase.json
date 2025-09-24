@@ -1,11 +1,13 @@
 {
   "emulators": {
     "ui": {
-      "enabled": false
+      "enabled": true,
+      "host": "127.0.0.1",
+      "port": 4000
     },
     "hub": {
       "host": "127.0.0.1",
-      "port": 4400
+      "port": 4402
     },
     "logging": {
       "host": "127.0.0.1",
@@ -17,11 +19,11 @@
     },
     "hosting": {
       "host": "127.0.0.1",
-      "port": 5002
+      "port": 5001
     },
     "functions": {
       "host": "127.0.0.1",
-      "port": 5001
+      "port": 5002
     },
     "eventarc": {
       "host": "127.0.0.1",
