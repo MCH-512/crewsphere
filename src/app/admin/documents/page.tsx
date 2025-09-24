@@ -97,7 +97,7 @@ export default function AdminDocumentsPage() {
             setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
         } else {
             setSortColumn(column);
-            setSortDirection('asc');
+            setSortDirection(column === 'lastUpdated' ? 'desc' : 'asc');
         }
     };
 
@@ -153,7 +153,7 @@ export default function AdminDocumentsPage() {
                 fileURL, filePath, fileName, fileType,
                 uploaderId: user.uid,
                 uploaderEmail: user.email || "N/A",
-                lastUpdated: serverTimestamp(),
+                lastUpdated: serverTimestamp() as any,
             };
             
             if (isEditMode && currentDocument) {
@@ -306,4 +306,6 @@ export default function AdminDocumentsPage() {
         </div>
     );
 }
+    
+
     
