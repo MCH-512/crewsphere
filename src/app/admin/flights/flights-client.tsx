@@ -191,8 +191,8 @@ export function AdminFlightsClient({
      const fetchPageData = React.useCallback(async () => {
         setIsLoading(true);
         try {
-            const { flights } = await getFlightsForAdmin();
-            setFlights(flights);
+            const { flights: newFlights } = await getFlightsForAdmin();
+            setFlights(newFlights);
         } catch (error: unknown) {
             const e = error as Error;
             toast({ title: "Error Refreshing Data", description: e.message || "Could not fetch updated flight data.", variant: "destructive" });
@@ -242,8 +242,8 @@ export function AdminFlightsClient({
             const lowerTerm = searchTerm.toLowerCase();
             displayFlights = displayFlights.filter(f => 
                 f.flightNumber.toLowerCase().includes(lowerTerm) ||
-                f.departureAirportName?.toLowerCase().includes(lowerTerm) ||
-                f.arrivalAirportName?.toLowerCase().includes(lowerTerm)
+                (f.departureAirportName || '').toLowerCase().includes(lowerTerm) ||
+                (f.arrivalAirportName || '').toLowerCase().includes(lowerTerm)
             );
         }
 
