@@ -35,4 +35,3 @@ const generateCourseImageFlow = ai.defineFlow(
     return { imageDataUri: media.url };
   }
 );
-

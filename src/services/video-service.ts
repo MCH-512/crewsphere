@@ -9,6 +9,8 @@
 import { ai } from '@/ai/genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { GenerateVideoInputSchema, type GenerateVideoInput, type GenerateVideoOutput } from '@/schemas/video-schema';
+import { z } from 'zod';
+
 
 /**
  * Generates a video from a text prompt and/or an image.

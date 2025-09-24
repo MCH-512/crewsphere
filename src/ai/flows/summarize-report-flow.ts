@@ -47,7 +47,7 @@ const summarizeReportFlow = ai.defineFlow(
         return output;
     } catch (error) {
         console.error("AI summarization flow failed:", error);
-        return { summary: '', keyPoints: [], potentialRisks: [] };
+        return { summary: "AI summary could not be generated for this report.", keyPoints: [], potentialRisks: [] };
     }
   }
 );
