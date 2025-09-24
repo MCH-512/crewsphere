@@ -230,16 +230,16 @@ export default function AdminCoursesPage() {
 
 
             if (isEditMode && currentCourse) {
-                const updateData: Partial<StoredCourse> = {
+                const updateData: Partial<Omit<StoredCourse, 'id' | 'createdAt'>> = {
                     title: data.title, description: data.description, category: data.category,
                     courseType: data.courseType, referenceBody: data.referenceBody, duration: data.duration,
                     mandatory: data.mandatory, published: data.published, imageHint: data.imageHint,
                     chapters: data.chapters.filter(c => c.title.trim() !== ""),
-                    updatedAt: serverTimestamp(),
+                    updatedAt: serverTimestamp() as any,
                 };
                 if (imageUrl) updateData.imageUrl = imageUrl;
 
-                batch.update(courseRef, updateData as any);
+                batch.update(courseRef, updateData);
                 batch.update(quizRef, { title: data.quizTitle });
                 batch.update(certRuleRef, { passingThreshold: data.passingThreshold, expiryDurationDays: data.certificateExpiryDays });
                 await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: 'UPDATE_COURSE', entityType: "COURSE", entityId: currentCourse.id, details: { title: data.title }});
