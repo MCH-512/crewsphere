@@ -1,39 +1,35 @@
-
 {
-  "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  },
   "emulators": {
-    "firestore": {
-      "host": "0.0.0.0",
-      "port": 8081
-    },
     "ui": {
       "enabled": false
     },
-    "functions": {
-      "host": "0.0.0.0",
-      "port": 5001
+    "hub": {
+      "host": "127.0.0.1",
+      "port": 4400
     },
     "logging": {
-      "host": "0.0.0.0",
+      "host": "127.0.0.1",
       "port": 4501
     },
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8081
+    },
     "hosting": {
-      "host": "0.0.0.0",
+      "host": "127.0.0.1",
       "port": 5002
-    }
-  },
-  "hosting": {
-    "source": ".",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "frameworksBackend": {
-      "region": "europe-west1"
+    },
+    "functions": {
+      "host": "127.0.0.1",
+      "port": 5001
+    },
+    "eventarc": {
+      "host": "127.0.0.1",
+      "port": 9299
+    },
+    "tasks": {
+      "host": "127.0.0.1",
+      "port": 9499
     }
   }
 }
