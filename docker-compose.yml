@@ -15,7 +15,8 @@ services:
       - NODE_ENV=development
       # Pass environment variables needed by the application
       - NEXT_PUBLIC_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}
-      - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
+      - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIRE_AUTH_DOMAIN}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-    # Keep the service running in dev mode
+    # Keep the service running in dev mode. 
+    # The `npm run dev` command now starts both the Next.js server and Firebase emulators.
     command: npm run dev

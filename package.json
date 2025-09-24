@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "npm-run-all --parallel dev:next dev:emulators",
+    "dev:next": "next dev",
+    "dev:emulators": "firebase emulators:start",
     "build": "next build",
     "start": "next start --port 9002",
     "lint": "next lint",
