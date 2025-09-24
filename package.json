@@ -19,7 +19,8 @@
     "test:accessibility": "playwright test tests/accessibility/accessibility.spec.ts",
     "test:ai": "jest --testPathPattern=tests/ai-validation",
     "test:auto-generate": "node src/scripts/generate-tests.js",
-    "auto-optimize": "node src/scripts/run-analysis.js"
+    "auto-optimize": "node src/scripts/run-analysis.js",
+    "emulators:core": "firebase emulators:start --only firestore,functions,hosting"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.0.0",
