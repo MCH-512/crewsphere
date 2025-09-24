@@ -18,7 +18,8 @@ export type ActionType =
     | "UPDATE_SYSTEM_SETTINGS"
     | "COMPLETE_QUIZ"
     | "CREATE_MANUAL_ACTIVITY"
-    | "SUBMIT_SUGGESTION"; // Added for weekly trends
+    | "SUBMIT_SUGGESTION"
+    | "UPDATE_USER_DOCUMENT"; 
 
 export interface AuditLogData {
   userId: string;
