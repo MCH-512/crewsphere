@@ -12,7 +12,8 @@ const scripts = [
 function runScript(script) {
   return new Promise((resolve, reject) => {
     console.log(`🚀 Starting: ${script.name}...`);
-    const process = exec(script.command, { cwd: path.join(__dirname, '..', '..') });
+    const projectRoot = path.resolve(__dirname, '..', '..');
+    const process = exec(script.command, { cwd: projectRoot });
 
     process.stdout.on('data', (data) => {
       console.log(`[${script.name}] ${data.toString()}`);
