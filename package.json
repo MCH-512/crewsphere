@@ -1,3 +1,4 @@
+
 {
   "name": "nextn",
   "version": "0.1.0",
@@ -5,7 +6,7 @@
   "scripts": {
     "dev": "npm-run-all --parallel dev:next dev:emulators",
     "dev:next": "next dev --port 9002 --hostname 0.0.0.0",
-    "dev:emulators": "firebase emulators:start",
+    "dev:emulators": "firebase emulators:start --only functions,firestore,hosting,extensions --no-ui",
     "build": "next build",
     "start": "next start --port 9002 --hostname 0.0.0.0",
     "lint": "next lint",
