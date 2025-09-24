@@ -23,7 +23,7 @@ export default function GlobalError({
               <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
               <CardTitle className="mt-4 text-2xl font-headline">Something Went Wrong</CardTitle>
               <CardDescription className="text-muted-foreground">
-                An unexpected error occurred. Our team has been notified, and we&apos;re working to fix it.
+                An unexpected error occurred. Our team has been notified, and we're working to fix it.
               </CardDescription>
             </CardHeader>
             <CardContent>
