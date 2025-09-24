@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { ArrowRight, SendHorizonal, Lightbulb, Wrench } from "lucide-react";
 import Link from "next/link";
-import { useAuth, type User } from "@/contexts/auth-context";
+import { useAuth } from "@/contexts/auth-context";
+import { type User } from "@/schemas/user-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { ActiveAlerts } from "@/components/features/active-alerts";
 import { Suspense } from "react";

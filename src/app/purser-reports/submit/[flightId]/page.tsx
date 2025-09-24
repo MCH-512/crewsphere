@@ -11,11 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileSignature, Loader2, Send, Users, PersonStanding, Shield, Plane, AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth, type User } from "@/contexts/auth-context";
+import { useAuth } from "@/contexts/auth-context";
+import { type User } from "@/schemas/user-schema";
 import { db } from "@/lib/firebase";
 import { collection, doc, getDoc, writeBatch, serverTimestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { purserReportFormSchema, type PurserReportFormValues, passengersToReportOptions, technicalIssuesOptions, safetyChecksOptions, incidentTypesOptions } from "@/schemas/purser-report-schema";
+import { purserReportFormSchema, type PurserReportFormValues, passengersToReportOptions, technicalIssuesOptions, safetyChecksOptions, incidentTypesOptions, StoredPurserReport } from "@/schemas/purser-report-schema";
 import { format, parseISO } from "date-fns";
 import { getAirportByCode } from "@/services/airport-service";
 import { logAuditEvent } from "@/lib/audit-logger";
@@ -26,6 +27,7 @@ import { CheckboxGroup } from "@/components/custom/custom-checkbox-group";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { AnimatedCard } from "@/components/motion/animated-card";
+import type { Timestamp } from "firebase/firestore";
 
 interface FlightForReport {
   id: string;

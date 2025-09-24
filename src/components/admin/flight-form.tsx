@@ -9,7 +9,8 @@ import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/co
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth, type User } from "@/contexts/auth-context";
+import { useAuth } from "@/contexts/auth-context";
+import { type User } from "@/schemas/user-schema";
 import { db } from "@/lib/firebase";
 import { collection, doc, writeBatch, serverTimestamp, Timestamp } from "firebase/firestore";
 import { Loader2, ArrowLeft, ArrowRight, Plane, Users, Send, Repeat, Info, AlertTriangle } from "lucide-react";
@@ -306,4 +307,3 @@ export function FlightForm({ isEditMode, currentFlight, onFormSubmitSuccess, all
         </>
     );
 }
-    

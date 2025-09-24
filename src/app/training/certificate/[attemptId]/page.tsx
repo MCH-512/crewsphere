@@ -5,7 +5,8 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useAuth, type User } from "@/contexts/auth-context";
+import { useAuth } from "@/contexts/auth-context";
+import { type User } from "@/schemas/user-schema";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, Timestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";

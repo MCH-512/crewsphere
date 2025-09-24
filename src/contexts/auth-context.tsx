@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import type { User } from "@/schemas/user-schema";
 
+export type { User };
 
 interface AuthContextType {
   user: User | null;

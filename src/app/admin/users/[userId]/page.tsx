@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
-import type { User } from "@/schemas/user-schema";
+import { type User } from "@/schemas/user-schema";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, orderBy, limit, getDocs, Timestamp, writeBatch } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
