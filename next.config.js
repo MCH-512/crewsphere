@@ -8,7 +8,7 @@ const cspHeader = `
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' https://placehold.co https://picsum.photos https://*.tile.openstreetmap.org https://unpkg.com https://images.unsplash.com data: blob:;
     font-src 'self' https://fonts.gstatic.com;
-    connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://storage.googleapis.com https://www.googleapis.com https://opensky-network.org https://www.aviationweather.gov *.sentry.io;
+    connect-src 'self' http://127.0.0.1:* https://*.firebaseio.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://storage.googleapis.com https://www.googleapis.com https://opensky-network.org https://www.aviationweather.gov *.sentry.io;
     frame-src 'self';
     object-src 'none';
     form-action 'self';
@@ -17,6 +17,9 @@ const cspHeader = `
 `.replace(/\s{2,}/g, ' ').trim();
 
 const nextConfig = {
+  allowedDevOrigins: [
+    '5002-firebase-studio-1749123725029.cluster-c23mj7ubf5fxwq6nrbev4ugaxa.cloudworkstations.dev'
+  ],
   experimental: {
     serverActions: {
       bodySizeLimit: '4.5mb',
