@@ -67,7 +67,6 @@
     "recharts": "^2.12.7",
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7",
-    "vsda": "^1.0.0",
     "wav": "^1.0.2",
     "zod": "^3.23.8"
   },
@@ -79,7 +78,6 @@
     "@types/node": "^20.14.12",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@types/recharts": "^1.8.29",
     "@types/wav": "^1.0.3",
     "acorn": "^8.12.1",
     "acorn-jsx": "^5.3.2",
