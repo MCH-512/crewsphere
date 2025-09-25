@@ -67,8 +67,6 @@ export default function DashboardClientPage({ children, heroImage }: DashboardCl
 
   const [scheduleWidget, trainingWidget, requestsWidget, trainingChart, requestsChart] = React.Children.toArray(children);
 
-  // Verification of heroImage.src
-  console.log('heroImage:', heroImage, 'typeof heroImage.src:', typeof heroImage.src);
   if (!heroImage || !heroImage.src || typeof heroImage.src !== 'string') {
     return <div>Error: heroImage.src is invalid or undefined</div>;
   }
