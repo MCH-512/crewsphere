@@ -6,7 +6,7 @@
     "dev": "npm-run-all --parallel dev:next dev:emulators",
     "dev:core": "npm-run-all --parallel dev:next emulators:core",
     "dev:next": "next dev --port 9002 --hostname 0.0.0.0",
-    "dev:studio": "next dev --port 9002 --hostname 0.0.0.0",
+    "dev:studio": "rm -rf node_modules/.cache && npm install && next dev --port 9002 --hostname 0.0.0.0",
     "dev:emulators": "firebase emulators:start --only functions,firestore,hosting,extensions",
     "emulators:core": "firebase emulators:start --only firestore,functions,hosting",
     "build": "next build",
