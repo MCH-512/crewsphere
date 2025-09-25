@@ -18,7 +18,7 @@ const cspHeader = `
 
 const nextConfig = {
   allowedDevOrigins: [
-    '5002-firebase-studio-1749123725029.cluster-c23mj7ubf5fxwq6nrbev4ugaxa.cloudworkstations.dev'
+    '*.cloudworkstations.dev'
   ],
   experimental: {
     serverActions: {
