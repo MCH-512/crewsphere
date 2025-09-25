@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "echo '✅ DEBUG: sh-c wrapper active' && sh -c 'npm-run-all --parallel dev:next dev:emulators'",
-    "dev:core": "echo '✅ DEBUG: sh-c wrapper active' && sh -c 'npm-run-all --parallel dev:next emulators:core'",
+    "dev": "next dev --port 9002 --hostname 0.0.0.0",
+    "dev:core": "sh -c 'npm-run-all --parallel dev:next emulators:core'",
     "dev:next": "next dev --port 9002 --hostname 0.0.0.0",
     "dev:emulators": "firebase emulators:start --only functions,firestore,hosting,extensions",
     "emulators:core": "firebase emulators:start --only firestore,functions,hosting",
