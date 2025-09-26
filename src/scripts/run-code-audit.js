@@ -1,6 +1,8 @@
 
 'use server';
 
+require('dotenv').config({ path: require('path').resolve(process.cwd(), '.env.local') });
+
 /**
  * @fileOverview CrewSphere Watchdog Agent
  * This script runs a proactive analysis of the codebase by:
@@ -193,7 +195,7 @@ async function main() {
   console.log("🧠 Sending context to AI for analysis...");
   try {
     const { text } = await ai.generate({
-        model: 'googleai/gemini-1.5-pro-latest',
+        model: 'googleai/gemini-pro-latest',
         prompt: prompt,
         output: { format: "json" },
         config: { temperature: 0.1 },
