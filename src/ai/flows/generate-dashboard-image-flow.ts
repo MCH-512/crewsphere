@@ -37,7 +37,6 @@ const generateDashboardImageFlow = ai.defineFlow(
         throw new Error('Image generation failed to return a valid image.');
       }
       
-      console.log(`[AI-FLOW] generateDashboardImage successfully generated an image.`);
       return { imageDataUri: media.url };
 
     } catch (error) {
