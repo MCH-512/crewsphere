@@ -9,18 +9,10 @@ import {
   where,
   orderBy,
   limit,
-  Timestamp,
 } from "firebase/firestore";
-import { User, StoredUser } from "@/schemas/user-schema";
-import { Course, StoredCourse } from "@/schemas/course-schema";
-import {
-  UserCourseProgress, 
-  StoredUserCourseProgress,
-} from "@/schemas/user-course-progress-schema";
-import { 
-  StoredUserRequest,
-  UserRequest
-} from "@/schemas/user-request-schema";
+import { User } from "@/schemas/user-schema";
+import { StoredUserCourseProgress } from "@/schemas/user-course-progress-schema";
+import { StoredUserRequest } from "@/schemas/user-request-schema";
 
 /**
  * Fetches all the necessary data for a user's profile page.
@@ -51,7 +43,7 @@ export async function getUserProfileData(userId: string) {
   if (!userDoc.exists()) {
     throw new Error("User not found");
   }
-  const user = { uid: userDoc.id, ...userDoc.data() } as StoredUser;
+  const user = { uid: userDoc.id, ...userDoc.data() } as User;
 
   const courseProgress = progressSnapshot.docs.map(
     (doc) => ({ id: doc.id, ...doc.data() } as StoredUserCourseProgress)
