@@ -1,6 +1,4 @@
 
-// const { withSentryConfig } = require('@sentry/nextjs');
-
 /** @type {import('next').NextConfig} */
 const cspHeader = `
     default-src 'self';
@@ -98,21 +96,15 @@ const nextConfig = {
     ];
     return [...defaultHeaders, ...staticCacheHeaders];
   },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals.push({
+        '@opentelemetry/instrumentation': 'commonjs @opentelemetry/instrumentation',
+        'require-in-the-middle': 'commonjs require-in-the-middle',
+      });
+    }
+    return config;
+  },
 };
 
-// const sentryWebpackPluginOptions = {
-//   org: process.env.SENTRY_ORG,
-//   project: process.env.SENTRY_PROJECT,
-//   authToken: process.env.SENTRY_AUTH_TOKEN,
-//   silent: true,
-// };
-
-// const sentryBuildOptions = {
-//   widenClientFileUpload: true,
-//   transpileClientSDK: true,
-//   hideSourceMaps: true,
-//   tunnelRoute: '/monitoring',
-// };
-
 module.exports = nextConfig;
-// module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions, sentryBuildOptions);
