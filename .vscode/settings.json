@@ -1,2 +1,33 @@
 {
+  // Editor and formatting settings
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode", // Assumes Prettier extension is installed
+  "files.autoSave": "onFocusChange",
+
+  // Enable Emmet for JSX/TSX
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact",
+    "typescript": "typescriptreact"
+  },
+
+  // File and folder exclusions from the explorer
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "firebase-debug.log": true,
+    "firestore-debug.log": true,
+    "ui-debug.log": true
+  },
+  // File and folder exclusions from search
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "package-lock.json": true
+  },
+
+  // Recommended extensions' settings (user must install the extensions for these to take effect)
+  "workbench.iconTheme": "vscode-icons", // From "VSCode Icons" extension
+  "workbench.colorTheme": "GitHub Dark Default" // From "GitHub Theme" extension
 }
