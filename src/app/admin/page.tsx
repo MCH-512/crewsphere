@@ -38,7 +38,7 @@ export default async function AdminConsolePage() {
   EmptySchema.parse({}); // Zod validation
   const stats = await getAdminDashboardStats();
   const pullRequests = await getOpenPullRequests();
-  const weeklyTrendsDataPromise = getAdminDashboardWeeklyTrends();
+  const weeklyTrendsData = await getAdminDashboardWeeklyTrends();
 
   // Find the PR item in the config to update its href
   const systemNavGroup = adminNavConfig.sidebarNav.find(group => group.title === "System");
@@ -68,7 +68,7 @@ export default async function AdminConsolePage() {
       </AnimatedCard>
       
       <Suspense fallback={<ChartSkeleton />}>
-          <WeeklyTrendsChart initialDataPromise={weeklyTrendsDataPromise} />
+          <WeeklyTrendsChart data={weeklyTrendsData} />
       </Suspense>
 
       {adminNavConfig.sidebarNav.map((group, groupIndex) => (

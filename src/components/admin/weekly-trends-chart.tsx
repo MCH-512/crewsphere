@@ -2,8 +2,7 @@
 "use client";
 
 import * as React from "react";
-import * as Sentry from "@sentry/nextjs";
-import { TrendingUp, AlertTriangle, Loader2 } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   Card,
@@ -37,62 +36,11 @@ const chartConfig = {
 
 
 interface WeeklyTrendsChartProps {
-    initialDataPromise: Promise<WeeklyTrendDataPoint[]>;
+    data: WeeklyTrendDataPoint[] | null;
 }
 
 
-export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps) {
-    const [data, setData] = React.useState<WeeklyTrendDataPoint[] | null>(null);
-    const [error, setError] = React.useState<string | null>(null);
-
-    React.useEffect(() => {
-        initialDataPromise
-            .then(setData)
-            .catch(e => {
-                console.error("Failed to render weekly trends chart:", e);
-                Sentry.captureException(e, { tags: { component: "WeeklyTrendsChart" } });
-                setError("Could not load trend data.");
-            });
-    }, [initialDataPromise]);
-
-    if (error) {
-        return (
-             <Card className="col-span-1 lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-primary" />
-                      Weekly Activity Trends
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col items-center justify-center h-[250px] text-destructive" role="alert" aria-live="polite">
-                        <AlertTriangle className="h-8 w-8 mb-2"/>
-                        <p className="font-semibold">{error}</p>
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    }
-    
-    if (!data) {
-        return (
-            <Card className="col-span-1 lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-primary" />
-                      Weekly Activity Trends
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center justify-center h-[250px]">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        <p className="ml-3 text-muted-foreground">Loading trends...</p>
-                    </div>
-                </CardContent>
-            </Card>
-        )
-    }
-
+export function WeeklyTrendsChart({ data }: WeeklyTrendsChartProps) {
   return (
     <Card className="col-span-1 lg:col-span-2">
       <CardHeader>
