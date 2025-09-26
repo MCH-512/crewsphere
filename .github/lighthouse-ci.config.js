@@ -9,6 +9,7 @@ module.exports = {
         onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo'],
         emulatedFormFactor: 'mobile',
         disableStorageReset: true,
+        pauseAfterLoad: 5000,
         throttling: {
           rttMs: 150,
           throughputKbps: 1600,
