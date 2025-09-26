@@ -1,4 +1,3 @@
-
 "use server";
 
 import * as React from "react";
@@ -10,7 +9,7 @@ import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { adminNavConfig } from "@/config/nav";
 import { cn } from "@/lib/utils";
-import { getAdminDashboardStats, getAdminDashboardWeeklyTrends } from "@/services/admin-dashboard-service";
+import { getAdminDashboardStats } from "@/services/admin-dashboard-service";
 import { getOpenPullRequests } from "@/services/github-service";
 import { Badge } from "@/components/ui/badge";
 import { WeeklyTrendsChart } from "@/components/admin/weekly-trends-chart";
@@ -37,7 +36,6 @@ const ChartSkeleton = () => (
 export default async function AdminConsolePage() {
   EmptySchema.parse({}); // Zod validation
   const stats = await getAdminDashboardStats();
-  const weeklyTrendsDataPromise = getAdminDashboardWeeklyTrends();
   const pullRequests = await getOpenPullRequests();
 
   // Find the PR item in the config to update its href
@@ -68,7 +66,7 @@ export default async function AdminConsolePage() {
       </AnimatedCard>
       
       <Suspense fallback={<ChartSkeleton />}>
-          <WeeklyTrendsChart initialDataPromise={weeklyTrendsDataPromise} />
+          <WeeklyTrendsChart />
       </Suspense>
 
       {adminNavConfig.sidebarNav.map((group, groupIndex) => (
