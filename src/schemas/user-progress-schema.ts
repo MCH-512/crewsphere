@@ -1,6 +1,6 @@
 
 import { z } from "zod";
-import type { Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 export const userQuizAttemptSchema = z.object({
   userId: z.string(),

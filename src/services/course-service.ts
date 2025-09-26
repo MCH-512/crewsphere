@@ -10,7 +10,7 @@ import { getCurrentUser } from "@/lib/session";
 
 export async function getCourses() {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin' || !isConfigvruealid || !db) {
+    if (!user || user.role !== 'admin' || !isConfigValid || !db) {
         console.error("Unauthorized or unconfigured attempt to fetch courses.");
         return { courses: [], quizzes: [], certRules: [], questions: [] };
     }
