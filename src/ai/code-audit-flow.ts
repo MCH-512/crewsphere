@@ -2,7 +2,7 @@
 'use server';
 
 import { ai } from "@/ai/genkit";
-import { defineFlow } from "genkit/flow";
+import { defineFlow } from "@genkit-ai/flow";
 import { z } from "zod";
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -16,7 +16,7 @@ export const codeAuditFlow = defineFlow(
     inputSchema: z.object({ filePath: z.string() }),
     outputSchema: z.string(),
   },
-  async ({ filePath }) => {
+  async ({ filePath }: { filePath: string }) => {
     console.log(`
     🤖 Starting code audit for: ${filePath}
     `);
@@ -44,7 +44,7 @@ export const codeAuditFlow = defineFlow(
     `;
 
     const llmResponse = await ai.generate({ prompt });
-    const responseText = llmResponse.text();
+    const responseText = llmResponse.text;
 
     console.log(`
     ✅ Audit complete for: ${filePath}

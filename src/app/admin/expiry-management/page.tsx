@@ -167,11 +167,11 @@ export default function AdminExpiryManagementPage() {
             if (isEditMode && currentDocument) {
                 const docRef = doc(db, "userDocuments", currentDocument.id);
                 await updateDoc(docRef, documentData as any);
-                await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email!, actionType: "UPDATE_USER_DOCUMENT", entityType: "USER_DOCUMENT", entityId: currentDocument.id, details: { user: selectedUser.email, doc: data.documentName } });
+                await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email!, actionType: "UPDATE_DOCUMENT", entityType: "USER_DOCUMENT", entityId: currentDocument.id, details: { user: selectedUser.email, doc: data.documentName } });
                 toast({ title: "Document Updated", description: "The user's document has been updated." });
             } else {
                 const newDocRef = await addDoc(collection(db, "userDocuments"), { ...documentData, createdAt: serverTimestamp() });
-                await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email!, actionType: "CREATE_USER_DOCUMENT", entityType: "USER_DOCUMENT", entityId: newDocRef.id, details: { user: selectedUser.email, doc: data.documentName } });
+                await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email!, actionType: "CREATE_DOCUMENT", entityType: "USER_DOCUMENT", entityId: newDocRef.id, details: { user: selectedUser.email, doc: data.documentName } });
                 toast({ title: "Document Added", description: "The user's document has been added." });
             }
             fetchPageData();
@@ -187,7 +187,7 @@ export default function AdminExpiryManagementPage() {
         if (!adminUser || !window.confirm(`Are you sure you want to delete "${docToDelete.documentName}" for ${docToDelete.userEmail}?`)) return;
         try {
             await deleteDoc(doc(db, "userDocuments", docToDelete.id));
-            await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email!, actionType: "DELETE_USER_DOCUMENT", entityType: "USER_DOCUMENT", entityId: docToDelete.id, details: { user: docToDelete.userEmail, doc: docToDelete.documentName } });
+            await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email!, actionType: "DELETE_DOCUMENT", entityType: "USER_DOCUMENT", entityId: docToDelete.id, details: { user: docToDelete.userEmail, doc: docToDelete.documentName } });
             toast({ title: "Document Deleted", description: "The document has been removed." });
             fetchPageData();
         } catch (error) {
