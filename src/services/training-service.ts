@@ -43,7 +43,6 @@ export async function getTrainingSessionsPageData() {
         const sessionsData = sessionsSnapshot.docs.map(doc => {
             const data = doc.data() as StoredTrainingSession;
             return {
-                id: doc.id,
                 ...data,
                 attendeeCount: (data.attendeeIds || []).length,
             }

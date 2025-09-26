@@ -14,13 +14,6 @@ export const userQuizAttemptSchema = z.object({
 
 export type UserQuizAttempt = z.infer<typeof userQuizAttemptSchema>;
 
-export interface StoredUserQuizAttempt {
+export interface StoredUserQuizAttempt extends UserQuizAttempt {
   id: string;
-  userId: string;
-  courseId: string;
-  quizId: string;
-  score: number;
-  status: 'passed' | 'failed';
-  completedAt: Timestamp;
-  answers: Record<string, string>;
 }
