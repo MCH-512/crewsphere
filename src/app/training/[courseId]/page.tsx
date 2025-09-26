@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc, collection, query, where, orderBy, limit } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
 import { Loader2, AlertTriangle, ArrowLeft, CheckCircle, Clock, BookOpen, ListChecks, Award } from "lucide-react";
 import { StoredCourse, StoredUserQuizAttempt } from "@/schemas/course-schema";

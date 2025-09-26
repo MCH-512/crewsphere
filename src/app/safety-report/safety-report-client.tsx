@@ -9,6 +9,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ShieldAlert, Loader2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
@@ -21,10 +24,6 @@ import {
   safetyReportSeverityLevels 
 } from "@/schemas/safety-report-schema";
 import { submitSafetyReport } from "@/services/safety-report-service";
-import { Checkbox } from "@/components/ui/checkbox";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
 
 export function SafetyReportClient() {
   const { toast } = useToast();
@@ -41,6 +40,9 @@ export function SafetyReportClient() {
       aircraftRegistration: "",
       description: "",
       isAnonymous: false,
+      eventType: undefined,
+      severity: undefined,
+      flightPhase: undefined,
     },
     mode: "onChange",
   });
@@ -96,9 +98,9 @@ export function SafetyReportClient() {
                             <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number (Optional)</FormLabel><FormControl><Input placeholder="e.g., TU721" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="aircraftRegistration" render={({ field }) => (<FormItem><FormLabel>Aircraft Registration (Optional)</FormLabel><FormControl><Input placeholder="e.g., TS-IMN" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             
-                            <FormField control={form.control} name="eventType" render={({ field }) => (<FormItem><FormLabel>Event Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an event type"/></SelectTrigger></FormControl><SelectContent>{safetyReportEventTypes.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="flightPhase" render={({ field }) => (<FormItem><FormLabel>Phase of Flight / Location</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a phase or location"/></SelectTrigger></FormControl><SelectContent>{safetyReportFlightPhases.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="severity" render={({ field }) => (<FormItem><FormLabel>Severity</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Assess the event's severity"/></SelectTrigger></FormControl><SelectContent>{safetyReportSeverityLevels.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="eventType" render={({ field }) => (<FormItem><FormLabel>Event Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an event type"/></SelectTrigger></FormControl><SelectContent>{safetyReportEventTypes.map((p: string) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="flightPhase" render={({ field }) => (<FormItem><FormLabel>Phase of Flight / Location</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a phase or location"/></SelectTrigger></FormControl><SelectContent>{safetyReportFlightPhases.map((p: string) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="severity" render={({ field }) => (<FormItem><FormLabel>Severity</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Assess the event's severity"/></SelectTrigger></FormControl><SelectContent>{safetyReportSeverityLevels.map((p: string) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                         </div>
 
                         <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Factual Description of the Event</FormLabel><FormControl><Textarea placeholder="Describe what happened with factual, objective details. Avoid assumptions or blame." className="min-h-[150px]" {...field} /></FormControl><FormMessage /></FormItem>)} />

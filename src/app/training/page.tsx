@@ -139,11 +139,11 @@ export default function TrainingPage() {
 
                 const [coursesSnapshot, attemptsSnapshot] = await Promise.all([
                     getDocs(coursesQuery),
-                    getDocs(attemptsSnapshot)
+                    getDocs(attemptsQuery)
                 ]);
 
-                const fetchedCourses = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCourse));
-                const fetchedAttempts = attemptsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserQuizAttempt));
+                const fetchedCourses = coursesSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as StoredCourse));
+                const fetchedAttempts = attemptsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as StoredUserQuizAttempt));
                 
                 // Create a map to store the latest attempt for each course
                 const latestAttempts = new Map<string, StoredUserQuizAttempt>();
