@@ -5,7 +5,7 @@ import {
   Calendar as CalendarIcon, Library, GraduationCap, Compass, BellRing, 
   BadgeAlert, NotebookPen, ShieldCheck, Wrench, 
   Handshake, Inbox, Lightbulb, FileCheck2, History, AudioWaveform, Video,
-  GitPullRequest
+  GitPullRequest, ShieldAlert
 } from "lucide-react";
 import type { ElementType } from 'react';
 
@@ -47,6 +47,7 @@ export const mainNavConfig: { sidebarNav: NavGroup[] } = {
         { href: "/my-schedule", title: "My Schedule", icon: CalendarIcon },
         { href: "/notifications", title: "Notifications", icon: BellRing },
         { href: "/purser-reports", title: "My Flight Reports", icon: FileSignature, roles: ['purser', 'admin', 'instructor'] },
+        { href: "/safety-report", title: "Safety Report", icon: ShieldAlert, roles: ['admin', 'purser', 'cabin crew', 'pilote', 'instructor'] },
         { href: "/my-logbook", title: "My Logbook", icon: NotebookPen },
         { href: "/my-documents", title: "My Documents", icon: ShieldCheck },
       ]
@@ -88,7 +89,7 @@ export const adminNavConfig: { sidebarNav: NavGroup[] } = {
     {
       title: "Operations",
       items: [
-        { href: "/admin", title: "Dashboard", icon: LayoutDashboard, description: "Vue centralisée pour la gestion de l'application et l'analyse des données opérationnelles.", buttonText: "View Dashboard" },
+        { href: "/admin", title: "Dashboard", description: "Vue centralisée pour la gestion de l'application et l'analyse des données opérationnelles.", buttonText: "View Dashboard" },
         { href: "/admin/flights", title: "Flight Management", icon: Plane, description: "Créez et assignez des vols, gérez les équipages et traitez les demandes d'échange de vols.", buttonText: "Manage Flights", statKey: "pendingSwaps", highlightWhen: v => v > 0 },
         { href: "/admin/training-sessions", title: "Training Sessions", icon: ClipboardCheck, description: "Organisez et planifiez des sessions de formation en présentiel pour tous les membres d'équipage.", buttonText: "Manage Sessions" },
       ]
