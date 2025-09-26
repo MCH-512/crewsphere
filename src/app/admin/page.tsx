@@ -11,7 +11,7 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 import { adminNavConfig } from "@/config/nav";
 import { cn } from "@/lib/utils";
 import { getAdminDashboardStats, getAdminDashboardWeeklyTrends } from "@/services/admin-dashboard-service";
-import { getOpenPullRequests } from "@/services/github-service"; // Import the new service
+import { getOpenPullRequests } from "@/services/github-service";
 import { Badge } from "@/components/ui/badge";
 import { WeeklyTrendsChart } from "@/components/admin/weekly-trends-chart";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,25 +38,16 @@ export default async function AdminConsolePage() {
   EmptySchema.parse({}); // Zod validation
   const stats = await getAdminDashboardStats();
   const weeklyTrendsDataPromise = getAdminDashboardWeeklyTrends();
-  const pullRequests = await getOpenPullRequests(); // Fetch PR data
+  const pullRequests = await getOpenPullRequests();
 
-  // Manually add the PR card to the system group for display
+  // Find the PR item in the config to update its href
   const systemNavGroup = adminNavConfig.sidebarNav.find(group => group.title === "System");
-  if (systemNavGroup) {
-      // Add PR item if it doesn't already exist to avoid duplicates on re-renders
-      if (!systemNavGroup.items.find(item => item.statKey === 'openPullRequests')) {
-          systemNavGroup.items.push({
-              href: pullRequests.url,
-              title: "Pull Requests",
-              icon: require("lucide-react").GitPullRequest,
-              description: "Review and merge pending pull requests on GitHub.",
-              buttonText: "Review PRs",
-              statKey: "openPullRequests",
-              highlightWhen: v => v > 0,
-          });
-      }
+  const prItem = systemNavGroup?.items.find(item => item.statKey === "openPullRequests");
+  if (prItem) {
+      prItem.href = pullRequests.url;
   }
-  // Add the PR count to the stats object
+
+  // Add the PR count to the stats object for display
   const displayStats = stats ? { ...stats, openPullRequests: pullRequests.count } : { openPullRequests: pullRequests.count };
 
 

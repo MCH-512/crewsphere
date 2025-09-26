@@ -119,6 +119,7 @@ export const adminNavConfig: { sidebarNav: NavGroup[] } = {
          { href: "/admin/video-studio", title: "Video Studio", icon: Video, description: "Generate short videos from text or by animating an image.", buttonText: "Open Studio" },
          { href: "/admin/system-settings", title: "System Settings", icon: Settings, description: "Configure application-wide settings and maintenance mode.", buttonText: "Configure Settings" },
          { href: "/admin/audit-logs", title: "Audit Logs", icon: Activity, description: "A chronological record of system activities and changes.", buttonText: "View Logs" },
+         { href: "#", title: "Pull Requests", icon: GitPullRequest, description: "Review and merge pending pull requests on GitHub.", buttonText: "Review PRs", statKey: "openPullRequests", highlightWhen: v => v > 0 },
        ]
     }
   ]
