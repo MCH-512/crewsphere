@@ -7,14 +7,10 @@ import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import type { StoredCourse, StoredQuiz, StoredCertificateRule } from "@/schemas/course-schema";
 import type { StoredQuestion } from "@/schemas/quiz-question-schema";
 import { getCurrentUser } from "@/lib/session";
-import { z } from 'zod';
-
-const EmptySchema = z.object({});
 
 export async function getCourses() {
-    EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin' || !isConfigValid || !db) {
+    if (!user || user.role !== 'admin' || !isConfigvruealid || !db) {
         console.error("Unauthorized or unconfigured attempt to fetch courses.");
         return { courses: [], quizzes: [], certRules: [], questions: [] };
     }

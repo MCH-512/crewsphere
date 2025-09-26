@@ -3,6 +3,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, SendHorizonal, Lightbulb, Wrench } from "lucide-react";
@@ -10,9 +11,14 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { type User } from "@/schemas/user-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
-import { ActiveAlerts } from "@/components/features/active-alerts";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Dynamically import ActiveAlerts
+const ActiveAlerts = dynamic(() => import('@/components/features/active-alerts').then(mod => mod.ActiveAlerts), {
+  loading: () => <Skeleton className="h-16 w-full" />,
+  ssr: false,
+});
 
 const WidgetSkeleton = () => (
   <Card className="h-full shadow-md">
@@ -95,9 +101,7 @@ export default function DashboardClientPage({ children, heroImage }: DashboardCl
         </Card>
       </AnimatedCard>
 
-      <Suspense>
-        <ActiveAlerts />
-      </Suspense>
+      <ActiveAlerts />
       
        <AnimatedCard delay={0.1} className="lg:col-span-1">
           <Suspense fallback={<WidgetSkeleton />}>

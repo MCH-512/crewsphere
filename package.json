@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "validate": "node scripts/validate-env.js",
+    "validate": "node scripts/validate-project.js",
     "check-dependencies": "node scripts/check-dependencies.js",
     "dev": "npm run check-dependencies && npm run validate && next dev",
     "dev:core": "npm-run-all --parallel dev:next emulators:core",
@@ -52,7 +52,6 @@
     "@radix-ui/react-tabs": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.1.2",
-    "@sentry/nextjs": "^8.21.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",

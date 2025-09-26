@@ -15,10 +15,6 @@ import { getOpenPullRequests } from "@/services/github-service";
 import { Badge } from "@/components/ui/badge";
 import { WeeklyTrendsChart } from "@/components/admin/weekly-trends-chart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { z } from 'zod';
-
-// Zod schema for functions that take no arguments
-const EmptySchema = z.object({});
 
 const ChartSkeleton = () => (
     <Card className="col-span-1 lg:col-span-2">
@@ -35,13 +31,15 @@ const ChartSkeleton = () => (
 );
 
 export default async function AdminConsolePage() {
-  EmptySchema.parse({}); // Zod validation
   const stats = await getAdminDashboardStats();
   const weeklyTrendsDataPromise = getAdminDashboardWeeklyTrends();
   const pullRequests = await getOpenPullRequests();
+  
+  // Deep copy the nav config to avoid direct mutation of the imported object
+  const navConfig = JSON.parse(JSON.stringify(adminNavConfig));
 
   // Find the PR item in the config to update its href
-  const systemNavGroup = adminNavConfig.sidebarNav.find(group => group.title === "System");
+  const systemNavGroup = navConfig.sidebarNav.find(group => group.title === "System");
   const prItem = systemNavGroup?.items.find(item => item.statKey === "openPullRequests");
   if (prItem) {
       prItem.href = pullRequests.url;
@@ -71,7 +69,7 @@ export default async function AdminConsolePage() {
           <WeeklyTrendsChart initialDataPromise={weeklyTrendsDataPromise} />
       </Suspense>
 
-      {adminNavConfig.sidebarNav.map((group, groupIndex) => (
+      {navConfig.sidebarNav.map((group, groupIndex) => (
           <section key={groupIndex}>
               <h2 className="text-2xl font-bold tracking-tight mb-4">{group.title}</h2>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

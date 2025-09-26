@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
-import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Eye, Filter, Search } from "lucide-react"; 
+import { Users, Loader2, AlertTriangle, Edit, PlusCircle, Eye, Filter, Search } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge"; 
 import Link from 'next/link';
@@ -45,30 +45,30 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   const [sortColumn, setSortColumn] = React.useState<SortableColumn>("fullName");
   const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc");
   
-  const loadUsers = React.useCallback(async () => {
+  React.useEffect(() => {
     if (!user) return;
+
     setIsLoading(true);
     const q = query(collection(db, "users"), orderBy("email", "asc"));
-    const unsubscribe = onSnapshot(q,
-        (snapshot) => {
-            const fetchedUsers = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
-            setUsersList(fetchedUsers);
-            setIsLoading(false);
-            setError(null);
-        },
-        (err) => {
-            console.error("Error fetching users in real-time:", err);
-            setError("Could not fetch real-time user updates.");
-            toast({ title: "Real-time Error", description: "Could not fetch user updates.", variant: "destructive" });
-            setIsLoading(false);
-        }
+
+    const unsubscribe = onSnapshot(q, 
+      (snapshot) => {
+        const fetchedUsers = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
+        setUsersList(fetchedUsers);
+        setError(null);
+        setIsLoading(false);
+      },
+      (err) => {
+        console.error("Error fetching users in real-time:", err);
+        setError("Could not fetch real-time user updates.");
+        toast({ title: "Real-time Error", description: "Could not fetch user updates.", variant: "destructive" });
+        setIsLoading(false);
+      }
     );
+
+    // Cleanup subscription on component unmount
     return () => unsubscribe();
   }, [user, toast]);
-
-  React.useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
   
   React.useEffect(() => {
     if (!authLoading && !user) {
