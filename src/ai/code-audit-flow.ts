@@ -3,12 +3,11 @@
  * @fileOverview A Genkit flow that audits a file using an AI model for TypeScript and React Hook Form issues.
  */
 import { ai } from '@/ai/genkit';
-import { defineFlow } from '@genkit-ai/flow';
 import { z } from 'zod';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-export const codeAuditFlow = defineFlow(
+export const codeAuditFlow = ai.defineFlow(
   {
     name: 'codeAuditFlow',
     inputSchema: z.object({ filePath: z.string() }),

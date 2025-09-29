@@ -21,7 +21,7 @@ async function runAudit(filePath) {
         console.log(`\n--- 🤖 AI Code Audit for: ${filePath} ---\n`);
         // Dynamically import the ES module as the flow is an ES module
         const { codeAuditFlow } = await import('../ai/code-audit-flow.ts');
-        const auditResult = await codeAuditFlow.run({ filePath });
+        const auditResult = await codeAuditFlow({ filePath });
         console.log(auditResult);
         console.log('\n------------------------------------\n');
     } catch (error) {
