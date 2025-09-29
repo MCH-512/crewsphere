@@ -1,4 +1,3 @@
-
 "use server";
 
 import * as React from "react";
@@ -73,4 +72,7 @@ export async function TodaysScheduleCard() {
             <CardContent className="flex-grow">
                 {renderContent()}
             </CardContent>
-        </Card
+        </Card>
+    );
+}
+    

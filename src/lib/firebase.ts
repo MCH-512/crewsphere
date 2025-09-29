@@ -39,3 +39,4 @@ if (isConfigValid) {
 
 // @ts-expect-error - This is a safe way to export uninitialized services for type-checking, while the runtime check prevents their use.
 export { app, auth, db, storage };
+    

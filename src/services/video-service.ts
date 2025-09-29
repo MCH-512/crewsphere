@@ -50,3 +50,4 @@ export async function generateVideo(input: GenerateVideoInput): Promise<Generate
   
   return { videoUrl: videoUrlWithKey };
 }
+    

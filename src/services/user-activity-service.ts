@@ -1,5 +1,3 @@
-
-
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
@@ -44,8 +42,8 @@ export async function getTodayActivities(): Promise<TodayActivity[]> {
         );
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => {
-            const { id, userId, date, ...activity } = doc.data();
-            return activity as TodayActivity;
+            const { id, userId, date, ...activity } = doc.data() as UserActivity & {id: string};
+            return activity;
         });
     } catch (error) {
         console.error("Error fetching today's activities:", error);
@@ -189,3 +187,4 @@ export async function checkCrewAvailability(
 
   return warnings;
 }
+    

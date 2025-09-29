@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db } from "@/lib/firebase";
@@ -64,11 +63,11 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             const flight2Update: Partial<StoredFlight> = { allCrewIds: updateCrewArray(flight2Data.allCrewIds, swapData.requestingUserId, swapData.initiatingUserId) };
             
             if (user1Role.field === 'purserId') {
-                (flight1Update as { purserId: string }).purserId = swapData.requestingUserId;
-                (flight2Update as { purserId: string }).purserId = swapData.initiatingUserId;
+                (flight1Update as any).purserId = swapData.requestingUserId;
+                (flight2Update as any).purserId = swapData.initiatingUserId;
             } else {
-                 (flight1Update as Record<string, string[]>)[user1Role.field] = updateCrewArray((flight1Data as Record<string, string[]>)[user1Role.field], swapData.initiatingUserId, swapData.requestingUserId);
-                 (flight2Update as Record<string, string[]>)[user2Role.field] = updateCrewArray((flight2Data as Record<string, string[]>)[user2Role.field], swapData.requestingUserId, swapData.initiatingUserId);
+                 (flight1Update as any)[user1Role.field] = updateCrewArray((flight1Data as any)[user1Role.field], swapData.initiatingUserId, swapData.requestingUserId);
+                 (flight2Update as any)[user2Role.field] = updateCrewArray((flight2Data as any)[user2Role.field], swapData.requestingUserId, swapData.initiatingUserId);
             }
             
             const activity1Id = flight1Data.activityIds?.[swapData.initiatingUserId];
@@ -178,4 +177,7 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
 
     } catch (error) {
         console.error("Error checking swap conflict:", error);
-        return "Could not automatically check for conflicts due to a
+        return "Could not automatically check for conflicts due to a server error.";
+    }
+}
+    

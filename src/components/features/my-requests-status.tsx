@@ -1,4 +1,3 @@
-
 "use server";
 
 import * as React from "react";
@@ -80,4 +79,11 @@ export async function MyRequestsStatusCard() {
                  <Button asChild className="w-full" variant="outline">
                     <Link href="/requests">
                         Go to My Requests
-                        <ArrowRight className="ml-2 h-4 w-4"
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+             </CardFooter>
+        </Card>
+    );
+}
+    
