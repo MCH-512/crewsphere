@@ -89,6 +89,8 @@
     "@types/wav": "^1.0.3",
     "acorn": "^8.12.1",
     "acorn-jsx": "^5.3.2",
+    "eslint": "8.57.1",
+    "eslint-config-next": "15.5.4",
     "firebase-tools": "^13.13.2",
     "glob": "^10.4.5",
     "jest": "^29.7.0",

@@ -10,13 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { useAuth, type User } from "@/contexts/auth-context";
+import { Textarea } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp, doc, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { BadgeAlert, Loader2, RefreshCw, Edit, PlusCircle, Trash2, Search, Filter } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { adminUserDocumentFormSchema, userDocumentTypes, type StoredUserDocument, type UserDocumentStatus, type AdminUserDocumentFormValues, getDocumentStatus, getStatusBadgeVariant } from "@/schemas/user-document-schema";
@@ -81,7 +79,7 @@ export default function AdminExpiryManagementPage() {
     const sortedAndFilteredDocuments = React.useMemo(() =&gt; {
         const processedDocs = documents.filter(doc =&gt; {
             const status = getDocumentStatus(doc, EXPIRY_WARNING_DAYS);
-            if (statusFilter !== 'all' && status !== statusFilter) return false;
+            if (statusFilter !== 'all' &amp;&amp; status !== statusFilter) return false;
             
             if (searchTerm) {
                 const lowerTerm = searchTerm.toLowerCase();

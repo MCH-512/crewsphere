@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -48,7 +47,7 @@ const UnitConverter = ({ type, icon: Icon }: { type: keyof typeof CONVERSIONS; i
                 return;
             }
 
-            const conversionRule = (CONVERSIONS[type] as any)[fromUnit][toUnit];
+            const conversionRule = (CONVERSIONS[type] as Record<string, Record<string, number | ((n:number) => number)>>)[fromUnit][toUnit];
             if (typeof conversionRule === 'number') {
                 setToValue((val * conversionRule).toFixed(4));
             } else if (typeof conversionRule === 'function') {
@@ -82,7 +81,7 @@ const UnitConverter = ({ type, icon: Icon }: { type: keyof typeof CONVERSIONS; i
             <div className="flex-1 w-full space-y-1">
                 <Select value={fromUnit} onValueChange={setFromUnit}>
                     <SelectTrigger><SelectValue/></SelectTrigger>
-                    <SelectContent>{Object.entries(CONVERSIONS[type]).map(([key, data]) => <SelectItem key={key} value={key}>{(data as any).label}</SelectItem>)}</SelectContent>
+                    <SelectContent>{Object.entries(CONVERSIONS[type]).map(([key, data]) => <SelectItem key={key} value={key}>{(data as {label: string}).label}</SelectItem>)}</SelectContent>
                 </Select>
                 <Input type="number" value={fromValue} onChange={handleFromValueChange} />
             </div>
@@ -94,7 +93,7 @@ const UnitConverter = ({ type, icon: Icon }: { type: keyof typeof CONVERSIONS; i
             <div className="flex-1 w-full space-y-1">
                 <Select value={toUnit} onValueChange={setToUnit}>
                     <SelectTrigger><SelectValue/></SelectTrigger>
-                    <SelectContent>{Object.entries(CONVERSIONS[type]).map(([key, data]) => <SelectItem key={key} value={key}>{(data as any).label}</SelectItem>)}</SelectContent>
+                    <SelectContent>{Object.entries(CONVERSIONS[type]).map(([key, data]) => <SelectItem key={key} value={key}>{(data as {label: string}).label}</SelectItem>)}</SelectContent>
                 </Select>
                 <Input type="number" value={toValue} readOnly className="bg-muted/50" />
             </div>

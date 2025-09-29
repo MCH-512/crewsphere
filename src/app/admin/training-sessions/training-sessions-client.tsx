@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, doc, writeBatch, serverTimestamp, deleteDoc, Timestamp } from "firebase/firestore";
+import { collection, doc, writeBatch, serverTimestamp, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { ClipboardCheck, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Users, BookCopy, ArrowLeft, ArrowRight, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -47,7 +47,7 @@ const wizardSteps = [
 interface TrainingSessionsClientProps {
     initialSessions: SessionForDisplay[];
     initialUsers: User[];
-    initialUserMap: Map<string, User>;
+    initialUserMap: Map&lt;string, User&gt;;
     initialPursers: User[];
     initialPilots: User[];
     initialCabinCrew: User[];
@@ -63,31 +63,30 @@ export function TrainingSessionsClient({
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
-    const [sessions, setSessions] = React.useState<SessionForDisplay[]>(initialSessions);
+    const [sessions, setSessions] = React.useState&lt;SessionForDisplay[]&gt;(initialSessions);
     
-    const [allUsers, setAllUsers] = React.useState<User[]>(initialUsers);
-    const [userMap, setUserMap] = React.useState<Map<string, User>>(initialUserMap);
-    const [pursers, setPursers] = React.useState<User[]>(initialPursers);
-    const [pilots, setPilots] = React.useState<User[]>(initialPilots);
-    const [cabinCrew, setCabinCrew] = React.useState<User[]>(initialCabinCrew);
-    const [instructors, setInstructors] = React.useState<User[]>(initialInstructors);
-    const [trainees, setTrainees] = React.useState<User[]>(initialTrainees);
+    const [userMap, setUserMap] = React.useState&lt;Map&lt;string, User&gt;&gt;(initialUserMap);
+    const [pursers, setPursers] = React.useState&lt;User[]&gt;(initialPursers);
+    const [pilots, setPilots] = React.useState&lt;User[]&gt;(initialPilots);
+    const [cabinCrew, setCabinCrew] = React.useState&lt;User[]&gt;(initialCabinCrew);
+    const [instructors, setInstructors] = React.useState&lt;User[]&gt;(initialInstructors);
+    const [trainees, setTrainees] = React.useState&lt;User[]&gt;(initialTrainees);
     
     const [isLoading, setIsLoading] = React.useState(false); // Only for client-side fetches
     
     const [isManageDialogOpen, setIsManageDialogOpen] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [isEditMode, setIsEditMode] = React.useState(false);
-    const [currentSession, setCurrentSession] = React.useState<StoredTrainingSession | null>(null);
+    const [currentSession, setCurrentSession] = React.useState&lt;StoredTrainingSession | null&gt;(null);
     const [currentStep, setCurrentStep] = React.useState(0);
 
-    const [sortColumn, setSortColumn] = React.useState<SortableColumn>('sessionDateTimeUTC');
-    const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
+    const [sortColumn, setSortColumn] = React.useState&lt;SortableColumn&gt;('sessionDateTimeUTC');
+    const [sortDirection, setSortDirection] = React.useState&lt;SortDirection&gt;('desc');
 
-    const [crewWarnings, setCrewWarnings] = React.useState<Record<string, Conflict>>({});
+    const [crewWarnings, setCrewWarnings] = React.useState&lt;Record&lt;string, Conflict&gt;&gt;({});
     const [isCheckingAvailability, setIsCheckingAvailability] = React.useState(false);
 
-    const form = useForm<TrainingSessionFormValues>({
+    const form = useForm&lt;TrainingSessionFormValues&gt;({
         resolver: zodResolver(trainingSessionFormSchema),
         defaultValues: { title: "", description: "", location: "", sessionDateTimeUTC: "", purserIds: [], pilotIds: [], cabinCrewIds: [], instructorIds: [], traineeIds: [] },
         mode: "onChange"
@@ -96,12 +95,11 @@ export function TrainingSessionsClient({
     const watchedAttendees = form.watch(["purserIds", "pilotIds", "cabinCrewIds", "instructorIds", "traineeIds"]);
     const debouncedSessionDate = useDebounce(form.watch("sessionDateTimeUTC"), 500);
 
-    const refreshPageData = React.useCallback(async () => {
+    const refreshPageData = React.useCallback(async () =&gt; {
         setIsLoading(true);
         try {
             const data = await getTrainingSessionsPageData();
             setSessions(data.initialSessions);
-            setAllUsers(data.initialUsers);
             setUserMap(data.initialUserMap);
             setPursers(data.initialPursers);
             setPilots(data.initialPilots);
@@ -109,7 +107,7 @@ export function TrainingSessionsClient({
             setInstructors(data.initialInstructors);
             setTrainees(data.initialTrainees);
             toast({ title: "Refreshed", description: "Data has been updated." });
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Failed to refresh sessions or users:", err);
             toast({ title: "Loading Error", description: "Could not refresh data.", variant: "destructive" });
         } finally {
@@ -117,13 +115,13 @@ export function TrainingSessionsClient({
         }
     }, [toast]);
     
-    const sortedSessions = React.useMemo(() => {
-        return [...sessions].sort((a, b) => {
+    const sortedSessions = React.useMemo(() =&gt; {
+        return [...sessions].sort((a, b) =&gt; {
             const valA = a[sortColumn];
             const valB = b[sortColumn];
             let comparison = 0;
 
-            if (valA instanceof Timestamp && valB instanceof Timestamp) {
+            if (valA instanceof Timestamp &amp;&amp; valB instanceof Timestamp) {
                 comparison = valA.toMillis() - valB.toMillis();
             } else if (sortColumn === 'attendeeCount') {
                 comparison = (valA as number) - (valB as number);
@@ -135,22 +133,20 @@ export function TrainingSessionsClient({
         });
     }, [sessions, sortColumn, sortDirection]);
 
-    const handleSort = (column: SortableColumn) => {
+    const handleSort = (column: SortableColumn) =&gt; {
         if (sortColumn === column) {
-            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+            setSortDirection(prev =&gt; prev === 'asc' ? 'desc' : 'asc');
         } else {
             setSortColumn(column);
             setSortDirection(column === 'sessionDateTimeUTC' ? 'desc' : 'asc');
         }
     };
 
-    React.useEffect(() => {
-        if (!authLoading) {
-            if (!user || user.role !== 'admin') router.push('/');
-        }
+    React.useEffect(() =&gt; {
+        if (!authLoading &amp;&amp; !user) router.push('/');
     }, [user, authLoading, router]);
     
-     React.useEffect(() => {
+     React.useEffect(() =&gt; {
         const allAttendees = watchedAttendees.flat().filter(Boolean) as string[];
 
         if (allAttendees.length === 0 || !debouncedSessionDate) {
@@ -158,7 +154,7 @@ export function TrainingSessionsClient({
             return;
         }
 
-        const check = async () => {
+        const check = async () =&gt; {
             setIsCheckingAvailability(true);
             try {
                 const sessionDate = startOfDay(new Date(debouncedSessionDate));
@@ -166,8 +162,8 @@ export function TrainingSessionsClient({
 
                 const warnings = await checkCrewAvailability(allAttendees, sessionDate, sessionDate, isEditMode ? currentSession?.id : undefined);
                 setCrewWarnings(warnings);
-            } catch (e) {
-                console.error("Failed to check crew availability for training session", e);
+            } catch (error: unknown) {
+                console.error("Failed to check crew availability for training session", error);
                 toast({ title: "Error", description: "Could not check crew availability.", variant: "destructive" });
             } finally {
                 setIsCheckingAvailability(false);
@@ -179,17 +175,17 @@ export function TrainingSessionsClient({
     }, [JSON.stringify(watchedAttendees), debouncedSessionDate, toast, currentSession, isEditMode]);
 
 
-    const handleOpenDialog = async (sessionToEdit?: StoredTrainingSession) => {
+    const handleOpenDialog = async (sessionToEdit?: StoredTrainingSession) =&gt; {
         setCurrentStep(0);
         if (sessionToEdit) {
             setIsEditMode(true);
             setCurrentSession(sessionToEdit);
 
-            const attendeesData = (sessionToEdit.attendeeIds || []).map(id => userMap.get(id)).filter((user): user is User => !!user);
+            const attendeesData = (sessionToEdit.attendeeIds || []).map(id =&gt; userMap.get(id)).filter((user): user is User =&gt; !!user);
             
             const sessionDate = sessionToEdit.sessionDateTimeUTC instanceof Timestamp 
                 ? sessionToEdit.sessionDateTimeUTC.toDate()
-                : new Date(sessionToEdit.sessionDateTimeUTC as any);
+                : new Date(sessionToEdit.sessionDateTimeUTC);
 
             const formattedDate = sessionDate.toISOString().substring(0, 16);
 
@@ -198,11 +194,11 @@ export function TrainingSessionsClient({
                 description: sessionToEdit.description,
                 location: sessionToEdit.location,
                 sessionDateTimeUTC: formattedDate,
-                purserIds: attendeesData.filter(u => ['purser', 'admin', 'instructor'].includes(u.role || '')).map(u => u.uid),
-                pilotIds: attendeesData.filter(u => u.role === 'pilote').map(u => u.uid),
-                cabinCrewIds: attendeesData.filter(u => u.role === 'cabin crew').map(u => u.uid),
-                instructorIds: attendeesData.filter(u => u.role === 'instructor').map(u => u.uid),
-                traineeIds: attendeesData.filter(u => u.role === 'stagiaire').map(u => u.uid),
+                purserIds: attendeesData.filter(u =&gt; ['purser', 'admin', 'instructor'].includes(u.role || '')).map(u =&gt; u.uid),
+                pilotIds: attendeesData.filter(u =&gt; u.role === 'pilote').map(u =&gt; u.uid),
+                cabinCrewIds: attendeesData.filter(u =&gt; u.role === 'cabin crew').map(u =&gt; u.uid),
+                instructorIds: attendeesData.filter(u =&gt; u.role === 'instructor').map(u =&gt; u.uid),
+                traineeIds: attendeesData.filter(u =&gt; u.role === 'stagiaire').map(u =&gt; u.uid),
             });
         } else {
             setIsEditMode(false);
@@ -213,10 +209,10 @@ export function TrainingSessionsClient({
         setIsManageDialogOpen(true);
     };
 
-    const handleFormSubmit = async (data: TrainingSessionFormValues) => {
+    const handleFormSubmit = async (data: TrainingSessionFormValues) =&gt; {
         if (!user) return;
 
-         if (Object.keys(crewWarnings).length > 0) {
+         if (Object.keys(crewWarnings).length &gt; 0) {
             if (!window.confirm("There are scheduling conflicts for some attendees. Are you sure you want to proceed?")) {
                 return;
             }
@@ -225,16 +221,16 @@ export function TrainingSessionsClient({
         setIsSubmitting(true);
         try {
             const batch = writeBatch(db);
-            const sessionRef = isEditMode && currentSession ? doc(db, "trainingSessions", currentSession.id) : doc(collection(db, "trainingSessions"));
+            const sessionRef = isEditMode &amp;&amp; currentSession ? doc(db, "trainingSessions", currentSession.id) : doc(collection(db, "trainingSessions"));
             
              const attendeeIds = [...new Set([
                 ...(data.purserIds || []), ...(data.pilotIds || []), ...(data.cabinCrewIds || []),
                 ...(data.instructorIds || []), ...(data.traineeIds || [])
             ])];
 
-            const activityIds: Record<string, string> = {};
-            if (isEditMode && currentSession?.activityIds) {
-                Object.values(currentSession.activityIds).forEach(activityId => {
+            const activityIds: Record&lt;string, string&gt; = {};
+            if (isEditMode &amp;&amp; currentSession?.activityIds) {
+                Object.values(currentSession.activityIds).forEach(activityId =&gt; {
                     batch.delete(doc(db, "userActivities", activityId));
                 });
             }
@@ -263,7 +259,7 @@ export function TrainingSessionsClient({
                 updatedAt: serverTimestamp() 
             };
 
-            if (isEditMode && currentSession) {
+            if (isEditMode &amp;&amp; currentSession) {
                 batch.update(sessionRef, sessionData);
                 await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "UPDATE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: currentSession.id, details: { title: data.title } });
             } else {
@@ -275,7 +271,7 @@ export function TrainingSessionsClient({
             toast({ title: isEditMode ? "Session Updated" : "Session Created", description: `Session "${data.title}" and user schedules have been updated.` });
             refreshPageData();
             setIsManageDialogOpen(false);
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Error submitting session:", error);
             toast({ title: "Submission Failed", variant: "destructive" });
         } finally {
@@ -283,13 +279,13 @@ export function TrainingSessionsClient({
         }
     };
     
-    const handleDelete = async (sessionToDelete: StoredTrainingSession) => {
+    const handleDelete = async (sessionToDelete: StoredTrainingSession) =&gt; {
         if (!user || !window.confirm(`Are you sure you want to delete the session "${sessionToDelete.title}"? This will also remove it from assigned user schedules.`)) return;
         try {
             const batch = writeBatch(db);
             batch.delete(doc(db, "trainingSessions", sessionToDelete.id));
             if (sessionToDelete.activityIds) {
-                Object.values(sessionToDelete.activityIds).forEach(activityId => {
+                Object.values(sessionToDelete.activityIds).forEach(activityId =&gt; {
                     batch.delete(doc(db, "userActivities", activityId));
                 });
             }
@@ -297,174 +293,171 @@ export function TrainingSessionsClient({
             await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "DELETE_TRAINING_SESSION", entityType: "TRAINING_SESSION", entityId: sessionToDelete.id, details: { title: sessionToDelete.title } });
             toast({ title: "Session Deleted", description: `"${sessionToDelete.title}" has been removed.` });
             refreshPageData();
-        } catch (error) {
+        } catch (error: unknown) {
             toast({ title: "Deletion Failed", variant: "destructive" });
         }
     };
 
-    const triggerValidation = async (fields: (keyof TrainingSessionFormValues)[]) => {
+    const triggerValidation = async (fields: (keyof TrainingSessionFormValues)[]) =&gt; {
         return await form.trigger(fields);
     };
 
-    const nextStep = async () => {
+    const nextStep = async () =&gt; {
         const fieldsToValidate = wizardSteps[currentStep].fields as (keyof TrainingSessionFormValues)[];
         const isValid = await triggerValidation(fieldsToValidate);
         if (isValid) {
-            if (currentStep < wizardSteps.length - 1) {
-                setCurrentStep(prev => prev + 1);
+            if (currentStep &lt; wizardSteps.length - 1) {
+                setCurrentStep(prev =&gt; prev + 1);
             }
         } else {
             toast({ title: "Incomplete Section", description: "Please fill all required fields before continuing.", variant: "destructive" });
         }
     };
 
-    const prevStep = () => {
-        if (currentStep > 0) {
-            setCurrentStep(prev => prev - 1);
+    const prevStep = () =&gt; {
+        if (currentStep &gt; 0) {
+            setCurrentStep(prev =&gt; prev - 1);
         }
     };
 
-    const progressPercentage = ((currentStep + 1) / wizardSteps.length) * 100;
+    const progressPercentage = (((currentStep + 1) / wizardSteps.length) * 100);
 
-    if (authLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+    if (authLoading) return &lt;div className="flex items-center justify-center min-h-screen"&gt;&lt;Loader2 className="h-12 w-12 animate-spin text-primary" /&gt;&lt;/div&gt;;
 
-    const formatDateSafe = (date: Timestamp | string) => {
+    const formatDateSafe = (date: Timestamp | string) =&gt; {
         if (!date) return 'N/A';
         try {
             const dateObj = date instanceof Timestamp ? date.toDate() : parseISO(date);
             return format(dateObj, "PPpp");
-        } catch (e) {
+        } catch (e: unknown) {
             console.warn("Could not format date:", date);
             return "Invalid Date";
         }
     };
 
     return (
-        <div className="space-y-6">
-            <Card className="shadow-lg">
-                <CardHeader className="flex flex-row justify-between items-start">
-                    <div>
-                        <CardTitle className="text-2xl font-headline flex items-center"><ClipboardCheck className="mr-3 h-7 w-7 text-primary" />Training Session Management</CardTitle>
-                        <CardDescription>Plan and manage in-person training sessions for all crew members.</CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={refreshPageData} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
-                        <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4" />Create Session</Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader><TableRow>
-                                <SortableHeader column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                                <SortableHeader column="location" label="Location" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                                <SortableHeader column="sessionDateTimeUTC" label="Date & Time (UTC)" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                                <SortableHeader column="attendeeCount" label="Attendees" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow></TableHeader>
-                            <TableBody>
-                                {sortedSessions.map(s => (
-                                    <TableRow key={s.id}>
-                                        <TableCell className="font-medium">{s.title}</TableCell>
-                                        <TableCell>{s.location}</TableCell>
-                                        <TableCell>{formatDateSafe(s.sessionDateTimeUTC)}</TableCell>
-                                        <TableCell>
-                                            <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                                                <Users className="h-3 w-3"/>
+        &lt;div className="space-y-6"&gt;
+            &lt;Card className="shadow-lg"&gt;
+                &lt;CardHeader className="flex flex-row justify-between items-start"&gt;
+                    &lt;div&gt;
+                        &lt;CardTitle className="text-2xl font-headline flex items-center"&gt;&lt;ClipboardCheck className="mr-3 h-7 w-7 text-primary" /&gt;Training Session Management&lt;/CardTitle&gt;
+                        &lt;CardDescription&gt;Plan and manage in-person training sessions for all crew members.&lt;/CardDescription&gt;
+                    &lt;/div&gt;
+                    &lt;div className="flex gap-2"&gt;
+                        &lt;Button variant="outline" onClick={refreshPageData} disabled={isLoading}&gt;&lt;RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /&gt;Refresh&lt;/Button&gt;
+                        &lt;Button onClick={() =&gt; handleOpenDialog()}&gt;&lt;PlusCircle className="mr-2 h-4 w-4" /&gt;Create Session&lt;/Button&gt;
+                    &lt;/div&gt;
+                &lt;/CardHeader&gt;
+                &lt;CardContent&gt;
+                    &lt;div className="rounded-md border"&gt;
+                        &lt;Table&gt;
+                            &lt;TableHeader&gt;&lt;TableRow&gt;
+                                &lt;SortableHeader column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
+                                &lt;SortableHeader column="location" label="Location" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
+                                &lt;SortableHeader column="sessionDateTimeUTC" label="Date &amp; Time (UTC)" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
+                                &lt;SortableHeader column="attendeeCount" label="Attendees" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
+                                &lt;TableHead className="text-right"&gt;Actions&lt;/TableHead&gt;
+                            &lt;/TableRow&gt;&lt;/TableHeader&gt;
+                            &lt;TableBody&gt;
+                                {sortedSessions.map(s =&gt; (
+                                    &lt;TableRow key={s.id}&gt;
+                                        &lt;TableCell className="font-medium"&gt;{s.title}&lt;/TableCell&gt;
+                                        &lt;TableCell&gt;{s.location}&lt;/TableCell&gt;
+                                        &lt;TableCell&gt;{formatDateSafe(s.sessionDateTimeUTC)}&lt;/TableCell&gt;
+                                        &lt;TableCell&gt;
+                                            &lt;Badge variant="secondary" className="flex items-center gap-1 w-fit"&gt;
+                                                &lt;Users className="h-3 w-3"/&gt;
                                                 {(s.attendeeIds || []).length}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right space-x-1">
-                                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(s)}><Edit className="h-4 w-4" /></Button>
-                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(s)}><Trash2 className="h-4 w-4" /></Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                    {sessions.length === 0 && <p className="text-center text-muted-foreground p-8">No training sessions found.</p>}
-                </CardContent>
-            </Card>
+                                            &lt;/Badge&gt;
+                                        &lt;/TableCell&gt;
+                                        &lt;TableCell className="text-right space-x-1"&gt;
+                                            &lt;Button variant="ghost" size="icon" onClick={() =&gt; handleOpenDialog(s)}&gt;&lt;Edit className="h-4 w-4" /&gt;&lt;/Button&gt;
+                                            &lt;Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() =&gt; handleDelete(s)}&gt;&lt;Trash2 className="h-4 w-4" /&gt;&lt;/Button&gt;
+                                        &lt;/TableCell&gt;
+                                    &lt;/TableRow&gt;
+                                ))}&lt;/TableBody&gt;
+                            &lt;/Table&gt;
+                        &lt;/div&gt;
+                    {sessions.length === 0 &amp;&amp; &lt;p className="text-center text-muted-foreground p-8"&gt;No training sessions found.&lt;/p&gt;}
+                &lt;/CardContent&gt;
+            &lt;/Card&gt;
 
-            <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle>{isEditMode ? "Edit Session" : "Create New Session"}</DialogTitle>
-                        <DialogDescription>{isEditMode ? "Update session details." : "Fill in the form to create a new in-person training session."}</DialogDescription>
-                         <Progress value={progressPercentage} className="mt-4"/>
-                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                            <span>Step {currentStep + 1} of {wizardSteps.length}: <strong>{wizardSteps[currentStep].title}</strong></span>
-                            <span>{Math.round(progressPercentage)}% Complete</span>
-                        </div>
-                    </DialogHeader>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleFormSubmit)}>
-                            <ScrollArea className="h-[60vh] p-4">
+            &lt;Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}&gt;
+                &lt;DialogContent className="max-w-2xl"&gt;
+                    &lt;DialogHeader&gt;
+                        &lt;DialogTitle&gt;{isEditMode ? "Edit Session" : "Create New Session"}&lt;/DialogTitle&gt;
+                        &lt;DialogDescription&gt;{isEditMode ? "Update session details." : "Fill in the form to create a new in-person training session."}&lt;/DialogDescription&gt;
+                         &lt;Progress value={progressPercentage} className="mt-4"/&gt;
+                        &lt;div className="flex justify-between text-xs text-muted-foreground mt-1"&gt;
+                            &lt;span&gt;Step {currentStep + 1} of {wizardSteps.length}: &lt;strong&gt;{wizardSteps[currentStep].title}&lt;/strong&gt;&lt;/span&gt;
+                            &lt;span&gt;{Math.round(progressPercentage)}% Complete&lt;/span&gt;
+                        &lt;/div&gt;
+                    &lt;/DialogHeader&gt;
+                    &lt;Form {...form}&gt;
+                        &lt;form onSubmit={form.handleSubmit(handleFormSubmit)}&gt;
+                            &lt;ScrollArea className="h-[60vh] p-4"&gt;
 
                                 {/* Step 1: Session Details */}
-                                <AnimatedCard delay={0.1} className={cn(currentStep !== 0 && "hidden")}>
-                                    <div className="space-y-6">
-                                        <h3 className="text-lg font-semibold flex items-center gap-2"><BookCopy/>Session Details</h3>
-                                        <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Session Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} className="min-h-[100px]" /></FormControl><FormMessage /></FormItem>)} />
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} placeholder="e.g., Training Center - Room A" /></FormControl><FormMessage /></FormItem>)} />
-                                            <FormField control={form.control} name="sessionDateTimeUTC" render={({ field }) => (<FormItem><FormLabel>Date & Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        </div>
-                                    </div>
-                                </AnimatedCard>
+                                &lt;AnimatedCard delay={0.1} className={cn(currentStep !== 0 && "hidden")}&gt;
+                                    &lt;div className="space-y-6"&gt;
+                                        &lt;h3 className="text-lg font-semibold flex items-center gap-2"&gt;&lt;BookCopy/&gt;Session Details&lt;/h3&gt;
+                                        &lt;FormField control={form.control} name="title" render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Session Title&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
+                                        &lt;FormField control={form.control} name="description" render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Description&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Textarea {...field} className="min-h-[100px]" /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
+                                        &lt;div className="grid grid-cols-1 md:grid-cols-2 gap-4"&gt;
+                                            &lt;FormField control={form.control} name="location" render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Location&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} placeholder="e.g., Training Center - Room A" /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
+                                            &lt;FormField control={form.control} name="sessionDateTimeUTC" render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Date &amp; Time (UTC)&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input type="datetime-local" {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
+                                        &lt;/div&gt;
+                                    &lt;/div&gt;
+                                &lt;/AnimatedCard&gt;
                                 
                                 {/* Step 2: Assign Attendees */}
-                                <AnimatedCard delay={0.1} className={cn(currentStep !== 1 && "hidden")}>
-                                     <div className="space-y-4">
-                                        <h3 className="text-lg font-medium flex items-center gap-2"><Users/>Assign Attendees</h3>
-                                         <FormField control={form.control} name="purserIds" render={({ field }) => (<FormItem><FormLabel>Assign Pursers</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pursers..." options={pursers.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                         <FormField control={form.control} name="pilotIds" render={({ field }) => (<FormItem><FormLabel>Assign Pilots</FormLabel><CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p => ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                         <FormField control={form.control} name="cabinCrewIds" render={({ field }) => (<FormItem><FormLabel>Assign Cabin Crew</FormLabel><CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c => ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                         <FormField control={form.control} name="instructorIds" render={({ field }) => (<FormItem><FormLabel>Assign Instructors</FormLabel><CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i => ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
-                                         <FormField control={form.control} name="traineeIds" render={({ field }) => (<FormItem><FormLabel>Assign Stagiaires</FormLabel><CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t => ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /><FormMessage /></FormItem>)} />
+                                &lt;AnimatedCard delay={0.1} className={cn(currentStep !== 1 && "hidden")}&gt;
+                                     &lt;div className="space-y-4"&gt;
+                                        &lt;h3 className="text-lg font-medium flex items-center gap-2"&gt;&lt;Users/&gt;Assign Attendees&lt;/h3&gt;
+                                         &lt;FormField control={form.control} name="purserIds" render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Assign Pursers&lt;/FormLabel&gt;&lt;CustomMultiSelectAutocomplete placeholder="Select pursers..." options={pursers.map(p =&gt; ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
+                                         &lt;FormField control={form.control} name="pilotIds" render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Assign Pilots&lt;/FormLabel&gt;&lt;CustomMultiSelectAutocomplete placeholder="Select pilots..." options={pilots.map(p =&gt; ({value: p.uid, label: `${p.displayName} (${p.email})`}))} selected={field.value || []} onChange={field.onChange} /&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
+                                         &lt;FormField control={form.control} name="cabinCrewIds" render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Assign Cabin Crew&lt;/FormLabel&gt;&lt;CustomMultiSelectAutocomplete placeholder="Select cabin crew..." options={cabinCrew.map(c =&gt; ({value: c.uid, label: `${c.displayName} (${c.email})`}))} selected={field.value || []} onChange={field.onChange} /&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
+                                         &lt;FormField control={form.control} name="instructorIds" render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Assign Instructors&lt;/FormLabel&gt;&lt;CustomMultiSelectAutocomplete placeholder="Select instructors..." options={instructors.map(i =&gt; ({value: i.uid, label: `${i.displayName} (${i.email})`}))} selected={field.value || []} onChange={field.onChange} /&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
+                                         &lt;FormField control={form.control} name="traineeIds" render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Assign Stagiaires&lt;/FormLabel&gt;&lt;CustomMultiSelectAutocomplete placeholder="Select stagiaires..." options={trainees.map(t =&gt; ({value: t.uid, label: `${t.displayName} (${t.email})`}))} selected={field.value || []} onChange={field.onChange} /&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
 
-                                        <Separator />
-                                         <h3 className="text-lg font-medium">Attendee Availability</h3>
+                                        &lt;Separator /&gt;
+                                         &lt;h3 className="text-lg font-medium"&gt;Attendee Availability&lt;/h3&gt;
                                             {isCheckingAvailability ? (
-                                                <div className="flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Checking schedules...</div>
-                                            ) : Object.keys(crewWarnings).length > 0 ? (
-                                                <div className="space-y-2">
-                                                    {Object.entries(crewWarnings).map(([userId, conflict]) => (
-                                                        <Alert key={userId} variant="warning">
-                                                            <AlertTriangle className="h-4 w-4" />
-                                                            <AlertTitle>{userMap.get(userId)?.displayName || 'User'} has a conflict</AlertTitle>
-                                                            <ShadAlertDescription>{conflict.details}</ShadAlertDescription>
-                                                        </Alert>
-                                                    ))}
-                                                </div>
+                                                &lt;div className="flex items-center text-sm text-muted-foreground"&gt;&lt;Loader2 className="mr-2 h-4 w-4 animate-spin"/&gt;Checking schedules...&lt;/div&gt;
+                                            ) : Object.keys(crewWarnings).length &gt; 0 ? (
+                                                &lt;div className="space-y-2"&gt;
+                                                    {Object.entries(crewWarnings).map(([userId, conflict]) =&gt; (
+                                                        &lt;Alert key={userId} variant="warning"&gt;
+                                                            &lt;AlertTriangle className="h-4 w-4" /&gt;
+                                                            &lt;AlertTitle&gt;{userMap.get(userId)?.displayName || 'User'} has a conflict&lt;/AlertTitle&gt;
+                                                            &lt;ShadAlertDescription&gt;{conflict.details}&lt;/ShadAlertDescription&gt;
+                                                        &lt;/Alert&gt;
+                                                    ))}&lt;/div&gt;
                                             ) : (
-                                                <p className="text-sm text-muted-foreground">No conflicts detected for the selected attendees and date.</p>
+                                                &lt;p className="text-sm text-muted-foreground"&gt;No conflicts detected for the selected attendees and date.&lt;/p&gt;
                                             )}
-                                    </div>
-                                </AnimatedCard>
-                            </ScrollArea>
-                             <DialogFooter className="mt-4 pt-4 border-t flex justify-between w-full">
-                                <Button type="button" variant="outline" onClick={prevStep} disabled={currentStep === 0}>
-                                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-                                </Button>
+                                    &lt;/div&gt;
+                                &lt;/AnimatedCard&gt;
+                            &lt;/ScrollArea&gt;
+                             &lt;DialogFooter className="mt-4 pt-4 border-t flex justify-between w-full"&gt;
+                                &lt;Button type="button" variant="outline" onClick={prevStep} disabled={currentStep === 0}&gt;
+                                    &lt;ArrowLeft className="mr-2 h-4 w-4" /&gt; Previous
+                                &lt;/Button&gt;
                                 
-                                {currentStep < wizardSteps.length - 1 ? (
-                                    <Button type="button" onClick={nextStep}>
-                                        Next <ArrowRight className="ml-2 h-4 w-4" />
-                                    </Button>
+                                {currentStep &lt; wizardSteps.length - 1 ? (
+                                    &lt;Button type="button" onClick={nextStep}&gt;
+                                        Next &lt;ArrowRight className="ml-2 h-4 w-4" /&gt;
+                                    &lt;/Button&gt;
                                 ) : (
-                                    <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>
-                                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
+                                    &lt;Button type="submit" disabled={isSubmitting || !form.formState.isValid}&gt;
+                                        {isSubmitting ? &lt;Loader2 className="mr-2 h-4 w-4 animate-spin"/&gt; : &lt;Send className="mr-2 h-4 w-4"/&gt;}
                                         {isEditMode ? "Save Changes" : "Create Session"}
-                                    </Button>
-                                )}
-                            </DialogFooter>
-                        </form>
-                    </Form>
-                </DialogContent>
-            </Dialog>
-        </div>
+                                    &lt;/Button&gt;
+                                )}&lt;/DialogFooter&gt;
+                        &lt;/form&gt;
+                    &lt;/Form&gt;
+                &lt;/DialogContent&gt;
+            &lt;/Dialog&gt;
+        &lt;/div&gt;
     );
 }

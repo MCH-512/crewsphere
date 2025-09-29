@@ -1,10 +1,8 @@
-
 'use server';
 
-require('dotenv').config({ path: require('path').resolve(process.cwd(), '.env.local') });
-const path = require('path');
+import 'dotenv/config';
+import path from 'path';
 
-// A predefined list of critical or complex files to check when no specific file is provided.
 const PREDEFINED_FILES_TO_AUDIT = [
     'src/dashboard-client-page.tsx',
     'src/app/admin/flights/flights-client.tsx',
@@ -19,7 +17,7 @@ const PREDEFINED_FILES_TO_AUDIT = [
 async function runAudit(filePath) {
     try {
         console.log(`\n--- 🤖 AI Code Audit for: ${filePath} ---\n`);
-        // Dynamically import the ES module as the flow is an ES module
+        // Dynamically import the ES module
         const { codeAuditFlow } = await import('../ai/code-audit-flow.ts');
         const auditResult = await codeAuditFlow({ filePath });
         console.log(auditResult);

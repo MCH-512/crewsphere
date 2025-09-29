@@ -53,7 +53,7 @@ export default function LoginPage() {
             <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
             <CardTitle className="text-2xl font-headline mt-4">Firebase Not Configured</CardTitle>
             <CardDescription>
-              The application's Firebase configuration is missing or contains placeholder values.
+              The application&apos;s Firebase configuration is missing or contains placeholder values.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -144,8 +144,3 @@ export default function LoginPage() {
             Don&apos;t have an account?{" "}
             <Link href="/signup" className="underline">
               Sign up
-            </Link>
-        </div>
-    </AuthLayout>
-  );
-}

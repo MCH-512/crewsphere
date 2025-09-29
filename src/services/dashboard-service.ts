@@ -3,8 +3,7 @@
 
 import { db, isConfigValid } from "@/lib/firebase";
 import { getCurrentUser } from "@/lib/session";
-import { collection, getDocs, query, where, Timestamp, orderBy, limit } from "firebase/firestore";
-import { startOfDay, endOfDay } from "date-fns";
+import { collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
 import type { StoredCourse } from "@/schemas/course-schema";
 import type { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
 import type { StoredUserRequest, RequestStatus } from "@/schemas/request-schema";
@@ -174,7 +173,4 @@ export async function getRequestsChartData(): Promise<RequestsChartDataPoint[] |
             count,
         }));
     } catch (error) {
-        console.error("Error fetching requests chart data:", error);
-        return null;
-    }
-}
+        console.error("Error fetching requests chart data:",

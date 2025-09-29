@@ -2,7 +2,7 @@
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
-import { collection, doc, getDoc, getDocs, updateDoc, writeBatch, serverTimestamp, deleteDoc, query, where, orderBy, addDoc } from "firebase/firestore";
+import { collection, getDoc, getDocs, updateDoc, serverTimestamp, query, where, orderBy, addDoc } from "firebase/firestore";
 import { StoredFlight } from "@/schemas/flight-schema";
 import { User } from "@/schemas/user-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
@@ -236,6 +236,4 @@ export async function getAvailableSwaps(userId: string): Promise<SwapWithConflic
 
     } catch (error) {
         console.error("Error fetching available swaps:", error);
-        return [];
-    }
-}
+        

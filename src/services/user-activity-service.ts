@@ -2,12 +2,13 @@
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
-import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { format, eachDayOfInterval, startOfDay, isSameDay, startOfMonth, endOfMonth, endOfDay } from 'date-fns';
 import { type ActivityType, type UserActivity } from "@/schemas/user-activity-schema";
 import { getCurrentUser } from "@/lib/session";
 import type { User } from "@/schemas/user-schema";
 import { z } from 'zod';
+import { Timestamp } from "firebase/firestore";
 
 export interface Conflict {
     activityType: ActivityType;
@@ -185,9 +186,4 @@ export async function checkCrewAvailability(
           }
       } catch (e) {
           console.error(`Error checking availability for user ${userId}:`, e);
-          // Do not throw, just skip this user. The UI will show no warning for them.
-      }
-  }
-
-  return warnings;
-}
+          // Do not throw, just skip this user. The UI will show no warning for them

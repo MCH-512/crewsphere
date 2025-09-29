@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -9,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, SendHorizonal, Lightbulb, Wrench } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
-import { type User } from "@/schemas/user-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";

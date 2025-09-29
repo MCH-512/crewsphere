@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription as UiFormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { User as UserIcon, Bell, Shield, Palette, Loader2, Info, CalendarDays, KeyRound, Camera } from "lucide-react";
+import { User as UserIcon, Bell, Shield, Loader2, CalendarDays, KeyRound, Camera } from "lucide-react";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { updateProfile as updateAuthProfile, EmailAuthProvider, reauthenticateWithCredential, updatePassword, type AuthError } from "firebase/auth";
@@ -20,8 +20,6 @@ import { doc, updateDoc } from "firebase/firestore";
 import { auth, db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { format } from "date-fns";
-import Image from "next/image";
-import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Schema for the main profile & preferences form
@@ -210,7 +208,7 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
       const dateObj = new Date(dateString);
       if (isNaN(dateObj.getTime())) return "Invalid Date";
       return format(dateObj, "PPP"); 
-    } catch (e) {
+    } catch (e: unknown) {
       return dateString; 
     }
   };
@@ -311,7 +309,7 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
                     </div>
                     <Separator />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormItem><FormLabel className="flex items-center gap-1"><Info className="w-3.5 h-3.5 text-muted-foreground"/> Employee ID</FormLabel><FormControl><Input value={initialUser.employeeId || "N/A"} disabled /></FormControl></FormItem>
+                        <FormItem><FormLabel className="flex items-center gap-1">Employee ID</FormLabel><FormControl><Input value={initialUser.employeeId || "N/A"} disabled /></FormControl></FormItem>
                         <FormItem><FormLabel className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5 text-muted-foreground"/> Joining Date</FormLabel><FormControl><Input value={formatDateDisplay(initialUser.joiningDate)} disabled /></FormControl></FormItem>
                     </div>
                 </CardContent>
@@ -397,8 +395,4 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
               </Form>
             </DialogContent>
           </Dialog>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+        

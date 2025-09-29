@@ -10,7 +10,6 @@ import {
   where,
   orderBy,
   limit,
-  Timestamp,
 } from "firebase/firestore";
 import { User } from "@/schemas/user-schema";
 import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";

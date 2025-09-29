@@ -1,19 +1,19 @@
+
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Calendar as CalendarIcon, Loader2, Plane, Briefcase, GraduationCap, Bed, Anchor, Users, Globe, User } from "lucide-react";
+import { Card, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Calendar as CalendarIcon, Loader2, Plane, Briefcase, GraduationCap, Bed, Anchor, Globe, User } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
-import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar";
 import { format, isSameDay } from "date-fns";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
 import type { StoredFlight } from "@/schemas/flight-schema";
 import type { StoredTrainingSession } from "@/schemas/training-session-schema";
-import { getAirportByCode, type Airport } from "@/services/airport-service";
+import { getAirportByCode } from "@/services/airport-service";
 import type { UserActivity, ActivityType } from "@/schemas/user-activity-schema";
 import type { User as AuthUser } from "@/schemas/user-schema";
 import { getUserActivitiesForMonth, type ActivityData } from "@/services/activity-service";
@@ -61,7 +61,6 @@ const ActivityCard = ({ activity, onActivityClick, view }: { activity: ActivityD
 // --- Main Page Client Component ---
 export function MyScheduleClient({ initialActivities }: { initialActivities: ActivityData[] }) {
     const { user, loading: authLoading } = useAuth();
-    const router = useRouter();
     const [view, setView] = React.useState<'personal' | 'global'>('personal');
     const [activities, setActivities] = React.useState<ActivityData[]>(initialActivities);
     const [isLoading, setIsLoading] = React.useState(false); // For subsequent fetches
@@ -236,7 +235,4 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
                     ))}
                 </CardFooter>
             </Card>
-            <ActivityDetailsSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} activity={sheetActivity} isLoading={isSheetLoading} authUser={user} error={sheetError} />
-        </div>
-    );
-}
+            <ActivityDetailsSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} activity={sheetActivity} isLoading={isSheetLoading} authUser={user}

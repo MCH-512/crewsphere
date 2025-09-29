@@ -1,55 +1,54 @@
 'use server';
-/**
- * @fileOverview A Genkit flow that audits a file using an AI model for TypeScript and React Hook Form issues.
- */
+
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { googleAI } from '@genkit-ai/googleai';
+import { CodeAuditInputSchema, type CodeAuditInput, CodeAuditOutputSchema, type CodeAuditOutput } from '@/schemas/code-audit-schema';
+import * as fs from 'node:fs/promises';
 
-export const codeAuditFlow = ai.defineFlow(
-  {
+
+/**
+ * Analyzes a code file and provides suggestions for improvements.
+ * @param input The data containing the file path of the code to be analyzed.
+ * @returns A promise that resolves with a summary of the code analysis and suggestions.
+ */
+export async function codeAuditFlow(input: CodeAuditInput): Promise<CodeAuditOutput> {
+    const validatedInput = CodeAuditInputSchema.parse(input);
+    return codeAuditFlowInner(validatedInput);
+}
+
+const codeAuditFlowInner = ai.defineFlow({
     name: 'codeAuditFlow',
-    inputSchema: z.object({ filePath: z.string() }),
-    outputSchema: z.string(),
-  },
-  async ({ filePath }) => {
-    console.log(`🤖 Starting code audit for: ${filePath}`);
-
-    const fullPath = path.resolve(process.cwd(), filePath);
-    let fileContent;
+    inputSchema: CodeAuditInputSchema,
+    outputSchema: CodeAuditOutputSchema,
+}, async (input) => {
     try {
-      fileContent = await fs.readFile(fullPath, 'utf-8');
-    } catch (err) {
-      console.error(`Error reading file at ${fullPath}:`, err);
-      return `Error: Could not read the specified file at ${fullPath}.`;
+        // Read the file content
+        const fileContent = await fs.readFile(input.filePath, 'utf8');
+        
+        const response = await ai.generate({
+            model: googleAI.model('gemini-1.5-flash'),
+            prompt: `You are a senior software engineer performing a code audit on the following file. Your goal is to identify potential issues and suggest improvements. Be specific and concise. Format the output as follows:
+Summary: [A one-sentence summary of the file's purpose.]
+Potential Issues:
+- [Specific issue 1 and why it matters]
+- [Specific issue 2 and why it matters]
+...
+Suggestions:
+- [Specific suggestion 1 for improvement]
+- [Specific suggestion 2 for improvement]
+...
+Filepath: ${input.filePath}
+File Content:
+\`\`\`
+${fileContent}
+\`\`\`
+`,
+            maxOutputTokens: 2048,
+        });
+
+        return { analysisSummary: response.text };
+    } catch (error) {
+        console.error('Code audit failed:', error);
+        return { analysisSummary: `Code audit failed: ${error.message}` };
     }
-
-    const prompt = `
-      You are an expert software architect specializing in Next.js 14, React, Firebase, and Genkit.
-      Your task is to audit the following code file: ${filePath}.
-
-      Please focus on these areas:
-      1.  **TypeScript Best Practices**: Identify type errors, "any" types, and opportunities for stricter typing.
-      2.  **React Hook Form Issues**: Look for common mistakes in form state management, validation, and submission logic.
-      3.  **Next.js 14 Anti-Patterns**: Check for incorrect use of Server/Client components, data fetching in client components, etc.
-      4.  **General Code Quality**: Look for code smells, performance bottlenecks, or security vulnerabilities.
-
-      Provide a concise, actionable report in clear Markdown format. If you find issues, suggest specific code changes.
-
-      File Content:
-      ---
-      ${fileContent}
-      ---
-    `;
-
-    const llmResponse = await ai.generate({
-      model: 'googleai/gemini-1.5-pro-latest',
-      prompt,
-    });
-    const responseText = llmResponse.text();
-
-    console.log(`✅ Audit complete for: ${filePath}`);
-    return responseText;
-  }
-);
+});

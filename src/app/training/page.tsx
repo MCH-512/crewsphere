@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -8,7 +7,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { GraduationCap, Loader2, AlertTriangle, BookOpen, CheckCircle, XCircle, RefreshCw, Award, Search, Filter } from "lucide-react";
+import { GraduationCap, Loader2, BookOpen, CheckCircle, XCircle, RefreshCw, Award, Search, Filter } from "lucide-react";
 import { StoredCourse, courseCategories } from "@/schemas/course-schema";
 import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
 import Link from "next/link";
@@ -16,7 +15,6 @@ import { AnimatedCard } from "@/components/motion/animated-card";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { format } from "date-fns";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import placeholderImages from "@/app/lib/placeholder-images.json";
@@ -142,8 +140,8 @@ export default function TrainingPage() {
                     getDocs(attemptsQuery)
                 ]);
 
-                const fetchedCourses = coursesSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as StoredCourse));
-                const fetchedAttempts = attemptsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as StoredUserQuizAttempt));
+                const fetchedCourses = coursesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as StoredCourse));
+                const fetchedAttempts = attemptsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as StoredUserQuizAttempt));
                 
                 // Create a map to store the latest attempt for each course
                 const latestAttempts = new Map<string, StoredUserQuizAttempt>();
@@ -229,7 +227,7 @@ export default function TrainingPage() {
                                 />
                             </div>
                             <div className="flex gap-4">
-                               <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as any)}>
+                               <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as typeof courseCategories[number] | 'all')}>
                                     <SelectTrigger className="w-full md:w-[240px]">
                                         <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
                                         <SelectValue placeholder="Filter by category" />
@@ -241,7 +239,7 @@ export default function TrainingPage() {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                               <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+                               <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'completed' | 'in-progress' | 'not-started')}>
                                     <SelectTrigger className="w-full md:w-[200px]">
                                         <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
                                         <SelectValue placeholder="Filter by status" />

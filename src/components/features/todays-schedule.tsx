@@ -66,13 +66,11 @@ export async function TodaysScheduleCard() {
             <CardHeader>
                 <CardTitle className="font-headline text-xl flex items-center gap-2">
                     <CalendarCheck className="h-5 w-5" />
-                    Today's Schedule
+                    Today&apos;s Schedule
                 </CardTitle>
                 <CardDescription>{format(new Date(), "EEEE, PPP")}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
                 {renderContent()}
             </CardContent>
-        </Card>
-    );
-}
+        </Card

@@ -36,7 +36,7 @@ export function MyLogbookClient({ initialEntries }: { initialEntries: LogbookEnt
             const entries = await getLogbookEntries(user.uid);
             setLogbookEntries(entries);
             toast({ title: "Logbook Refreshed", description: "Your flight log has been updated."});
-        } catch(err) {
+        } catch(err: unknown) {
             setError("Could not refresh logbook entries.");
             toast({ title: "Error", description: "Could not refresh logbook entries.", variant: "destructive" });
         } finally {
@@ -218,8 +218,4 @@ export function MyLogbookClient({ initialEntries }: { initialEntries: LogbookEnt
                             </div>
                         )}
                     </CardContent>
-                </Card>
-            </AnimatedCard>
-        </div>
-    );
-}
+                

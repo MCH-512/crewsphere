@@ -21,7 +21,7 @@ import { SendHorizonal, Loader2, AlertTriangle, Info, Zap, Inbox, ListTodo, Mess
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy, Timestamp } from "firebase/firestore"; // ✅ Import correct de Timestamp
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,7 +35,6 @@ import {
   requestCategoriesAndTypes, 
   urgencyLevels,
   type StoredUserRequest, 
-  type RequestStatus, 
   getStatusBadgeVariant, 
   getUrgencyBadgeVariant, 
   getAdminResponseAlertVariant
@@ -134,7 +133,7 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
         <Info className="h-4 w-4" />
         <AlertTitle>How It Works</AlertTitle>
         <AlertDescription>
-          After submitting, your request will be routed to the appropriate department. You can track its status in the "My Submission History" tab.
+          After submitting, your request will be routed to the appropriate department. You can track its status in the &quot;My Submission History&quot; tab.
         </AlertDescription>
       </Alert>
       <Form {...form}>
@@ -230,7 +229,7 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
           {formDataToSubmit?.urgencyLevel === 'Critical' && (
             <Alert variant="destructive" className="my-4">
               <Zap className="h-4 w-4" /><AlertTitle>Confirm Critical Urgency</AlertTitle>
-              <AlertDialogDescription>You have marked this as a critical request. This should only be used for emergencies impacting immediate flight operations.</AlertDialogDescription>
+              <AlertDescription>You have marked this as a critical request. This should only be used for emergencies impacting immediate flight operations.</AlertDescription>
             </Alert>
           )}
 
@@ -293,7 +292,7 @@ const RequestHistoryTab = ({ myRequests, isLoading, error, fetchMyRequests }: Re
         <Card className="text-center p-6 shadow-md mt-6">
           <ListTodo className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <p className="font-semibold text-lg text-muted-foreground">No requests submitted yet.</p>
-          <p className="text-sm text-muted-foreground">Use the "Submit New Request" tab to create your first request.</p>
+          <p className="text-sm text-muted-foreground">Use the &quot;Submit New Request&quot; tab to create your first request.</p>
         </Card>
       </AnimatedCard>
     );

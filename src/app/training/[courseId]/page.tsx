@@ -11,7 +11,6 @@ import { useRouter, useParams } from "next/navigation";
 import { Loader2, AlertTriangle, ArrowLeft, CheckCircle, Clock, BookOpen, ListChecks, Award } from "lucide-react";
 import { StoredCourse, StoredUserQuizAttempt } from "@/schemas/course-schema";
 import Link from "next/link";
-import { AnimatedCard } from "@/components/motion/animated-card";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -77,7 +76,7 @@ export default function CourseDetailPage() {
                 }
 
 
-            } catch (err) {
+            } catch (err: unknown) {
                 console.error("Error fetching course:", err);
                 setError("Failed to load the course.");
             } finally {
@@ -100,7 +99,7 @@ export default function CourseDetailPage() {
             const userProgressRef = doc(db, "userProgress", user.uid, "courses", courseId);
             // Use set with merge:true to create or update the document
             await setDoc(userProgressRef, { readChapters: updatedReadChapters }, { merge: true });
-        } catch (error) {
+        } catch (error: unknown) {
             toast({ title: "Error", description: "Could not save your progress.", variant: "destructive"});
             // Revert optimistic update on failure
             setReadChapters(readChapters);
@@ -213,5 +212,4 @@ export default function CourseDetailPage() {
             )}
 
         </div>
-    );
-}
+    

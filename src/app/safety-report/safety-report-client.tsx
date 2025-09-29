@@ -47,7 +47,7 @@ export function SafetyReportClient() {
     mode: "onChange",
   });
 
-  async function onSubmit(values: SafetyReportFormValues) {
+  async function onSubmit() {
     setShowConfirmDialog(true);
   }
 
@@ -144,5 +144,3 @@ export function SafetyReportClient() {
             </AlertDialogContent>
         </AlertDialog>
     </div>
-  );
-}

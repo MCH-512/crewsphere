@@ -1,6 +1,7 @@
+
 // scripts/apply-optimizations.js
-const fs = require('fs').promises;
-const path = require('path');
+import { promises as fs } from 'fs';
+import path from 'path';
 
 const REPORT_PATH = path.join(process.cwd(), 'suggested-optimizations.json');
 const RULES_PATH = path.join(process.cwd(), 'src', 'lib', 'alert-rules.ts');
@@ -66,4 +67,4 @@ async function applyOptimizations() {
   }
 }
 
-applyOptimizations();
+applyOptim
