@@ -16,7 +16,6 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "clean-install": "rm -rf node_modules package-lock.json && npm install",
-    "audit": "node nextjs-audit.js",
     "audit:report": "npm audit",
     "audit:fix": "npm audit fix",
     "audit:ai": "tsx src/scripts/run-code-audit.js",
