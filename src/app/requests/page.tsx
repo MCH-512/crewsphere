@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -72,7 +71,7 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
     if (categoryHasSpecificTypes) {
       const newSpecificTypes = requestCategoriesAndTypes[watchedRequestCategory as keyof typeof requestCategoriesAndTypes];
       setSpecificTypes(newSpecificTypes);
-       if (!newSpecificTypes.includes(form.getValues('specificRequestType'))) {
+       if (!newSpecificTypes.includes(form.getValues('specificRequestType') || '')) {
           form.setValue('specificRequestType', '', { shouldValidate: true });
       }
     } else {
@@ -410,7 +409,7 @@ export default function RequestsPage() {
                   <AlertTitle>Authentication Required</AlertTitle>
                   <ShadAlertDescription>
                     You must be logged in to submit or view requests.
-                  </ShadAlertDescription>
+                  </ShAlertDescription>
                 </Alert>
               )}
 

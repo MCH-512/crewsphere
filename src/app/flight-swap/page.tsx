@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -166,14 +165,14 @@ export default function FlightSwapPage() {
                             getAirportByCode(data.arrivalAirport)
                         ]);
                         return { 
-                            id: doc.id, 
                             ...data,
-                            departureAirportIATA: depAirport?.iata,
-                            arrivalAirportIATA: arrAirport?.iata,
+                            id: doc.id, 
+                            departureAirportIATA: depAirport?.iata || undefined,
+                            arrivalAirportIATA: arrAirport?.iata || undefined,
                         };
                     })
             );
-            setUserFlights(eligibleFlights);
+            setUserFlights(eligibleFlights as FlightForSwap[]);
 
         } catch (error) {
             console.error("Error fetching flight swap data:", error);

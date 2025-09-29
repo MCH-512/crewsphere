@@ -1,4 +1,3 @@
-
 "use server";
 
 import * as React from "react";
@@ -8,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ServerCog } from "lucide-react";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
-import { adminNavConfig, type NavGroup, type NavItem } from "@/config/nav";
+import { adminNavConfig, type NavGroup, type NavItem, type AdminDashboardStats } from "@/config/nav";
 import { cn } from "@/lib/utils";
-import { getAdminDashboardStats, getAdminDashboardWeeklyTrends, type getAdminDashboardStats } from "@/services/admin-dashboard-service";
+import { getAdminDashboardStats, getAdminDashboardWeeklyTrends } from "@/services/admin-dashboard-service";
 import { getOpenPullRequests } from "@/services/github-service";
 import { Badge } from "@/components/ui/badge";
 import { WeeklyTrendsChart } from "@/components/admin/weekly-trends-chart";

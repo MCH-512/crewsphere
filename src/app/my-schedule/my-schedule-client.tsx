@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -15,16 +14,16 @@ import { cn } from "@/lib/utils";
 import type { StoredFlight } from "@/schemas/flight-schema";
 import type { StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode, type Airport } from "@/services/airport-service";
-import type { UserActivity, ActivityData } from "@/schemas/user-activity-schema";
+import type { UserActivity, ActivityType } from "@/schemas/user-activity-schema";
 import type { User as AuthUser } from "@/schemas/user-schema";
-import { getUserActivitiesForMonth } from "@/services/activity-service";
+import { getUserActivitiesForMonth, type ActivityData } from "@/services/activity-service";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ActivityDetailsSheet, type SheetActivityDetails } from "@/components/features/activity-details-sheet";
 
 
 // --- UI Configuration ---
-const activityConfig: Record<UserActivity['activityType'], { icon: React.ElementType; label: string; dotColor: string; }> = {
+const activityConfig: Record<ActivityType, { icon: React.ElementType; label: string; dotColor: string; }> = {
     flight: { icon: Plane, label: "Flight", dotColor: "bg-primary" },
     leave: { icon: Briefcase, label: "Leave", dotColor: "bg-green-500" },
     training: { icon: GraduationCap, label: "Training", dotColor: "bg-yellow-500" },
@@ -149,7 +148,7 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
     const activityDotStyles = activities.reduce((acc, activity) => {
         const dateKey = format(activity.date.toDate(), 'yyyy-MM-dd');
         if (!acc[dateKey]) {
-            acc[dateKey] = new Set();
+            acc[dateKey] = new Set<string>();
         }
         acc[dateKey].add(activityConfig[activity.activityType].dotColor);
         return acc;
@@ -163,7 +162,7 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
             {isLoading ? (
               <div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
             ) : selectedDayActivities.length > 0 ? (
-              selectedDayActivities.map(activity => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} view={view}/>)
+              selectedDayActivities.map((activity) => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} view={view}/>)
             ) : (
               <p className="text-sm text-muted-foreground text-center p-4">No activities scheduled for this day.</p>
             )}
@@ -188,8 +187,8 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
                         </div>
                         {user?.role === 'admin' && (
                             <div className="flex items-center gap-2 mt-4 sm:mt-0 p-1 bg-muted rounded-lg">
-                                <Button variant={view === 'personal' ? 'primary' : 'ghost'} size="sm" onClick={() => setView('personal')} className="flex items-center gap-1"><User className="h-4 w-4"/> Personal</Button>
-                                <Button variant={view === 'global' ? 'primary' : 'ghost'} size="sm" onClick={() => setView('global')} className="flex items-center gap-1"><Globe className="h-4 w-4"/> Global</Button>
+                                <Button variant={view === 'personal' ? 'default' : 'ghost'} size="sm" onClick={() => setView('personal')} className="flex items-center gap-1"><User className="h-4 w-4"/> Personal</Button>
+                                <Button variant={view === 'global' ? 'default' : 'ghost'} size="sm" onClick={() => setView('global')} className="flex items-center gap-1"><Globe className="h-4 w-4"/> Global</Button>
                             </div>
                         )}
                     </div>

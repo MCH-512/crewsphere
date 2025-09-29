@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db } from "@/lib/firebase";
@@ -15,7 +14,7 @@ import {
 } from "firebase/firestore";
 import { User } from "@/schemas/user-schema";
 import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
-import { StoredUserRequest } from "@/schemas/user-request-schema";
+import { StoredUserRequest } from "@/schemas/request-schema";
 import { Airport, getAirportByCode } from "./airport-service";
 import { ActivityData, getUserActivitiesForMonth } from "./activity-service";
 import { StoredUserDocument } from "@/schemas/user-document-schema";
@@ -66,12 +65,12 @@ export async function getUserProfileData(userId: string): Promise<ProfileData | 
   const [trainingsSnapshot, requestsSnapshot, documentsSnapshot] = await Promise.all([
       getDocs(trainingsQuery),
       getDocs(requestsQuery),
-      getDocs(documentsQuery),
+      getDocs(documentsSnapshot),
   ]);
 
-  const trainings = trainingsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), completedAt: doc.data().completedAt as Timestamp } as StoredUserQuizAttempt));
-  const requests = requestsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt as Timestamp, updatedAt: doc.data().updatedAt as Timestamp } as StoredUserRequest));
-  const documents = documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), issueDate: doc.data().issueDate as Timestamp, expiryDate: doc.data().expiryDate as Timestamp, lastUpdatedAt: doc.data().lastUpdatedAt as Timestamp, createdAt: doc.data().createdAt as Timestamp } as StoredUserDocument));
+  const trainings = trainingsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserQuizAttempt));
+  const requests = requestsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserRequest));
+  const documents = documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserDocument));
 
   return {
     user,

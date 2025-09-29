@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -152,7 +151,7 @@ export function TrainingSessionsClient({
     }, [user, authLoading, router]);
     
      React.useEffect(() => {
-        const allAttendees = watchedAttendees.flat().filter(Boolean);
+        const allAttendees = watchedAttendees.flat().filter(Boolean) as string[];
 
         if (allAttendees.length === 0 || !debouncedSessionDate) {
             setCrewWarnings({});
@@ -321,7 +320,7 @@ export function TrainingSessionsClient({
 
     const prevStep = () => {
         if (currentStep > 0) {
-            setCurrentStep(prev => prev + 1);
+            setCurrentStep(prev => prev - 1);
         }
     };
 

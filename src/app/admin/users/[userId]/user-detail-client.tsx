@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -7,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { type User } from "@/schemas/user-schema";
-import { type Timestamp } from "firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Loader2, AlertTriangle, ArrowLeft, User as UserIcon, Calendar, GraduationCap, Inbox, CheckCircle, XCircle, ShieldCheck, CalendarX, CalendarClock, CalendarCheck2, PlusCircle, Info, CalendarDays, Edit, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +37,7 @@ import { type StoredFlight } from "@/schemas/flight-schema";
 import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode } from "@/services/airport-service";
 import { ActivityDetailsSheet, type SheetActivityDetails } from "@/components/features/activity-details-sheet";
+import { ActivityData } from "@/schemas/user-activity-schema";
 
 
 const DynamicMap = dynamic(() => import('@/components/features/live-map').then(mod => mod.MapDisplay), {
@@ -287,8 +287,8 @@ export function UserDetailClient({ initialProfileData, initialUserMap }: UserDet
                             <CardContent>
                                 {isLoading ? <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin"/></div> :
                                 activities.length > 0 ? (
-                                    <ul className="space-y-2">{activities.map((act) => <li key={act.id} className="text-sm flex justify-between">
-                                        <button onClick={() => handleShowActivityDetails(act)} className="text-left hover:text-primary truncate pr-2">{act.activityType === 'flight' ? `Flight ${act.flightNumber}` : act.comments || act.activityType}</button>
+                                    <ul className="space-y-2">{activities.map((act: ActivityData) => <li key={act.id} className="text-sm flex justify-between">
+                                        <button onClick={() => handleShowActivityDetails(act as UserActivity)} className="text-left hover:text-primary truncate pr-2">{act.activityType === 'flight' ? `Flight ${act.flightNumber}` : act.comments || act.activityType}</button>
                                         <span className="text-muted-foreground">{format(act.date.toDate(), 'PP')}</span>
                                     </li>)}</ul>
                                 ) : (<p className="text-sm text-muted-foreground text-center py-4">No recent activities found.</p>)}

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -16,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { generateVideo } from "@/services/video-service";
 import Image from "next/image";
+import type { GenerateVideoInput } from "@/schemas/video-schema";
 
 const formSchema = z.object({
   prompt: z.string().min(10, 'Prompt must be at least 10 characters long.').max(500, 'Prompt is too long.'),
@@ -67,7 +67,7 @@ export default function VideoStudioPage() {
     try {
       toast({ title: "Generating Video...", description: "This is a complex task and may take up to a minute. Please be patient." });
       
-      let promptPayload: string | (object | { media: { url: string; contentType: string | undefined; }; })[] = data.prompt;
+      let promptPayload: GenerateVideoInput['prompt'] = data.prompt;
 
       if (data.imageFile) {
         const imageBase64 = await toBase64(data.imageFile);

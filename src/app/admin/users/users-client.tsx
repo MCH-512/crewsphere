@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -185,7 +184,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-            <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as SpecificRole | 'all')}>
+            <Select value={roleFilter === null ? NO_ROLE_SENTINEL : roleFilter} onValueChange={(value) => setRoleFilter(value === NO_ROLE_SENTINEL ? null : value as SpecificRole | 'all')}>
                 <SelectTrigger className="w-full md:w-[180px]">
                     <Filter className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="Filter by role" />
@@ -193,6 +192,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                 <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
                     {availableRoles.map(role => <SelectItem key={role} value={role} className="capitalize">{role}</SelectItem>)}
+                    <SelectItem value={NO_ROLE_SENTINEL}>Not Assigned</SelectItem>
                 </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as AccountStatus | 'all')}>

@@ -1,4 +1,3 @@
-
 "use server";
 
 import * as React from "react";
@@ -37,8 +36,6 @@ const getStatusBadgeVariant = (status: ReportStatus) => {
 const getAdminResponseAlertVariant = (status: ReportStatus): VariantProps<typeof alertVariants>["variant"] => {
     switch (status) {
       case "closed": return "success";
-      case "approved": return "success";
-      case "rejected": return "destructive";
       default: return "info";
     }
 };
@@ -109,7 +106,7 @@ export default async function PurserReportHistoryDetailPage({ params }: { params
                             </CardDescription>
                         </div>
                         <div className="text-right text-sm">
-                           <Badge variant={getStatusBadgeVariant(report.status)} className="capitalize">{report.status.replace('-', ' ')}</Badge>
+                           <Badge variant={getStatusBadgeVariant(report.status as ReportStatus)} className="capitalize">{report.status.replace('-', ' ')}</Badge>
                            <p className="text-muted-foreground mt-1">Submitted: {format(report.createdAt.toDate(), "PPp")}</p>
                         </div>
                     </div>
@@ -117,7 +114,7 @@ export default async function PurserReportHistoryDetailPage({ params }: { params
             </Card>
 
             {report.adminNotes && (
-                <Alert variant={getAdminResponseAlertVariant(report.status)}>
+                <Alert variant={getAdminResponseAlertVariant(report.status as ReportStatus)}>
                     <CheckCircle className="h-4 w-4" />
                     <AlertTitle>Administrator Response</AlertTitle>
                     <AlertDescription className="whitespace-pre-wrap">{report.adminNotes}</AlertDescription>

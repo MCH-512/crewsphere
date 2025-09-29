@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -59,14 +58,14 @@ export default function PurserReportsPage() {
                             getAirportByCode(data.arrivalAirport)
                         ]);
                         return { 
-                            id: doc.id,
                             ...data,
-                            departureAirportIATA: depAirport?.iata,
-                            arrivalAirportIATA: arrAirport?.iata,
+                            id: doc.id,
+                            departureAirportIATA: depAirport?.iata || undefined,
+                            arrivalAirportIATA: arrAirport?.iata || undefined,
                         };
                     })
                 );
-                setFlights(fetchedFlights);
+                setFlights(fetchedFlights as FlightForReporting[]);
             } catch (err) {
                 console.error("Error fetching flights:", err);
                 toast({ title: "Loading Error", description: "Could not fetch flights needing reports.", variant: "destructive" });

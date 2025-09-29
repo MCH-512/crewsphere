@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -14,7 +13,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Power, PowerOff } from "lucide-react"; 
 import { Separator } from "@/components/ui/separator";
-import type { User, ManageUserFormValues } from "@/schemas/user-schema";
+import type { User, ManageUserFormValues, SpecificRole } from "@/schemas/user-schema";
 import { manageUserFormSchema, availableRoles } from "@/schemas/user-schema";
 import { manageUser } from "@/services/user-service";
 import { CustomAutocompleteAirport } from "@/components/custom/custom-autocomplete-airport";
@@ -26,6 +25,8 @@ interface UserFormProps {
     currentUser: User | null;
     onFormSubmitSuccess: () => void;
 }
+
+const NO_ROLE_SENTINEL = "_NONE_";
 
 export function UserForm({ isCreateMode, currentUser, onFormSubmitSuccess }: UserFormProps) {
   const { user: adminUser } = useAuth();
@@ -41,14 +42,14 @@ export function UserForm({ isCreateMode, currentUser, onFormSubmitSuccess }: Use
     defaultValues: isCreateMode ? {
         email: "", password: "", confirmPassword: "", displayName: "", fullName: "",
         employeeId: "", joiningDate: new Date().toISOString().split('T')[0], 
-        role: "", accountStatus: true, baseAirport: "",
+        role: "other", accountStatus: true, baseAirport: "",
     } : {
         email: currentUser?.email || "",
         displayName: currentUser?.displayName || "",
         fullName: currentUser?.fullName || "",
         employeeId: currentUser?.employeeId || "",
         joiningDate: currentUser?.joiningDate ? new Date(currentUser.joiningDate).toISOString().split('T')[0] : "",
-        role: currentUser?.role || "",
+        role: currentUser?.role || "other",
         accountStatus: currentUser?.accountStatus === 'active',
         baseAirport: currentUser?.baseAirport || "",
         password: "", confirmPassword: "",
@@ -118,7 +119,7 @@ export function UserForm({ isCreateMode, currentUser, onFormSubmitSuccess }: Use
                           <Select onValueChange={field.onChange} value={field.value ?? ""}>
                               <FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl>
                               <SelectContent>
-                                <SelectItem value=""><em>(Remove Role / Default)</em></SelectItem>
+                                <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
                                 {availableRoles.map(roleValue => (<SelectItem key={roleValue} value={roleValue} className="capitalize">{roleValue}</SelectItem>))}
                               </SelectContent>
                           </Select>

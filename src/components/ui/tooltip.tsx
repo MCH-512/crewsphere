@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -12,7 +11,7 @@ const Tooltip = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>
 >(({ delayDuration = 300, ...props }, ref) => (
-  <TooltipPrimitive.Root ref={ref} delayDuration={delayDuration} {...props} />
+  <TooltipPrimitive.Root delayDuration={delayDuration} {...props} />
 ));
 Tooltip.displayName = TooltipPrimitive.Root.displayName;
 

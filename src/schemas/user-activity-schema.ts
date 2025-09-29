@@ -15,3 +15,7 @@ export interface UserActivity {
   trainingSessionId?: string | null;
   requestId?: string;
 }
+
+export interface ActivityData extends UserActivity {
+    userEmail?: string;
+}
