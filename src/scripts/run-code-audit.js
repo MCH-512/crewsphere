@@ -14,7 +14,6 @@ require('dotenv').config({ path: require('path').resolve(process.cwd(), '.env.lo
  */
 
 const { Octokit } = require("@octokit/rest");
-const { ai } = require("../ai/genkit");
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -144,6 +143,9 @@ async function getSourceCodeContext() {
  */
 async function main() {
   console.log("🤖 CrewSphere Watchdog: Starting proactive code audit...");
+
+  // Dynamically import genkit module
+  const { ai } = await import('../ai/genkit');
 
   // 1. Gather all context
   const [sentryContext, dependabotContext, codeContext] = await Promise.all([

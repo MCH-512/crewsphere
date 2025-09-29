@@ -37,6 +37,8 @@ import { writeBatch, doc, collection, getDoc } from "firebase/firestore";
 import { type StoredFlight } from "@/schemas/flight-schema";
 import { type StoredTrainingSession } from "@/schemas/training-session-schema";
 import { getAirportByCode } from "@/services/airport-service";
+import { ActivityDetailsSheet, type SheetActivityDetails } from "@/components/features/activity-details-sheet";
+
 
 const DynamicMap = dynamic(() => import('@/components/features/live-map').then(mod => mod.MapDisplay), {
     ssr: false,
@@ -147,91 +149,6 @@ const AddManualActivityDialog = ({ userId, onActivityAdded, adminUser }: { userI
     );
 }
 
-// --- Detail Sheet Sub-components ---
-type SheetActivityDetails = { type: 'flight', data: FlightWithCrewDetails } | { type: 'training', data: TrainingWithCrewDetails };
-interface FlightWithCrewDetails extends StoredFlight {
-    departureAirportInfo?: Airport | null;
-    arrivalAirportInfo?: Airport | null;
-    crew: User[];
-}
-interface TrainingWithCrewDetails extends StoredTrainingSession {
-    attendees: User[];
-}
-
-
-const FlightDetails = ({ data, authUser }: { data: FlightWithCrewDetails, authUser: User | null }) => (
-    <div className="space-y-4">
-        <Card><CardHeader className="pb-2"><CardDescription>Flight Info</CardDescription><CardTitle className="flex items-center gap-2"><Plane className="h-5 w-5"/> {data.flightNumber}</CardTitle></CardHeader>
-            <CardContent className="text-sm space-y-1"><p><strong>Route:</strong> {data.departureAirportInfo?.iata || data.departureAirport} → {data.arrivalAirportInfo?.iata || data.arrivalAirport}</p><p><strong>Departure:</strong> {format(new Date(data.scheduledDepartureDateTimeUTC), "PPP HH:mm")} UTC</p><p><strong>Arrival:</strong> {format(new Date(data.scheduledArrivalDateTimeUTC), "PPP HH:mm")} UTC</p><p><strong>Aircraft:</strong> {data.aircraftType}</p></CardContent>
-        </Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Assigned Crew ({data.crew.length})</CardDescription></CardHeader>
-            <CardContent>{['purser', 'pilote', 'cabin crew', 'instructor', 'stagiaire'].map(role => {
-                const members = data.crew.filter(c => c.role === role);
-                if (members.length === 0) return null;
-                return (<div key={role}><h4 className="font-semibold capitalize mt-3 mb-2 text-primary">{role}</h4><div className="space-y-2">{members.map(member => (<div key={member.uid} className="flex items-center gap-2 text-sm">
-                    <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL ?? undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
-                    {authUser?.role === 'admin' ? (
-                        <Link href={`/admin/users/${member.uid}`} className="hover:underline text-primary">{member.displayName}</Link>
-                    ) : (
-                        <span>{member.displayName}</span>
-                    )}
-                </div>))}</div></div>);})}
-            </CardContent>
-        </Card>
-    </div>
-);
-
-const TrainingDetails = ({ data, authUser }: { data: TrainingWithCrewDetails, authUser: User | null }) => {
-    const sessionDate = typeof data.sessionDateTimeUTC === 'string'
-        ? new Date(data.sessionDateTimeUTC)
-        : data.sessionDateTimeUTC.toDate();
-        
-    return (
-        <div className="space-y-4">
-            <Card><CardHeader className="pb-2"><CardDescription>Training Session</CardDescription><CardTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5"/> {data.title}</CardTitle></CardHeader>
-                <CardContent className="text-sm space-y-1"><p><strong>Location:</strong> {data.location}</p><p><strong>Time:</strong> {format(sessionDate, "PPP HH:mm")} UTC</p><p><strong>Description:</strong> {data.description}</p></CardContent>
-            </Card>
-            <Card><CardHeader className="pb-2"><CardDescription>Attendees ({data.attendees.length})</CardDescription></CardHeader>
-                <CardContent><div className="space-y-2 max-h-60 overflow-y-auto">{data.attendees.map(member => (
-                    <div key={member.uid} className="flex items-center gap-2 text-sm">
-                      <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL ?? undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
-                       {authUser?.role === 'admin' ? (
-                            <Link href={`/admin/users/${member.uid}`} className="hover:underline text-primary">{member.displayName} ({member.role})</Link>
-                        ) : (
-                            <span>{member.displayName} ({member.role})</span>
-                        )}
-                    </div>))}
-                </div></CardContent>
-            </Card>
-        </div>
-    );
-};
-
-const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authUser, error }: { isOpen: boolean, onOpenChange: (open: boolean) => void, activity: SheetActivityDetails | null, isLoading: boolean, authUser: User | null, error: string | null }) => {
-    if (!isOpen) return null;
-
-    return (
-      <Sheet open={isOpen} onOpenChange={onOpenChange}>
-        <SheetContent className="w-full sm:max-w-md">
-            <SheetHeader><SheetTitle>Activity Details</SheetTitle><SheetDescription>{isLoading ? "Loading details..." : "Information about the selected event."}</SheetDescription></SheetHeader>
-            <div className="py-4">
-                {isLoading ? (
-                    <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin" /></div>
-                ) : error ? (
-                    <div className="text-center text-destructive py-10 flex flex-col items-center gap-2">
-                        <AlertTriangle className="h-8 w-8"/>
-                        <p className="font-semibold">Error Loading Details</p>
-                        <p className="text-sm">{error}</p>
-                    </div>
-                ) : activity ? (
-                    activity.type === 'flight' ? <FlightDetails data={activity.data} authUser={authUser} /> : <TrainingDetails data={activity.data} authUser={authUser} />
-                ) : null}
-            </div>
-        </SheetContent>
-      </Sheet>
-    );
-};
-
 interface UserDetailClientProps {
     initialProfileData: ProfileData;
     initialUserMap: Map<string, User>;
@@ -300,14 +217,14 @@ export function UserDetailClient({ initialProfileData, initialUserMap }: UserDet
         try {
             if (activity.flightId) {
                 const flightSnap = await getDoc(doc(db, "flights", activity.flightId));
-                if (!flightSnap.exists()) throw new Error("Flight details not found.");
+                if (!flightSnap.exists()) throw new Error("Flight details not found. It may have been deleted.");
                 const flight = { id: flightSnap.id, ...flightSnap.data() } as StoredFlight;
                 const crew = (flight.allCrewIds || []).map(uid => userMap.get(uid)).filter(Boolean) as User[];
                 const [depAirport, arrAirport] = await Promise.all([getAirportByCode(flight.departureAirport), getAirportByCode(flight.arrivalAirport)]);
                 setSheetActivity({ type: 'flight', data: { ...flight, departureAirportInfo: depAirport, arrivalAirportInfo: arrAirport, crew } });
             } else if (activity.trainingSessionId) {
                 const sessionSnap = await getDoc(doc(db, "trainingSessions", activity.trainingSessionId));
-                if (!sessionSnap.exists()) throw new Error("Training session not found.");
+                if (!sessionSnap.exists()) throw new Error("Training session not found. It may have been deleted.");
                 const session = { id: sessionSnap.id, ...sessionSnap.data() } as StoredTrainingSession;
                 const attendees = (session.attendeeIds || []).map(uid => userMap.get(uid)).filter(Boolean) as User[];
                 setSheetActivity({ type: 'training', data: { ...session, attendees } });
