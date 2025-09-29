@@ -317,7 +317,7 @@ SidebarInset.displayName = "SidebarInset"
 
 const SidebarHeader = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div">
+  React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
   return (
     <div
@@ -332,7 +332,7 @@ SidebarHeader.displayName = "SidebarHeader"
 
 const SidebarFooter = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div">
+  React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
   return (
     <div
@@ -404,7 +404,7 @@ SidebarGroupLabel.displayName = "SidebarGroupLabel"
 
 const SidebarMenu = React.forwardRef<
   HTMLUListElement,
-  React.ComponentProps<"ul">
+  React.HTMLAttributes<HTMLUListElement>
 >(({ className, ...props }, ref) => (
   <ul
     ref={ref}
@@ -417,7 +417,7 @@ SidebarMenu.displayName = "SidebarMenu"
 
 const SidebarMenuItem = React.forwardRef<
   HTMLLIElement,
-  React.ComponentProps<"li">
+  React.HTMLAttributes<HTMLLIElement>
 >(({ className, ...props }, ref) => (
   <li
     ref={ref}

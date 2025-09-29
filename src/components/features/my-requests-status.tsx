@@ -83,7 +83,7 @@ export async function MyRequestsStatusCard() {
                         <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                 </Button>
-            </CardFooter>
+             </CardFooter>
         </Card>
     );
 }

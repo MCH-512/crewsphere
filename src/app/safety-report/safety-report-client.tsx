@@ -5,17 +5,38 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldAlert, Loader2, Send, Plane, MapPin, ListChecks, CheckCheck, HelpCircle, EyeOff, ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
+import { ShieldAlert, Send, Loader2, Plane, MapPin, CheckCheck, EyeOff, ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
-import { safetyReportFormSchema, type SafetyReportFormValues, eventTypes, flightPhases, contributingFactors } from "@/schemas/safety-report-schema";
+import {
+  safetyReportFormSchema,
+  type SafetyReportFormValues,
+  eventTypes,
+  flightPhases,
+  contributingFactors,
+} from "@/schemas/safety-report-schema";
 import { submitSafetyReport } from "@/services/safety-report-service";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { AnimatedCard } from "@/components/motion/animated-card";
