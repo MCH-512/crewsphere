@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, Timestamp } from "firebase/firestore"; // ✅ Import correct de Timestamp
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"; // ✅ Correction: AlertDescription au lieu de ShadAlertDescription
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -230,7 +230,7 @@ const SubmitRequestTab = ({ refreshHistory }: { refreshHistory: () => void }) =>
           {formDataToSubmit?.urgencyLevel === 'Critical' && (
             <Alert variant="destructive" className="my-4">
               <Zap className="h-4 w-4" /><AlertTitle>Confirm Critical Urgency</AlertTitle>
-              <AlertDescription>You have marked this as a critical request. This should only be used for emergencies impacting immediate flight operations.</AlertDescription>
+              <AlertDialogDescription>You have marked this as a critical request. This should only be used for emergencies impacting immediate flight operations.</AlertDialogDescription>
             </Alert>
           )}
 

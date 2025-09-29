@@ -65,7 +65,7 @@ export async function getUserProfileData(userId: string): Promise<ProfileData | 
   const [trainingsSnapshot, requestsSnapshot, documentsSnapshot] = await Promise.all([
       getDocs(trainingsQuery),
       getDocs(requestsQuery),
-      getDocs(documentsSnapshot),
+      getDocs(documentsQuery),
   ]);
 
   const trainings = trainingsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserQuizAttempt));

@@ -184,7 +184,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-            <Select value={roleFilter === null ? NO_ROLE_SENTINEL : roleFilter} onValueChange={(value) => setRoleFilter(value === NO_ROLE_SENTINEL ? null : value as SpecificRole | 'all')}>
+            <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value === NO_ROLE_SENTINEL ? "all" : value as SpecificRole | 'all')}>
                 <SelectTrigger className="w-full md:w-[180px]">
                     <Filter className="h-4 w-4 mr-2" />
                     <SelectValue placeholder="Filter by role" />
