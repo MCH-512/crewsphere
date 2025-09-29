@@ -1,4 +1,6 @@
 
+const { withSentryConfig } = require('@sentry/nextjs');
+
 /** @type {import('next').NextConfig} */
 const cspHeader = `
     default-src 'self';
@@ -15,12 +17,14 @@ const cspHeader = `
 `.replace(/\s{2,}/g, ' ').trim();
 
 const nextConfig = {
+  // Allow requests from Firebase Studio's preview domains
   allowedDevOrigins: [
     '*.cloudworkstations.dev'
   ],
   experimental: {
     serverActions: {
       bodySizeLimit: '4.5mb',
+      timeout: 120,
     },
     instrumentationHook: true,
   },
@@ -96,15 +100,20 @@ const nextConfig = {
     ];
     return [...defaultHeaders, ...staticCacheHeaders];
   },
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals.push({
-        '@opentelemetry/instrumentation': 'commonjs @opentelemetry/instrumentation',
-        'require-in-the-middle': 'commonjs require-in-the-middle',
-      });
-    }
-    return config;
-  },
 };
 
-module.exports = nextConfig;
+const sentryWebpackPluginOptions = {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+};
+
+const sentryBuildOptions = {
+  widenClientFileUpload: true,
+  transpileClientSDK: true,
+  hideSourceMaps: true,
+  tunnelRoute: '/monitoring',
+};
+
+module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions, sentryBuildOptions);
