@@ -33,7 +33,10 @@ import type { StoredUserRequest } from "@/schemas/request-schema";
 import { Suspense } from "react";
 import { type ProfileData, getUserProfileData } from "@/services/user-profile-service";
 import { db } from "@/lib/firebase";
-import { writeBatch, doc, collection } from "firebase/firestore";
+import { writeBatch, doc, collection, getDoc } from "firebase/firestore";
+import { type StoredFlight } from "@/schemas/flight-schema";
+import { type StoredTrainingSession } from "@/schemas/training-session-schema";
+import { getAirportByCode } from "@/services/airport-service";
 
 const DynamicMap = dynamic(() => import('@/components/features/live-map').then(mod => mod.MapDisplay), {
     ssr: false,
@@ -144,19 +147,113 @@ const AddManualActivityDialog = ({ userId, onActivityAdded, adminUser }: { userI
     );
 }
 
-interface UserDetailClientProps {
-    initialProfileData: ProfileData;
+// --- Detail Sheet Sub-components ---
+type SheetActivityDetails = { type: 'flight', data: FlightWithCrewDetails } | { type: 'training', data: TrainingWithCrewDetails };
+interface FlightWithCrewDetails extends StoredFlight {
+    departureAirportInfo?: Airport | null;
+    arrivalAirportInfo?: Airport | null;
+    crew: User[];
+}
+interface TrainingWithCrewDetails extends StoredTrainingSession {
+    attendees: User[];
 }
 
+
+const FlightDetails = ({ data, authUser }: { data: FlightWithCrewDetails, authUser: User | null }) => (
+    <div className="space-y-4">
+        <Card><CardHeader className="pb-2"><CardDescription>Flight Info</CardDescription><CardTitle className="flex items-center gap-2"><Plane className="h-5 w-5"/> {data.flightNumber}</CardTitle></CardHeader>
+            <CardContent className="text-sm space-y-1"><p><strong>Route:</strong> {data.departureAirportInfo?.iata || data.departureAirport} → {data.arrivalAirportInfo?.iata || data.arrivalAirport}</p><p><strong>Departure:</strong> {format(new Date(data.scheduledDepartureDateTimeUTC), "PPP HH:mm")} UTC</p><p><strong>Arrival:</strong> {format(new Date(data.scheduledArrivalDateTimeUTC), "PPP HH:mm")} UTC</p><p><strong>Aircraft:</strong> {data.aircraftType}</p></CardContent>
+        </Card>
+        <Card><CardHeader className="pb-2"><CardDescription>Assigned Crew ({data.crew.length})</CardDescription></CardHeader>
+            <CardContent>{['purser', 'pilote', 'cabin crew', 'instructor', 'stagiaire'].map(role => {
+                const members = data.crew.filter(c => c.role === role);
+                if (members.length === 0) return null;
+                return (<div key={role}><h4 className="font-semibold capitalize mt-3 mb-2 text-primary">{role}</h4><div className="space-y-2">{members.map(member => (<div key={member.uid} className="flex items-center gap-2 text-sm">
+                    <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL ?? undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                    {authUser?.role === 'admin' ? (
+                        <Link href={`/admin/users/${member.uid}`} className="hover:underline text-primary">{member.displayName}</Link>
+                    ) : (
+                        <span>{member.displayName}</span>
+                    )}
+                </div>))}</div></div>);})}
+            </CardContent>
+        </Card>
+    </div>
+);
+
+const TrainingDetails = ({ data, authUser }: { data: TrainingWithCrewDetails, authUser: User | null }) => {
+    const sessionDate = typeof data.sessionDateTimeUTC === 'string'
+        ? new Date(data.sessionDateTimeUTC)
+        : data.sessionDateTimeUTC.toDate();
+        
+    return (
+        <div className="space-y-4">
+            <Card><CardHeader className="pb-2"><CardDescription>Training Session</CardDescription><CardTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5"/> {data.title}</CardTitle></CardHeader>
+                <CardContent className="text-sm space-y-1"><p><strong>Location:</strong> {data.location}</p><p><strong>Time:</strong> {format(sessionDate, "PPP HH:mm")} UTC</p><p><strong>Description:</strong> {data.description}</p></CardContent>
+            </Card>
+            <Card><CardHeader className="pb-2"><CardDescription>Attendees ({data.attendees.length})</CardDescription></CardHeader>
+                <CardContent><div className="space-y-2 max-h-60 overflow-y-auto">{data.attendees.map(member => (
+                    <div key={member.uid} className="flex items-center gap-2 text-sm">
+                      <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL ?? undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                       {authUser?.role === 'admin' ? (
+                            <Link href={`/admin/users/${member.uid}`} className="hover:underline text-primary">{member.displayName} ({member.role})</Link>
+                        ) : (
+                            <span>{member.displayName} ({member.role})</span>
+                        )}
+                    </div>))}
+                </div></CardContent>
+            </Card>
+        </div>
+    );
+};
+
+const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authUser, error }: { isOpen: boolean, onOpenChange: (open: boolean) => void, activity: SheetActivityDetails | null, isLoading: boolean, authUser: User | null, error: string | null }) => {
+    if (!isOpen) return null;
+
+    return (
+      <Sheet open={isOpen} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:max-w-md">
+            <SheetHeader><SheetTitle>Activity Details</SheetTitle><SheetDescription>{isLoading ? "Loading details..." : "Information about the selected event."}</SheetDescription></SheetHeader>
+            <div className="py-4">
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : error ? (
+                    <div className="text-center text-destructive py-10 flex flex-col items-center gap-2">
+                        <AlertTriangle className="h-8 w-8"/>
+                        <p className="font-semibold">Error Loading Details</p>
+                        <p className="text-sm">{error}</p>
+                    </div>
+                ) : activity ? (
+                    activity.type === 'flight' ? <FlightDetails data={activity.data} authUser={authUser} /> : <TrainingDetails data={activity.data} authUser={authUser} />
+                ) : null}
+            </div>
+        </SheetContent>
+      </Sheet>
+    );
+};
+
+interface UserDetailClientProps {
+    initialProfileData: ProfileData;
+    initialUserMap: Map<string, User>;
+}
+
+
 // --- Page Component ---
-export function UserDetailClient({ initialProfileData }: UserDetailClientProps) {
+export function UserDetailClient({ initialProfileData, initialUserMap }: UserDetailClientProps) {
     const { user: adminUser, loading: authLoading } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
 
     const [profileData, setProfileData] = React.useState<ProfileData>(initialProfileData);
-    const [isLoading, setIsLoading] = React.useState(false); // For refresh only
+    const [userMap, setUserMap] = React.useState<Map<string, User>>(initialUserMap);
+    const [isLoading, setIsLoading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
+
+    const [sheetActivity, setSheetActivity] = React.useState<SheetActivityDetails | null>(null);
+    const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+    const [isSheetLoading, setIsSheetLoading] = React.useState(false);
+    const [sheetError, setSheetError] = React.useState<string | null>(null);
+
 
     const fetchUserProfileData = React.useCallback(async () => {
         setIsLoading(true);
@@ -165,6 +262,7 @@ export function UserDetailClient({ initialProfileData }: UserDetailClientProps) 
             const freshData = await getUserProfileData(profileData.user.uid);
             if (freshData) {
                 setProfileData(freshData);
+                setUserMap(freshData.userMap);
                 toast({ title: "Profile Refreshed", description: "The user's data has been updated." });
             } else {
                 throw new Error("Failed to refresh user profile data.");
@@ -193,6 +291,36 @@ export function UserDetailClient({ initialProfileData }: UserDetailClientProps) 
         }
         return format(dateObj, "PPP");
     };
+
+    const handleShowActivityDetails = async (activity: UserActivity) => {
+        setIsSheetOpen(true);
+        setIsSheetLoading(true);
+        setSheetActivity(null);
+        setSheetError(null);
+        try {
+            if (activity.flightId) {
+                const flightSnap = await getDoc(doc(db, "flights", activity.flightId));
+                if (!flightSnap.exists()) throw new Error("Flight details not found.");
+                const flight = { id: flightSnap.id, ...flightSnap.data() } as StoredFlight;
+                const crew = (flight.allCrewIds || []).map(uid => userMap.get(uid)).filter(Boolean) as User[];
+                const [depAirport, arrAirport] = await Promise.all([getAirportByCode(flight.departureAirport), getAirportByCode(flight.arrivalAirport)]);
+                setSheetActivity({ type: 'flight', data: { ...flight, departureAirportInfo: depAirport, arrivalAirportInfo: arrAirport, crew } });
+            } else if (activity.trainingSessionId) {
+                const sessionSnap = await getDoc(doc(db, "trainingSessions", activity.trainingSessionId));
+                if (!sessionSnap.exists()) throw new Error("Training session not found.");
+                const session = { id: sessionSnap.id, ...sessionSnap.data() } as StoredTrainingSession;
+                const attendees = (session.attendeeIds || []).map(uid => userMap.get(uid)).filter(Boolean) as User[];
+                setSheetActivity({ type: 'training', data: { ...session, attendees } });
+            }
+        } catch(err) {
+            const e = err as Error;
+            console.error("Error fetching activity details:", e);
+            setSheetError(e.message || "An unexpected error occurred.");
+        } finally {
+            setIsSheetLoading(false);
+        }
+    };
+
 
     if (authLoading) {
         return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -242,7 +370,10 @@ export function UserDetailClient({ initialProfileData }: UserDetailClientProps) 
                             <CardContent>
                                 {isLoading ? <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin"/></div> :
                                 activities.length > 0 ? (
-                                    <ul className="space-y-2">{activities.map((act) => <li key={act.id} className="text-sm flex justify-between"><span>{act.activityType === 'flight' ? `Flight ${act.flightNumber}` : act.comments || act.activityType}</span> <span className="text-muted-foreground">{format(act.date.toDate(), 'PP')}</span></li>)}</ul>
+                                    <ul className="space-y-2">{activities.map((act) => <li key={act.id} className="text-sm flex justify-between">
+                                        <button onClick={() => handleShowActivityDetails(act)} className="text-left hover:text-primary truncate pr-2">{act.activityType === 'flight' ? `Flight ${act.flightNumber}` : act.comments || act.activityType}</button>
+                                        <span className="text-muted-foreground">{format(act.date.toDate(), 'PP')}</span>
+                                    </li>)}</ul>
                                 ) : (<p className="text-sm text-muted-foreground text-center py-4">No recent activities found.</p>)}
                             </CardContent>
                         </Card>
@@ -290,7 +421,7 @@ export function UserDetailClient({ initialProfileData }: UserDetailClientProps) 
                                     <div>
                                         <p className="font-medium">
                                             <Link href={`/training/${t.courseId}`} className="hover:underline text-primary">
-                                                {t.courseTitle}
+                                                {t.courseId} {/* Fallback to ID if title not available */}
                                             </Link>
                                         </p>
                                         <p className="text-xs text-muted-foreground">Completed {formatDistanceToNowStrict(t.completedAt.toDate(), { addSuffix: true })}</p>
@@ -337,7 +468,14 @@ export function UserDetailClient({ initialProfileData }: UserDetailClientProps) 
                     ) : (<p className="text-sm text-muted-foreground text-center py-4">No documents are tracked for this user.</p>)}
                 </CardContent>
              </Card>
+             <ActivityDetailsSheet 
+                isOpen={isSheetOpen} 
+                onOpenChange={setIsSheetOpen} 
+                activity={sheetActivity} 
+                isLoading={isSheetLoading} 
+                authUser={adminUser} 
+                error={sheetError} 
+             />
         </div>
     );
 }
-

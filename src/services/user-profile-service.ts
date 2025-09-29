@@ -11,51 +11,72 @@ import {
   limit,
 } from "firebase/firestore";
 import { User } from "@/schemas/user-schema";
-import { StoredUserCourseProgress } from "@/schemas/user-course-progress-schema";
+import { StoredUserQuizAttempt } from "@/schemas/user-course-progress-schema";
 import { StoredUserRequest } from "@/schemas/user-request-schema";
+import { Airport, getAirportByCode } from "./airport-service";
+import { ActivityData, getUserActivitiesForMonth } from "./activity-service";
+import { StoredUserDocument } from "@/schemas/user-document-schema";
+
+
+export interface ProfileData {
+    user: User;
+    activities: ActivityData[];
+    trainings: StoredUserQuizAttempt[];
+    requests: StoredUserRequest[];
+    documents: StoredUserDocument[];
+    baseAirport: Airport | null;
+    userMap: Map<string, User>;
+}
+
 
 /**
  * Fetches all the necessary data for a user's profile page.
  * 
  * @param {string} userId - The UID of the user.
- * @returns An object containing user details, course progress, and recent requests.
+ * @returns An object containing user details, activities, trainings, requests, documents, and a map of all users.
  */
-export async function getUserProfileData(userId: string) {
+export async function getUserProfileData(userId: string): Promise<ProfileData | null> {
 
   const userRef = doc(db, "users", userId);
-  const userDocPromise = getDoc(userRef);
-
-  const progressQuery = query(
-    collection(db, "userCourseProgress"),
-    where("userId", "==", userId),
-    orderBy("lastActivity", "desc")
-  );
-  const progressPromise = getDocs(progressQuery);
-
-  const requestsPromise = getDocs(query(collection(db, "requests"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(5)));
-
-  const [userDoc, progressSnapshot, requestsSnapshot] = await Promise.all([
-    userDocPromise,
-    progressPromise,
-    requestsPromise,
+  
+  const [userDoc, allUsersSnapshot] = await Promise.all([
+    getDoc(userRef),
+    getDocs(collection(db, "users")),
   ]);
 
   if (!userDoc.exists()) {
-    throw new Error("User not found");
+    return null; // User not found
   }
+  
   const user = { uid: userDoc.id, ...userDoc.data() } as User;
+  
+  const userMap = new Map(allUsersSnapshot.docs.map(doc => [doc.id, { uid: doc.id, ...doc.data() } as User]));
+  
+  const baseAirport = user.baseAirport ? await getAirportByCode(user.baseAirport) : null;
+  
+  const activities = await getUserActivitiesForMonth(new Date(), userId);
 
-  const courseProgress = progressSnapshot.docs.map(
-    (doc) => ({ id: doc.id, ...doc.data() } as StoredUserCourseProgress)
-  );
+  const trainingsQuery = query(collection(db, "userQuizAttempts"), where("userId", "==", userId), orderBy("completedAt", "desc"), limit(5));
+  const requestsQuery = query(collection(db, "requests"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(5));
+  const documentsQuery = query(collection(db, "userDocuments"), where("userId", "==", userId), orderBy("expiryDate", "asc"));
 
-  const recentRequests = requestsSnapshot.docs.map(
-    (doc) => ({ id: doc.id, ...doc.data() } as StoredUserRequest)
-  );
+  const [trainingsSnapshot, requestsSnapshot, documentsSnapshot] = await Promise.all([
+      getDocs(trainingsQuery),
+      getDocs(requestsQuery),
+      getDocs(documentsQuery),
+  ]);
+
+  const trainings = trainingsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserQuizAttempt));
+  const requests = requestsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserRequest));
+  const documents = documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserDocument));
 
   return {
     user,
-    courseProgress,
-    recentRequests,
+    activities,
+    trainings,
+    requests,
+    documents,
+    baseAirport,
+    userMap,
   };
 }
