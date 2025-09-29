@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -13,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, Timestamp, doc, serverTimestamp, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, Timestamp, doc, writeBatch, serverTimestamp, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { useRouter } from "next/navigation";
 import { Library, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Download, Search, Filter, Eye } from "lucide-react";
@@ -56,7 +57,7 @@ export default function AdminDocumentsPage() {
             const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc"));
             const querySnapshot = await getDocs(q);
             setDocuments(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredDocument)));
-        } catch (err: unknown) {
+        } catch (err) {
             toast({ title: "Loading Error", description: "Could not fetch documents.", variant: "destructive" });
         } finally {
             setIsLoading(false);
@@ -128,9 +129,7 @@ export default function AdminDocumentsPage() {
             let fileName = currentDocument?.fileName;
             let fileType = currentDocument?.fileType;
 
-            const fileList = (data as DocumentFormValues).file;
-            const file = fileList?.[0];
-
+            const file = data.file?.[0];
             if (file) {
                 if (isEditMode && currentDocument?.filePath) {
                     await deleteObject(ref(storage, currentDocument.filePath));
@@ -154,7 +153,7 @@ export default function AdminDocumentsPage() {
                 fileURL, filePath, fileName, fileType,
                 uploaderId: user.uid,
                 uploaderEmail: user.email || "N/A",
-                lastUpdated: serverTimestamp(),
+                lastUpdated: serverTimestamp() as any,
             };
             
             if (isEditMode && currentDocument) {
@@ -229,7 +228,7 @@ export default function AdminDocumentsPage() {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as DocumentCategory | "all")}>
+                        <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as any)}>
                             <SelectTrigger className="w-full md:w-[220px]">
                                 <Filter className="mr-2 h-4 w-4" />
                                 <SelectValue placeholder="Filter by category" />
@@ -284,12 +283,12 @@ export default function AdminDocumentsPage() {
                         <DialogDescription>{isEditMode ? "Update the document details below." : "Fill in the form to add a new document."}</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-                            <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                            <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>} />
-                            <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{documentCategories.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>} />
-                            <FormField control={form.control} name="version" render={({ field }) => (<FormItem><FormLabel>Version</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                            <FormField control={form.control} name="file" render={({ field: { onChange, ...fieldProps } }) => (
+                        <form onSubmit={form.handleSubmit(handleFormSubmit as any)} className="space-y-4">
+                            <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{documentCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="version" render={({ field }) => (<FormItem><FormLabel>Version</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="file" render={({ field: { value, onChange, ...fieldProps } }) => (
                                 <FormItem>
                                     <FormLabel>File {isEditMode && "(Optional: leave empty to keep existing file)"}</FormLabel>
                                     <FormControl><Input type="file" {...fieldProps} onChange={e => onChange(e.target.files)} /></FormControl>
@@ -307,3 +306,6 @@ export default function AdminDocumentsPage() {
         </div>
     );
 }
+    
+
+    

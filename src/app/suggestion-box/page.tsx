@@ -23,17 +23,18 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lightbulb, Send, Loader2, ThumbsUp, CheckCircle, ArrowUpDown } from "lucide-react";
+import { Lightbulb, Send, Loader2, AlertTriangle, MessageSquare, ThumbsUp, CheckCircle, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, query, orderBy, getDocs, doc, runTransaction } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, orderBy, getDocs, doc, updateDoc, arrayUnion, arrayRemove, getDoc, runTransaction } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { suggestionFormSchema, type SuggestionFormValues, suggestionCategories, type StoredSuggestion } from "@/schemas/suggestion-schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDistanceToNowStrict } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { logAuditEvent } from "@/lib/audit-logger";
 

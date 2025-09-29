@@ -6,9 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, getDocs, orderBy, limit, addDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, orderBy, limit, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, AlertTriangle, CheckCircle, XCircle, FileQuestion, Send, Award, RefreshCw } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle, XCircle, FileQuestion, Star, Send, Award, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { StoredQuestion } from "@/schemas/quiz-question-schema";
 import { StoredQuiz, StoredCertificateRule, StoredCourse } from "@/schemas/course-schema";
@@ -266,3 +266,4 @@ export default function QuizPage() {
     }
     
     return null; // Should not be reached
+}

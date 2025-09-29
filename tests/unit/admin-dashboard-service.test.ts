@@ -11,6 +11,12 @@ jest.mock('firebase/firestore', () => ({
   orderBy: jest.fn(),
 }));
 
+// Mock the firebase config
+jest.mock('@/lib/firebase', () => ({
+    isConfigValid: true,
+    db: {},
+  }));
+
 // Mock the session user
 jest.mock('@/lib/session', () => ({
   getCurrentUser: jest.fn().mockResolvedValue({

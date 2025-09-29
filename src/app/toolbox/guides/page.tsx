@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -12,12 +13,12 @@ const guides = [
     title: "Professional Etiquette & Grooming",
     content: (
         <>
-            <p>Maintaining impeccable grooming and professional etiquette is paramount. It reflects on the airline&apos;s brand and ensures a positive passenger experience.</p>
+            <p>Maintaining impeccable grooming and professional etiquette is paramount. It reflects on the airline's brand and ensures a positive passenger experience.</p>
             <ul className="list-disc list-inside mt-2 space-y-1">
                 <li><strong>Uniform:</strong> Always wear the complete, clean, and well-pressed uniform. Shoes must be polished and in good condition.</li>
                 <li><strong>Grooming:</strong> Adhere strictly to company guidelines regarding hair, makeup, and accessories. A neat and professional appearance is non-negotiable.</li>
                 <li><strong>Posture and Body Language:</strong> Stand tall, walk with purpose, and maintain open body language. Avoid leaning, slouching, or crossing arms when interacting with passengers.</li>
-                <li><strong>Communication:</strong> Use polite and respectful language at all times. Address passengers with appropriate titles (e.g., &quot;Sir,&quot; &quot;Ma&apos;am&quot;) unless invited to do otherwise.</li>
+                <li><strong>Communication:</strong> Use polite and respectful language at all times. Address passengers with appropriate titles (e.g., "Sir," "Ma'am") unless invited to do otherwise.</li>
             </ul>
         </>
     ),
@@ -47,7 +48,7 @@ const guides = [
             <p>Anticipating needs and providing outstanding service creates a memorable journey for passengers.</p>
             <ul className="list-disc list-inside mt-2 space-y-1">
                 <li><strong>Be Proactive:</strong> Anticipate passenger needs before they ask. Offer a blanket to a passenger who looks cold, or water on a long flight.</li>
-                <li><strong>Personalize Interaction:</strong> When possible, use passengers&apos; names (from the passenger manifest). A small personal touch can make a big difference.</li>
+                <li><strong>Personalize Interaction:</strong> When possible, use passengers' names (from the passenger manifest). A small personal touch can make a big difference.</li>
                 <li><strong>Know Your Product:</strong> Be knowledgeable about the in-flight service, menu, and entertainment options to answer questions confidently.</li>
                 <li><strong>Teamwork in Service:</strong> Coordinate with fellow crew members to ensure a smooth and efficient service flow. Support each other, especially during busy periods.</li>
             </ul>
@@ -113,7 +114,7 @@ export default function GuidesPage() {
                 </Card>
             ))
         ) : (
-            <p className="text-center text-muted-foreground py-6">No guides found matching &quot;{searchTerm}&quot;.</p>
+            <p className="text-center text-muted-foreground py-6">No guides found matching "{searchTerm}".</p>
         )}
       </div>
     </div>

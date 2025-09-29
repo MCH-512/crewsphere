@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -11,7 +12,7 @@ import { Compass, Loader2, Send, ThumbsUp, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, query, orderBy, getDocs, doc, runTransaction } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, orderBy, getDocs, doc, runTransaction, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { communityPostFormSchema, type CommunityPostFormValues, type StoredCommunityPost } from "@/schemas/community-post-schema";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -19,8 +20,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AnimatedCard } from "@/components/motion/animated-card";
 
 // PostCard Component
-const PostCard = ({ post, onLike, currentUserId }: { post: StoredCommunityPost; onLike: (id: string) =&gt; void; currentUserId: string | null; }) =&gt; {
-    const hasLiked = currentUserId &amp;&amp; post.likes.includes(currentUserId);
+const PostCard = ({ post, onLike, currentUserId }: { post: StoredCommunityPost; onLike: (id: string) => void; currentUserId: string | null; }) => {
+    const hasLiked = currentUserId && post.likes.includes(currentUserId);
     const timeAgo = post.createdAt ? formatDistanceToNowStrict(post.createdAt.toDate(), { addSuffix: true }) : "just now";
     
     // Safely get author name and fallback for avatar
@@ -28,27 +29,27 @@ const PostCard = ({ post, onLike, currentUserId }: { post: StoredCommunityPost; 
     const avatarFallback = (authorName || "AN").substring(0, 2).toUpperCase();
 
     return (
-        &lt;Card className="shadow-sm"&gt;
-            &lt;CardHeader className="flex flex-row items-start gap-4 pb-4"&gt;
-                &lt;Avatar&gt;
-                    &lt;AvatarImage src={post.authorPhotoURL ?? undefined} data-ai-hint="user portrait" /&gt;
-                    &lt;AvatarFallback&gt;{avatarFallback}&lt;/AvatarFallback&gt;
-                &lt;/Avatar&gt;
-                &lt;div className="flex-1"&gt;
-                    &lt;p className="font-semibold"&gt;{authorName}&lt;/p&gt;
-                    &lt;p className="text-xs text-muted-foreground capitalize"&gt;{post.authorRole || 'Crew Member'} • {timeAgo}&lt;/p&gt;
-                &lt;/div&gt;
-            &lt;/CardHeader&gt;
-            &lt;CardContent&gt;
-                &lt;p className="text-sm whitespace-pre-wrap"&gt;{post.content}&lt;/p&gt;
-            &lt;/CardContent&gt;
-            &lt;CardFooter className="border-t pt-2 pb-2"&gt;
-                &lt;Button variant={hasLiked ? "default" : "ghost"} size="sm" onClick={() =&gt; onLike(post.id)} disabled={!currentUserId}&gt;
-                    &lt;ThumbsUp className="mr-2 h-4 w-4" /&gt;
-                    &lt;span&gt;Like ({post.likeCount})&lt;/span&gt;
-                &lt;/Button&gt;
-            &lt;/CardFooter&gt;
-        &lt;/Card&gt;
+        <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-start gap-4 pb-4">
+                <Avatar>
+                    <AvatarImage src={post.authorPhotoURL ?? undefined} data-ai-hint="user portrait" />
+                    <AvatarFallback>{avatarFallback}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                    <p className="font-semibold">{authorName}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{post.authorRole || 'Crew Member'} • {timeAgo}</p>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <p className="text-sm whitespace-pre-wrap">{post.content}</p>
+            </CardContent>
+            <CardFooter className="border-t pt-2 pb-2">
+                <Button variant={hasLiked ? "default" : "ghost"} size="sm" onClick={() => onLike(post.id)} disabled={!currentUserId}>
+                    <ThumbsUp className="mr-2 h-4 w-4" />
+                    <span>Like ({post.likeCount})</span>
+                </Button>
+            </CardFooter>
+        </Card>
     );
 };
 
@@ -59,15 +60,15 @@ export default function CommunityHubPage() {
     const router = useRouter();
 
     const [isSubmitting, setIsSubmitting] = React.useState(false);
-    const [posts, setPosts] = React.useState&lt;StoredCommunityPost[]&gt;([]);
+    const [posts, setPosts] = React.useState<StoredCommunityPost[]>([]);
     const [isLoadingPosts, setIsLoadingPosts] = React.useState(true);
 
-    const fetchPosts = React.useCallback(async () =&gt; {
+    const fetchPosts = React.useCallback(async () => {
         setIsLoadingPosts(true);
         try {
             const q = query(collection(db, "communityPosts"), orderBy("createdAt", "desc"));
             const querySnapshot = await getDocs(q);
-            const fetchedPosts = querySnapshot.docs.map(doc =&gt; ({ id: doc.id, ...doc.data() } as StoredCommunityPost));
+            const fetchedPosts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredCommunityPost));
             setPosts(fetchedPosts);
         } catch (error) {
             console.error("Error fetching posts:", error);
@@ -77,7 +78,7 @@ export default function CommunityHubPage() {
         }
     }, [toast]);
 
-    React.useEffect(() =&gt; {
+    React.useEffect(() => {
         if (!authLoading) {
             if (user) {
                 fetchPosts();
@@ -116,12 +117,12 @@ export default function CommunityHubPage() {
         }
     }
 
-    const handleLike = async (postId: string) =&gt; {
+    const handleLike = async (postId: string) => {
         if (!user) return;
         const postRef = doc(db, "communityPosts", postId);
 
         try {
-            await runTransaction(db, async (transaction) =&gt; {
+            await runTransaction(db, async (transaction) => {
                 const postDoc = await transaction.get(postRef);
                 if (!postDoc.exists()) throw "Document does not exist!";
                 
@@ -129,7 +130,7 @@ export default function CommunityHubPage() {
                 const currentLikes: string[] = data.likes || [];
                 const hasLiked = currentLikes.includes(user.uid);
                 
-                const newLikes = hasLiked ? currentLikes.filter(uid =&gt; uid !== user.uid) : [...currentLikes, user.uid];
+                const newLikes = hasLiked ? currentLikes.filter(uid => uid !== user.uid) : [...currentLikes, user.uid];
                 
                 transaction.update(postRef, {
                     likes: newLikes,
@@ -137,10 +138,10 @@ export default function CommunityHubPage() {
                 });
             });
 
-            setPosts(prevPosts =&gt; prevPosts.map(p =&gt; {
+            setPosts(prevPosts => prevPosts.map(p => {
                 if (p.id === postId) {
                     const hasLiked = p.likes.includes(user.uid);
-                    const newLikes = hasLiked ? p.likes.filter(uid =&gt; uid !== user.uid) : [...p.likes, user.uid];
+                    const newLikes = hasLiked ? p.likes.filter(uid => uid !== user.uid) : [...p.likes, user.uid];
                     return { ...p, likes: newLikes, likeCount: newLikes.length };
                 }
                 return p;
@@ -152,82 +153,82 @@ export default function CommunityHubPage() {
         }
     };
     
-    const form = useForm&lt;CommunityPostFormValues&gt;({
+    const form = useForm<CommunityPostFormValues>({
         resolver: zodResolver(communityPostFormSchema),
         defaultValues: { content: "" },
     });
 
-    if (authLoading || (!user &amp;&amp; !authLoading)) {
-        return &lt;div className="flex items-center justify-center min-h-[calc(100vh-200px)]"&gt;&lt;Loader2 className="h-12 w-12 animate-spin text-primary" /&gt;&lt;/div&gt;;
+    if (authLoading || (!user && !authLoading)) {
+        return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
 
     return (
-        &lt;div className="space-y-6 max-w-3xl mx-auto"&gt;
-            &lt;Card className="shadow-lg"&gt;
-                &lt;CardHeader&gt;
-                    &lt;CardTitle className="text-2xl font-headline flex items-center gap-3"&gt;
-                        &lt;Compass className="h-7 w-7 text-primary" /&gt;
+        <div className="space-y-6 max-w-3xl mx-auto">
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle className="text-2xl font-headline flex items-center gap-3">
+                        <Compass className="h-7 w-7 text-primary" />
                         Community Hub
-                    &lt;/CardTitle&gt;
-                    &lt;CardDescription&gt;
+                    </CardTitle>
+                    <CardDescription>
                         Share updates, ask questions, and connect with fellow crew members.
-                    &lt;/CardDescription&gt;
-                &lt;/CardHeader&gt;
-            &lt;/Card&gt;
+                    </CardDescription>
+                </CardHeader>
+            </Card>
             
-            &lt;AnimatedCard&gt;
-                &lt;Card&gt;
-                    &lt;CardHeader className="pb-4"&gt;
-                        &lt;CardTitle className="text-lg flex items-center gap-2"&gt;&lt;MessageSquare className="h-5 w-5"/&gt;Create a new post&lt;/CardTitle&gt;
-                    &lt;/CardHeader&gt;
-                    &lt;CardContent&gt;
-                        &lt;Form {...form}&gt;
-                            &lt;form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4"&gt;
-                                &lt;FormField
+            <AnimatedCard>
+                <Card>
+                    <CardHeader className="pb-4">
+                        <CardTitle className="text-lg flex items-center gap-2"><MessageSquare className="h-5 w-5"/>Create a new post</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                <FormField
                                     control={form.control}
                                     name="content"
-                                    render={({ field }) =&gt; (
-                                        &lt;FormItem&gt;
-                                            &lt;FormControl&gt;
-                                                &lt;Textarea
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <Textarea
                                                     placeholder={`What's on your mind, ${user?.displayName || 'crew member'}?`}
                                                     className="min-h-[100px] text-base"
                                                     {...field}
-                                                /&gt;
-                                            &lt;/FormControl&gt;
-                                            &lt;FormMessage /&gt;
-                                        &lt;/FormItem&gt;
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
                                     )}
-                                /&gt;
-                                &lt;div className="flex justify-end"&gt;
-                                    &lt;Button type="submit" disabled={isSubmitting || !form.formState.isDirty}&gt;
-                                        {isSubmitting ? &lt;Loader2 className="mr-2 h-4 w-4 animate-spin"/&gt; : &lt;Send className="mr-2 h-4 w-4"/&gt;}
+                                />
+                                <div className="flex justify-end">
+                                    <Button type="submit" disabled={isSubmitting || !form.formState.isDirty}>
+                                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
                                         Publish Post
-                                    &lt;/Button&gt;
-                                &lt;/div&gt;
-                            &lt;/form&gt;
-                        &lt;/Form&gt;
-                    &lt;/CardContent&gt;
-                &lt;/Card&gt;
-            &lt;/AnimatedCard&gt;
+                                    </Button>
+                                </div>
+                            </form>
+                        </Form>
+                    </CardContent>
+                </Card>
+            </AnimatedCard>
 
-            &lt;div className="space-y-4"&gt;
+            <div className="space-y-4">
                 {isLoadingPosts ? (
-                    &lt;div className="text-center py-8"&gt;&lt;Loader2 className="mx-auto h-8 w-8 animate-spin text-primary"/&gt;&lt;/div&gt;
-                ) : posts.length &gt; 0 ? (
-                    posts.map((post, index) =&gt; (
-                        &lt;AnimatedCard key={post.id} delay={0.1 + index * 0.05}&gt;
-                            &lt;PostCard post={post} onLike={handleLike} currentUserId={user?.uid || null} /&gt;
-                        &lt;/AnimatedCard&gt;
+                    <div className="text-center py-8"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary"/></div>
+                ) : posts.length > 0 ? (
+                    posts.map((post, index) => (
+                        <AnimatedCard key={post.id} delay={0.1 + index * 0.05}>
+                            <PostCard post={post} onLike={handleLike} currentUserId={user?.uid || null} />
+                        </AnimatedCard>
                     ))
                 ) : (
-                    &lt;Card className="text-center py-12"&gt;
-                        &lt;CardContent&gt;
-                           &lt;p className="text-muted-foreground"&gt;No posts yet. Be the first to share something!&lt;/p&gt;
-                        &lt;/CardContent&gt;
-                    &lt;/Card&gt;
+                    <Card className="text-center py-12">
+                        <CardContent>
+                           <p className="text-muted-foreground">No posts yet. Be the first to share something!</p>
+                        </CardContent>
+                    </Card>
                 )}
-            &lt;/div&gt;
-        &lt;/div&gt;
+            </div>
+        </div>
     );
 }

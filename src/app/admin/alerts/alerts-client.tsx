@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -14,7 +15,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, Timestamp, doc, addDoc, updateDoc, deleteDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { BellRing, Loader2, AlertTriangle, Edit, PlusCircle, Trash2, Search, Filter } from "lucide-react";
+import { BellRing, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Search, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { VariantProps } from "class-variance-authority";
@@ -24,6 +25,7 @@ import { logAuditEvent } from "@/lib/audit-logger";
 import { Switch } from "@/components/ui/switch";
 import { StoredAlert, alertFormSchema, AlertFormValues, alertTypes, alertAudiences } from "@/schemas/alert-schema";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
+import { badgeVariants } from "@/components/ui/badge";
 
 type SortableColumn = 'title' | 'type' | 'targetAudience' | 'isActive' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
@@ -91,8 +93,8 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
 
         const sorted = [...filtered];
         sorted.sort((a, b) => {
-            const valA = a[sortColumn];
-            const valB = b[sortColumn];
+            let valA = a[sortColumn];
+            let valB = b[sortColumn];
             let comparison = 0;
             if (valA instanceof Timestamp && valB instanceof Timestamp) {
                 comparison = valA.toMillis() - valB.toMillis();
@@ -148,7 +150,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
                 toast({ title: "Alert Created", description: `Alert "${data.title}" has been published.` });
             }
             setIsManageDialogOpen(false);
-        } catch (error: unknown) {
+        } catch (error) {
             toast({ title: "Submission Failed", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
@@ -161,7 +163,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
             await deleteDoc(doc(db, "alerts", alertToDelete.id));
             await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "DELETE_ALERT", entityType: "ALERT", entityId: alertToDelete.id, details: { title: alertToDelete.title } });
             toast({ title: "Alert Deleted", description: `"${alertToDelete.title}" has been removed.` });
-        } catch (error: unknown) {
+        } catch (error) {
             toast({ title: "Deletion Failed", variant: "destructive" });
         }
     };
@@ -219,7 +221,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as AlertType | "all")}>
+                        <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as any)}>
                             <SelectTrigger className="w-full md:w-[180px]">
                                 <Filter className="mr-2 h-4 w-4" />
                                 <SelectValue placeholder="Filter by type" />
@@ -229,7 +231,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
                                 {alertTypes.map(type => <SelectItem key={type} value={type} className="capitalize">{type}</SelectItem>)}
                             </SelectContent>
                         </Select>
-                        <Select value={audienceFilter} onValueChange={(value) => setAudienceFilter(value as AlertAudience | "all")}>
+                        <Select value={audienceFilter} onValueChange={(value) => setAudienceFilter(value as any)}>
                             <SelectTrigger className="w-full md:w-[180px]">
                                 <Filter className="mr-2 h-4 w-4" />
                                 <SelectValue placeholder="Filter by audience" />
@@ -263,7 +265,8 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
                                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(alert)}><Trash2 className="h-4 w-4" /></Button>
                                     </TableCell>
                                 </TableRow>
-                            ))}</TableBody>
+                            ))}
+                        </TableBody>
                     </Table>
                     {sortedAlerts.length === 0 && <p className="text-center text-muted-foreground p-8">No alerts found matching your criteria.</p>}
                 </CardContent>
@@ -295,3 +298,4 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
         </div>
     );
 }
+    

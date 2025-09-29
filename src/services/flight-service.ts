@@ -1,7 +1,8 @@
+
 "use server";
 
 import { db, isConfigValid } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, doc } from "firebase/firestore";
 import { StoredFlight } from "@/schemas/flight-schema";
 import { StoredFlightSwap } from "@/schemas/flight-swap-schema";
 import { User } from "@/schemas/user-schema";
@@ -9,7 +10,10 @@ import { getAirportByCode } from "./airport-service";
 import { getCurrentUser } from "@/lib/session";
 import { z } from "zod";
 
-const GetFlightsInputSchema = z.object({}).optional();
+const GetFlightsInputSchema = z.object({
+    // In a real app, you might have filters here, like date ranges or user IDs.
+    // For now, we'll keep it simple as this function has no external inputs.
+}).optional();
 
 export interface FlightForDisplay extends StoredFlight {
     departureAirportName?: string;

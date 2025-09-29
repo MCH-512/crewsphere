@@ -21,8 +21,6 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         success: "bg-success text-success-foreground hover:bg-success/90",
         warning: "bg-warning text-warning-foreground hover:bg-warning/90",
-        active: "bg-primary/10 text-primary border border-primary/20",
-        border: "border border-input bg-transparent hover:bg-accent",
       },
       size: {
         default: "h-10 px-4 py-2",

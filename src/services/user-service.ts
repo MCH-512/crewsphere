@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db, auth, isConfigValid } from "@/lib/firebase";
@@ -132,4 +133,3 @@ export async function manageUser({ isCreate, data, userId, adminUser }: ManageUs
         }
     }
 }
-    

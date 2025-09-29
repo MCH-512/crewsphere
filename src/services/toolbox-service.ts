@@ -1,6 +1,7 @@
+
 'use server';
 
-import { Book, Calculator, CloudSun, Globe, Map, MessagesSquare, Mic, ScrollText, ShieldAlert } from "lucide-react";
+import { Book, Calculator, CloudSun, Globe, Map, MessagesSquare, Mic, ScrollText, Wrench, ShieldAlert, Waypoints } from "lucide-react";
 import type { ElementType } from "react";
 import { z } from 'zod';
 
@@ -82,6 +83,7 @@ const EmptySchema = z.object({});
 
 export async function getToolboxTools(): Promise<Tool[]> {
     EmptySchema.parse({}); // Zod validation
-    // In a real application, this could fetch from a DB to allow dynamic tool management
-    return toolsData;
+    // In a real application, this could fetch from a database or a CMS.
+    // For now, we'll return the static data.
+    return Promise.resolve(toolsData);
 }

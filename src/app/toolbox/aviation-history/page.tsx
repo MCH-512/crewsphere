@@ -72,8 +72,10 @@ export default function AviationHistoryPage() {
                     </div>
                 </div>
             ) : (
-                <p className="text-center text-muted-foreground py-6">No historical events found for &quot;{searchTerm}&quot;.</p>
+                <p className="text-center text-muted-foreground py-6">No historical events found for "{searchTerm}".</p>
             )}
         </CardContent>
        </Card>
     </div>
+  );
+}

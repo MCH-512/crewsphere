@@ -1,23 +1,20 @@
 import { z } from 'zod';
 
-const textPrompt = z.object({
-  text: z.string().min(1, { message: 'Prompt cannot be empty.' }).max(500, { message: 'Prompt is too long.' }),
-});
+// Video Schemas
 
-const mediaPrompt = z.object({
-  media: z.object({
-    url: z.string().url(),
-    contentType: z.string(),
-  }),
-});
+// A prompt for video can be a string or an array of text and media parts.
+const VideoPromptPartSchema = z.union([
+  z.object({ text: z.string() }),
+  z.object({ media: z.object({ url: z.string(), contentType: z.string().optional() }) }),
+]);
 
 export const GenerateVideoInputSchema = z.object({
-  prompt: z.union([textPrompt, z.array(z.union([textPrompt, mediaPrompt]))]),
+  prompt: z.union([z.string(), z.array(VideoPromptPartSchema)]).describe("The text prompt or a combination of text and media parts for video generation."),
 });
+export type GenerateVideoInput = z.infer<typeof GenerateVideoInputSchema>;
+
 
 export const GenerateVideoOutputSchema = z.object({
-    videoUrl: z.string(),
+  videoUrl: z.string().describe("The URL of the generated video file."),
 });
-
-export type GenerateVideoInput = z.infer<typeof GenerateVideoInputSchema>;
 export type GenerateVideoOutput = z.infer<typeof GenerateVideoOutputSchema>;

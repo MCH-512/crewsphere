@@ -52,6 +52,7 @@ const useTheme = () => {
   const [theme, setTheme] = React.useState("light");
 
   React.useEffect(() => {
+    // On mount, read the theme from localStorage and update the state
     const localTheme = localStorage.getItem("theme");
     if (localTheme) {
       setTheme(localTheme);
@@ -61,6 +62,7 @@ const useTheme = () => {
           document.documentElement.classList.remove('dark');
         }
     } else {
+        // If no theme is in localStorage, use system preference
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         const systemTheme = prefersDark ? 'dark' : 'light';
         setTheme(systemTheme);
@@ -147,7 +149,7 @@ function LayoutWithSidebar({
   toggleTheme,
 }: {
   children: React.ReactNode;
-  user: User | null;
+  user: User;
   handleLogout: () => void;
   theme: string;
   toggleTheme: () => void;

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -50,18 +51,18 @@ export default function LoginPage() {
         <Card className="w-full max-w-lg shadow-xl text-center">
           <CardHeader>
             <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
-            CardTitle className="text-2xl font-headline mt-4">Firebase Not Configured</CardTitle>
-            CardDescription>
-              The application&apos;s Firebase configuration is missing or contains placeholder values.
-            CardDescription>
-          CardHeader>
-          CardContent>
-            p className="text-sm text-muted-foreground">
+            <CardTitle className="text-2xl font-headline mt-4">Firebase Not Configured</CardTitle>
+            <CardDescription>
+              The application's Firebase configuration is missing or contains placeholder values.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
               Please create or update the <code>.env</code> file in the root of the project with the correct keys from your Firebase Console. The application will not function until this is resolved.
-            p>
-          CardContent>
-        Card>
-      div>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -93,58 +94,58 @@ export default function LoginPage() {
   }
 
   return (
-    AuthLayout
+    <AuthLayout
         title="Welcome Back"
         description="Enter your email below to login to your account"
         imageUrl={placeholderImages.auth.login.src}
         imageHint={placeholderImages.auth.login.hint}
     >
-        Form {...form}>
-            form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-              FormField
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+              <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
-                  FormItem>
-                    FormLabel>Email</FormLabel>
-                    FormControl>
-                      Input type="email" placeholder="you@example.com" {...field} />
-                    FormControl>
-                    FormMessage />
-                  FormItem>
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="you@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              FormField
+              <FormField
                 control={form.control}
                 name="password"
                 render={({ field }) => (
-                  FormItem>
-                    FormLabel>Password</FormLabel>
-                    FormControl>
-                      Input type="password" placeholder="••••••••" {...field} />
-                    FormControl>
-                    FormMessage />
-                  FormItem>
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              Button type="submit" disabled={isLoading} className="w-full">
+              <Button type="submit" disabled={isLoading} className="w-full">
                 {isLoading ? (
                   <>
-                    Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Signing In...
                   </>
                 ) : (
                   "Login"
                 )}
-              Button>
-            form>
-        Form>
-        div className="mt-4 text-center text-sm">
+              </Button>
+            </form>
+        </Form>
+        <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}
-            Link href="/signup" className="underline">
+            <Link href="/signup" className="underline">
               Sign up
-            Link>
-        div>
-    AuthLayout>
+            </Link>
+        </div>
+    </AuthLayout>
   );
 }

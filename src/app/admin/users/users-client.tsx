@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
-import { Users, Loader2, AlertTriangle, Edit, PlusCircle, Eye, Filter, Search } from "lucide-react"; 
+import { Users, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Eye, Filter, Search } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge"; 
 import Link from 'next/link';
@@ -29,57 +30,57 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [usersList, setUsersList] = React.useState&lt;User[]&gt;(initialUsers);
+  const [usersList, setUsersList] = React.useState<User[]>(initialUsers);
   const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState&lt;string | null&gt;(null);
+  const [error, setError] = React.useState<string | null>(null);
 
   const [isManageUserDialogOpen, setIsManageUserDialogOpen] = React.useState(false);
   const [isCreateMode, setIsCreateMode] = React.useState(false);
-    const [currentUserToManage, setCurrentUserToManage] = React.useState&lt;User | null&gt;(null);
+  const [currentUserToManage, setCurrentUserToManage] = React.useState<User | null>(null);
   
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [roleFilter, setRoleFilter] = React.useState&lt;SpecificRole | "all"&gt;("all");
-  const [statusFilter, setStatusFilter] = React.useState&lt;AccountStatus | "all"&gt;("all");
+  const [roleFilter, setRoleFilter] = React.useState<SpecificRole | "all">("all");
+  const [statusFilter, setStatusFilter] = React.useState<AccountStatus | "all">("all");
 
-  const [sortColumn, setSortColumn] = React.useState&lt;SortableColumn&gt;("fullName");
-  const [sortDirection, setSortDirection] = React.useState&lt;SortDirection&gt;("asc");
+  const [sortColumn, setSortColumn] = React.useState<SortableColumn>("fullName");
+  const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc");
   
-  React.useEffect(() =&gt; {
+  const loadUsers = React.useCallback(async () => {
     if (!user) return;
-
     setIsLoading(true);
     const q = query(collection(db, "users"), orderBy("email", "asc"));
-
-    const unsubscribe = onSnapshot(q, 
-      (snapshot) =&gt; {
-        const fetchedUsers = snapshot.docs.map(doc =&gt; ({ uid: doc.id, ...doc.data() } as User));
-        setUsersList(fetchedUsers);
-        setError(null);
-        setIsLoading(false);
-      },
-      (err) =&gt; {
-        console.error("Error fetching users in real-time:", err);
-        setError("Could not fetch real-time user updates.");
-        toast({ title: "Real-time Error", description: "Could not fetch user updates.", variant: "destructive" });
-        setIsLoading(false);
-      }
+    const unsubscribe = onSnapshot(q,
+        (snapshot) => {
+            const fetchedUsers = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
+            setUsersList(fetchedUsers);
+            setIsLoading(false);
+            setError(null);
+        },
+        (err) => {
+            console.error("Error fetching users in real-time:", err);
+            setError("Could not fetch real-time user updates.");
+            toast({ title: "Real-time Error", description: "Could not fetch user updates.", variant: "destructive" });
+            setIsLoading(false);
+        }
     );
-
-    // Cleanup subscription on component unmount
-    return () =&gt; unsubscribe();
+    return () => unsubscribe();
   }, [user, toast]);
+
+  React.useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
   
-  React.useEffect(() =&gt; {
-    if (!authLoading &amp;&amp; !user) {
+  React.useEffect(() => {
+    if (!authLoading && !user) {
       router.push('/login');
     }
   }, [authLoading, user, router]);
 
-  const filteredAndSortedUsers = React.useMemo(() =&gt; {
-    const filtered = usersList
-      .filter(u =&gt; {
-        if (roleFilter !== "all" &amp;&amp; u.role !== roleFilter) return false;
-        if (statusFilter !== "all" &amp;&amp; u.accountStatus !== statusFilter) return false;
+  const filteredAndSortedUsers = React.useMemo(() => {
+    let filtered = usersList
+      .filter(u => {
+        if (roleFilter !== "all" && u.role !== roleFilter) return false;
+        if (statusFilter !== "all" && u.accountStatus !== statusFilter) return false;
         if (searchTerm) {
           const lowercasedTerm = searchTerm.toLowerCase();
           return (
@@ -92,7 +93,7 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
         return true;
       });
 
-    return filtered.sort((a, b) =&gt; {
+    return filtered.sort((a, b) => {
         const valA = a[sortColumn];
         const valB = b[sortColumn];
         let comparison = 0;
@@ -103,168 +104,168 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
     });
   }, [usersList, searchTerm, roleFilter, statusFilter, sortColumn, sortDirection]);
 
-  const handleSort = (column: SortableColumn) =&gt; {
+  const handleSort = (column: SortableColumn) => {
     if (sortColumn === column) {
-      setSortDirection(prev =&gt; prev === 'asc' ? 'desc' : 'asc');
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
       setSortColumn(column);
       setSortDirection('asc');
     }
   };
 
-  const handleOpenCreateUserDialog = () =&gt; {
+  const handleOpenCreateUserDialog = () => {
     setIsCreateMode(true);
     setCurrentUserToManage(null);
     setIsManageUserDialogOpen(true);
   };
 
-  const handleOpenEditUserDialog = (userToEdit: User) =&gt; {
+  const handleOpenEditUserDialog = (userToEdit: User) => {
     setIsCreateMode(false);
     setCurrentUserToManage(userToEdit);
     setIsManageUserDialogOpen(true);
   };
   
-  const onFormSubmitSuccess = () =&gt; {
+  const onFormSubmitSuccess = () => {
       // The real-time listener will automatically update the state, no need for manual refresh.
       setIsManageUserDialogOpen(false);
   }
 
   if (authLoading || isLoading) {
     return (
-      &lt;div className="flex items-center justify-center min-h-[calc(100vh-200px)]"&gt;
-        &lt;Loader2 className="h-12 w-12 animate-spin text-primary" /&gt;
-        &lt;p className="ml-4 text-lg text-muted-foreground"&gt;Loading users...&lt;/p&gt;
-      &lt;/div&gt;
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-4 text-lg text-muted-foreground">Loading users...</p>
+      </div>
     );
   }
 
   if (!user || user.role !== 'admin') {
      return (
-      &lt;div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center"&gt;
-        &lt;AlertTriangle className="h-12 w-12 text-destructive mb-4" /&gt;
-        &lt;CardTitle className="text-xl mb-2"&gt;Access Denied&lt;/CardTitle&gt;
-        &lt;p className="text-muted-foreground"&gt;You do not have permission to view this page.&lt;/p&gt;
-        &lt;Button onClick={() =&gt; router.push('/')} className="mt-4"&gt;Go to Dashboard&lt;/Button&gt;
-      &lt;/div&gt;
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <CardTitle className="text-xl mb-2">Access Denied</CardTitle>
+        <p className="text-muted-foreground">You do not have permission to view this page.</p>
+        <Button onClick={() => router.push('/')} className="mt-4">Go to Dashboard</Button>
+      </div>
     );
   }
 
   return (
-    &lt;div className="space-y-6"&gt;
-      &lt;Card className="shadow-lg"&gt;
-        &lt;CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"&gt;
-          &lt;div&gt;
-            &lt;CardTitle className="text-2xl font-headline flex items-center"&gt;
-              &lt;Users className="mr-3 h-7 w-7 text-primary" /&gt;
+    <div className="space-y-6">
+      <Card className="shadow-lg">
+        <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <CardTitle className="text-2xl font-headline flex items-center">
+              <Users className="mr-3 h-7 w-7 text-primary" />
               User Management
-            &lt;/CardTitle&gt;
-            &lt;CardDescription&gt;View, create, and manage user accounts, their roles, and status.&lt;/CardDescription&gt;
-          &lt;/div&gt;
-          &lt;div className="flex gap-2 w-full sm:w-auto"&gt;
-            &lt;Button onClick={handleOpenCreateUserDialog} className="flex-1 sm:flex-auto"&gt;
-              &lt;PlusCircle className="mr-2 h-4 w-4" /&gt; Create User
-            &lt;/Button&gt;
-          &lt;/div&gt;
-        &lt;/CardHeader&gt;
-        &lt;CardContent&gt;
-          {error &amp;&amp; (
-            &lt;div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2"&gt;
-              &lt;AlertTriangle className="h-5 w-5" /&gt; {error}
-            &lt;/div&gt;
+            </CardTitle>
+            <CardDescription>View, create, and manage user accounts, their roles, and status.</CardDescription>
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button onClick={handleOpenCreateUserDialog} className="flex-1 sm:flex-auto">
+              <PlusCircle className="mr-2 h-4 w-4" /> Create User
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="p-4 mb-4 text-sm text-destructive-foreground bg-destructive rounded-md flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" /> {error}
+            </div>
           )}
 
-          &lt;div className="flex flex-col md:flex-row gap-4 mb-6"&gt;
-            &lt;div className="relative flex-grow"&gt;
-                &lt;Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /&gt;
-                &lt;Input
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-grow">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
                     type="search"
                     placeholder="Search by email, name, ID..."
                     className="pl-8 w-full"
                     value={searchTerm}
-                    onChange={(e) =&gt; setSearchTerm(e.target.value)}
-                /&gt;
-            &lt;/div&gt;
-            &lt;Select value={roleFilter} onValueChange={(value) =&gt; setRoleFilter(value === NO_ROLE_SENTINEL ? "all" : value as SpecificRole | 'all')}&gt;
-                &lt;SelectTrigger className="w-full md:w-[180px]"&gt;
-                    &lt;Filter className="h-4 w-4 mr-2" /&gt;
-                    &lt;SelectValue placeholder="Filter by role" /&gt;
-                &lt;/SelectTrigger&gt;
-                &lt;SelectContent&gt;
-                    &lt;SelectItem value="all"&gt;All Roles&lt;/SelectItem&gt;
-                    {availableRoles.map(role =&gt; &lt;SelectItem key={role} value={role} className="capitalize"&gt;{role}&lt;/SelectItem&gt;)}
-                    &lt;SelectItem value={NO_ROLE_SENTINEL}&gt;Not Assigned&lt;/SelectItem&gt;
-                &lt;/SelectContent&gt;
-            &lt;/Select&gt;
-            &lt;Select value={statusFilter} onValueChange={(value) =&gt; setStatusFilter(value as AccountStatus | 'all')}&gt;
-                &lt;SelectTrigger className="w-full md:w-[180px]"&gt;
-                     &lt;Filter className="h-4 w-4 mr-2" /&gt;
-                    &lt;SelectValue placeholder="Filter by status" /&gt;
-                &lt;/SelectTrigger&gt;
-                &lt;SelectContent&gt;
-                    &lt;SelectItem value="all"&gt;All Statuses&lt;/SelectItem&gt;
-                    &lt;SelectItem value="active"&gt;Active&lt;/SelectItem&gt;
-                    &lt;SelectItem value="inactive"&gt;Inactive&lt;/SelectItem&gt;
-                &lt;/SelectContent&gt;
-            &lt;/Select&gt;
-          &lt;/div&gt;
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+            <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as SpecificRole | 'all')}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by role" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    {availableRoles.map(role => <SelectItem key={role} value={role} className="capitalize">{role}</SelectItem>)}
+                </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as AccountStatus | 'all')}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                     <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+            </Select>
+          </div>
 
-          {filteredAndSortedUsers.length &gt; 0 ? (
-            &lt;div className="rounded-md border"&gt;
-              &lt;Table&gt;
-                &lt;TableHeader&gt;
-                  &lt;TableRow&gt;
-                    &lt;SortableHeader column="fullName" label="Full Name" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
-                    &lt;TableHead&gt;Email&lt;/TableHead&gt;
-                    &lt;SortableHeader column="role" label="Role" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
-                    &lt;SortableHeader column="accountStatus" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
-                    &lt;SortableHeader column="employeeId" label="Employee ID" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
-                    &lt;TableHead className="text-right"&gt;Actions&lt;/TableHead&gt;
-                  &lt;/TableRow&gt;
-                &lt;/TableHeader&gt;
-                &lt;TableBody&gt;
-                  {filteredAndSortedUsers.map((u) =&gt; (
-                    &lt;TableRow key={u.uid}&gt;
-                      &lt;TableCell className="font-medium"&gt;{u.fullName || 'N/A'}&lt;/TableCell&gt;
-                      &lt;TableCell&gt;{u.email || 'N/A'}&lt;/TableCell&gt;
-                      &lt;TableCell&gt;
-                        &lt;Badge variant={getRoleBadgeVariant(u.role)} className="capitalize"&gt;
+          {filteredAndSortedUsers.length > 0 ? (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <SortableHeader column="fullName" label="Full Name" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <TableHead>Email</TableHead>
+                    <SortableHeader column="role" label="Role" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <SortableHeader column="accountStatus" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <SortableHeader column="employeeId" label="Employee ID" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedUsers.map((u) => (
+                    <TableRow key={u.uid}>
+                      <TableCell className="font-medium">{u.fullName || 'N/A'}</TableCell>
+                      <TableCell>{u.email || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Badge variant={getRoleBadgeVariant(u.role)} className="capitalize">
                           {u.role || 'Not Assigned'}
-                        &lt;/Badge&gt;
-                      &lt;/TableCell&gt;
-                      &lt;TableCell&gt;
-                        &lt;Badge variant={getStatusBadgeVariant(u.accountStatus)} className="capitalize"&gt;
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(u.accountStatus)} className="capitalize">
                           {u.accountStatus || 'Unknown'}
-                        &lt;/Badge&gt;
-                      &lt;/TableCell&gt;
-                      &lt;TableCell&gt;{u.employeeId || 'N/A'}&lt;/TableCell&gt;
-                      &lt;TableCell className="text-right space-x-1"&gt;
-                        &lt;Button variant="ghost" size="icon" title="View User Details" asChild&gt;
-                          &lt;Link href={`/admin/users/${u.uid}`}&gt;&lt;Eye className="h-4 w-4"/&gt;&lt;/Link&gt;
-                        &lt;/Button&gt;
-                        &lt;Button variant="ghost" size="icon" title="Edit User" onClick={() =&gt; handleOpenEditUserDialog(u)}&gt;
-                          &lt;Edit className="h-4 w-4" /&gt;
-                        &lt;/Button&gt;
-                      &lt;/TableCell&gt;
-                    &lt;/TableRow&gt;
-                  ))}&lt;/TableBody&gt;
-              &lt;/Table&gt;
-            &lt;/div&gt;
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{u.employeeId || 'N/A'}</TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button variant="ghost" size="icon" title="View User Details" asChild>
+                          <Link href={`/admin/users/${u.uid}`}><Eye className="h-4 w-4"/></Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Edit User" onClick={() => handleOpenEditUserDialog(u)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
-             &lt;p className="text-muted-foreground text-center py-8"&gt;No users found matching your criteria.&lt;/p&gt;
+             <p className="text-muted-foreground text-center py-8">No users found matching your criteria.</p>
           )}
 
-        &lt;/CardContent&gt;
-      &lt;/Card&gt;
+        </CardContent>
+      </Card>
 
-      &lt;Dialog open={isManageUserDialogOpen} onOpenChange={setIsManageUserDialogOpen}&gt;
-        &lt;DialogContent className="sm:max-w-lg"&gt;
-          &lt;UserForm 
+      <Dialog open={isManageUserDialogOpen} onOpenChange={setIsManageUserDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <UserForm 
             isCreateMode={isCreateMode} 
             currentUser={currentUserToManage}
             onFormSubmitSuccess={onFormSubmitSuccess} 
-          /&gt;
-        &lt;/DialogContent&gt;
-      &lt;/Dialog&gt;
-    &lt;/div&gt;
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

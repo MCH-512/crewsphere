@@ -1,15 +1,16 @@
+
 "use client";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useAuth } from "@/contexts/auth-context";
 import { db, storage } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy, doc, addDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, doc, addDoc, updateDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, Loader2, CalendarX, CalendarClock, CalendarCheck2, PlusCircle, Edit } from "lucide-react";
+import { ShieldCheck, Loader2, AlertTriangle, CalendarX, CalendarClock, CalendarCheck2, PlusCircle, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
-import { StoredUserDocument, userDocumentCreateFormSchema, userDocumentUpdateFormSchema, userDocumentTypes, getDocumentStatus } from "@/schemas/user-document-schema";
+import { StoredUserDocument, userDocumentCreateFormSchema, userDocumentUpdateFormSchema, userDocumentTypes, getDocumentStatus, getStatusBadgeVariant } from "@/schemas/user-document-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -70,7 +71,7 @@ const ManageDocumentDialog = ({ open, onOpenChange, documentToEdit, onSave }: { 
 
             if (file) {
                 if (isEditMode && documentToEdit?.filePath) {
-                    try { await deleteObject(ref(storage, documentToEdit.filePath)); } catch (e: unknown) { console.warn("Old file not found for deletion, continuing.")}
+                    try { await deleteObject(ref(storage, documentToEdit.filePath)); } catch (e) { console.warn("Old file not found for deletion, continuing.")}
                 }
                 const newFilePath = `user-documents/${user.uid}/${Date.now()}-${file.name}`;
                 const storageRef = ref(storage, newFilePath);
@@ -105,7 +106,7 @@ const ManageDocumentDialog = ({ open, onOpenChange, documentToEdit, onSave }: { 
             toast({ title: isEditMode ? "Document Updated" : "Document Added", description: `Your document is now pending validation by an administrator.` });
             onSave();
             onOpenChange(false);
-        } catch (error: unknown) {
+        } catch (error) {
             toast({ title: "Submission Failed", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
@@ -126,7 +127,7 @@ const ManageDocumentDialog = ({ open, onOpenChange, documentToEdit, onSave }: { 
                         <FormField control={form.control} name="issueDate" render={({ field }) => <FormItem><FormLabel>Issue Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
                         <FormField control={form.control} name="expiryDate" render={({ field }) => <FormItem><FormLabel>Expiry Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
                     </div>
-                    <FormField control={form.control} name="file" render={({ field }) => <FormItem><FormLabel>Upload File {isEditMode && "(Optional: only to replace existing file)"}</FormLabel><FormControl><Input type="file" onChange={e => field.onChange(e.target.files)} /></FormControl><FormMessage /></FormItem>} />
+                    <FormField control={form.control} name="file" render={({ field: { value, onChange, ...fieldProps } }) => <FormItem><FormLabel>Upload File {isEditMode && "(Optional: only to replace existing file)"}</FormLabel><FormControl><Input type="file" {...fieldProps} onChange={e => onChange(e.target.files)} /></FormControl><FormMessage /></FormItem>} />
                     <FormField control={form.control} name="notes" render={({ field }) => <FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>} />
                     <DialogFooter>
                         <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
@@ -153,7 +154,7 @@ export default function MyDocumentsPage() {
             const q = query(collection(db, "userDocuments"), where("userId", "==", user.uid), orderBy("expiryDate", "asc"));
             const querySnapshot = await getDocs(q);
             setDocuments(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserDocument)));
-        } catch (error: unknown) {
+        } catch (error) {
             console.error("Error fetching documents:", error);
         } finally {
             setIsLoading(false);
@@ -227,7 +228,7 @@ export default function MyDocumentsPage() {
             ) : (
                  <AnimatedCard delay={0.1}>
                     <Card className="text-center py-12">
-                        <CardContent><p className="text-muted-foreground">No documents found. Click &quot;Add Document&quot; to get started.</p></CardContent>
+                        <CardContent><p className="text-muted-foreground">No documents found. Click "Add Document" to get started.</p></CardContent>
                     </Card>
                 </AnimatedCard>
             )}

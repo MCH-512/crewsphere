@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -9,7 +8,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Loader2, AlertTriangle, List, ArrowRight } from "lucide-react";
+import { FileSignature, Loader2, AlertTriangle, List, ArrowRight } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { StoredPurserReport } from "@/schemas/purser-report-schema";
@@ -119,4 +118,12 @@ export default function PurserReportsHistoryPage() {
                                             <ArrowRight className="ml-auto h-4 w-4" />
                                         </Link>
                                     </Button>
-                               
+                                </CardFooter>
+                            </Card>
+                        </AnimatedCard>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}

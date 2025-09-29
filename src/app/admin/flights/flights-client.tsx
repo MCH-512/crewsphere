@@ -1,15 +1,16 @@
+
 "use client";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, doc, writeBatch, query, where, onSnapshot } from "firebase/firestore";
+import { collection, doc, writeBatch, serverTimestamp, query, where, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Handshake, FileSignature, Filter, BellOff, Search, CheckCircle } from "lucide-react";
+import { Plane, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, ArrowRightLeft, Handshake, FileSignature, Filter, BellOff, Search, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import type { StoredFlight } from "@/schemas/flight-schema";
@@ -22,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SortableHeader } from "@/components/custom/custom-sortable-header";
 import { Label } from "@/components/ui/label";
 import { getFlightsForAdmin, type FlightForDisplay } from "@/services/flight-service";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { aircraftTypes } from "@/schemas/flight-schema";
 import { Input } from "@/components/ui/input";
 import { FlightForm } from "@/components/admin/flight-form";
@@ -390,8 +391,8 @@ export function AdminFlightsClient({
                                     <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(f)} title="Delete Flight"><Trash2 className="h-4 w-4" /></Button>
                                 </TableCell>
                             </TableRow>
-                        ))}</TableBody>
-                    
+                        ))}
+                    </TableBody>
                 </Table>
                 {sortedAndFilteredFlights.length === 0 && <p className="text-center text-muted-foreground py-8">No flights found matching criteria.</p>}
             </div>
@@ -419,4 +420,3 @@ export function AdminFlightsClient({
         </div>
     );
 }
-    

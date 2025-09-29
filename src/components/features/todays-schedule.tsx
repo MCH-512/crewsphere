@@ -1,3 +1,4 @@
+
 "use server";
 
 import * as React from "react";
@@ -65,7 +66,7 @@ export async function TodaysScheduleCard() {
             <CardHeader>
                 <CardTitle className="font-headline text-xl flex items-center gap-2">
                     <CalendarCheck className="h-5 w-5" />
-                    Today&apos;s Schedule
+                    Today's Schedule
                 </CardTitle>
                 <CardDescription>{format(new Date(), "EEEE, PPP")}</CardDescription>
             </CardHeader>
@@ -75,4 +76,3 @@ export async function TodaysScheduleCard() {
         </Card>
     );
 }
-    

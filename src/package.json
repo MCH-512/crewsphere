@@ -3,19 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "validate": "node scripts/validate-project.js",
-    "check-dependencies": "node scripts/check-dependencies.js",
-    "dev": "npm run check-dependencies && npm run validate && next dev",
+    "dev": "next dev",
     "dev:core": "npm-run-all --parallel dev:next emulators:core",
     "dev:next": "next dev --port 9002 --hostname 0.0.0.0",
-<<<<<<< HEAD
     "dev:studio": "rm -rf node_modules/.cache && npm install && next dev --port 9002 --hostname 0.0.0.0",
-=======
-    "dev:studio": "rm -rf .next && next dev --port 9002 --hostname 0.0.0.0",
->>>>>>> 574222e9d7c8cb9928d1f30ba4e25ba0e9ad8299
     "dev:emulators": "firebase emulators:start --only functions,firestore,hosting,extensions",
     "emulators:core": "firebase emulators:start --only firestore,functions,hosting",
-    "build": "npm run check-dependencies && npm run validate && next build",
+    "build": "next build",
     "start": "next start --port 9002 --hostname 0.0.0.0",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -23,17 +17,16 @@
     "audit": "node nextjs-audit.js",
     "audit:report": "npm audit",
     "audit:fix": "npm audit fix",
-    "audit:ai": "tsx src/scripts/run-code-audit.js",
+    "audit:ai": "node src/scripts/run-code-audit.js",
     "test": "node src/scripts/run-all-tests.js",
     "test:unit": "jest --coverage",
     "test:e2e": "playwright test",
     "test:accessibility": "playwright test tests/accessibility/accessibility.spec.ts",
     "test:ai": "jest --testPathPattern=tests/ai-validation",
     "test:auto-generate": "node src/scripts/generate-tests.js",
-    "auto-optimize": "tsx src/scripts/run-analysis.js"
+    "auto-optimize": "node src/scripts/run-analysis.js"
   },
   "dependencies": {
-    "@genkit-ai/flow": "^0.5.17",
     "@genkit-ai/googleai": "^1.0.0",
     "@hello-pangea/dnd": "^16.6.0",
     "@hookform/resolvers": "^3.9.0",
@@ -57,16 +50,12 @@
     "@radix-ui/react-tabs": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.1.2",
-<<<<<<< HEAD
     "@sentry/nextjs": "^8.21.0",
-=======
-    "@sentry/nextjs": "^10.15.0",
->>>>>>> 574222e9d7c8cb9928d1f30ba4e25ba0e9ad8299
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
-    "dotenv": "^16.6.1",
+    "dotenv": "^16.4.5",
     "fast-xml-parser": "^4.4.0",
     "firebase": "^12.3.0",
     "framer-motion": "^11.3.8",
@@ -87,7 +76,6 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.9.1",
-    "@octokit/rest": "^22.0.0",
     "@playwright/test": "^1.45.3",
     "@types/jest": "^29.5.12",
     "@types/leaflet": "^1.9.12",
@@ -104,7 +92,6 @@
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.2.3",
-    "tsx": "^4.20.6",
     "typescript": "^5.5.4"
   }
 }

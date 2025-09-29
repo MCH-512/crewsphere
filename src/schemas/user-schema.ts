@@ -1,9 +1,10 @@
 
+import type { User as FirebaseUser } from "firebase/auth";
 import type { VariantProps } from "class-variance-authority";
 import { badgeVariants } from "@/components/ui/badge";
 import { z } from "zod";
 
-export type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'stagiaire' | 'other';
+export type SpecificRole = 'admin' | 'purser' | 'cabin crew' | 'instructor' | 'pilote' | 'stagiaire' | 'other' | null;
 export type AccountStatus = 'active' | 'inactive';
 
 export const availableRoles: SpecificRole[] = ['admin', 'purser', 'cabin crew', 'instructor', 'pilote', 'stagiaire', 'other'];
@@ -87,3 +88,8 @@ export const getRoleBadgeVariant = (role?: SpecificRole | null): VariantProps<ty
 
 export const getStatusBadgeVariant = (status?: AccountStatus | null): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
+        case "active": return "success";
+        case "inactive": return "destructive";
+        default: return "outline";
+    }
+};

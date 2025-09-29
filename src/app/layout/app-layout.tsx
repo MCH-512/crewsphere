@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -39,7 +40,8 @@ import {
   Sun,
   ServerCog
 } from "lucide-react";
-import { useAuth, type User } from "@/contexts/auth-context";
+import { useAuth } from "@/contexts/auth-context";
+import { type User } from "@/schemas/user-schema";
 import { useToast } from "@/hooks/use-toast";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { HeaderClocks } from "@/components/features/header-clocks";
@@ -149,7 +151,7 @@ function LayoutWithSidebar({
   toggleTheme,
 }: {
   children: React.ReactNode;
-  user: User | null;
+  user: User;
   handleLogout: () => void;
   theme: string;
   toggleTheme: () => void;

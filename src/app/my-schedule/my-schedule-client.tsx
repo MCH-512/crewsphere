@@ -1,28 +1,42 @@
+
 "use client";
 
 import * as React from "react";
-import { Card, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Calendar as CalendarIcon, Loader2, Plane, Briefcase, GraduationCap, Bed, Anchor, Globe, User } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Calendar as CalendarIcon, Loader2, Plane, Briefcase, GraduationCap, Bed, Anchor, Users, Globe, User } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
+import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar";
 import { format, isSameDay } from "date-fns";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { cn } from "@/lib/utils";
-import type { StoredFlight } from "@/schemas/flight-schema";
-import type { StoredTrainingSession } from "@/schemas/training-session-schema";
-import { getAirportByCode } from "@/services/airport-service";
-import type { UserActivity, ActivityType } from "@/schemas/user-activity-schema";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { type StoredFlight } from "@/schemas/flight-schema";
+import { type StoredTrainingSession } from "@/schemas/training-session-schema";
+import { getAirportByCode, type Airport } from "@/services/airport-service";
+import type { UserActivity, ActivityData } from "@/schemas/user-activity-schema";
 import type { User as AuthUser } from "@/schemas/user-schema";
-import { getUserActivitiesForMonth, type ActivityData } from "@/services/activity-service";
+import Link from 'next/link';
+import { getUserActivitiesForMonth } from "@/services/activity-service";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ActivityDetailsSheet, type SheetActivityDetails } from "@/components/features/activity-details-sheet";
 
+// --- Data Structures ---
+interface FlightWithCrewDetails extends StoredFlight {
+    departureAirportInfo?: Airport | null;
+    arrivalAirportInfo?: Airport | null;
+    crew: AuthUser[];
+}
+interface TrainingWithAttendeesDetails extends StoredTrainingSession {
+    attendees: AuthUser[];
+}
+type SheetActivityDetails = { type: 'flight', data: FlightWithCrewDetails } | { type: 'training', data: TrainingWithAttendeesDetails };
 
 // --- UI Configuration ---
-const activityConfig: Record<ActivityType, { icon: React.ElementType; label: string; dotColor: string; }> = {
+const activityConfig: Record<UserActivity['activityType'], { icon: React.ElementType; label: string; dotColor: string; }> = {
     flight: { icon: Plane, label: "Flight", dotColor: "bg-primary" },
     leave: { icon: Briefcase, label: "Leave", dotColor: "bg-green-500" },
     training: { icon: GraduationCap, label: "Training", dotColor: "bg-yellow-500" },
@@ -31,6 +45,79 @@ const activityConfig: Record<ActivityType, { icon: React.ElementType; label: str
 };
 
 // --- Sub-components ---
+const FlightDetails = ({ data, authUser }: { data: FlightWithCrewDetails, authUser: AuthUser | null }) => (
+    <div className="space-y-4">
+        <Card><CardHeader className="pb-2"><CardDescription>Flight Info</CardDescription><CardTitle className="flex items-center gap-2"><Plane className="h-5 w-5"/> {data.flightNumber}</CardTitle></CardHeader>
+            <CardContent className="text-sm space-y-1"><p><strong>Route:</strong> {data.departureAirportInfo?.iata || data.departureAirport} → {data.arrivalAirportInfo?.iata || data.arrivalAirport}</p><p><strong>Departure:</strong> {format(new Date(data.scheduledDepartureDateTimeUTC), "PPP HH:mm")} UTC</p><p><strong>Arrival:</strong> {format(new Date(data.scheduledArrivalDateTimeUTC), "PPP HH:mm")} UTC</p><p><strong>Aircraft:</strong> {data.aircraftType}</p></CardContent>
+        </Card>
+        <Card><CardHeader className="pb-2"><CardDescription>Assigned Crew ({data.crew.length})</CardDescription></CardHeader>
+            <CardContent>{['purser', 'pilote', 'cabin crew', 'instructor', 'stagiaire'].map(role => {
+                const members = data.crew.filter(c => c.role === role);
+                if (members.length === 0) return null;
+                return (<div key={role}><h4 className="font-semibold capitalize mt-3 mb-2 text-primary">{role}</h4><div className="space-y-2">{members.map(member => (<div key={member.uid} className="flex items-center gap-2 text-sm">
+                    <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL ?? undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                    {authUser?.role === 'admin' ? (
+                        <Link href={`/admin/users/${member.uid}`} className="hover:underline text-primary">{member.displayName}</Link>
+                    ) : (
+                        <span>{member.displayName}</span>
+                    )}
+                </div>))}</div></div>);})}
+            </CardContent>
+        </Card>
+    </div>
+);
+
+const TrainingDetails = ({ data, authUser }: { data: TrainingWithAttendeesDetails, authUser: AuthUser | null }) => {
+    const sessionDate = typeof data.sessionDateTimeUTC === 'string'
+        ? new Date(data.sessionDateTimeUTC)
+        : data.sessionDateTimeUTC.toDate();
+        
+    return (
+        <div className="space-y-4">
+            <Card><CardHeader className="pb-2"><CardDescription>Training Session</CardDescription><CardTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5"/> {data.title}</CardTitle></CardHeader>
+                <CardContent className="text-sm space-y-1"><p><strong>Location:</strong> {data.location}</p><p><strong>Time:</strong> {format(sessionDate, "PPP HH:mm")} UTC</p><p><strong>Description:</strong> {data.description}</p></CardContent>
+            </Card>
+            <Card><CardHeader className="pb-2"><CardDescription>Attendees ({data.attendees.length})</CardDescription></CardHeader>
+                <CardContent><div className="space-y-2 max-h-60 overflow-y-auto">{data.attendees.map(member => (
+                    <div key={member.uid} className="flex items-center gap-2 text-sm">
+                      <Avatar className="h-6 w-6"><AvatarImage src={member.photoURL ?? undefined} data-ai-hint="user portrait" /><AvatarFallback>{member.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                       {authUser?.role === 'admin' ? (
+                            <Link href={`/admin/users/${member.uid}`} className="hover:underline text-primary">{member.displayName} ({member.role})</Link>
+                        ) : (
+                            <span>{member.displayName} ({member.role})</span>
+                        )}
+                    </div>))}
+                </div></CardContent>
+            </Card>
+        </div>
+    );
+};
+
+const ActivityDetailsSheet = ({ isOpen, onOpenChange, activity, isLoading, authUser, error }: { isOpen: boolean, onOpenChange: (open: boolean) => void, activity: SheetActivityDetails | null, isLoading: boolean, authUser: AuthUser | null, error: string | null }) => {
+    if (!isOpen) return null;
+
+    return (
+      <Sheet open={isOpen} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:max-w-md">
+            <SheetHeader><SheetTitle>Activity Details</SheetTitle><SheetDescription>{isLoading ? "Loading details..." : "Information about the selected event."}</SheetDescription></SheetHeader>
+            <div className="py-4">
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-10"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : error ? (
+                    <div className="text-center text-destructive py-10 flex flex-col items-center gap-2">
+                        <AlertTriangle className="h-8 w-8"/>
+                        <p className="font-semibold">Error Loading Details</p>
+                        <p className="text-sm">{error}</p>
+                    </div>
+                ) : activity ? (
+                    activity.type === 'flight' ? <FlightDetails data={activity.data} authUser={authUser} /> : <TrainingDetails data={activity.data} authUser={authUser} />
+                ) : null}
+            </div>
+        </SheetContent>
+      </Sheet>
+    );
+};
+
 const ActivityCard = ({ activity, onActivityClick, view }: { activity: ActivityData; onActivityClick: (activity: UserActivity) => void; view: 'personal' | 'global' }) => {
     const config = activityConfig[activity.activityType];
     const Icon = config.icon;
@@ -60,6 +147,7 @@ const ActivityCard = ({ activity, onActivityClick, view }: { activity: ActivityD
 // --- Main Page Client Component ---
 export function MyScheduleClient({ initialActivities }: { initialActivities: ActivityData[] }) {
     const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
     const [view, setView] = React.useState<'personal' | 'global'>('personal');
     const [activities, setActivities] = React.useState<ActivityData[]>(initialActivities);
     const [isLoading, setIsLoading] = React.useState(false); // For subsequent fetches
@@ -146,7 +234,7 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
     const activityDotStyles = activities.reduce((acc, activity) => {
         const dateKey = format(activity.date.toDate(), 'yyyy-MM-dd');
         if (!acc[dateKey]) {
-            acc[dateKey] = new Set<string>();
+            acc[dateKey] = new Set();
         }
         acc[dateKey].add(activityConfig[activity.activityType].dotColor);
         return acc;
@@ -160,7 +248,7 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
             {isLoading ? (
               <div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
             ) : selectedDayActivities.length > 0 ? (
-              selectedDayActivities.map((activity) => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} view={view}/>)
+              selectedDayActivities.map(activity => <ActivityCard key={activity.id} activity={activity} onActivityClick={handleShowActivityDetails} view={view}/>)
             ) : (
               <p className="text-sm text-muted-foreground text-center p-4">No activities scheduled for this day.</p>
             )}
@@ -185,8 +273,8 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
                         </div>
                         {user?.role === 'admin' && (
                             <div className="flex items-center gap-2 mt-4 sm:mt-0 p-1 bg-muted rounded-lg">
-                                <Button variant={view === 'personal' ? 'default' : 'ghost'} size="sm" onClick={() => setView('personal')} className="flex items-center gap-1"><User className="h-4 w-4"/> Personal</Button>
-                                <Button variant={view === 'global' ? 'default' : 'ghost'} size="sm" onClick={() => setView('global')} className="flex items-center gap-1"><Globe className="h-4 w-4"/> Global</Button>
+                                <Button variant={view === 'personal' ? 'primary' : 'ghost'} size="sm" onClick={() => setView('personal')} className="flex items-center gap-1"><User className="h-4 w-4"/> Personal</Button>
+                                <Button variant={view === 'global' ? 'primary' : 'ghost'} size="sm" onClick={() => setView('global')} className="flex items-center gap-1"><Globe className="h-4 w-4"/> Global</Button>
                             </div>
                         )}
                     </div>

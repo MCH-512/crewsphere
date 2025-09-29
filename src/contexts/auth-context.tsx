@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -5,6 +6,8 @@ import type { User as FirebaseUser } from "firebase/auth";
 import { auth, db, isConfigValid } from "@/lib/firebase"; 
 import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import type { User } from "@/schemas/user-schema";
 
 export type { User };

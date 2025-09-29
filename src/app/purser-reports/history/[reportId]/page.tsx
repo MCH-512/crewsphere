@@ -1,3 +1,4 @@
+
 "use server";
 
 import * as React from "react";
@@ -5,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { ArrowLeft, Shield, Wrench, MessageSquare, CheckCircle, Users, PersonStanding, AlertTriangle, FileSignature } from "lucide-react";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
+import { ArrowLeft, Shield, AlertCircle, UserCheck, Wrench, MessageSquare, CheckCircle, Users, PersonStanding, Plane, AlertTriangle, FileSignature } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { StoredPurserReport } from "@/schemas/purser-report-schema";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -36,6 +37,8 @@ const getStatusBadgeVariant = (status: ReportStatus) => {
 const getAdminResponseAlertVariant = (status: ReportStatus): VariantProps<typeof alertVariants>["variant"] => {
     switch (status) {
       case "closed": return "success";
+      case "approved": return "success";
+      case "rejected": return "destructive";
       default: return "info";
     }
 };
@@ -106,7 +109,7 @@ export default async function PurserReportHistoryDetailPage({ params }: { params
                             </CardDescription>
                         </div>
                         <div className="text-right text-sm">
-                           <Badge variant={getStatusBadgeVariant(report.status as ReportStatus)} className="capitalize">{report.status.replace('-', ' ')}</Badge>
+                           <Badge variant={getStatusBadgeVariant(report.status)} className="capitalize">{report.status.replace('-', ' ')}</Badge>
                            <p className="text-muted-foreground mt-1">Submitted: {format(report.createdAt.toDate(), "PPp")}</p>
                         </div>
                     </div>
@@ -114,7 +117,7 @@ export default async function PurserReportHistoryDetailPage({ params }: { params
             </Card>
 
             {report.adminNotes && (
-                <Alert variant={getAdminResponseAlertVariant(report.status as ReportStatus)}>
+                <Alert variant={getAdminResponseAlertVariant(report.status)}>
                     <CheckCircle className="h-4 w-4" />
                     <AlertTitle>Administrator Response</AlertTitle>
                     <AlertDescription className="whitespace-pre-wrap">{report.adminNotes}</AlertDescription>
@@ -126,7 +129,7 @@ export default async function PurserReportHistoryDetailPage({ params }: { params
                 <CardContent className="space-y-4">
                     <SectionDisplay label="Crew Coordination: Positive Points" value={report.positivePoints} icon={Users} />
                     <SectionDisplay label="Crew Coordination: Improvement Points" value={report.improvementPoints} icon={Users} />
-                    <SectionDisplay label="Action Required from Management" value={report.actionRequired} icon={AlertTriangle} />
+                    <SectionDisplay label="Action Required from Management" value={report.actionRequired} icon={AlertCircle} />
                     
                     <SectionDisplay label="Passengers & Cabin: Specific Passenger Types" value={report.passengersToReport} icon={PersonStanding} />
                     <SectionDisplay label="Passengers & Cabin: Technical Issues" value={report.technicalIssues} icon={Wrench} />

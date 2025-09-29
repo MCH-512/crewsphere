@@ -15,8 +15,5 @@ export default async function UserDetailPage({ params }: { params: { userId: str
         notFound();
     }
     
-    return <UserDetailClient 
-        initialProfileData={initialProfileData} 
-        initialUserMap={initialProfileData.userMap} 
-    />;
+    return <UserDetailClient initialProfileData={initialProfileData} />;
 }

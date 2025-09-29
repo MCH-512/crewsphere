@@ -1,45 +1,49 @@
 
-"use server";
+'use server';
+/**
+ * @fileOverview An AI flow to generate a dynamic hero image for the user's dashboard.
+ *
+ * - generateDashboardImage - A function that takes a destination and time of day to create a relevant image.
+ */
 
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/googleai';
-import { GenerateDashboardImageSchema, type GenerateDashboardImageInput, GenerateDashboardImageOutputSchema, type GenerateDashboardImageOutput } from '@/schemas/dashboard-schema';
+import { GenerateDashboardImageInputSchema, type GenerateDashboardImageInput, GenerateDashboardImageOutputSchema, type GenerateDashboardImageOutput } from '@/schemas/dashboard-image-schema';
+
 
 export async function generateDashboardImage(input: GenerateDashboardImageInput): Promise<GenerateDashboardImageOutput> {
-  const validatedInput = GenerateDashboardImageSchema.parse(input);
+  const validatedInput = GenerateDashboardImageInputSchema.parse(input);
   return generateDashboardImageFlow(validatedInput);
 }
 
-const generateDashboardImageFlow = ai.defineFlow({
+
+const generateDashboardImageFlow = ai.defineFlow(
+  {
     name: 'generateDashboardImageFlow',
-    inputSchema: GenerateDashboardImageSchema,
+    inputSchema: GenerateDashboardImageInputSchema,
     outputSchema: GenerateDashboardImageOutputSchema,
-}, async (input) => {
-
-    const { media } = await ai.generate({
-        model: googleAI.model('gemini-pro-vision'),
+  },
+  async (input) => {
+    const validatedInput = GenerateDashboardImageInputSchema.parse(input);
+    try {
+      const { media } = await ai.generate({
+        model: 'googleai/imagen-4.0-fast-generate-001',
+        prompt: `Generate a photorealistic, cinematic image of an airplane wing view, looking out towards ${validatedInput.destination}. The scene should be at ${validatedInput.timeOfDay}. The image should be inspiring, professional, and suitable for a hero banner. Avoid text.`,
         config: {
-          maxOutputTokens: 1024,
-          promptConfig: {
-            temperature: 0.8,
-            topP: 0.9,
-          },
-          responseModalities: ['IMAGE'],
+          aspectRatio: '16:9',
         },
-        prompt: `Create a visually stunning and cinematic background image that conveys the feeling of flight or travel. The image should be a banner, designed for a dashboard.
-            - It must contain a very soft, muted gradient background.
-            - Avoid any text or labels on the image. It will be overlaid with user-specific data later.
-            - Avoid human elements and faces.
+      });
 
-            The prompt should focus on the following:
-            - The overall theme is ${input.destination ? `flying to or through ${input.destination}` : "general aviation"}.
-            - The time of day feeling should be ${input.timeOfDay || "general"}.
-        `,
-    });
+      if (!media?.url) {
+        throw new Error('Image generation failed to return a valid image.');
+      }
+      
+      console.log(`[AI-FLOW] generateDashboardImage successfully generated an image.`);
+      return { imageDataUri: media.url };
 
-    if (!media) {
-        throw new Error('Image generation failed to return valid media.');
+    } catch (error) {
+        console.error("Error in generateDashboardImageFlow:", error);
+        // Instead of throwing, return an empty object to allow fallback
+        return { imageDataUri: "" };
     }
-    
-    return { imageDataUri: media.url };
-});
+  }
+);

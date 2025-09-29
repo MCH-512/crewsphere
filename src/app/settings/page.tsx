@@ -4,6 +4,8 @@ import * as React from "react";
 import { getCurrentUser } from "@/lib/session";
 import SettingsClientPage from "./settings-client-page";
 import { redirect } from "next/navigation";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle } from "lucide-react";
 import { z } from "zod";
 
 const EmptySchema = z.object({});
@@ -13,11 +15,13 @@ export default async function SettingsPage() {
     const user = await getCurrentUser();
 
     if (!user) {
-        // This redirection is a safety net. 
-        // The logic in AppLayout already handles most cases.
+        // Cette redirection est une sécurité supplémentaire. 
+        // La logique dans AppLayout gère déjà la plupart des cas.
         redirect('/login');
     }
 
-    // The server component fetches the data and passes it to the client component.
-    return <SettingsClientPage initialUser={user} />;
+    // Le composant serveur récupère les données et les passe au composant client.
+    return (
+        <SettingsClientPage initialUser={user} />
+    );
 }

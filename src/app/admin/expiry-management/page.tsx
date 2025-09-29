@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -15,7 +16,7 @@ import { useAuth, type User } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp, doc, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { BadgeAlert, Loader2, RefreshCw, Edit, PlusCircle, Trash2, Search, Filter } from "lucide-react";
+import { BadgeAlert, Loader2, AlertTriangle, RefreshCw, Edit, PlusCircle, Trash2, Search, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { logAuditEvent } from "@/lib/audit-logger";
@@ -64,7 +65,7 @@ export default function AdminExpiryManagementPage() {
             
             setUsers(usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User)));
             setDocuments(docsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserDocument)));
-        } catch (err: unknown) {
+        } catch (err) {
             toast({ title: "Loading Error", description: "Could not fetch users and documents.", variant: "destructive" });
         } finally {
             setIsLoading(false);
@@ -79,7 +80,7 @@ export default function AdminExpiryManagementPage() {
     }, [adminUser, authLoading, router, fetchPageData]);
     
     const sortedAndFilteredDocuments = React.useMemo(() => {
-        const processedDocs = documents.filter(doc => {
+        let processedDocs = documents.filter(doc => {
             const status = getDocumentStatus(doc, EXPIRY_WARNING_DAYS);
             if (statusFilter !== 'all' && status !== statusFilter) return false;
             
@@ -96,13 +97,20 @@ export default function AdminExpiryManagementPage() {
         return processedDocs.sort((a, b) => {
             let valA: string | number | Date | Timestamp = a[sortColumn];
             let valB: string | number | Date | Timestamp = b[sortColumn];
-            let comparison = 0;
+
             if (sortColumn === 'status') {
                 valA = statusOrder[getDocumentStatus(a, EXPIRY_WARNING_DAYS)];
                 valB = statusOrder[getDocumentStatus(b, EXPIRY_WARNING_DAYS)];
             } else if (valA instanceof Timestamp && valB instanceof Timestamp) {
                 valA = valA.toMillis();
                 valB = valB.toMillis();
+            }
+
+            let comparison = 0;
+            if (typeof valA === 'string' && typeof valB === 'string') {
+                comparison = valA.localeCompare(valB);
+            } else if (typeof valA === 'number' && typeof valB === 'number') {
+                comparison = valA - valB;
             } else {
                  comparison = String(valA).localeCompare(String(valB));
             }
@@ -158,17 +166,17 @@ export default function AdminExpiryManagementPage() {
 
             if (isEditMode && currentDocument) {
                 const docRef = doc(db, "userDocuments", currentDocument.id);
-                await updateDoc(docRef, documentData);
-                await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email!, actionType: "UPDATE_DOCUMENT", entityType: "USER_DOCUMENT", entityId: currentDocument.id, details: { user: selectedUser.email, doc: data.documentName } });
+                await updateDoc(docRef, documentData as any);
+                await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email!, actionType: "UPDATE_USER_DOCUMENT", entityType: "USER_DOCUMENT", entityId: currentDocument.id, details: { user: selectedUser.email, doc: data.documentName } });
                 toast({ title: "Document Updated", description: "The user's document has been updated." });
             } else {
                 const newDocRef = await addDoc(collection(db, "userDocuments"), { ...documentData, createdAt: serverTimestamp() });
-                await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email!, actionType: "CREATE_DOCUMENT", entityType: "USER_DOCUMENT", entityId: newDocRef.id, details: { user: selectedUser.email, doc: data.documentName } });
+                await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email!, actionType: "CREATE_USER_DOCUMENT", entityType: "USER_DOCUMENT", entityId: newDocRef.id, details: { user: selectedUser.email, doc: data.documentName } });
                 toast({ title: "Document Added", description: "The user's document has been added." });
             }
             fetchPageData();
             setIsManageDialogOpen(false);
-        } catch (error: unknown) {
+        } catch (error) {
             toast({ title: "Submission Failed", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
@@ -179,10 +187,10 @@ export default function AdminExpiryManagementPage() {
         if (!adminUser || !window.confirm(`Are you sure you want to delete "${docToDelete.documentName}" for ${docToDelete.userEmail}?`)) return;
         try {
             await deleteDoc(doc(db, "userDocuments", docToDelete.id));
-            await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email!, actionType: "DELETE_DOCUMENT", entityType: "USER_DOCUMENT", entityId: docToDelete.id, details: { user: docToDelete.userEmail, doc: docToDelete.documentName } });
+            await logAuditEvent({ userId: adminUser.uid, userEmail: adminUser.email!, actionType: "DELETE_USER_DOCUMENT", entityType: "USER_DOCUMENT", entityId: docToDelete.id, details: { user: docToDelete.userEmail, doc: docToDelete.documentName } });
             toast({ title: "Document Deleted", description: "The document has been removed." });
             fetchPageData();
-        } catch (error: unknown) {
+        } catch (error) {
             toast({ title: "Deletion Failed", variant: "destructive" });
         }
     };
@@ -215,7 +223,7 @@ export default function AdminExpiryManagementPage() {
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input type="search" placeholder="Search by user or document name..." className="pl-8 w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         </div>
-                        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as UserDocumentStatus | "all")}>
+                        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
                             <SelectTrigger className="w-full md:w-[200px]"><Filter className="mr-2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="Filter by status" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Statuses</SelectItem>

@@ -1,6 +1,6 @@
 
 import { z } from "zod";
-import { Timestamp } from 'firebase/firestore';
+import type { Timestamp } from 'firebase/firestore';
 
 export const userQuizAttemptSchema = z.object({
   userId: z.string(),
@@ -14,6 +14,13 @@ export const userQuizAttemptSchema = z.object({
 
 export type UserQuizAttempt = z.infer<typeof userQuizAttemptSchema>;
 
-export interface StoredUserQuizAttempt extends UserQuizAttempt {
+export interface StoredUserQuizAttempt {
   id: string;
+  userId: string;
+  courseId: string;
+  quizId: string;
+  score: number;
+  status: 'passed' | 'failed';
+  completedAt: Timestamp;
+  answers: Record<string, string>;
 }
