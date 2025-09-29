@@ -53,6 +53,7 @@ export default function RootLayout({
       <head>
         <LanguageInitializer />
         <ThemeInitializer />
+        <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
       </head>
       <body>
         <a
