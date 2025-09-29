@@ -15,7 +15,7 @@ import { db } from "@/lib/firebase";
 import { collection, doc, writeBatch, serverTimestamp, Timestamp } from "firebase/firestore";
 import { Loader2, ArrowLeft, ArrowRight, Plane, Users, Send, Repeat, Info, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfDay, parseISO, differenceInMinutes, addMinutes, addDays, addWeeks } from "date-fns";
+import { startOfDay, parseISO, differenceInMinutes, addMinutes, addDays, addWeeks } from "date-fns";
 import { flightFormSchema, type FlightFormValues, type StoredFlight, aircraftTypes } from "@/schemas/flight-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
 import { CustomAutocompleteAirport } from "@/components/custom/custom-autocomplete-airport";

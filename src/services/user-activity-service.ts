@@ -44,7 +44,7 @@ export async function getTodayActivities(): Promise<TodayActivity[]> {
         );
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => {
-            const { id, userId, date, ...activity } = doc.data();
+            const { id: _id, userId: _userId, date: _date, ...activity } = doc.data();
             return activity as TodayActivity;
         });
     } catch (error) {
