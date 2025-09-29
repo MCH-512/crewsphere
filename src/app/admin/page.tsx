@@ -10,7 +10,7 @@ import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { adminNavConfig, type NavGroup, type NavItem } from "@/config/nav";
 import { cn } from "@/lib/utils";
-import { getAdminDashboardStats, getAdminDashboardWeeklyTrends } from "@/services/admin-dashboard-service";
+import { getAdminDashboardStats, getAdminDashboardWeeklyTrends, type AdminDashboardStats } from "@/services/admin-dashboard-service";
 import { getOpenPullRequests } from "@/services/github-service";
 import { Badge } from "@/components/ui/badge";
 import { WeeklyTrendsChart } from "@/components/admin/weekly-trends-chart";
@@ -52,7 +52,20 @@ export default async function AdminConsolePage() {
     }),
   };
 
-  const displayStats = stats ? { ...stats, openPullRequests: pullRequests.count } : { openPullRequests: pullRequests.count };
+  const defaultStats: AdminDashboardStats = {
+    pendingRequests: 0,
+    pendingDocValidations: 0,
+    newSuggestions: 0,
+    pendingSwaps: 0,
+    activeAlerts: 0,
+    pendingReports: 0,
+  };
+
+  const displayStats = {
+    ...(stats || defaultStats),
+    openPullRequests: pullRequests.count,
+  };
+  type DisplayStats = typeof displayStats;
 
   return (
     <div className="space-y-8">
@@ -84,7 +97,8 @@ export default async function AdminConsolePage() {
                       const IconComponent = item.icon;
                       const animationDelay = 0.1 + (itemIndex * 0.05);
                       
-                      const statValue = displayStats && item.statKey ? displayStats[item.statKey] : undefined;
+                      const statKey = item.statKey as keyof DisplayStats | undefined;
+                      const statValue = statKey ? displayStats[statKey] : undefined;
                       const shouldHighlight = statValue !== undefined && item.highlightWhen ? item.highlightWhen(statValue) : false;
 
                       return (
