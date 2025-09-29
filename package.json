@@ -15,6 +15,7 @@
     "start": "next start --port 9002 --hostname 0.0.0.0",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "audit": "npm run lint && npm run typecheck",
     "clean-install": "rm -rf node_modules package-lock.json && npm install",
     "audit:report": "npm audit",
     "audit:fix": "npm audit fix",
