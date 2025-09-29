@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow that audits a file using an AI model for TypeScript and React Hook Form issues.
@@ -43,7 +44,10 @@ export const codeAuditFlow = ai.defineFlow(
       ---
     `;
 
-    const llmResponse = await ai.generate({ prompt });
+    const llmResponse = await ai.generate({
+      model: 'googleai/gemini-1.5-pro-latest',
+      prompt,
+    });
     const responseText = llmResponse.text();
 
     console.log(`✅ Audit complete for: ${filePath}`);
