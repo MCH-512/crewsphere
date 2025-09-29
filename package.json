@@ -18,14 +18,14 @@
     "audit": "node nextjs-audit.js",
     "audit:report": "npm audit",
     "audit:fix": "npm audit fix",
-    "audit:ai": "node src/scripts/run-code-audit.js",
-    "test": "node src/scripts/run-all-tests.js",
+    "audit:ai": "tsx src/scripts/run-code-audit.js",
+    "test": "tsx src/scripts/run-all-tests.js",
     "test:unit": "jest --coverage",
     "test:e2e": "playwright test",
     "test:accessibility": "playwright test tests/accessibility/accessibility.spec.ts",
     "test:ai": "jest --testPathPattern=tests/ai-validation",
-    "test:auto-generate": "node src/scripts/generate-tests.js",
-    "auto-optimize": "node src/scripts/run-analysis.js"
+    "test:auto-generate": "tsx src/scripts/generate-tests.js",
+    "auto-optimize": "tsx src/scripts/run-analysis.js"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.0.0",
@@ -93,6 +93,7 @@
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.2.3",
+    "tsx": "^4.16.2",
     "typescript": "^5.5.4"
   }
 }
