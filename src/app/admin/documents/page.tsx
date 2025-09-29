@@ -50,12 +50,12 @@ export default function AdminDocumentsPage() {
         defaultValues: { title: "", description: "", category: undefined, version: "", file: undefined },
     });
 
-    const fetchDocuments = React.useCallback(async () =&gt; {
+    const fetchDocuments = React.useCallback(async () => {
         setIsLoading(true);
         try {
             const q = query(collection(db, "documents"), orderBy("lastUpdated", "desc"));
             const querySnapshot = await getDocs(q);
-            setDocuments(querySnapshot.docs.map(doc =&gt; ({ id: doc.id, ...doc.data() } as StoredDocument)));
+            setDocuments(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredDocument)));
         } catch (err: unknown) {
             toast({ title: "Loading Error", description: "Could not fetch documents.", variant: "destructive" });
         } finally {
@@ -63,21 +63,21 @@ export default function AdminDocumentsPage() {
         }
     }, [toast]);
 
-    React.useEffect(() =&gt; {
+    React.useEffect(() => {
         if (!authLoading) {
             if (!user || user.role !== 'admin') router.push('/');
             else fetchDocuments();
         }
     }, [user, authLoading, router, fetchDocuments]);
 
-    const sortedDocuments = React.useMemo(() =&gt; {
-        const filteredDocs = documents.filter(doc =&gt; {
+    const sortedDocuments = React.useMemo(() => {
+        const filteredDocs = documents.filter(doc => {
             if (categoryFilter !== 'all' && doc.category !== categoryFilter) return false;
             if (searchTerm && !doc.title.toLowerCase().includes(searchTerm.toLowerCase()) && !doc.description.toLowerCase().includes(searchTerm.toLowerCase())) return false;
             return true;
         });
 
-        return filteredDocs.sort((a, b) =&gt; {
+        return filteredDocs.sort((a, b) => {
             const valA = a[sortColumn];
             const valB = b[sortColumn];
             let comparison = 0;
@@ -91,16 +91,16 @@ export default function AdminDocumentsPage() {
         });
     }, [documents, sortColumn, sortDirection, searchTerm, categoryFilter]);
     
-    const handleSort = (column: SortableColumn) =&gt; {
+    const handleSort = (column: SortableColumn) => {
         if (sortColumn === column) {
-            setSortDirection(prev =&gt; prev === 'asc' ? 'desc' : 'asc');
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
         } else {
             setSortColumn(column);
             setSortDirection(column === 'lastUpdated' ? 'desc' : 'asc');
         }
     };
 
-    const handleOpenDialog = (docToEdit?: StoredDocument) =&gt; {
+    const handleOpenDialog = (docToEdit?: StoredDocument) => {
         if (docToEdit) {
             setIsEditMode(true);
             setCurrentDocument(docToEdit);
@@ -119,7 +119,7 @@ export default function AdminDocumentsPage() {
         setIsManageDialogOpen(true);
     };
 
-    const handleFormSubmit = async (data: DocumentFormValues | DocumentEditFormValues) =&gt; {
+    const handleFormSubmit = async (data: DocumentFormValues | DocumentEditFormValues) => {
         if (!user) return;
         setIsSubmitting(true);
         try {
@@ -146,7 +146,7 @@ export default function AdminDocumentsPage() {
 
             if (!fileURL || !filePath || !fileName || !fileType) throw new Error("File information is missing.");
 
-            const docData: Partial&lt;StoredDocument&gt; = {
+            const docData: Partial<StoredDocument> = {
                 title: data.title,
                 description: data.description,
                 category: data.category,
@@ -183,7 +183,7 @@ export default function AdminDocumentsPage() {
         }
     };
 
-    const handleDelete = async (docToDelete: StoredDocument) =&gt; {
+    const handleDelete = async (docToDelete: StoredDocument) => {
         if (!user || !window.confirm(`Are you sure you want to delete the document "${docToDelete.title}"?`)) return;
         try {
             await deleteObject(ref(storage, docToDelete.filePath));
@@ -198,112 +198,112 @@ export default function AdminDocumentsPage() {
     };
 
     if (authLoading || isLoading) {
-        return &lt;div className="flex items-center justify-center min-h-[calc(100vh-200px)]"&gt;&lt;Loader2 className="h-12 w-12 animate-spin text-primary" /&gt;&lt;/div&gt;;
+        return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
      if (!user || user.role !== 'admin') {
-        return &lt;div className="flex flex-col items-center justify-center min-h-screen text-center p-4"&gt;&lt;AlertTriangle className="h-16 w-16 text-destructive mb-4" /&gt;&lt;CardTitle className="text-2xl mb-2"&gt;Access Denied&lt;/CardTitle&gt;&lt;p className="text-muted-foreground"&gt;You do not have permission to view this page.&lt;/p&gt;&lt;Button onClick={() =&gt; router.push('/')} className="mt-6"&gt;Go to Dashboard&lt;/Button&gt;&lt;/div&gt;;
+        return <div className="flex flex-col items-center justify-center min-h-screen text-center p-4"><AlertTriangle className="h-16 w-16 text-destructive mb-4" /><CardTitle className="text-2xl mb-2">Access Denied</CardTitle><p className="text-muted-foreground">You do not have permission to view this page.</p><Button onClick={() => router.push('/')} className="mt-6">Go to Dashboard</Button></div>;
     }
 
     return (
-        &lt;div className="space-y-6"&gt;
-            &lt;Card className="shadow-lg"&gt;
-                &lt;CardHeader className="flex flex-row justify-between items-start"&gt;
-                    &lt;div&gt;
-                        &lt;CardTitle className="text-2xl font-headline flex items-center"&gt;&lt;Library className="mr-3 h-7 w-7 text-primary" /&gt;Document Management&lt;/CardTitle&gt;
-                        &lt;CardDescription&gt;Add, update, and remove documents from the library.&lt;/CardDescription&gt;
-                    &lt;/div&gt;
-                    &lt;div className="flex gap-2"&gt;
-                        &lt;Button variant="outline" onClick={fetchDocuments} disabled={isLoading}&gt;&lt;RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /&gt;Refresh&lt;/Button&gt;
-                        &lt;Button onClick={() =&gt; handleOpenDialog()}&gt;&lt;PlusCircle className="mr-2 h-4 w-4"/&gt;Add Document&lt;/Button&gt;
-                    &lt;/div&gt;
-                &lt;/CardHeader&gt;
-                &lt;CardContent&gt;
-                    &lt;div className="flex flex-col md:flex-row gap-4 mb-6"&gt;
-                        &lt;div className="relative flex-grow"&gt;
-                            &lt;Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /&gt;
-                            &lt;Input
+        <div className="space-y-6">
+            <Card className="shadow-lg">
+                <CardHeader className="flex flex-row justify-between items-start">
+                    <div>
+                        <CardTitle className="text-2xl font-headline flex items-center"><Library className="mr-3 h-7 w-7 text-primary" />Document Management</CardTitle>
+                        <CardDescription>Add, update, and remove documents from the library.</CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={fetchDocuments} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
+                        <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4"/>Add Document</Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                        <div className="relative flex-grow">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
                                 type="search"
                                 placeholder="Search by title or description..."
                                 className="pl-8 w-full md:max-w-md"
                                 value={searchTerm}
-                                onChange={(e) =&gt; setSearchTerm(e.target.value)}
-                            /&gt;
-                        &lt;/div&gt;
-                        &lt;Select value={categoryFilter} onValueChange={(value) =&gt; setCategoryFilter(value as DocumentCategory | "all")}&gt;
-                            &lt;SelectTrigger className="w-full md:w-[220px]"&gt;
-                                &lt;Filter className="mr-2 h-4 w-4" /&gt;
-                                &lt;SelectValue placeholder="Filter by category" /&gt;
-                            &lt;/SelectTrigger&gt;
-                            &lt;SelectContent&gt;
-                                &lt;SelectItem value="all"&gt;All Categories&lt;/SelectItem&gt;
-                                {documentCategories.map(cat =&gt; (
-                                    &lt;SelectItem key={cat} value={cat}&gt;{cat}&lt;/SelectItem&gt;
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as DocumentCategory | "all")}>
+                            <SelectTrigger className="w-full md:w-[220px]">
+                                <Filter className="mr-2 h-4 w-4" />
+                                <SelectValue placeholder="Filter by category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Categories</SelectItem>
+                                {documentCategories.map(cat => (
+                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                                 ))}
-                            &lt;/SelectContent&gt;
-                        &lt;/Select&gt;
-                    &lt;/div&gt;
-                    &lt;div className="rounded-md border"&gt;
-                        &lt;Table&gt;
-                            &lt;TableHeader&gt;
-                                &lt;TableRow&gt;
-                                    &lt;SortableHeader&lt;SortableColumn&gt; column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
-                                    &lt;SortableHeader&lt;SortableColumn&gt; column="category" label="Category" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
-                                    &lt;SortableHeader&lt;SortableColumn&gt; column="version" label="Version" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
-                                    &lt;SortableHeader&lt;SortableColumn&gt; column="lastUpdated" label="Last Updated" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
-                                    &lt;SortableHeader&lt;SortableColumn&gt; column="uploaderEmail" label="Uploaded By" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
-                                    &lt;TableHead className="text-right"&gt;Actions&lt;/TableHead&gt;
-                                &lt;/TableRow&gt;
-                            &lt;/TableHeader&gt;
-                            &lt;TableBody&gt;
-                                {sortedDocuments.map((docItem) =&gt; (
-                                    &lt;TableRow key={docItem.id}&gt;
-                                        &lt;TableCell className="font-medium"&gt;{docItem.title}&lt;/TableCell&gt;
-                                        &lt;TableCell&gt;{docItem.category}&lt;/TableCell&gt;
-                                        &lt;TableCell&gt;{docItem.version}&lt;/TableCell&gt;
-                                        &lt;TableCell&gt;{format(docItem.lastUpdated.toDate(), "PPp")}&lt;/TableCell&gt;
-                                        &lt;TableCell&gt;{docItem.uploaderEmail}&lt;/TableCell&gt;
-                                        &lt;TableCell className="text-right space-x-1"&gt;
-                                            &lt;Button variant="ghost" size="icon" asChild title="View Read Status"&gt;&lt;Link href={`/admin/documents/${docItem.id}`}&gt;&lt;Eye className="h-4 w-4"/&gt;&lt;/Link&gt;&lt;/Button&gt;
-                                            &lt;Button variant="ghost" size="icon" asChild&gt;&lt;a href={docItem.fileURL} target="_blank" rel="noopener noreferrer"&gt;&lt;Download className="h-4 w-4"/&gt;&lt;/a&gt;&lt;/Button&gt;
-                                            &lt;Button variant="ghost" size="icon" onClick={() =&gt; handleOpenDialog(docItem)}&gt;&lt;Edit className="h-4 w-4" /&gt;&lt;/Button&gt;
-                                            &lt;Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() =&gt; handleDelete(docItem)}&gt;&lt;Trash2 className="h-4 w-4" /&gt;&lt;/Button&gt;
-                                        &lt;/TableCell&gt;
-                                    &lt;/TableRow&gt;
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <SortableHeader<SortableColumn> column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader<SortableColumn> column="category" label="Category" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader<SortableColumn> column="version" label="Version" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader<SortableColumn> column="lastUpdated" label="Last Updated" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader<SortableColumn> column="uploaderEmail" label="Uploaded By" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {sortedDocuments.map((docItem) => (
+                                    <TableRow key={docItem.id}>
+                                        <TableCell className="font-medium">{docItem.title}</TableCell>
+                                        <TableCell>{docItem.category}</TableCell>
+                                        <TableCell>{docItem.version}</TableCell>
+                                        <TableCell>{format(docItem.lastUpdated.toDate(), "PPp")}</TableCell>
+                                        <TableCell>{docItem.uploaderEmail}</TableCell>
+                                        <TableCell className="text-right space-x-1">
+                                            <Button variant="ghost" size="icon" asChild title="View Read Status"><Link href={`/admin/documents/${docItem.id}`}><Eye className="h-4 w-4"/></Link></Button>
+                                            <Button variant="ghost" size="icon" asChild><a href={docItem.fileURL} target="_blank" rel="noopener noreferrer"><Download className="h-4 w-4"/></a></Button>
+                                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(docItem)}><Edit className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(docItem)}><Trash2 className="h-4 w-4" /></Button>
+                                        </TableCell>
+                                    </TableRow>
                                 ))}
-                            &lt;/TableBody&gt;
-                        &lt;/Table&gt;
-                    &lt;/div&gt;
-                     {sortedDocuments.length === 0 &amp;&amp; &lt;p className="text-center text-muted-foreground py-8"&gt;No documents found matching your criteria.&lt;/p&gt;}
-                &lt;/CardContent&gt;
-            &lt;/Card&gt;
+                            </TableBody>
+                        </Table>
+                    </div>
+                     {sortedDocuments.length === 0 && <p className="text-center text-muted-foreground py-8">No documents found matching your criteria.</p>}
+                </CardContent>
+            </Card>
 
-            &lt;Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}&gt;
-                &lt;DialogContent&gt;
-                    &lt;DialogHeader&gt;
-                        &lt;DialogTitle&gt;{isEditMode ? "Edit Document" : "Add New Document"}&lt;/DialogTitle&gt;
-                        &lt;DialogDescription&gt;{isEditMode ? "Update the document details below." : "Fill in the form to add a new document."}&lt;/DialogDescription&gt;
-                    &lt;/DialogHeader&gt;
-                    &lt;Form {...form}&gt;
-                        &lt;form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4"&gt;
-                            &lt;FormField control={form.control} name="title" render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Title&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
-                            &lt;FormField control={form.control} name="description" render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Description&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Textarea {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
-                            &lt;FormField control={form.control} name="category" render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Category&lt;/FormLabel&gt;&lt;Select onValueChange={field.onChange} value={field.value}&gt;&lt;FormControl&gt;&lt;SelectTrigger&gt;&lt;SelectValue placeholder="Select a category" /&gt;&lt;/SelectTrigger&gt;&lt;/FormControl&gt;&lt;SelectContent&gt;{documentCategories.map(c =&gt; (&lt;SelectItem key={c} value={c}&gt;{c}&lt;/SelectItem&gt;))}&lt;/SelectContent&gt;&lt;/Select&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
-                            &lt;FormField control={form.control} name="version" render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Version&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
-                            &lt;FormField control={form.control} name="file" render={({ field: { onChange, ...fieldProps } }) =&gt; (
-                                &lt;FormItem&gt;
-                                    &lt;FormLabel&gt;File {isEditMode &amp;&amp; "(Optional: leave empty to keep existing file)"}&lt;/FormLabel&gt;
-                                    &lt;FormControl&gt;&lt;Input type="file" {...fieldProps} onChange={e =&gt; onChange(e.target.files)} /&gt;&lt;/FormControl&gt;
-                                    &lt;FormMessage /&gt;
-                                &lt;/FormItem&gt;
-                            )} /&gt;
-                            &lt;DialogFooter&gt;
-                                &lt;DialogClose asChild&gt;&lt;Button type="button" variant="outline"&gt;Cancel&lt;/Button&gt;&lt;/DialogClose&gt;
-                                &lt;Button type="submit" disabled={isSubmitting}&gt;{isSubmitting &amp;&amp; &lt;Loader2 className="mr-2 h-4 w-4 animate-spin"/&gt;}{isEditMode ? "Save Changes" : "Add Document"}&lt;/Button&gt;
-                            &lt;/DialogFooter&gt;
-                        &lt;/form&gt;
-                    &lt;/Form&gt;
-                &lt;/DialogContent&gt;
-            &lt;/Dialog&gt;
-        &lt;/div&gt;
+            <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{isEditMode ? "Edit Document" : "Add New Document"}</DialogTitle>
+                        <DialogDescription>{isEditMode ? "Update the document details below." : "Fill in the form to add a new document."}</DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+                            <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                            <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>} />
+                            <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{documentCategories.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>} />
+                            <FormField control={form.control} name="version" render={({ field }) => (<FormItem><FormLabel>Version</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                            <FormField control={form.control} name="file" render={({ field: { onChange, ...fieldProps } }) => (
+                                <FormItem>
+                                    <FormLabel>File {isEditMode && "(Optional: leave empty to keep existing file)"}</FormLabel>
+                                    <FormControl><Input type="file" {...fieldProps} onChange={e => onChange(e.target.files)} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <DialogFooter>
+                                <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                                <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}{isEditMode ? "Save Changes" : "Add Document"}</Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+        </div>
     );
 }

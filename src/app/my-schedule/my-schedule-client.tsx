@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -235,4 +234,7 @@ export function MyScheduleClient({ initialActivities }: { initialActivities: Act
                     ))}
                 </CardFooter>
             </Card>
-            <ActivityDetailsSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} activity={sheetActivity} isLoading={isSheetLoading} authUser={user}
+            <ActivityDetailsSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} activity={sheetActivity} isLoading={isSheetLoading} authUser={user} error={sheetError} />
+        </div>
+    );
+}

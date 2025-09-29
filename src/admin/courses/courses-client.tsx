@@ -43,7 +43,7 @@ type StatusFilter = "all" | "published" | "draft";
 const steps = [
     { id: 1, title: 'Course Details', fields: ['title', 'description', 'category', 'courseType', 'referenceBody', 'duration', 'imageHint', 'mandatory', 'published'], icon: BookOpen },
     { id: 2, title: 'Chapters', fields: ['chapters'], icon: ListOrdered },
-    { id: 3, title: 'Quiz &amp; Certificate', fields: ['quizTitle', 'passingThreshold', 'certificateExpiryDays'], icon: Shield },
+    { id: 3, title: 'Quiz & Certificate', fields: ['quizTitle', 'passingThreshold', 'certificateExpiryDays'], icon: Shield },
     { id: 4, title: 'Quiz Questions', fields: ['questions'], icon: FileQuestion },
 ];
 
@@ -230,21 +230,21 @@ export function CoursesClient({ initialCourses, initialQuizzes, initialCertRules
             if (isEditMode && currentCourse) {
                  const questionsQuery = query(collection(db, "questions"), where("quizId", "==", currentCourse.quizId));
                  const questionsSnapshot = await getDocs(questionsQuery);
-                 questionsSnapshot.forEach(doc =&gt; batch.delete(doc.ref));
+                 questionsSnapshot.forEach(doc => batch.delete(doc.ref));
             }
-            data.questions.forEach((q) =&gt; {
+            data.questions.forEach((q) => {
                 const questionRef = doc(collection(db, "questions"));
                 batch.set(questionRef, { ...q, quizId: quizRef.id, questionType: 'mcq', createdAt: serverTimestamp() });
             });
 
 
             if (isEditMode && currentCourse) {
-                const updateData: Partial&lt;Omit&lt;StoredCourse, 'id' | 'createdAt'&gt;&gt; = {
+                const updateData: Partial<Omit<StoredCourse, 'id' | 'createdAt'>> = {
                     title: data.title, description: data.description, category: data.category,
                     courseType: data.courseType, referenceBody: data.referenceBody, duration: data.duration,
                     mandatory: data.mandatory, published: data.published, imageHint: data.imageHint,
-                    chapters: data.chapters.filter(c =&gt; c.title.trim() !== ""),
-                    updatedAt: serverTimestamp(),
+                    chapters: data.chapters.filter(c => c.title.trim() !== ""),
+                    updatedAt: serverTimestamp() as any,
                 };
                 if (imageUrl) updateData.imageUrl = imageUrl;
 
@@ -259,7 +259,7 @@ export function CoursesClient({ initialCourses, initialQuizzes, initialCertRules
                     title: data.title, description: data.description, category: data.category,
                     courseType: data.courseType, referenceBody: data.referenceBody, duration: data.duration,
                     mandatory: data.mandatory, published: data.published, imageHint: data.imageHint,
-                    chapters: data.chapters.filter(c =&gt; c.title.trim() !== ""),
+                    chapters: data.chapters.filter(c => c.title.trim() !== ""),
                     quizId: quizRef.id, certificateRuleId: certRuleRef.id,
                     imageUrl: imageUrl || null,
                     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
@@ -287,7 +287,7 @@ export function CoursesClient({ initialCourses, initialQuizzes, initialCertRules
         const courseTitle = form.getValues('title');
         const chapters = form.getValues('chapters');
         
-        if (!courseTitle || chapters.every(c =&gt; !c.content?.trim())) {
+        if (!courseTitle || chapters.every(c => !c.content?.trim())) {
             toast({ title: "Cannot Generate Quiz", description: "Please provide a course title and some chapter content first.", variant: "destructive" });
             return;
         }
@@ -298,11 +298,11 @@ export function CoursesClient({ initialCourses, initialQuizzes, initialCertRules
         try {
             const result = await generateQuizFromContent({
                 courseTitle,
-                courseContent: chapters.map(c =&gt; `Chapter: ${c.title}\n${c.content}`).join('\n\n'),
+                courseContent: chapters.map(c => `Chapter: ${c.title}\n${c.content}`).join('\n\n'),
                 questionCount: 5,
             });
 
-            if (result && result.questions.length &gt; 0) {
+            if (result && result.questions.length > 0) {
                 replaceQuestions(result.questions);
                 toast({ title: "Quiz Generated!", description: `${result.questions.length} questions have been added to the form.` });
             } else {
@@ -323,7 +323,7 @@ export function CoursesClient({ initialCourses, initialQuizzes, initialCertRules
             const batch = writeBatch(db);
             const questionsQuery = query(collection(db, "questions"), where("quizId", "==", courseToDelete.quizId));
             const questionsSnapshot = await getDocs(questionsQuery);
-            questionsSnapshot.docs.forEach(d =&gt; batch.delete(d.ref));
+            questionsSnapshot.docs.forEach(d => batch.delete(d.ref));
             batch.delete(doc(db, "quizzes", courseToDelete.quizId));
             batch.delete(doc(db, "certificateRules", courseToDelete.certificateRuleId));
             batch.delete(doc(db, "courses", courseToDelete.id));
@@ -349,249 +349,251 @@ export function CoursesClient({ initialCourses, initialQuizzes, initialCertRules
         const fieldsToValidate = steps[currentStep].fields as (keyof CourseFormValues)[];
         const isValid = await triggerValidation(fieldsToValidate);
         if (isValid) {
-          if (currentStep &lt; steps.length - 1) {
-            setCurrentStep(prev =&gt; prev + 1);
+          if (currentStep < steps.length - 1) {
+            setCurrentStep(prev => prev + 1);
           }
         } else {
             toast({ title: "Incomplete Section", description: "Please fill all required fields before continuing.", variant: "destructive"})
         }
     };
 
-    const prevStep = () =&gt; {
-        if (currentStep &gt; 0) {
-            setCurrentStep(prev =&gt; prev - 1);
+    const prevStep = () => {
+        if (currentStep > 0) {
+            setCurrentStep(prev => prev - 1);
         }
     };
 
-    const progressPercentage = (((currentStep + 1) / steps.length) * 100);
+    const progressPercentage = ((currentStep + 1) / steps.length) * 100;
 
-    if (authLoading) return &lt;div className="flex items-center justify-center min-h-screen"&gt;&lt;Loader2 className="h-12 w-12 animate-spin text-primary" /&gt;&lt;/div&gt;;
-    if (!user || user.role !== 'admin') return &lt;div className="text-center p-4"&gt;&lt;AlertTriangle className="mx-auto h-12 w-12 text-destructive" /&gt;&lt;CardTitle&gt;Access Denied&lt;/CardTitle&gt;&lt;/div&gt;;
+    if (authLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+    if (!user || user.role !== 'admin') return <div className="text-center p-4"><AlertTriangle className="mx-auto h-12 w-12 text-destructive" /><CardTitle>Access Denied</CardTitle></div>;
 
     return (
-        &lt;div className="space-y-6"&gt;
-            &lt;Card className="shadow-lg"&gt;
-                &lt;CardHeader className="flex flex-row justify-between items-start"&gt;
-                    &lt;div&gt;
-                        &lt;CardTitle className="text-2xl font-headline flex items-center"&gt;&lt;GraduationCap className="mr-3 h-7 w-7 text-primary" /&gt;Course Management&lt;/CardTitle&gt;
-                        &lt;CardDescription&gt;Create, manage, and publish e-learning courses.&lt;/CardDescription&gt;
-                    &lt;/div&gt;
-                    &lt;div className="flex gap-2"&gt;
-                        &lt;Button variant="outline" onClick={fetchAllData} disabled={isLoading}&gt;&lt;RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /&gt;Refresh&lt;/Button&gt;
-                        &lt;Button onClick={() =&gt; handleOpenDialog()}&gt;&lt;PlusCircle className="mr-2 h-4 w-4" /&gt;Create Course&lt;/Button&gt;
-                    &lt;/div&gt;
-                &lt;/CardHeader&gt;
-                &lt;CardContent&gt;
-                    &lt;div className="flex flex-col md:flex-row gap-2 mb-6"&gt;
-                        &lt;div className="relative flex-grow"&gt;
-                            &lt;Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /&gt;
-                            &lt;Input
+        <div className="space-y-6">
+            <Card className="shadow-lg">
+                <CardHeader className="flex flex-row justify-between items-start">
+                    <div>
+                        <CardTitle className="text-2xl font-headline flex items-center"><GraduationCap className="mr-3 h-7 w-7 text-primary" />Course Management</CardTitle>
+                        <CardDescription>Create, manage, and publish e-learning courses.</CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={fetchAllData} disabled={isLoading}><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
+                        <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4" />Create Course</Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col md:flex-row gap-2 mb-6">
+                        <div className="relative flex-grow">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
                                 type="search"
                                 placeholder="Search by title..."
                                 className="pl-8 w-full"
                                 value={searchTerm}
-                                onChange={(e) =&gt; setSearchTerm(e.target.value)}
-                            /&gt;
-                        &lt;/div&gt;
-                        &lt;Select value={categoryFilter} onValueChange={(value) =&gt; setCategoryFilter(value as CourseCategory | "all")}&gt;
-                            &lt;SelectTrigger className="w-full md:w-[240px]"&gt;&lt;Filter className="mr-2 h-4 w-4" /&gt;&lt;SelectValue placeholder="Filter by category" /&gt;&lt;/SelectTrigger&gt;
-                            &lt;SelectContent&gt;&lt;SelectItem value="all"&gt;All Categories&lt;/SelectItem&gt;{courseCategories.map(c =&gt; &lt;SelectItem key={c} value={c}&gt;{c}&lt;/SelectItem&gt;)}&lt;/SelectContent&gt;
-                        &lt;/Select&gt;
-                         &lt;Select value={typeFilter} onValueChange={(value) =&gt; setTypeFilter(value as CourseType | "all")}&gt;
-                            &lt;SelectTrigger className="w-full md:w-[200px]"&gt;&lt;Filter className="mr-2 h-4 w-4" /&gt;&lt;SelectValue placeholder="Filter by type" /&gt;&lt;/SelectTrigger&gt;
-                            &lt;SelectContent&gt;&lt;SelectItem value="all"&gt;All Types&lt;/SelectItem&gt;{courseTypes.map(c =&gt; &lt;SelectItem key={c} value={c}&gt;{c}&lt;/SelectItem&gt;)}&lt;/SelectContent&gt;
-                        &lt;/Select&gt;
-                        &lt;Select value={statusFilter} onValueChange={(value) =&gt; setStatusFilter(value as StatusFilter)}&gt;
-                            &lt;SelectTrigger className="w-full md:w-[180px]"&gt;&lt;Filter className="mr-2 h-4 w-4" /&gt;&lt;SelectValue placeholder="Filter by status" /&gt;&lt;/SelectTrigger&gt;
-                            &lt;SelectContent&gt;&lt;SelectItem value="all"&gt;All Statuses&lt;/SelectItem&gt;&lt;SelectItem value="published"&gt;Published&lt;/SelectItem&gt;&lt;SelectItem value="draft"&gt;Draft&lt;/SelectItem&gt;&lt;/SelectContent&gt;
-                        &lt;/Select&gt;
-                    &lt;/div&gt;
-                    &lt;Table&gt;
-                        &lt;TableHeader&gt;&lt;TableRow&gt;
-                            &lt;SortableHeader&lt;SortableColumn&gt; column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
-                            &lt;SortableHeader&lt;SortableColumn&gt; column="category" label="Category" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
-                            &lt;SortableHeader&lt;SortableColumn&gt; column="courseType" label="Type" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
-                            &lt;SortableHeader&lt;SortableColumn&gt; column="published" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} /&gt;
-                            &lt;TableHead&gt;Actions&lt;/TableHead&gt;
-                        &lt;/TableRow&gt;&lt;/TableHeader&gt;
-                        &lt;TableBody&gt;
-                            {sortedCourses.map(course =&gt; (
-                                &lt;TableRow key={course.id}&gt;
-                                    &lt;TableCell className="font-medium"&gt;{course.title}&lt;/TableCell&gt;
-                                    &lt;TableCell&gt;{course.category}&lt;/TableCell&gt;
-                                    &lt;TableCell&gt;{course.courseType}&lt;/TableCell&gt;
-                                    &lt;TableCell&gt;
-                                        &lt;Badge variant={course.published ? "success" : "secondary"}&gt;
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as CourseCategory | "all")}>
+                            <SelectTrigger className="w-full md:w-[240px]"><Filter className="mr-2 h-4 w-4" /><SelectValue placeholder="Filter by category" /></SelectTrigger>
+                            <SelectContent><SelectItem value="all">All Categories</SelectItem>{courseCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                        </Select>
+                         <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as CourseType | "all")}>
+                            <SelectTrigger className="w-full md:w-[200px]"><Filter className="mr-2 h-4 w-4" /><SelectValue placeholder="Filter by type" /></SelectTrigger>
+                            <SelectContent><SelectItem value="all">All Types</SelectItem>{courseTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
+                            <SelectTrigger className="w-full md:w-[180px]"><Filter className="mr-2 h-4 w-4" /><SelectValue placeholder="Filter by status" /></SelectTrigger>
+                            <SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="published">Published</SelectItem><SelectItem value="draft">Draft</SelectItem></SelectContent>
+                        </Select>
+                    </div>
+                    <Table>
+                        <TableHeader><TableRow>
+                            <SortableHeader<SortableColumn> column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader<SortableColumn> column="category" label="Category" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader<SortableColumn> column="courseType" label="Type" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader<SortableColumn> column="published" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <TableHead>Actions</TableHead>
+                        </TableRow></TableHeader>
+                        <TableBody>
+                            {sortedCourses.map(course => (
+                                <TableRow key={course.id}>
+                                    <TableCell className="font-medium">{course.title}</TableCell>
+                                    <TableCell>{course.category}</TableCell>
+                                    <TableCell>{course.courseType}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={course.published ? "success" : "secondary"}>
                                             {course.published ? "Published" : "Draft"}
-                                        &lt;/Badge&gt;
-                                    &lt;/TableCell&gt;
-                                    &lt;TableCell className="space-x-1"&gt;
-                                        &lt;Button variant="ghost" size="icon" onClick={() =&gt; handleOpenDialog(course)} title="Edit Course Details"&gt;&lt;Edit className="h-4 w-4" /&gt;&lt;/Button&gt;
-                                        &lt;Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title="Delete Course" onClick={() =&gt; { setCourseToDelete(course); setIsDeleteDialogOpen(true); }}&gt;&lt;Trash2 className="h-4 w-4" /&gt;&lt;/Button&gt;
-                                    &lt;/TableCell&gt;
-                                &lt;/TableRow&gt;
-                            ))}&lt;/TableBody&gt;
-                    &lt;/Table&gt;
-                    {sortedCourses.length === 0 && &lt;p className="text-center text-muted-foreground p-8"&gt;No courses found matching your criteria.&lt;/p&gt;}
-                &lt;/CardContent&gt;
-            &lt;/Card&gt;
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="space-x-1">
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(course)} title="Edit Course Details"><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title="Delete Course" onClick={() => { setCourseToDelete(course); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    {sortedCourses.length === 0 && <p className="text-center text-muted-foreground p-8">No courses found matching your criteria.</p>}
+                </CardContent>
+            </Card>
 
-            &lt;Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}&gt;
-                &lt;DialogContent className="max-w-4xl"&gt;
-                    &lt;DialogHeader&gt;
-                        &lt;DialogTitle&gt;{isEditMode ? "Edit Course" : "Create New Course"}&lt;/DialogTitle&gt;
-                        &lt;DialogDescription&gt;{isEditMode ? "Update course details, chapters, and quiz questions below." : "Fill out all details for the new course."}&lt;/DialogDescription&gt;
-                         &lt;Progress value={progressPercentage} className="mt-4"/&gt;
-                        &lt;div className="flex justify-between text-xs text-muted-foreground mt-1"&gt;
-                            &lt;span&gt;Step {currentStep + 1} of {steps.length}: &lt;strong&gt;{steps[currentStep].title}&lt;/strong&gt;&lt;/span&gt;
-                            &lt;span&gt;{Math.round(progressPercentage)}% Complete&lt;/span&gt;
-                        &lt;/div&gt;
-                    &lt;/DialogHeader&gt;
-                    &lt;Form {...form}&gt;
-                        &lt;form onSubmit={form.handleSubmit(handleFormSubmit)}&gt;
-                            &lt;ScrollArea className="h-[60vh] p-4"&gt;
+            <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>{isEditMode ? "Edit Course" : "Create New Course"}</DialogTitle>
+                        <DialogDescription>{isEditMode ? "Update course details, chapters, and quiz questions below." : "Fill out all details for the new course."}</DialogDescription>
+                         <Progress value={progressPercentage} className="mt-4"/>
+                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                            <span>Step {currentStep + 1} of {steps.length}: <strong>{steps[currentStep].title}</strong></span>
+                            <span>{Math.round(progressPercentage)}% Complete</span>
+                        </div>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleFormSubmit)}>
+                            <ScrollArea className="h-[60vh] p-4">
 
                                 {/* Step 1: Course Details */}
-                                &lt;AnimatedCard delay={0.1} className={cn(currentStep !== 0 && "hidden")}&gt;
-                                     &lt;div className="space-y-6"&gt;
-                                        &lt;h3 className="text-lg font-semibold flex items-center gap-2"&gt;&lt;BookOpen/&gt;Course Details&lt;/h3&gt;
-                                        &lt;FormField control={form.control} name="title" render={({ field }) =&gt; &lt;FormItem&gt;&lt;FormLabel&gt;Course Title&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;} /&gt;
-                                        &lt;FormField control={form.control} name="description" render={({ field }) =&gt; &lt;FormItem&gt;&lt;FormLabel&gt;Description&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Textarea {...field} className="min-h-[100px]" /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;} /&gt;
-                                        &lt;div className="grid md:grid-cols-2 gap-4"&gt;
-                                            &lt;FormField control={form.control} name="category" render={({ field }) =&gt; &lt;FormItem&gt;&lt;FormLabel&gt;Category&lt;/FormLabel&gt;&lt;Select onValueChange={field.onChange} value={field.value}&gt;&lt;FormControl&gt;&lt;SelectTrigger&gt;&lt;SelectValue placeholder="Select course category" /&gt;&lt;/SelectTrigger&gt;&lt;/FormControl&gt;&lt;SelectContent&gt;{courseCategories.map(c =&gt; &lt;SelectItem key={c} value={c}&gt;{c}&lt;/SelectItem&gt;)}&lt;/SelectContent&gt;&lt;/Select&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;} /&gt;
-                                            &lt;FormField control={form.control} name="courseType" render={({ field }) =&gt; &lt;FormItem&gt;&lt;FormLabel&gt;Course Type&lt;/FormLabel&gt;&lt;Select onValueChange={field.onChange} value={field.value}&gt;&lt;FormControl&gt;&lt;SelectTrigger&gt;&lt;SelectValue placeholder="Select course type" /&gt;&lt;/SelectTrigger&gt;&lt;/FormControl&gt;&lt;SelectContent&gt;{courseTypes.map(c =&gt; &lt;SelectItem key={c} value={c}&gt;{c}&lt;/SelectItem&gt;)}&lt;/SelectContent&gt;&lt;/Select&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;} /&gt;
-                                            &lt;FormField control={form.control} name="referenceBody" render={({ field }) =&gt; &lt;FormItem&gt;&lt;FormLabel&gt;Reference&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;} /&gt;
-                                            &lt;FormField control={form.control} name="duration" render={({ field }) =&gt; &lt;FormItem&gt;&lt;FormLabel&gt;Duration&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;} /&gt;
-                                            &lt;FormField control={form.control} name="imageHint" render={({ field }) =&gt; &lt;FormItem&gt;&lt;FormLabel&gt;AI Image Hint&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} placeholder="e.g. cockpit, safety manual" /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;} /&gt;
-                                        &lt;/div&gt;
-                                        &lt;div className="grid md:grid-cols-2 gap-4"&gt;
-                                           &lt;FormField control={form.control} name="mandatory" render={({ field }) =&gt; &lt;FormItem className="flex flex-row items-center justify-between rounded-lg border p-3"&gt;&lt;div className="space-y-0.5"&gt;&lt;FormLabel&gt;Mandatory&lt;/FormLabel&gt;&lt;/div&gt;&lt;FormControl&gt;&lt;Switch checked={field.value} onCheckedChange={field.onChange} /&gt;&lt;/FormControl&gt;&lt;/FormItem&gt;} /&gt;
-                                           &lt;FormField control={form.control} name="published" render={({ field }) =&gt; &lt;FormItem className="flex flex-row items-center justify-between rounded-lg border p-3"&gt;&lt;div className="space-y-0.5"&gt;&lt;FormLabel&gt;Published&lt;/FormLabel&gt;&lt;/div&gt;&lt;FormControl&gt;&lt;Switch checked={field.value} onCheckedChange={field.onChange} /&gt;&lt;/FormControl&gt;&lt;/FormItem&gt;} /&gt;
-                                        &lt;/div&gt;
-                                    &lt;/div&gt;
-                                &lt;/AnimatedCard&gt;
+                                <AnimatedCard delay={0.1} className={cn(currentStep !== 0 && "hidden")}>
+                                     <div className="space-y-6">
+                                        <h3 className="text-lg font-semibold flex items-center gap-2"><BookOpen/>Course Details</h3>
+                                        <FormField control={form.control} name="title" render={({ field }) => <FormItem><FormLabel>Course Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField control={form.control} name="description" render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} className="min-h-[100px]" /></FormControl><FormMessage /></FormItem>} />
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="category" render={({ field }) => <FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course category" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                            <FormField control={form.control} name="courseType" render={({ field }) => <FormItem><FormLabel>Course Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select course type" /></SelectTrigger></FormControl><SelectContent>{courseTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                            <FormField control={form.control} name="referenceBody" render={({ field }) => <FormItem><FormLabel>Reference</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                                            <FormField control={form.control} name="duration" render={({ field }) => <FormItem><FormLabel>Duration</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                                            <FormField control={form.control} name="imageHint" render={({ field }) => <FormItem><FormLabel>AI Image Hint</FormLabel><FormControl><Input {...field} placeholder="e.g. cockpit, safety manual" /></FormControl><FormMessage /></FormItem>} />
+                                        </div>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                           <FormField control={form.control} name="mandatory" render={({ field }) => <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3"><div className="space-y-0.5"><FormLabel>Mandatory</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>} />
+                                           <FormField control={form.control} name="published" render={({ field }) => <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3"><div className="space-y-0.5"><FormLabel>Published</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>} />
+                                        </div>
+                                    </div>
+                                </AnimatedCard>
                                 
                                 {/* Step 2: Chapters */}
-                                 &lt;AnimatedCard delay={0.1} className={cn(currentStep !== 1 && "hidden")}&gt;
-                                    &lt;div className="space-y-4"&gt;
-                                        &lt;h3 className="font-semibold text-lg flex items-center gap-2"&gt;&lt;ListOrdered/&gt;Chapters&lt;/h3&gt;
-                                        {chapterFields.map((field, index) =&gt; (
-                                            &lt;div key={field.id} className="p-4 border rounded-lg space-y-4 relative"&gt;
-                                                &lt;Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() =&gt; removeChapter(index)}&gt;&lt;Trash2 className="h-4 w-4 text-destructive" /&gt;&lt;/Button&gt;
-                                                &lt;FormField control={form.control} name={`chapters.${index}.title`} render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Chapter {index + 1} Title&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} placeholder={`Title for chapter ${index + 1}`} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
-                                                &lt;FormField control={form.control} name={`chapters.${index}.content`} render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Chapter {index + 1} Content&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Textarea {...field} placeholder="Write the chapter content here..." className="min-h-[120px]" /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
-                                            &lt;/div&gt;
-                                        ))}&lt;/div&gt;
-                                        &lt;Button type="button" variant="outline" size="sm" onClick={() =&gt; appendChapter({ title: "", content: "" })}&gt;Add Chapter&lt;/Button&gt;
-                                    &lt;/div&gt;
-                                &lt;/AnimatedCard&gt;
+                                 <AnimatedCard delay={0.1} className={cn(currentStep !== 1 && "hidden")}>
+                                    <div className="space-y-4">
+                                        <h3 className="font-semibold text-lg flex items-center gap-2"><ListOrdered/>Chapters</h3>
+                                        {chapterFields.map((field, index) => (
+                                            <div key={field.id} className="p-4 border rounded-lg space-y-4 relative">
+                                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeChapter(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                                <FormField control={form.control} name={`chapters.${index}.title`} render={({ field }) => (<FormItem><FormLabel>Chapter {index + 1} Title</FormLabel><FormControl><Input {...field} placeholder={`Title for chapter ${index + 1}`} /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={form.control} name={`chapters.${index}.content`} render={({ field }) => (<FormItem><FormLabel>Chapter {index + 1} Content</FormLabel><FormControl><Textarea {...field} placeholder="Write the chapter content here..." className="min-h-[120px]" /></FormControl><FormMessage /></FormItem>)} />
+                                            </div>
+                                        ))}
+                                        <Button type="button" variant="outline" size="sm" onClick={() => appendChapter({ title: "", content: "" })}>Add Chapter</Button>
+                                    </div>
+                                </AnimatedCard>
 
-                                {/* Step 3: Quiz &amp; Certificate */}
-                                &lt;AnimatedCard delay={0.1} className={cn(currentStep !== 2 && "hidden")}&gt;
-                                     &lt;div className="space-y-4"&gt;
-                                        &lt;h3 className="font-semibold text-lg flex items-center gap-2"&gt;&lt;Shield/&gt;Quiz &amp; Certificate Settings&lt;/h3&gt;
-                                         &lt;FormField control={form.control} name="quizTitle" render={({ field }) =&gt; &lt;FormItem&gt;&lt;FormLabel&gt;Quiz Title&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;} /&gt;
-                                         &lt;div className="grid md:grid-cols-2 gap-4"&gt;
-                                            &lt;Controller
+                                {/* Step 3: Quiz & Certificate */}
+                                <AnimatedCard delay={0.1} className={cn(currentStep !== 2 && "hidden")}>
+                                     <div className="space-y-4">
+                                        <h3 className="font-semibold text-lg flex items-center gap-2"><Shield/>Quiz & Certificate Settings</h3>
+                                         <FormField control={form.control} name="quizTitle" render={({ field }) => <FormItem><FormLabel>Quiz Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                                         <div className="grid md:grid-cols-2 gap-4">
+                                            <Controller
                                                 control={form.control}
                                                 name="passingThreshold"
-                                                render={({ field }) =&gt; (
-                                                    &lt;FormItem&gt;
-                                                        &lt;FormLabel&gt;Passing Score (%)&lt;/FormLabel&gt;
-                                                        &lt;FormControl&gt;
-                                                            &lt;Input type="number" {...field} onChange={e =&gt; field.onChange(parseInt(e.target.value, 10) || 0)} /&gt;
-                                                        &lt;/FormControl&gt;
-                                                        &lt;FormMessage /&gt;
-                                                    &lt;/FormItem&gt;
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Passing Score (%)</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
                                                 )}
-                                            /&gt;
-                                            &lt;Controller
+                                            />
+                                            <Controller
                                                 control={form.control}
                                                 name="certificateExpiryDays"
-                                                render={({ field }) =&gt; (
-                                                    &lt;FormItem&gt;
-                                                        &lt;FormLabel&gt;Certificate Expiry (Days)&lt;/FormLabel&gt;
-                                                        &lt;FormControl&gt;
-                                                            &lt;Input type="number" {...field} onChange={e =&gt; field.onChange(parseInt(e.target.value, 10) || 0)} /&gt;
-                                                        &lt;/FormControl&gt;
-                                                        &lt;FormMessage /&gt;
-                                                    &lt;/FormItem&gt;
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Certificate Expiry (Days)</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
                                                 )}
-                                            /&gt;
-                                         &lt;/div&gt;
-                                    &lt;/div&gt;
-                                &lt;/AnimatedCard&gt;
+                                            />
+                                         </div>
+                                    </div>
+                                </AnimatedCard>
                                 
                                 {/* Step 4: Quiz Questions */}
-                                &lt;AnimatedCard delay={0.1} className={cn(currentStep !== 3 && "hidden")}&gt;
-                                    &lt;div className="space-y-4"&gt;
-                                        &lt;div className="flex justify-between items-center"&gt;
-                                            &lt;h3 className="font-semibold text-lg flex items-center gap-2"&gt;&lt;FileQuestion/&gt;Quiz Questions&lt;/h3&gt;
-                                            &lt;Button type="button" variant="outline" onClick={handleGenerateQuiz} disabled={isGeneratingQuiz}&gt;
-                                                {isGeneratingQuiz ? &lt;Loader2 className="mr-2 h-4 w-4 animate-spin"/&gt; : &lt;Sparkles className="mr-2 h-4 w-4"/&gt;}
+                                <AnimatedCard delay={0.1} className={cn(currentStep !== 3 && "hidden")}>
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="font-semibold text-lg flex items-center gap-2"><FileQuestion/>Quiz Questions</h3>
+                                            <Button type="button" variant="outline" onClick={handleGenerateQuiz} disabled={isGeneratingQuiz}>
+                                                {isGeneratingQuiz ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}
                                                 Generate with AI
-                                            &lt;/Button&gt;
-                                        &lt;/div&gt;
-                                        {questionFields.map((field, index) =&gt; {
+                                            </Button>
+                                        </div>
+                                        {questionFields.map((field, index) => {
                                             const options = form.watch(`questions.${index}.options`);
                                             return (
-                                                &lt;div key={field.id} className="p-4 border rounded-lg space-y-4 relative bg-muted/30"&gt;
-                                                    &lt;Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() =&gt; removeQuestion(index)}&gt;&lt;Trash2 className="h-4 w-4 text-destructive" /&gt;&lt;/Button&gt;
-                                                    &lt;FormField control={form.control} name={`questions.${index}.questionText`} render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Question {index + 1}&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Textarea {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)}/&gt;
-                                                    &lt;div className="grid grid-cols-2 gap-4"&gt;
-                                                        &lt;FormField control={form.control} name={`questions.${index}.options.0`} render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Option A&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
-                                                        &lt;FormField control={form.control} name={`questions.${index}.options.1`} render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Option B&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
-                                                        &lt;FormField control={form.control} name={`questions.${index}.options.2`} render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Option C&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
-                                                        &lt;FormField control={form.control} name={`questions.${index}.options.3`} render={({ field }) =&gt; (&lt;FormItem&gt;&lt;FormLabel&gt;Option D&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;)} /&gt;
-                                                    &lt;/div&gt;
-                                                     &lt;FormField control={form.control} name={`questions.${index}.correctAnswer`} render={({ field }) =&gt; (
-                                                        &lt;FormItem&gt;&lt;FormLabel&gt;Correct Answer&lt;/FormLabel&gt;
-                                                        &lt;Select onValueChange={field.onChange} value={field.value || ""}&gt;&lt;FormControl&gt;&lt;SelectTrigger&gt;&lt;SelectValue placeholder="Select the correct option" /&gt;&lt;/SelectTrigger&gt;&lt;/FormControl&gt;
-                                                            &lt;SelectContent&gt;{options.filter(opt =&gt; opt?.trim()).map((opt, i) =&gt; (&lt;SelectItem key={i} value={opt}&gt;{opt}&lt;/SelectItem&gt;))}&lt;/SelectContent&gt;
-                                                        &lt;/Select&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;
-                                                    )}/&gt;
-                                                &lt;/div&gt;
+                                                <div key={field.id} className="p-4 border rounded-lg space-y-4 relative bg-muted/30">
+                                                    <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeQuestion(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                                    <FormField control={form.control} name={`questions.${index}.questionText`} render={({ field }) => (<FormItem><FormLabel>Question {index + 1}</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <FormField control={form.control} name={`questions.${index}.options.0`} render={({ field }) => (<FormItem><FormLabel>Option A</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                        <FormField control={form.control} name={`questions.${index}.options.1`} render={({ field }) => (<FormItem><FormLabel>Option B</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                        <FormField control={form.control} name={`questions.${index}.options.2`} render={({ field }) => (<FormItem><FormLabel>Option C</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                        <FormField control={form.control} name={`questions.${index}.options.3`} render={({ field }) => (<FormItem><FormLabel>Option D</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                    </div>
+                                                     <FormField control={form.control} name={`questions.${index}.correctAnswer`} render={({ field }) => (
+                                                        <FormItem><FormLabel>Correct Answer</FormLabel>
+                                                        <Select onValueChange={field.onChange} value={field.value || ""}><FormControl><SelectTrigger><SelectValue placeholder="Select the correct option" /></SelectTrigger></FormControl>
+                                                            <SelectContent>{options.filter(opt => opt?.trim()).map((opt, i) => (<SelectItem key={i} value={opt}>{opt}</SelectItem>))}</SelectContent>
+                                                        </Select><FormMessage /></FormItem>
+                                                    )}/>
+                                                </div>
                                             )
                                         })}
-                                        &lt;Button type="button" variant="outline" size="sm" onClick={() =&gt; appendQuestion({ questionText: "", options: ["", "", "", ""], correctAnswer: "" })}&gt;Add Question&lt;/Button&gt;
-                                    &lt;/div&gt;
-                                &lt;/AnimatedCard&gt;
+                                        <Button type="button" variant="outline" size="sm" onClick={() => appendQuestion({ questionText: "", options: ["", "", "", ""], correctAnswer: "" })}>Add Question</Button>
+                                    </div>
+                                </AnimatedCard>
 
-                            &lt;/ScrollArea&gt;
-                            &lt;DialogFooter className="mt-4 pt-4 border-t flex justify-between w-full"&gt;
-                                &lt;Button type="button" variant="outline" onClick={prevStep} disabled={currentStep === 0}&gt;
-                                    &lt;ArrowLeft className="mr-2 h-4 w-4" /&gt; Previous
-                                &lt;/Button&gt;
+                            </ScrollArea>
+                            <DialogFooter className="mt-4 pt-4 border-t flex justify-between w-full">
+                                <Button type="button" variant="outline" onClick={prevStep} disabled={currentStep === 0}>
+                                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+                                </Button>
                                 
-                                {currentStep &lt; steps.length - 1 ? (
-                                    &lt;Button type="button" onClick={nextStep}&gt;
-                                        Next &lt;ArrowRight className="ml-2 h-4 w-4" /&gt;
-                                    &lt;/Button&gt;
+                                {currentStep < steps.length - 1 ? (
+                                    <Button type="button" onClick={nextStep}>
+                                        Next <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
                                 ) : (
-                                    &lt;Button type="submit" disabled={isSubmitting || !form.formState.isValid}&gt;
-                                        {isSubmitting ? &lt;Loader2 className="mr-2 h-4 w-4 animate-spin"/&gt; : &lt;Send className="mr-2 h-4 w-4"/&gt;}
+                                    <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>
+                                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
                                         {isEditMode ? "Save Changes" : "Create Course"}
-                                    &lt;/Button&gt;
-                                )}&lt;/DialogFooter&gt;
-                        &lt;/form&gt;
-                    &lt;/Form&gt;
-                &lt;/DialogContent&gt;
-            &lt;/Dialog&gt;
+                                    </Button>
+                                )}
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
 
-            &lt;AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}&gt;
-                &lt;AlertDialogContent&gt;
-                    &lt;AlertDialogHeader&gt;
-                        &lt;AlertDialogTitle&gt;Are you absolutely sure?&lt;/AlertDialogTitle&gt;
-                        &lt;AlertDialogDescription&gt;
-                            This action cannot be undone. This will permanently delete the course &amp;quot;{courseToDelete?.title}&amp;quot; and all its associated data, including its quiz, questions, and any user progress.
-                        &lt;/AlertDialogDescription&gt;
-                    &lt;/AlertDialogHeader&gt;
-                    &lt;AlertDialogFooter&gt;
-                        &lt;AlertDialogCancel onClick={() =&gt; setCourseToDelete(null)}&gt;Cancel&lt;/AlertDialogCancel&gt;
-                        &lt;AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90"&gt;Delete Course&lt;/AlertDialogAction&gt;
-                    &lt;/AlertDialogFooter&gt;
-                &lt;/AlertDialogContent&gt;
-            &lt;/AlertDialog&gt;
-        &lt;/div&gt;
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the course &quot;{courseToDelete?.title}&quot; and all its associated data, including its quiz, questions, and any user progress.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setCourseToDelete(null)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete Course</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
     );
 }

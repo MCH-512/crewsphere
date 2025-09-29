@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as Sentry from "@sentry/nextjs";
@@ -27,5 +26,14 @@ export default function GlobalError({
                 An unexpected error occurred. Our team has been notified, and we&apos;re working to fix it.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            CardContent>
               <Button variant="default" onClick={() => reset()}>
+                Try Again
+              </Button>
+            CardContent>
+          Card>
+        div>
+      body>
+    html>
+  );
+}

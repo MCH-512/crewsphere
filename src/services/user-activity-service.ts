@@ -1,14 +1,14 @@
 
+
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { format, eachDayOfInterval, startOfDay, isSameDay, startOfMonth, endOfMonth, endOfDay } from 'date-fns';
 import { type ActivityType, type UserActivity } from "@/schemas/user-activity-schema";
 import { getCurrentUser } from "@/lib/session";
 import type { User } from "@/schemas/user-schema";
 import { z } from 'zod';
-import { Timestamp } from "firebase/firestore";
 
 export interface Conflict {
     activityType: ActivityType;
@@ -22,7 +22,6 @@ export interface ActivityData extends UserActivity {
 }
 
 const GetTodayActivitiesSchema = z.object({}).optional();
-
 /**
  * Fetches all activities for the current user for the current day.
  * @returns A promise that resolves to an array of TodayActivity objects.
@@ -58,7 +57,6 @@ const GetUserActivitiesForMonthSchema = z.object({
     month: z.date(),
     userId: z.string().optional(),
 });
-
 /**
  * Fetches all activities for a specific user or globally within a given month.
  * @param month The month to fetch activities for.
@@ -66,7 +64,7 @@ const GetUserActivitiesForMonthSchema = z.object({
  * @returns A promise that resolves to an array of UserActivity objects.
  */
 export async function getUserActivitiesForMonth(month: Date, userId?: string): Promise<ActivityData[]> {
-    GetUserActivitiesForMonthSchema.parse({ month, userId }); // Zod validation
+    GetUserActivitiesForMonthSchema.parse({ month, userId });
     if (!isConfigValid || !db) {
         console.error("Firebase is not configured. Cannot fetch user activities.");
         return [];
@@ -116,12 +114,11 @@ export async function getUserActivitiesForMonth(month: Date, userId?: string): P
 }
 
 const CheckCrewAvailabilitySchema = z.object({
-    crewUserIds: z.array(z.string()),
-    startDate: z.date(),
-    endDate: z.date(),
-    activityIdToIgnore: z.string().optional(),
+  crewUserIds: z.array(z.string()),
+  startDate: z.date(),
+  endDate: z.date(),
+  activityIdToIgnore: z.string().optional(),
 });
-
 /**
  * Checks the availability of a single crew member for a given date range.
  * @param userId The user UID to check.
@@ -136,7 +133,7 @@ export async function checkCrewAvailability(
   endDate: Date,
   activityIdToIgnore?: string
 ): Promise<Record<string, Conflict>> {
-  CheckCrewAvailabilitySchema.parse({ crewUserIds, startDate, endDate, activityIdToIgnore }); // Zod validation
+  CheckCrewAvailabilitySchema.parse({ crewUserIds, startDate, endDate, activityIdToIgnore });
   if (!isConfigValid || !db || crewUserIds.length === 0) {
     return {};
   }
@@ -186,4 +183,9 @@ export async function checkCrewAvailability(
           }
       } catch (e) {
           console.error(`Error checking availability for user ${userId}:`, e);
-          // Do not throw, just skip this user. The UI will show no warning for them
+          // Do not throw, just skip this user. The UI will show no warning for them.
+      }
+  }
+
+  return warnings;
+}

@@ -71,7 +71,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
             }
         );
 
-        return () =&gt; unsubscribe(); // Unsubscribe when component unmounts
+        return () => unsubscribe(); // Unsubscribe when component unmounts
     }, [user, toast]);
 
 
@@ -82,7 +82,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
     }, [user, authLoading, router]);
 
     const sortedAlerts = React.useMemo(() => {
-        const filtered = alerts.filter(alert =&gt; {
+        const filtered = alerts.filter(alert => {
             if (searchTerm && !alert.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
             if (typeFilter !== 'all' && alert.type !== typeFilter) return false;
             if (audienceFilter !== 'all' && alert.targetAudience !== audienceFilter) return false;
@@ -90,7 +90,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
         });
 
         const sorted = [...filtered];
-        sorted.sort((a, b) =&gt; {
+        sorted.sort((a, b) => {
             const valA = a[sortColumn];
             const valB = b[sortColumn];
             let comparison = 0;
@@ -106,16 +106,16 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
         return sorted;
     }, [alerts, sortColumn, sortDirection, searchTerm, typeFilter, audienceFilter]);
 
-    const handleSort = (column: SortableColumn) =&gt; {
+    const handleSort = (column: SortableColumn) => {
         if (sortColumn === column) {
-            setSortDirection(prev =&gt; prev === 'asc' ? 'desc' : 'asc');
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
         } else {
             setSortColumn(column);
             setSortDirection('asc');
         }
     };
 
-    const handleOpenDialog = (alertToEdit?: StoredAlert) =&gt; {
+    const handleOpenDialog = (alertToEdit?: StoredAlert) => {
         if (alertToEdit) {
             setIsEditMode(true);
             setCurrentAlert(alertToEdit);
@@ -128,7 +128,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
         setIsManageDialogOpen(true);
     };
 
-    const handleFormSubmit = async (data: AlertFormValues) =&gt; {
+    const handleFormSubmit = async (data: AlertFormValues) => {
         if (!user) return;
         setIsSubmitting(true);
         try {
@@ -155,7 +155,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
         }
     };
 
-    const handleDelete = async (alertToDelete: StoredAlert) =&gt; {
+    const handleDelete = async (alertToDelete: StoredAlert) => {
         if (!user || !window.confirm(`Are you sure you want to delete the alert "${alertToDelete.title}"?`)) return;
         try {
             await deleteDoc(doc(db, "alerts", alertToDelete.id));
@@ -166,7 +166,7 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
         }
     };
 
-    const getTypeBadgeVariant = (type: StoredAlert["type"]): VariantProps&lt;typeof Badge&gt;["variant"] =&gt; {
+    const getTypeBadgeVariant = (type: StoredAlert["type"]): VariantProps<typeof Badge>["variant"] => {
         switch (type) {
             case "info": return "secondary";
             case "warning": return "warning";
@@ -177,121 +177,121 @@ export function AlertsClient({ initialAlerts }: { initialAlerts: StoredAlert[] }
 
     if (authLoading || isLoading) {
       return (
-        &lt;div className="flex items-center justify-center min-h-[calc(100vh-200px)]"&gt;
-          &lt;Loader2 className="h-12 w-12 animate-spin text-primary" /&gt;
-          &lt;p className="ml-4 text-lg text-muted-foreground"&gt;Loading alerts...&lt;/p&gt;
-        &lt;/div&gt;
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="ml-4 text-lg text-muted-foreground">Loading alerts...</p>
+        </div>
       );
     }
     
     if (!user || user.role !== 'admin') {
        return (
-        &lt;div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center"&gt;
-          &lt;AlertTriangle className="h-12 w-12 text-destructive mb-4" /&gt;
-          &lt;CardTitle className="text-xl mb-2"&gt;Access Denied&lt;/CardTitle&gt;
-          &lt;p className="text-muted-foreground"&gt;You do not have permission to view this page.&lt;/p&gt;
-          &lt;Button onClick={() =&gt; router.push('/')} className="mt-4"&gt;Go to Dashboard&lt;/Button&gt;
-        &lt;/div&gt;
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
+          <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+          <CardTitle className="text-xl mb-2">Access Denied</CardTitle>
+          <p className="text-muted-foreground">You do not have permission to view this page.</p>
+          <Button onClick={() => router.push('/')} className="mt-4">Go to Dashboard</Button>
+        </div>
       );
     }
 
     return (
-        &lt;div className="space-y-6"&gt;
-            &lt;Card className="shadow-lg"&gt;
-                &lt;CardHeader className="flex flex-row justify-between items-start"&gt;
-                    &lt;div&gt;
-                        &lt;CardTitle className="text-2xl font-headline flex items-center"&gt;&lt;BellRing className="mr-3 h-7 w-7 text-primary" /&gt;Alert Management&lt;/CardTitle&gt;
-                        &lt;CardDescription&gt;Create, manage, and broadcast alerts to specific user groups.&lt;/CardDescription&gt;
-                    &lt;/div&gt;
-                    &lt;div className="flex gap-2"&gt;
-                        &lt;Button onClick={() =&gt; handleOpenDialog()}&gt;&lt;PlusCircle className="mr-2 h-4 w-4" /&gt;Create Alert&lt;/Button&gt;
-                    &lt;/div&gt;
-                &lt;/CardHeader&gt;
-                &lt;CardContent&gt;
-                    &lt;div className="flex flex-col md:flex-row gap-4 mb-6"&gt;
-                         &lt;div className="relative flex-grow"&gt;
-                            &lt;Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /&gt;
-                            &lt;Input
+        <div className="space-y-6">
+            <Card className="shadow-lg">
+                <CardHeader className="flex flex-row justify-between items-start">
+                    <div>
+                        <CardTitle className="text-2xl font-headline flex items-center"><BellRing className="mr-3 h-7 w-7 text-primary" />Alert Management</CardTitle>
+                        <CardDescription>Create, manage, and broadcast alerts to specific user groups.</CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button onClick={() => handleOpenDialog()}><PlusCircle className="mr-2 h-4 w-4" />Create Alert</Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                         <div className="relative flex-grow">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
                                 type="search"
                                 placeholder="Search by title..."
                                 className="pl-8 w-full md:max-w-xs"
                                 value={searchTerm}
-                                onChange={(e) =&gt; setSearchTerm(e.target.value)}
-                            /&gt;
-                        &lt;/div&gt;
-                        &lt;Select value={typeFilter} onValueChange={(value) =&gt; setTypeFilter(value as AlertType | "all")}&gt;
-                            &lt;SelectTrigger className="w-full md:w-[180px]"&gt;
-                                &lt;Filter className="mr-2 h-4 w-4" /&gt;
-                                &lt;SelectValue placeholder="Filter by type" /&gt;
-                            &lt;/SelectTrigger&gt;
-                            &lt;SelectContent&gt;
-                                &lt;SelectItem value="all"&gt;All Types&lt;/SelectItem&gt;
-                                {alertTypes.map(type =&gt; &lt;SelectItem key={type} value={type} className="capitalize"&gt;{type}&lt;/SelectItem&gt;)}
-                            &lt;/SelectContent&gt;
-                        &lt;/Select&gt;
-                        &lt;Select value={audienceFilter} onValueChange={(value) =&gt; setAudienceFilter(value as AlertAudience | "all")}&gt;
-                            &lt;SelectTrigger className="w-full md:w-[180px]"&gt;
-                                &lt;Filter className="mr-2 h-4 w-4" /&gt;
-                                &lt;SelectValue placeholder="Filter by audience" /&gt;
-                            &lt;/SelectTrigger&gt;
-                            &lt;SelectContent&gt;
-                                &lt;SelectItem value="all"&gt;All Audiences&lt;/SelectItem&gt;
-                                {alertAudiences.map(audience =&gt; &lt;SelectItem key={audience} value={audience} className="capitalize"&gt;{audience}&lt;/SelectItem&gt;)}
-                            &lt;/SelectContent&gt;
-                        &lt;/Select&gt;
-                    &lt;/div&gt;
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as AlertType | "all")}>
+                            <SelectTrigger className="w-full md:w-[180px]">
+                                <Filter className="mr-2 h-4 w-4" />
+                                <SelectValue placeholder="Filter by type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Types</SelectItem>
+                                {alertTypes.map(type => <SelectItem key={type} value={type} className="capitalize">{type}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select value={audienceFilter} onValueChange={(value) => setAudienceFilter(value as AlertAudience | "all")}>
+                            <SelectTrigger className="w-full md:w-[180px]">
+                                <Filter className="mr-2 h-4 w-4" />
+                                <SelectValue placeholder="Filter by audience" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Audiences</SelectItem>
+                                {alertAudiences.map(audience => <SelectItem key={audience} value={audience} className="capitalize">{audience}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                    &lt;Table&gt;
-                        &lt;TableHeader&gt;&lt;TableRow&gt;
-                            &lt;SortableHeader column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/&gt;
-                            &lt;SortableHeader column="type" label="Type" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/&gt;
-                            &lt;SortableHeader column="targetAudience" label="Audience" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/&gt;
-                            &lt;SortableHeader column="isActive" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/&gt;
-                            &lt;SortableHeader column="createdAt" label="Created" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/&gt;
-                            &lt;TableHead&gt;Actions&lt;/TableHead&gt;
-                        &lt;/TableRow&gt;&lt;/TableHeader&gt;
-                        &lt;TableBody&gt;
-                            {sortedAlerts.map(alert =&gt; (
-                                &lt;TableRow key={alert.id}&gt;
-                                    &lt;TableCell className="font-medium max-w-sm truncate" title={alert.title}&gt;{alert.title}&lt;/TableCell&gt;
-                                    &lt;TableCell&gt;&lt;Badge variant={getTypeBadgeVariant(alert.type)} className="capitalize"&gt;{alert.type}&lt;/Badge&gt;&lt;/TableCell&gt;
-                                    &lt;TableCell&gt;&lt;Badge variant="outline" className="capitalize"&gt;{alert.targetAudience}&lt;/Badge&gt;&lt;/TableCell&gt;
-                                    &lt;TableCell&gt;{alert.isActive ? &lt;Badge variant="success"&gt;Active&lt;/Badge&gt; : &lt;Badge variant="secondary"&gt;Inactive&lt;/Badge&gt;}&lt;/TableCell&gt;
-                                    &lt;TableCell className="text-xs"&gt;{alert.createdAt ? format(alert.createdAt.toDate(), "PPp") : 'N/A'}&lt;/TableCell&gt;
-                                    &lt;TableCell className="space-x-1"&gt;
-                                        &lt;Button variant="ghost" size="icon" onClick={() =&gt; handleOpenDialog(alert)}&gt;&lt;Edit className="h-4 w-4" /&gt;&lt;/Button&gt;
-                                        &lt;Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() =&gt; handleDelete(alert)}&gt;&lt;Trash2 className="h-4 w-4" /&gt;&lt;/Button&gt;
-                                    &lt;/TableCell&gt;
-                                &lt;/TableRow&gt;
-                            ))}&lt;/TableBody&gt;
-                    &lt;/Table&gt;
-                    {sortedAlerts.length === 0 && &lt;p className="text-center text-muted-foreground p-8"&gt;No alerts found matching your criteria.&lt;/p&gt;}
-                &lt;/CardContent&gt;
-            &lt;/Card&gt;
+                    <Table>
+                        <TableHeader><TableRow>
+                            <SortableHeader column="title" label="Title" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="type" label="Type" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="targetAudience" label="Audience" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="isActive" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <SortableHeader column="createdAt" label="Created" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort}/>
+                            <TableHead>Actions</TableHead>
+                        </TableRow></TableHeader>
+                        <TableBody>
+                            {sortedAlerts.map(alert => (
+                                <TableRow key={alert.id}>
+                                    <TableCell className="font-medium max-w-sm truncate" title={alert.title}>{alert.title}</TableCell>
+                                    <TableCell><Badge variant={getTypeBadgeVariant(alert.type)} className="capitalize">{alert.type}</Badge></TableCell>
+                                    <TableCell><Badge variant="outline" className="capitalize">{alert.targetAudience}</Badge></TableCell>
+                                    <TableCell>{alert.isActive ? <Badge variant="success">Active</Badge> : <Badge variant="secondary">Inactive</Badge>}</TableCell>
+                                    <TableCell className="text-xs">{alert.createdAt ? format(alert.createdAt.toDate(), "PPp") : 'N/A'}</TableCell>
+                                    <TableCell className="space-x-1">
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(alert)}><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(alert)}><Trash2 className="h-4 w-4" /></Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}</TableBody>
+                    </Table>
+                    {sortedAlerts.length === 0 && <p className="text-center text-muted-foreground p-8">No alerts found matching your criteria.</p>}
+                </CardContent>
+            </Card>
 
-            &lt;Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}&gt;
-                &lt;DialogContent&gt;
-                    &lt;DialogHeader&gt;
-                        &lt;DialogTitle&gt;{isEditMode ? "Edit Alert" : "Create New Alert"}&lt;/DialogTitle&gt;
-                        &lt;DialogDescription&gt;{isEditMode ? "Update the alert details below." : "Fill out the form to broadcast a new alert."}&lt;/DialogDescription&gt;
-                    &lt;/DialogHeader&gt;
-                    &lt;Form {...form}&gt;
-                        &lt;form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4"&gt;
-                            &lt;FormField control={form.control} name="title" render={({ field }) =&gt; &lt;FormItem&gt;&lt;FormLabel&gt;Title&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;} /&gt;
-                            &lt;FormField control={form.control} name="message" render={({ field }) =&gt; &lt;FormItem&gt;&lt;FormLabel&gt;Message&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Textarea className="min-h-[100px]" {...field} /&gt;&lt;/FormControl&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;} /&gt;
-                            &lt;div className="grid grid-cols-2 gap-4"&gt;
-                                &lt;FormField control={form.control} name="type" render={({ field }) =&gt; &lt;FormItem&gt;&lt;FormLabel&gt;Type&lt;/FormLabel&gt;&lt;Select onValueChange={field.onChange} value={field.value}&gt;&lt;FormControl&gt;&lt;SelectTrigger&gt;&lt;SelectValue/&gt;&lt;/SelectTrigger&gt;&lt;/FormControl&gt;&lt;SelectContent&gt;{alertTypes.map(t =&gt; &lt;SelectItem key={t} value={t} className="capitalize"&gt;{t}&lt;/SelectItem&gt;)}&lt;/SelectContent&gt;&lt;/Select&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;} /&gt;
-                                &lt;FormField control={form.control} name="targetAudience" render={({ field }) =&gt; &lt;FormItem&gt;&lt;FormLabel&gt;Audience&lt;/FormLabel&gt;&lt;Select onValueChange={field.onChange} value={field.value}&gt;&lt;FormControl&gt;&lt;SelectTrigger&gt;&lt;SelectValue/&gt;&lt;/SelectTrigger&gt;&lt;/FormControl&gt;&lt;SelectContent&gt;{alertAudiences.map(a =&gt; &lt;SelectItem key={a} value={a} className="capitalize"&gt;{a}&lt;/SelectItem&gt;)}&lt;/SelectContent&gt;&lt;/Select&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;} /&gt;
-                            &lt;/div&gt;
-                            &lt;FormField control={form.control} name="isActive" render={({ field }) =&gt; &lt;FormItem className="flex flex-row items-center justify-between rounded-lg border p-3"&gt;&lt;div className="space-y-0.5"&gt;&lt;FormLabel&gt;Active&lt;/FormLabel&gt;&lt;/div&gt;&lt;FormControl&gt;&lt;Switch checked={field.value} onCheckedChange={field.onChange} /&gt;&lt;/FormControl&gt;&lt;/FormItem&gt;} /&gt;
-                            &lt;DialogFooter&gt;
-                                &lt;DialogClose asChild&gt;&lt;Button type="button" variant="outline"&gt;Cancel&lt;/Button&gt;&lt;/DialogClose&gt;
-                                &lt;Button type="submit" disabled={isSubmitting}&gt;{isSubmitting &amp;&amp; &lt;Loader2 className="mr-2 h-4 w-4 animate-spin"/&gt;}{isEditMode ? "Save Changes" : "Create Alert"}&lt;/Button&gt;
-                            &lt;/DialogFooter&gt;
-                        &lt;/form&gt;
-                    &lt;/Form&gt;
-                &lt;/DialogContent&gt;
-            &lt;/Dialog&gt;
-        &lt;/div&gt;
+            <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{isEditMode ? "Edit Alert" : "Create New Alert"}</DialogTitle>
+                        <DialogDescription>{isEditMode ? "Update the alert details below." : "Fill out the form to broadcast a new alert."}</DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+                            <FormField control={form.control} name="title" render={({ field }) => <FormItem><FormLabel>Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                            <FormField control={form.control} name="message" render={({ field }) => <FormItem><FormLabel>Message</FormLabel><FormControl><Textarea className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField control={form.control} name="type" render={({ field }) => <FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{alertTypes.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                <FormField control={form.control} name="targetAudience" render={({ field }) => <FormItem><FormLabel>Audience</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{alertAudiences.map(a => <SelectItem key={a} value={a} className="capitalize">{a}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                            </div>
+                            <FormField control={form.control} name="isActive" render={({ field }) => <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3"><div className="space-y-0.5"><FormLabel>Active</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>} />
+                            <DialogFooter>
+                                <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                                <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}{isEditMode ? "Save Changes" : "Create Alert"}</Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+        </div>
     );
 }

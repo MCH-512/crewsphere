@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import placeholderImages from "@/app/lib/placeholder-images.json";
+import { Separator } from "@/components/ui/separator";
 
 interface CourseWithProgress extends StoredCourse {
     progress?: StoredUserQuizAttempt;
@@ -29,10 +30,10 @@ const CourseProgressCard = ({ course, delay }: { course: CourseWithProgress; del
     const completedAt = course.progress?.completedAt?.toDate();
 
     return (
-        <AnimatedCard delay={delay}>
-             <Card className="shadow-sm h-full flex flex-col hover:shadow-lg transition-shadow overflow-hidden">
-                <div className="relative h-40 w-full">
-                    <Image 
+        AnimatedCard delay={delay}>
+             Card className="shadow-sm h-full flex flex-col hover:shadow-lg transition-shadow overflow-hidden">
+                div className="relative h-40 w-full">
+                    Image 
                       src={course.imageUrl || placeholderImages.course.default.src}
                       alt={course.title}
                       data-ai-hint={course.imageHint || placeholderImages.course.default.hint}
@@ -42,60 +43,60 @@ const CourseProgressCard = ({ course, delay }: { course: CourseWithProgress; del
                       className="w-full h-full"
                     />
                      {status && (
-                        <Badge variant={status === 'passed' ? 'success' : 'destructive'} className="absolute top-2 right-2 capitalize font-semibold">
+                        Badge variant={status === 'passed' ? 'success' : 'destructive'} className="absolute top-2 right-2 capitalize font-semibold">
                            {status}
-                        </Badge>
+                        Badge>
                      )}
-                </div>
-                <CardHeader>
-                    <Badge variant={course.mandatory ? "default" : "secondary"} className="mb-2 w-fit">
+                div>
+                CardHeader>
+                    Badge variant={course.mandatory ? "default" : "secondary"} className="mb-2 w-fit">
                         {course.mandatory ? "Mandatory" : "Optional"}
-                    </Badge>
-                    <CardTitle className="text-lg">{course.title}</CardTitle>
-                    <CardDescription className="text-xs pt-1">{course.category}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                    <p className="text-sm text-muted-foreground line-clamp-3">{course.description}</p>
-                </CardContent>
-                <CardFooter className="flex-col items-stretch gap-2 pt-4">
+                    Badge>
+                    CardTitle className="text-lg">course.titleCardTitle>
+                    CardDescription className="text-xs pt-1">course.categoryCardDescription>
+                CardHeader>
+                CardContent className="flex-grow">
+                    p className="text-sm text-muted-foreground line-clamp-3">course.descriptionp>
+                CardContent>
+                CardFooter className="flex-col items-stretch gap-2 pt-4">
                     {status === 'passed' && completedAt && (
-                        <div className="flex items-center text-xs text-success-foreground font-medium p-2 rounded-md bg-success/90">
-                            <CheckCircle className="mr-2 h-4 w-4"/>
-                            <span>Passed on {format(completedAt, 'PP')}</span>
-                        </div>
+                        div className="flex items-center text-xs text-success-foreground font-medium p-2 rounded-md bg-success/90">
+                            CheckCircle className="mr-2 h-4 w-4"/>
+                            span>Passed on {format(completedAt, 'PP')}span>
+                        div>
                     )}
                      {status === 'failed' && score !== undefined && (
-                        <div className="flex items-center text-xs text-destructive-foreground font-medium p-2 rounded-md bg-destructive">
-                            <XCircle className="mr-2 h-4 w-4"/>
-                            <span>Failed (Score: {score.toFixed(0)}%)</span>
-                        </div>
+                        div className="flex items-center text-xs text-destructive-foreground font-medium p-2 rounded-md bg-destructive">
+                            XCircle className="mr-2 h-4 w-4"/>
+                            span>Failed (Score: {score.toFixed(0)}%)span>
+                        div>
                     )}
 
-                    <div className="flex flex-col sm:flex-row gap-2">
+                    div className="flex flex-col sm:flex-row gap-2">
                         {status === 'passed' && course.progress?.id ? (
                             <>
-                                <Button asChild variant="outline" className="flex-1">
-                                    <Link href={`/training/${course.id}`}><BookOpen className="mr-2 h-4 w-4" />Review</Link>
-                                </Button>
-                                <Button asChild className="flex-1">
-                                    <Link href={`/training/certificate/${course.progress.id}`}>
-                                        <Award className="mr-2 h-4 w-4" />Certificate
-                                    </Link>
-                                </Button>
+                                Button asChild variant="outline" className="flex-1">
+                                    Link href={`/training/${course.id}`}><BookOpen className="mr-2 h-4 w-4" />ReviewLink>
+                                Button>
+                                Button asChild className="flex-1">
+                                    Link href={`/training/certificate/${course.progress.id}`}>
+                                        Award className="mr-2 h-4 w-4" />Certificate
+                                    Link>
+                                Button>
                             </>
                         ) : status === 'failed' ? (
-                             <Button asChild className="w-full">
-                                 <Link href={`/training/quiz/${course.quizId}`}><RefreshCw className="mr-2 h-4 w-4" />Retake Quiz</Link>
-                             </Button>
+                             Button asChild className="w-full">
+                                 Link href={`/training/quiz/${course.quizId}`}><RefreshCw className="mr-2 h-4 w-4" />Retake QuizLink>
+                             Button>
                         ) : (
-                             <Button asChild className="w-full">
-                                <Link href={`/training/${course.id}`}><BookOpen className="mr-2 h-4 w-4" />Start Course</Link>
-                            </Button>
+                             Button asChild className="w-full">
+                                Link href={`/training/${course.id}`}><BookOpen className="mr-2 h-4 w-4" />Start CourseLink>
+                            Button>
                         )}
-                    </div>
-                </CardFooter>
-            </Card>
-        </AnimatedCard>
+                    div>
+                CardFooter>
+            Card>
+        AnimatedCard>
     );
 };
 
@@ -193,7 +194,7 @@ export default function TrainingPage() {
     }, [allCourses, searchTerm, categoryFilter, statusFilter]);
 
     if (authLoading || isLoading) {
-        return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+        return <div className="flex items-center justify-center min-h-[calc(100vh-200px)]"><Loader2 className="h-12 w-12 animate-spin text-primary" />div>;
     }
     
     if (!user) {
@@ -204,96 +205,96 @@ export default function TrainingPage() {
     const optionalCourses = filteredCourses.filter(c => !c.mandatory);
 
     return (
-        <div className="space-y-8">
-            <AnimatedCard>
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="text-2xl font-headline flex items-center">
-                            <GraduationCap className="mr-3 h-7 w-7 text-primary" />
+        div className="space-y-8">
+            AnimatedCard>
+                Card className="shadow-lg">
+                    CardHeader>
+                        CardTitle className="text-2xl font-headline flex items-center">
+                            GraduationCap className="mr-3 h-7 w-7 text-primary" />
                             E-Learning Center
-                        </CardTitle>
-                        <CardDescription>Browse and complete your assigned and optional training courses.</CardDescription>
-                    </CardHeader>
-                     <CardContent>
-                        <div className="flex flex-col md:flex-row gap-4">
-                             <div className="relative flex-grow">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
+                        CardTitle>
+                        CardDescription>Browse and complete your assigned and optional training courses.CardDescription>
+                    CardHeader>
+                     CardContent>
+                        div className="flex flex-col md:flex-row gap-4">
+                             div className="relative flex-grow">
+                                Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                Input
                                     type="search"
                                     placeholder="Search by course title..."
                                     className="pl-8 w-full"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
-                            </div>
-                            <div className="flex gap-4">
-                               <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as typeof courseCategories[number] | 'all')}>
-                                    <SelectTrigger className="w-full md:w-[240px]">
-                                        <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-                                        <SelectValue placeholder="Filter by category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Categories</SelectItem>
+                            div>
+                            div className="flex gap-4">
+                               Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as typeof courseCategories[number] | 'all')}>
+                                    SelectTrigger className="w-full md:w-[240px]">
+                                        Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                                        SelectValue placeholder="Filter by category" />
+                                    SelectTrigger>
+                                    SelectContent>
+                                        SelectItem value="all">All CategoriesSelectItem>
                                         {courseCategories.map(cat => (
-                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                            SelectItem key={cat} value={cat}>{cat}SelectItem>
                                         ))}
-                                    </SelectContent>
-                                </Select>
-                               <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'completed' | 'in-progress' | 'not-started')}>
-                                    <SelectTrigger className="w-full md:w-[200px]">
-                                        <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-                                        <SelectValue placeholder="Filter by status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Statuses</SelectItem>
-                                        <SelectItem value="not-started">Not Started</SelectItem>
-                                        <SelectItem value="in-progress">In Progress</SelectItem>
-                                        <SelectItem value="completed">Completed</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </AnimatedCard>
+                                    SelectContent>
+                                Select>
+                               Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'completed' | 'in-progress' | 'not-started')}>
+                                    SelectTrigger className="w-full md:w-[200px]">
+                                        Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                                        SelectValue placeholder="Filter by status" />
+                                    SelectTrigger>
+                                    SelectContent>
+                                        SelectItem value="all">All StatusesSelectItem>
+                                        SelectItem value="not-started">Not StartedSelectItem>
+                                        SelectItem value="in-progress">In ProgressSelectItem>
+                                        SelectItem value="completed">CompletedSelectItem>
+                                    SelectContent>
+                                Select>
+                            div>
+                        div>
+                    CardContent>
+                Card>
+            AnimatedCard>
 
             {filteredCourses.length === 0 ? (
-                 <AnimatedCard delay={0.1}>
-                    <Card className="text-center py-12">
-                        <CardContent>
-                            <p className="text-muted-foreground mb-4">No training courses found matching your criteria.</p>
-                        </CardContent>
-                    </Card>
-                </AnimatedCard>
+                 AnimatedCard delay={0.1}>
+                    Card className="text-center py-12">
+                        CardContent>
+                            p className="text-muted-foreground mb-4">No training courses found matching your criteria.p>
+                        CardContent>
+                    Card>
+                AnimatedCard>
             ) : (
-                <div className="space-y-8">
+                div className="space-y-8">
                     {/* Mandatory Courses Section */}
                      {mandatoryCourses.length > 0 && (
-                        <section>
-                            <h2 className="text-2xl font-bold tracking-tight mb-4">Mandatory Courses</h2>
-                            <Separator className="mb-6"/>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        section>
+                            h2 className="text-2xl font-bold tracking-tight mb-4">Mandatory Coursesh2>
+                            Separator className="mb-6"/>
+                            div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {mandatoryCourses.map((course, index) => (
-                                    <CourseProgressCard key={course.id} course={course} delay={0.1 + index * 0.05} />
+                                    CourseProgressCard key={course.id} course={course} delay={0.1 + index * 0.05} />
                                 ))}
-                            </div>
-                        </section>
+                            div>
+                        section>
                      )}
                     
                      {/* Optional Courses Section */}
                     {optionalCourses.length > 0 && (
-                        <section>
-                            <h2 className="text-2xl font-bold tracking-tight mb-4">Optional Courses</h2>
-                             <Separator className="mb-6"/>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        section>
+                            h2 className="text-2xl font-bold tracking-tight mb-4">Optional Coursesh2>
+                             Separator className="mb-6"/>
+                            div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {optionalCourses.map((course, index) => (
-                                     <CourseProgressCard key={course.id} course={course} delay={0.1 + index * 0.05} />
+                                     CourseProgressCard key={course.id} course={course} delay={0.1 + index * 0.05} />
                                 ))}
-                            </div>
-                        </section>
+                            div>
+                        section>
                     )}
-                </div>
+                div>
             )}
-        </div>
+        div>
     );
 }

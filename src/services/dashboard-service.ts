@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
@@ -173,4 +172,7 @@ export async function getRequestsChartData(): Promise<RequestsChartDataPoint[] |
             count,
         }));
     } catch (error) {
-        console.error("Error fetching requests chart data:",
+        console.error("Error fetching requests chart data:", error);
+        return [];
+    }
+}

@@ -1,4 +1,3 @@
-
 'use server';
 
 import { Book, Calculator, CloudSun, Globe, Map, MessagesSquare, Mic, ScrollText, ShieldAlert } from "lucide-react";
@@ -83,4 +82,6 @@ const EmptySchema = z.object({});
 
 export async function getToolboxTools(): Promise<Tool[]> {
     EmptySchema.parse({}); // Zod validation
-    // In a real application, this could fetch
+    // In a real application, this could fetch from a DB to allow dynamic tool management
+    return toolsData;
+}

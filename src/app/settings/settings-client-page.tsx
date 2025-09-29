@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -36,7 +35,7 @@ type ProfileSettingsFormValues = z.infer<typeof profileSettingsFormSchema>;
 const changePasswordFormSchema = z.object({
   currentPassword: z.string().min(1, { message: "Current password is required." }),
   newPassword: z.string().min(6, { message: "New password must be at least 6 characters." }),
-  confirmPassword: z.string().min(6, { message: "Confirm password must be at least 6 characters." }),
+  confirmPassword: z.string().min(6, { message: "New password must be at least 6 characters." }),
 })
 .refine((data) => data.newPassword === data.confirmPassword, {
   message: "New passwords don't match.",
@@ -225,28 +224,28 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
 
 
   return (
-    <div className="space-y-8 max-w-3xl mx-auto">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl font-headline">Settings</CardTitle>
-          <CardDescription>Manage your account preferences and application settings.</CardDescription>
-        </CardHeader>
-      </Card>
+    div className="space-y-8 max-w-3xl mx-auto">
+      Card className="shadow-lg">
+        CardHeader>
+          CardTitle className="text-2xl font-headline">SettingsCardTitle>
+          CardDescription>Manage your account preferences and application settings.CardDescription>
+        CardHeader>
+      Card>
         
-      <Form {...profileForm}>
-        <form onSubmit={profileForm.handleSubmit(handleProfileUpdate)} className="space-y-8">
-            <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><UserIcon /> Profile Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                        <div className="relative">
-                            <Avatar className="h-20 w-20">
-                               <AvatarImage src={previewUrl || initialUser.photoURL || undefined} alt="User Avatar" data-ai-hint="user portrait" />
-                               <AvatarFallback>{avatarFallback}</AvatarFallback>
-                            </Avatar>
-                             <Button 
+      Form {...profileForm}>
+        form onSubmit={profileForm.handleSubmit(handleProfileUpdate)} className="space-y-8">
+            Card>
+                CardHeader>
+                  CardTitle className="flex items-center gap-2">UserIcon /> Profile InformationCardTitle>
+                CardHeader>
+                CardContent className="space-y-6">
+                    div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        div className="relative">
+                            Avatar className="h-20 w-20">
+                               AvatarImage src={previewUrl || initialUser.photoURL || undefined} alt="User Avatar" data-ai-hint="user portrait" />
+                               AvatarFallback>{avatarFallback}AvatarFallback>
+                            Avatar>
+                             Button 
                                 type="button"
                                 variant="outline"
                                 size="icon"
@@ -255,9 +254,9 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
                                 aria-label="Change avatar"
                                 disabled={isUploading}
                             >
-                                <Camera />
-                            </Button>
-                             <input 
+                                Camera />
+                            Button>
+                             input 
                                 type="file" 
                                 id="avatar-upload"
                                 ref={fileInputRef}
@@ -265,134 +264,138 @@ export default function SettingsClientPage({ initialUser }: SettingsClientPagePr
                                 accept="image/png, image/jpeg"
                                 className="hidden" 
                             />
-                        </div>
-                        <div className="flex flex-col gap-2">
+                        div>
+                        div className="flex flex-col gap-2">
                              {selectedFile ? (
                                 <>
-                                    <p className="text-sm font-medium">New: <span className="text-muted-foreground truncate">{selectedFile.name}</span></p>
-                                    <div className="flex gap-2">
-                                        <Button type="button" onClick={handleAvatarUpload} disabled={isUploading}>
-                                            {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    p className="text-sm font-medium">New: span className="text-muted-foreground truncate">{selectedFile.name}span>p>
+                                    div className="flex gap-2">
+                                        Button type="button" onClick={handleAvatarUpload} disabled={isUploading}>
+                                            {isUploading && Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                             Save Avatar
-                                        </Button>
-                                        <Button type="button" variant="ghost" onClick={() => {setSelectedFile(null); setPreviewUrl(null);}} disabled={isUploading}>
+                                        Button>
+                                        Button type="button" variant="ghost" onClick={() => {setSelectedFile(null); setPreviewUrl(null);}} disabled={isUploading}>
                                             Cancel
-                                        </Button>
-                                    </div>
+                                        Button>
+                                    div>
                                 </>
                             ) : (
-                                <p className="text-sm text-muted-foreground">Click the camera to change your avatar.</p>
+                                p className="text-sm text-muted-foreground">Click the camera to change your avatar.p>
                             )}
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={profileForm.control} name="displayName" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Display Name</FormLabel>
-                                <FormControl><Input {...field} disabled={isUpdatingProfile} /></FormControl>
-                                <UiFormDescription>Publicly visible name.</UiFormDescription>
-                                <FormMessage />
-                            </FormItem>
+                        div>
+                    div>
+                    div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        FormField control={profileForm.control} name="displayName" render={({ field }) => (
+                            FormItem>
+                                FormLabel>Display NameFormLabel>
+                                FormControl>Input {...field} disabled={isUpdatingProfile} />FormControl>
+                                UiFormDescription>Publicly visible name.UiFormDescription>
+                                FormMessage />
+                            FormItem>
                         )}/>
-                        <FormField control={profileForm.control} name="fullName" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Full Name</FormLabel>
-                                <FormControl><Input {...field} disabled={isUpdatingProfile} /></FormControl>
-                                <UiFormDescription>Your legal name.</UiFormDescription>
-                                <FormMessage />
-                            </FormItem>
+                        FormField control={profileForm.control} name="fullName" render={({ field }) => (
+                            FormItem>
+                                FormLabel>Full NameFormLabel>
+                                FormControl>Input {...field} disabled={isUpdatingProfile} />FormControl>
+                                UiFormDescription>Your legal name.UiFormDescription>
+                                FormMessage />
+                            FormItem>
                         )}/>
-                    </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormItem><FormLabel>Email Address</FormLabel><FormControl><Input value={initialUser.email || ""} disabled /></FormControl><UiFormDescription>Email cannot be changed.</UiFormDescription></FormItem>
-                        <FormItem><FormLabel>Role</FormLabel><FormControl><Input value={initialUser.role ? initialUser.role.charAt(0).toUpperCase() + initialUser.role.slice(1) : "Not Assigned"} disabled className="capitalize"/></FormControl><UiFormDescription>Assigned system role.</UiFormDescription></FormItem>
-                    </div>
-                    <Separator />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormItem><FormLabel className="flex items-center gap-1">Employee ID</FormLabel><FormControl><Input value={initialUser.employeeId || "N/A"} disabled /></FormControl></FormItem>
-                        <FormItem><FormLabel className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5 text-muted-foreground"/> Joining Date</FormLabel><FormControl><Input value={formatDateDisplay(initialUser.joiningDate)} disabled /></FormControl></FormItem>
-                    </div>
-                </CardContent>
-            </Card>
+                    div>
+                     div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        FormItem>FormLabel>Email AddressFormLabel>FormControl>Input value={initialUser.email || ""} disabled />FormControl>UiFormDescription>Email cannot be changed.UiFormDescription>FormItem>
+                        FormItem>FormLabel>RoleFormLabel>FormControl>Input value={initialUser.role ? initialUser.role.charAt(0).toUpperCase() + initialUser.role.slice(1) : "Not Assigned"} disabled className="capitalize"/>FormControl>UiFormDescription>Assigned system role.UiFormDescription>FormItem>
+                    div>
+                    Separator />
+                    div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        FormItem>FormLabel className="flex items-center gap-1">Employee IDFormLabel>FormControl>Input value={initialUser.employeeId || "N/A"} disabled />FormControl>FormItem>
+                        FormItem>FormLabel className="flex items-center gap-1">CalendarDays className="w-3.5 h-3.5 text-muted-foreground"/> Joining DateFormLabel>FormControl>Input value={formatDateDisplay(initialUser.joiningDate)} disabled />FormControl>FormItem>
+                    div>
+                CardContent>
+            Card>
 
-            <Card>
-                <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Bell /> Notification Preferences</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <FormField control={profileForm.control} name="emailNotifications" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between rounded-lg border p-4 shadow-sm">
-                            <div className="space-y-0.5"><FormLabel>Email Notifications</FormLabel><UiFormDescription>Receive important updates via email.</UiFormDescription></div>
-                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isUpdatingProfile} /></FormControl>
-                        </FormItem>
+            Card>
+                CardHeader>
+                CardTitle className="flex items-center gap-2">Bell /> Notification PreferencesCardTitle>
+                CardHeader>
+                CardContent className="space-y-6">
+                    FormField control={profileForm.control} name="emailNotifications" render={({ field }) => (
+                        FormItem className="flex items-center justify-between rounded-lg border p-4 shadow-sm">
+                            div className="space-y-0.5">FormLabel>Email NotificationsFormLabel>UiFormDescription>Receive important updates via email.UiFormDescription>div>
+                            FormControl>Switch checked={field.value} onCheckedChange={field.onChange} disabled={isUpdatingProfile} />FormControl>
+                        FormItem>
                     )}/>
-                    <FormField control={profileForm.control} name="scheduleChangeAlerts" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between rounded-lg border p-4 shadow-sm">
-                            <div className="space-y-0.5"><FormLabel>Schedule Change Alerts</FormLabel><UiFormDescription>Notify me of changes to my schedule.</UiFormDescription></div>
-                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isUpdatingProfile} /></FormControl>
-                        </FormItem>
+                    FormField control={profileForm.control} name="scheduleChangeAlerts" render={({ field }) => (
+                        FormItem className="flex items-center justify-between rounded-lg border p-4 shadow-sm">
+                            div className="space-y-0.5">FormLabel>Schedule Change AlertsFormLabel>UiFormDescription>Notify me of changes to my schedule.UiFormDescription>div>
+                            FormControl>Switch checked={field.value} onCheckedChange={field.onChange} disabled={isUpdatingProfile} />FormControl>
+                        FormItem>
                     )}/>
-                </CardContent>
-            </Card>
+                CardContent>
+            Card>
 
-            <div className="flex justify-end">
-                <Button type="submit" disabled={isUpdatingProfile || !profileForm.formState.isDirty}>
-                    {isUpdatingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            div className="flex justify-end">
+                Button type="submit" disabled={isUpdatingProfile || !profileForm.formState.isDirty}>
+                    {isUpdatingProfile && Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Changes
-                </Button>
-            </div>
-        </form>
-      </Form>
+                Button>
+            div>
+        form>
+      Form>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Shield /> Security</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Dialog open={isChangePasswordDialogOpen} onOpenChange={(open) => { setIsChangePasswordDialogOpen(open); if(!open) changePasswordForm.reset();}}>
-            <DialogTrigger asChild>
-              <Button variant="outline"><KeyRound className="mr-2 h-4 w-4" />Change Password</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Change Your Password</DialogTitle>
-                <DialogDescription>
+      Card>
+        CardHeader>
+          CardTitle className="flex items-center gap-2">Shield /> SecurityCardTitle>
+        CardHeader>
+        CardContent className="space-y-4">
+          Dialog open={isChangePasswordDialogOpen} onOpenChange={(open) => { setIsChangePasswordDialogOpen(open); if(!open) changePasswordForm.reset();}}>
+            DialogTrigger asChild>
+              Button variant="outline">KeyRound className="mr-2 h-4 w-4" />Change PasswordButton>
+            DialogTrigger>
+            DialogContent className="sm:max-w-md">
+              DialogHeader>
+                DialogTitle>Change Your PasswordDialogTitle>
+                DialogDescription>
                   Enter your current password and a new password.
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...changePasswordForm}>
-                <form onSubmit={changePasswordForm.handleSubmit(handleChangePasswordSubmit)} className="space-y-4 py-4">
-                  <FormField control={changePasswordForm.control} name="currentPassword" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Current Password</FormLabel>
-                        <FormControl><Input type="password" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
+                DialogDescription>
+              DialogHeader>
+              Form {...changePasswordForm}>
+                form onSubmit={changePasswordForm.handleSubmit(handleChangePasswordSubmit)} className="space-y-4 py-4">
+                  FormField control={changePasswordForm.control} name="currentPassword" render={({ field }) => (
+                      FormItem>
+                        FormLabel>Current PasswordFormLabel>
+                        FormControl>Input type="password" {...field} />FormControl>
+                        FormMessage />
+                      FormItem>
                     )}/>
-                  <FormField control={changePasswordForm.control} name="newPassword" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>New Password</FormLabel>
-                        <FormControl><Input type="password" {...field} /></FormControl>
-                        <UiFormDescription>Minimum 6 characters.</UiFormDescription>
-                        <FormMessage />
-                      </FormItem>
+                  FormField control={changePasswordForm.control} name="newPassword" render={({ field }) => (
+                      FormItem>
+                        FormLabel>New PasswordFormLabel>
+                        FormControl>Input type="password" {...field} />FormControl>
+                        UiFormDescription>Minimum 6 characters.UiFormDescription>
+                        FormMessage />
+                      FormItem>
                     )}/>
-                  <FormField control={changePasswordForm.control} name="confirmPassword" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirm New Password</FormLabel>
-                        <FormControl><Input type="password" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
+                  FormField control={changePasswordForm.control} name="confirmPassword" render={({ field }) => (
+                      FormItem>
+                        FormLabel>Confirm New PasswordFormLabel>
+                        FormControl>Input type="password" {...field} />FormControl>
+                        FormMessage />
+                      FormItem>
                     )}/>
-                  <DialogFooter className="pt-4">
-                     <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                    <Button type="submit" disabled={isChangingPassword}>
-                      {isChangingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  DialogFooter className="pt-4">
+                     DialogClose asChild>Button type="button" variant="outline">CancelButton>DialogClose>
+                    Button type="submit" disabled={isChangingPassword}>
+                      {isChangingPassword && Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Update Password
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        
+                    Button>
+                  DialogFooter>
+                form>
+              Form>
+            DialogContent>
+          Dialog>
+        CardContent>
+      Card>
+    div>
+  );
+}

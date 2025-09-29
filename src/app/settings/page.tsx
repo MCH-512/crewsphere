@@ -1,4 +1,3 @@
-
 "use server";
 
 import * as React from "react";
@@ -20,3 +19,5 @@ export default async function SettingsPage() {
     }
 
     // The server component fetches the data and passes it to the client component.
+    return <SettingsClientPage initialUser={user} />;
+}
