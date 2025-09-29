@@ -10,7 +10,7 @@ import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { adminNavConfig, type NavGroup, type NavItem } from "@/config/nav";
 import { cn } from "@/lib/utils";
-import { getAdminDashboardStats, getAdminDashboardWeeklyTrends, type AdminDashboardStats } from "@/services/admin-dashboard-service";
+import { getAdminDashboardStats, getAdminDashboardWeeklyTrends, type getAdminDashboardStats } from "@/services/admin-dashboard-service";
 import { getOpenPullRequests } from "@/services/github-service";
 import { Badge } from "@/components/ui/badge";
 import { WeeklyTrendsChart } from "@/components/admin/weekly-trends-chart";
