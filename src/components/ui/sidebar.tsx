@@ -484,4 +484,10 @@ export {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
-  SidebarMenu
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+}

@@ -1,0 +1,126 @@
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-09-29T11:51:43.713Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:43.718Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:43.719Z] > refreshing access token with scopes: []
+[debug] [2025-09-29T11:51:43.737Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-09-29T11:51:43.737Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:43.885Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:43.886Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:43.886Z] > refreshing access token with scopes: []
+[debug] [2025-09-29T11:51:43.889Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-09-29T11:51:43.890Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:43.906Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:43.910Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:43.911Z] > refreshing access token with scopes: []
+[debug] [2025-09-29T11:51:43.912Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-09-29T11:51:43.912Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:43.922Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:43.923Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:43.923Z] > refreshing access token with scopes: []
+[debug] [2025-09-29T11:51:43.923Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-09-29T11:51:43.934Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:43.942Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:43.942Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:43.942Z] > refreshing access token with scopes: []
+[debug] [2025-09-29T11:51:43.949Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-09-29T11:51:43.949Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-09-29T11:51:44.243Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:44.243Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:44.243Z] > refreshing access token with scopes: []
+[debug] [2025-09-29T11:51:44.250Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-09-29T11:51:44.251Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:44.264Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:44.264Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:44.264Z] > refreshing access token with scopes: []
+[debug] [2025-09-29T11:51:44.270Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-09-29T11:51:44.270Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:44.277Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:44.283Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:44.283Z] > refreshing access token with scopes: []
+[debug] [2025-09-29T11:51:44.284Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-09-29T11:51:44.284Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:44.298Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:44.299Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:44.299Z] > refreshing access token with scopes: []
+[debug] [2025-09-29T11:51:44.299Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-09-29T11:51:44.309Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:44.318Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:44.318Z] Checked if tokens are valid: false, expires at: 1759144489250
+[debug] [2025-09-29T11:51:44.318Z] > refreshing access token with scopes: []
+[debug] [2025-09-29T11:51:44.323Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-09-29T11:51:44.323Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:44.459Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-09-29T11:51:44.461Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:44.538Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2025-09-29T11:51:44.539Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-09-29T11:51:44.570Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-09-29T11:51:44.571Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:44.589Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [none]
+[debug] [2025-09-29T11:51:44.589Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-09-29T11:51:44.677Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-09-29T11:51:44.684Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:44.700Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [none]
+[debug] [2025-09-29T11:51:44.701Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-09-29T11:51:44.717Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-09-29T11:51:44.718Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:44.735Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-09-29T11:51:44.735Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-09-29T11:51:44.757Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-09-29T11:51:44.758Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:44.781Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-09-29T11:51:44.781Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-09-29T11:51:44.814Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-09-29T11:51:44.814Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:44.838Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-09-29T11:51:44.838Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-09-29T11:51:44.849Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-09-29T11:51:44.850Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:44.878Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2025-09-29T11:51:44.878Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-09-29T11:51:44.914Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-09-29T11:51:44.918Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:44.949Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [none]
+[debug] [2025-09-29T11:51:44.951Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-09-29T11:51:44.974Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-09-29T11:51:44.974Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:45.003Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [none]
+[debug] [2025-09-29T11:51:45.003Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-09-29T11:51:45.078Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-09-29T11:51:45.078Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-09-29T11:51:45.101Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-09-29T11:51:45.102Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-09-29T11:51:45.155Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com 200
+[debug] [2025-09-29T11:51:45.155Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2025-09-29T11:51:45.439Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com 403
+[debug] [2025-09-29T11:51:45.446Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [omitted]
+[debug] [2025-09-29T11:51:45.596Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-09-29T11:51:45.606Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2025-09-29T11:51:45.696Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-09-29T11:51:45.696Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-09-29T11:51:45.726Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ 200
+[debug] [2025-09-29T11:51:45.726Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [omitted]
+[debug] [2025-09-29T11:51:45.824Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com 403
+[debug] [2025-09-29T11:51:45.826Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [omitted]
+[debug] [2025-09-29T11:51:45.833Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-09-29T11:51:45.834Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2025-09-29T11:51:45.835Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com 200
+[debug] [2025-09-29T11:51:45.835Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2025-09-29T11:51:45.873Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-09-29T11:51:45.873Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-09-29T11:51:46.141Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ 200
+[debug] [2025-09-29T11:51:46.142Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [omitted]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-09-29T11:51:46.155Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-09-29T11:51:46.156Z] > authorizing via signed-in user (chabouha.mahmoud@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-09-29T11:51:46.225Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-09-29T11:51:46.225Z] > authorizing via signed-in user (chabouha.mahmoud@gmail.com)
+[debug] [2025-09-29T11:51:46.225Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-09-29T11:51:46.225Z] > authorizing via signed-in user (chabouha.mahmoud@gmail.com)

@@ -150,7 +150,7 @@ const ChartTooltipContent = React.forwardRef<
       if (labelFormatter) {
         return (
           <div className={cn("font-medium", labelClassName)}>
-            {labelFormatter(value, payload)}
+            {labelFormatter(value, payload as any)}
           </div>
         )
       }
@@ -199,7 +199,7 @@ const ChartTooltipContent = React.forwardRef<
                   indicator === "dot" && "items-center"
                 )}
               >
-                {formatter && item?.value !== undefined && item.name ? (
+                {formatter ? (
                   formatter(item.value, item.name, item, index, item.payload)
                 ) : (
                   <>
@@ -292,7 +292,7 @@ const ChartLegendContent = React.forwardRef<
 
           return (
             <div
-              key={item.value}
+              key={item.value as string}
               className={cn(
                 "flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground"
               )}
@@ -320,7 +320,7 @@ ChartLegendContent.displayName = "ChartLegend"
 // Helper to extract item config from a payload.
 function getPayloadConfigFromPayload(
   config: ChartConfig,
-  payload: RechartsPrimitive.Payload,
+  payload: unknown,
   key: string
 ) {
   if (typeof payload !== "object" || payload === null) {
@@ -362,4 +362,5 @@ export {
   ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
-  ChartStyle
+  ChartStyle,
+}
