@@ -29,6 +29,7 @@
     "auto-optimize": "tsx src/scripts/run-analysis.js"
   },
   "dependencies": {
+    "@genkit-ai/flow": "^0.5.17",
     "@genkit-ai/googleai": "^1.0.0",
     "@hello-pangea/dnd": "^16.6.0",
     "@hookform/resolvers": "^3.9.0",
@@ -52,6 +53,7 @@
     "@radix-ui/react-tabs": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.1.2",
+    "@sentry/nextjs": "^10.15.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",

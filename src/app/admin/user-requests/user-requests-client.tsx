@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, orderBy, Timestamp, doc, updateDoc, onSnapshot } from "firebase/firestore";
+import { collection, query, orderBy, Timestamp, doc, updateDoc, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Inbox, Loader2, AlertTriangle, Edit, Search, Filter } from "lucide-react";
 import { format } from "date-fns";

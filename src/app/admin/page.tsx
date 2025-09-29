@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ServerCog } from "lucide-react";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
-import { adminNavConfig } from "@/config/nav";
+import { adminNavConfig, type NavGroup, type NavItem } from "@/config/nav";
 import { cn } from "@/lib/utils";
 import { getAdminDashboardStats, getAdminDashboardWeeklyTrends } from "@/services/admin-dashboard-service";
 import { getOpenPullRequests } from "@/services/github-service";
@@ -35,19 +35,24 @@ export default async function AdminConsolePage() {
   const weeklyTrendsDataPromise = getAdminDashboardWeeklyTrends();
   const pullRequests = await getOpenPullRequests();
   
-  // Deep copy the nav config to avoid direct mutation of the imported object
-  const navConfig = JSON.parse(JSON.stringify(adminNavConfig));
+  const navConfig = {
+    sidebarNav: adminNavConfig.sidebarNav.map((group: NavGroup) => {
+      if (group.title === "System") {
+        return {
+          ...group,
+          items: group.items.map((item: NavItem) => {
+            if (item.statKey === "openPullRequests") {
+              return { ...item, href: pullRequests.url };
+            }
+            return item;
+          }),
+        };
+      }
+      return group;
+    }),
+  };
 
-  // Find the PR item in the config to update its href
-  const systemNavGroup = navConfig.sidebarNav.find(group => group.title === "System");
-  const prItem = systemNavGroup?.items.find(item => item.statKey === "openPullRequests");
-  if (prItem) {
-      prItem.href = pullRequests.url;
-  }
-
-  // Add the PR count to the stats object for display
   const displayStats = stats ? { ...stats, openPullRequests: pullRequests.count } : { openPullRequests: pullRequests.count };
-
 
   return (
     <div className="space-y-8">
@@ -69,11 +74,11 @@ export default async function AdminConsolePage() {
           <WeeklyTrendsChart initialDataPromise={weeklyTrendsDataPromise} />
       </Suspense>
 
-      {navConfig.sidebarNav.map((group, groupIndex) => (
+      {navConfig.sidebarNav.map((group: NavGroup, groupIndex: number) => (
           <section key={groupIndex}>
               <h2 className="text-2xl font-bold tracking-tight mb-4">{group.title}</h2>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {group.items.map((item, itemIndex) => {
+                  {group.items.map((item: NavItem, itemIndex: number) => {
                       if (item.href === '/admin') return null; // Don't show the dashboard card itself
                       
                       const IconComponent = item.icon;

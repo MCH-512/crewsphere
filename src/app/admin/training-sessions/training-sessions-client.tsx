@@ -186,7 +186,7 @@ export function TrainingSessionsClient({
             setIsEditMode(true);
             setCurrentSession(sessionToEdit);
 
-            const attendeesData = (sessionToEdit.attendeeIds || []).map(id => userMap.get(id)).filter(Boolean) as User[];
+            const attendeesData = (sessionToEdit.attendeeIds || []).map(id => userMap.get(id)).filter((user): user is User => !!user);
             
             const sessionDate = sessionToEdit.sessionDateTimeUTC instanceof Timestamp 
                 ? sessionToEdit.sessionDateTimeUTC.toDate()
@@ -321,7 +321,7 @@ export function TrainingSessionsClient({
 
     const prevStep = () => {
         if (currentStep > 0) {
-            setCurrentStep(prev => prev - 1);
+            setCurrentStep(prev => prev + 1);
         }
     };
 
