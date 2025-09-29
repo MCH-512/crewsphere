@@ -41,10 +41,10 @@ export async function getUserProfileData(userId: string): Promise<ProfileData | 
         const userPromise = getDoc(userDocRef);
         const activitiesPromise = getDocs(query(collection(db, "userActivities"), where("userId", "==", userId), orderBy("date", "desc"), limit(5)));
         const trainingsPromise = getDocs(query(collection(db, "userQuizAttempts"), where("userId", "==", userId), orderBy("completedAt", "desc"), limit(5)));
-        const requestsPromise = getDocs(query(collection(db, "requests"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(5));
+        const requestsPromise = getDocs(query(collection(db, "requests"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(5)));
         const documentsPromise = getDocs(query(collection(db, "userDocuments"), where("userId", "==", userId), orderBy("expiryDate", "asc")));
 
-        const [userSnap, activitiesSnap, trainingsSnap, requestsSnap, documentsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsSnap, documentsSnap]);
+        const [userSnap, activitiesSnap, trainingsSnap, requestsSnap, documentsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsPromise, documentsSnap]);
 
         if (!userSnap.exists()) {
             throw new Error("User not found.");
@@ -81,4 +81,3 @@ export async function getUserProfileData(userId: string): Promise<ProfileData | 
         return null;
     }
 }
-
