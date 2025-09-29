@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Inbox, AlertTriangle, CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Badge } from "../ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { getStatusBadgeVariant, type RequestStatus } from "@/schemas/request-schema";
 import { getRequestsStatus } from "@/services/dashboard-service";
 import { z } from 'zod';
