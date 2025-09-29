@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -14,20 +13,20 @@ import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Power, PowerOff } from "lucide-react"; 
 import { Separator } from "@/components/ui/separator";
-import type { User, SpecificRole, ManageUserFormValues } from "@/schemas/user-schema";
+import type { User, ManageUserFormValues, SpecificRole } from "@/schemas/user-schema";
 import { manageUserFormSchema, availableRoles } from "@/schemas/user-schema";
 import { manageUser } from "@/services/user-service";
 import { CustomAutocompleteAirport } from "@/components/custom/custom-autocomplete-airport";
 import { Airport, searchAirports } from "@/services/airport-service";
 import { useDebounce } from "@/hooks/use-debounce";
 
-const NO_ROLE_SENTINEL = "_NONE_"; 
-
 interface UserFormProps {
     isCreateMode: boolean;
     currentUser: User | null;
     onFormSubmitSuccess: () => void;
 }
+
+const NO_ROLE_SENTINEL = "_NONE_";
 
 export function UserForm({ isCreateMode, currentUser, onFormSubmitSuccess }: UserFormProps) {
   const { user: adminUser } = useAuth();
@@ -43,14 +42,14 @@ export function UserForm({ isCreateMode, currentUser, onFormSubmitSuccess }: Use
     defaultValues: isCreateMode ? {
         email: "", password: "", confirmPassword: "", displayName: "", fullName: "",
         employeeId: "", joiningDate: new Date().toISOString().split('T')[0], 
-        role: "", accountStatus: true, baseAirport: "",
+        role: "other", accountStatus: true, baseAirport: "",
     } : {
         email: currentUser?.email || "",
         displayName: currentUser?.displayName || "",
         fullName: currentUser?.fullName || "",
         employeeId: currentUser?.employeeId || "",
         joiningDate: currentUser?.joiningDate ? new Date(currentUser.joiningDate).toISOString().split('T')[0] : "",
-        role: currentUser?.role || "",
+        role: currentUser?.role || "other",
         accountStatus: currentUser?.accountStatus === 'active',
         baseAirport: currentUser?.baseAirport || "",
         password: "", confirmPassword: "",
@@ -117,11 +116,11 @@ export function UserForm({ isCreateMode, currentUser, onFormSubmitSuccess }: Use
                       <FormField control={form.control} name="role" render={({ field }) => (
                           <FormItem>
                           <FormLabel>Role</FormLabel>
-                          <Select onValueChange={(value) => field.onChange(value === NO_ROLE_SENTINEL ? "" : value)} value={field.value || NO_ROLE_SENTINEL} >
+                          <Select onValueChange={field.onChange} value={field.value ?? ""}>
                               <FormControl><SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger></FormControl>
                               <SelectContent>
-                              {availableRoles.map(roleValue => (<SelectItem key={roleValue} value={roleValue} className="capitalize">{roleValue}</SelectItem>))}
-                              <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
+                                <SelectItem value={NO_ROLE_SENTINEL}><em>(Remove Role / Default)</em></SelectItem>
+                                {availableRoles.map(roleValue => (<SelectItem key={roleValue} value={roleValue} className="capitalize">{roleValue}</SelectItem>))}
                               </SelectContent>
                           </Select>
                           <FormDescription>Assign a system role or leave as default for standard user permissions.</FormDescription>
@@ -133,7 +132,7 @@ export function UserForm({ isCreateMode, currentUser, onFormSubmitSuccess }: Use
                           <FormLabel>Account Status</FormLabel>
                           <div className="flex items-center space-x-2">
                               <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Account status toggle"/></FormControl>
-                              {field.value ? <Power className="h-5 w-5 text-success" /> : <PowerOff className="h-5 w-5 text-destructive" />}
+                              {field.value ? <Power className="h-5 w-5 text-success" /> : <PowerOff className="h-s w-5 text-destructive" />}
                               <span className={field.value ? "font-medium text-success" : "font-medium text-destructive"}>{field.value ? "Active" : "Inactive"}</span>
                           </div>
                           <FormDescription>Controls if the user account is active or inactive in the application.</FormDescription>

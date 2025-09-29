@@ -5,7 +5,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -63,10 +63,29 @@ const formSchema = z.object({
 });
 type FormValues = z.infer<typeof formSchema>;
 
+interface CalculationResult {
+    baseFDP: string;
+    sectorReductions: string;
+    fdpAfterSectors: string;
+    woclInfringement: boolean;
+    finalFDP: string;
+    latestOffBlock: string;
+    extension: {
+        possible: boolean;
+        newFDP: string;
+    };
+    minRest: string;
+    feasibility: {
+        isFeasible: boolean;
+        plannedFDP: string;
+        difference: string;
+    } | null;
+}
+
 // --- Page Component ---
 
 export default function FtlCalculatorPage() {
-    const [result, setResult] = React.useState<any | null>(null);
+    const [result, setResult] = React.useState<CalculationResult | null>(null);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -298,7 +317,7 @@ export default function FtlCalculatorPage() {
                         <AccordionItem value="acclimatisation">
                             <AccordionTrigger>What is Acclimatisation?</AccordionTrigger>
                             <AccordionContent>
-                                A state in which a crew member's circadian biological clock is synchronised to the time of the area to which the crew member is exposed. A crew member is considered to be acclimatised to a 2-hour wide time zone surrounding the local time at the point of departure. When the local time at the place where a duty commences differs by more than 2 hours from the local time at the place where the crew member was last acclimatised, the crew member, for the calculation of the maximum FDP, is considered to be in an unknown state of acclimatisation.
+                                A state in which a crew member&apos;s circadian biological clock is synchronised to the time of the area to which the crew member is exposed. A crew member is considered to be acclimatised to a 2-hour wide time zone surrounding the local time at the point of departure. When the local time at the place where a duty commences differs by more than 2 hours from the local time at the place where the crew member was last acclimatised, the crew member, for the calculation of the maximum FDP, is considered to be in an unknown state of acclimatisation.
                             </AccordionContent>
                         </AccordionItem>
                         <AccordionItem value="wocl">
@@ -310,7 +329,7 @@ export default function FtlCalculatorPage() {
                          <AccordionItem value="disclaimer">
                             <AccordionTrigger className="text-destructive">Disclaimer</AccordionTrigger>
                             <AccordionContent className="text-destructive/80">
-                                This calculator is for informational and guidance purposes only and should not be used as a substitute for official flight planning and rostering systems. Always refer to your airline's official Operations Manual and all applicable EASA regulations. The creators of this tool are not liable for any errors or omissions.
+                                This calculator is for informational and guidance purposes only and should not be used as a substitute for official flight planning and rostering systems. Always refer to your airline&apos;s official Operations Manual and all applicable EASA regulations. The creators of this tool are not liable for any errors or omissions.
                             </AccordionContent>
                         </AccordionItem>
                     </Accordion>
@@ -318,5 +337,4 @@ export default function FtlCalculatorPage() {
             </Card>
 
         </div>
-    );
-}
+    

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -160,7 +159,7 @@ export default function AirportDirectoryPage() {
                  {filteredContinents.length === 0 && searchTerm && (
                     <Card className="mt-4">
                         <CardContent className="py-12 text-center text-muted-foreground">
-                            No airports found for your search query: "{searchTerm}"
+                            No airports found for your search query: &quot;{searchTerm}&quot;
                         </CardContent>
                     </Card>
                  )}

@@ -1,4 +1,3 @@
-
 "use server";
 
 import * as React from "react";
@@ -8,17 +7,13 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ServerCog } from "lucide-react";
 import Link from "next/link";
 import { AnimatedCard } from "@/components/motion/animated-card";
-import { adminNavConfig } from "@/config/nav";
+import { adminNavConfig, type NavGroup, type NavItem, type AdminDashboardStats } from "@/config/nav";
 import { cn } from "@/lib/utils";
 import { getAdminDashboardStats, getAdminDashboardWeeklyTrends } from "@/services/admin-dashboard-service";
 import { getOpenPullRequests } from "@/services/github-service";
 import { Badge } from "@/components/ui/badge";
 import { WeeklyTrendsChart } from "@/components/admin/weekly-trends-chart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { z } from 'zod';
-
-// Zod schema for functions that take no arguments
-const EmptySchema = z.object({});
 
 const ChartSkeleton = () => (
     <Card className="col-span-1 lg:col-span-2">
@@ -35,21 +30,44 @@ const ChartSkeleton = () => (
 );
 
 export default async function AdminConsolePage() {
-  EmptySchema.parse({}); // Zod validation
   const stats = await getAdminDashboardStats();
   const pullRequests = await getOpenPullRequests();
+<<<<<<< HEAD
   const weeklyTrendsData = await getAdminDashboardWeeklyTrends();
+=======
+  
+  const navConfig = {
+    sidebarNav: adminNavConfig.sidebarNav.map((group: NavGroup) => {
+      if (group.title === "System") {
+        return {
+          ...group,
+          items: group.items.map((item: NavItem) => {
+            if (item.statKey === "openPullRequests") {
+              return { ...item, href: pullRequests.url };
+            }
+            return item;
+          }),
+        };
+      }
+      return group;
+    }),
+  };
+>>>>>>> 574222e9d7c8cb9928d1f30ba4e25ba0e9ad8299
 
-  // Find the PR item in the config to update its href
-  const systemNavGroup = adminNavConfig.sidebarNav.find(group => group.title === "System");
-  const prItem = systemNavGroup?.items.find(item => item.statKey === "openPullRequests");
-  if (prItem) {
-      prItem.href = pullRequests.url;
-  }
+  const defaultStats: AdminDashboardStats = {
+    pendingRequests: 0,
+    pendingDocValidations: 0,
+    newSuggestions: 0,
+    pendingSwaps: 0,
+    activeAlerts: 0,
+    pendingReports: 0,
+  };
 
-  // Add the PR count to the stats object for display
-  const displayStats = stats ? { ...stats, openPullRequests: pullRequests.count } : { openPullRequests: pullRequests.count };
-
+  const displayStats = {
+    ...(stats || defaultStats),
+    openPullRequests: pullRequests.count,
+  };
+  type DisplayStats = typeof displayStats;
 
   return (
     <div className="space-y-8">
@@ -71,17 +89,18 @@ export default async function AdminConsolePage() {
           <WeeklyTrendsChart data={weeklyTrendsData} />
       </Suspense>
 
-      {adminNavConfig.sidebarNav.map((group, groupIndex) => (
+      {navConfig.sidebarNav.map((group: NavGroup, groupIndex: number) => (
           <section key={groupIndex}>
               <h2 className="text-2xl font-bold tracking-tight mb-4">{group.title}</h2>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {group.items.map((item, itemIndex) => {
+                  {group.items.map((item: NavItem, itemIndex: number) => {
                       if (item.href === '/admin') return null; // Don't show the dashboard card itself
                       
                       const IconComponent = item.icon;
                       const animationDelay = 0.1 + (itemIndex * 0.05);
                       
-                      const statValue = displayStats && item.statKey ? displayStats[item.statKey] : undefined;
+                      const statKey = item.statKey as keyof DisplayStats | undefined;
+                      const statValue = statKey ? displayStats[statKey] : undefined;
                       const shouldHighlight = statValue !== undefined && item.highlightWhen ? item.highlightWhen(statValue) : false;
 
                       return (

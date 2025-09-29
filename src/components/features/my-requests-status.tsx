@@ -1,4 +1,3 @@
-
 "use server";
 
 import * as React from "react";
@@ -6,10 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Inbox, AlertTriangle, CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+<<<<<<< HEAD
 import { Badge } from "@/components/ui/badge";
 import { getStatusBadgeVariant, type RequestStatus } from "@/schemas/request-schema";
+=======
+import { Badge } from "../ui/badge";
+import { getStatusBadgeVariant } from "@/schemas/request-schema";
+>>>>>>> 574222e9d7c8cb9928d1f30ba4e25ba0e9ad8299
 import { getRequestsStatus } from "@/services/dashboard-service";
 import { z } from 'zod';
+import type { RequestStatus } from "@/schemas/request-schema";
 
 const EmptySchema = z.object({});
 
@@ -64,7 +69,7 @@ export async function MyRequestsStatusCard() {
                         </div>
                          {stats.latestRequest && (
                             <div className="text-sm text-muted-foreground truncate p-2 border-l-2 border-warning/80">
-                                Latest: "{stats.latestRequest.subject}" <Badge variant={getStatusBadgeVariant(stats.latestRequest.status)} className="capitalize">{stats.latestRequest.status.replace('-', ' ')}</Badge>
+                                Latest: &quot;{stats.latestRequest.subject}&quot; <Badge variant={getStatusBadgeVariant(stats.latestRequest.status)} className="capitalize">{stats.latestRequest.status.replace('-', ' ')}</Badge>
                             </div>
                         )}
                     </div>
@@ -82,7 +87,8 @@ export async function MyRequestsStatusCard() {
                         <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                 </Button>
-            </CardFooter>
+             </CardFooter>
         </Card>
     );
 }
+    

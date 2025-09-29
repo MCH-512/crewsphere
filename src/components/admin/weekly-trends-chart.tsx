@@ -1,7 +1,10 @@
-
 "use client";
 
 import * as React from "react";
+<<<<<<< HEAD
+=======
+import { format } from "date-fns";
+>>>>>>> 574222e9d7c8cb9928d1f30ba4e25ba0e9ad8299
 import { TrendingUp } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
@@ -17,7 +20,11 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+<<<<<<< HEAD
 import { type WeeklyTrendDataPoint } from "@/services/admin-dashboard-service";
+=======
+import type { WeeklyTrendDataPoint } from "@/services/admin-dashboard-service";
+>>>>>>> 574222e9d7c8cb9928d1f30ba4e25ba0e9ad8299
 
 const chartConfig = {
   Requests: {
@@ -39,6 +46,7 @@ interface WeeklyTrendsChartProps {
     data: WeeklyTrendDataPoint[] | null;
 }
 
+<<<<<<< HEAD
 
 export function WeeklyTrendsChart({ data }: WeeklyTrendsChartProps) {
   return (
@@ -118,4 +126,89 @@ export function WeeklyTrendsChart({ data }: WeeklyTrendsChartProps) {
       </CardContent>
     </Card>
   );
+=======
+export function WeeklyTrendsChart({ initialDataPromise }: WeeklyTrendsChartProps) {
+    // The `use` hook suspends the component until the promise resolves.
+    // If the promise rejects, it will be caught by the nearest Error Boundary,
+    // which is handled by Next.js's file-based `error.tsx`.
+    const data = React.use(initialDataPromise);
+
+    return (
+        <Card className="col-span-1 lg:col-span-2">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Weekly Activity Trends
+                </CardTitle>
+                <CardDescription>
+                    An overview of key user activities from the last 7 days.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {!data || data.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
+                        <p className="font-semibold">No activity data available for the last 7 days.</p>
+                    </div>
+                ) : (
+                    <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
+                        <AreaChart
+                            accessibilityLayer
+                            data={data}
+                            margin={{ left: 12, right: 12, top: 12 }}
+                        >
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                                dataKey="date"
+                                tickLine={false}
+                                axisLine={false}
+                                tickMargin={8}
+                                tickFormatter={(value) => format(new Date(value), "MMM d")}
+                            />
+                            <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                            <ChartTooltip
+                                cursor={false}
+                                content={<ChartTooltipContent indicator="dot" />}
+                            />
+                            <defs>
+                                <linearGradient id="fillRequests" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="var(--color-Requests)" stopOpacity={0.8} />
+                                <stop offset="95%" stopColor="var(--color-Requests)" stopOpacity={0.1} />
+                                </linearGradient>
+                                <linearGradient id="fillSuggestions" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="var(--color-Suggestions)" stopOpacity={0.8} />
+                                <stop offset="95%" stopColor="var(--color-Suggestions)" stopOpacity={0.1} />
+                                </linearGradient>
+                                <linearGradient id="fillSwaps" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="var(--color-Swaps)" stopOpacity={0.8} />
+                                <stop offset="95%" stopColor="var(--color-Swaps)" stopOpacity={0.1} />
+                                </linearGradient>
+                            </defs>
+                            <Area
+                                dataKey="Requests"
+                                type="natural"
+                                fill="url(#fillRequests)"
+                                stroke="var(--color-Requests)"
+                                stackId="a"
+                            />
+                            <Area
+                                dataKey="Suggestions"
+                                type="natural"
+                                fill="url(#fillSuggestions)"
+                                stroke="var(--color-Suggestions)"
+                                stackId="a"
+                            />
+                            <Area
+                                dataKey="Swaps"
+                                type="natural"
+                                fill="url(#fillSwaps)"
+                                stroke="var(--color-Swaps)"
+                                stackId="a"
+                            />
+                        </AreaChart>
+                    </ChartContainer>
+                )}
+            </CardContent>
+        </Card>
+    );
+>>>>>>> 574222e9d7c8cb9928d1f30ba4e25ba0e9ad8299
 }

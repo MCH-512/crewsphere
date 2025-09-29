@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -18,7 +17,7 @@ const formatDuration = (totalMinutes: number): string => {
     if (isNaN(totalMinutes) || totalMinutes < 0) return "0h 0m";
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
-    return `${hours}h ${minutes}m`;
+    return `${hours}h ${minutes}`;
 };
 
 export function MyLogbookClient({ initialEntries }: { initialEntries: LogbookEntry[] }) {
@@ -36,7 +35,7 @@ export function MyLogbookClient({ initialEntries }: { initialEntries: LogbookEnt
             const entries = await getLogbookEntries(user.uid);
             setLogbookEntries(entries);
             toast({ title: "Logbook Refreshed", description: "Your flight log has been updated."});
-        } catch(err) {
+        } catch(err: unknown) {
             setError("Could not refresh logbook entries.");
             toast({ title: "Error", description: "Could not refresh logbook entries.", variant: "destructive" });
         } finally {
@@ -173,7 +172,7 @@ export function MyLogbookClient({ initialEntries }: { initialEntries: LogbookEnt
                                     ))}
                                 </div>
                             ) : <p className="text-xs text-muted-foreground">No data</p>}
-                        </CardContent>
+                        CardContent>
                     </Card>
                 </AnimatedCard>
             </div>

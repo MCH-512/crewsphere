@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -69,7 +68,7 @@ export default function AeronauticalJargonPage() {
                     </AccordionItem>
                 ))
             ) : (
-                <p className="text-center text-muted-foreground py-6">No terms found for "{searchTerm}".</p>
+                <p className="text-center text-muted-foreground py-6">No terms found for &quot;{searchTerm}&quot;.</p>
             )}
            </Accordion>
         </CardContent>

@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -9,7 +8,6 @@
 import { ai } from '@/ai/genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { GenerateVideoInputSchema, type GenerateVideoInput, type GenerateVideoOutput } from '@/schemas/video-schema';
-import { z } from 'zod';
 
 
 /**
@@ -52,3 +50,4 @@ export async function generateVideo(input: GenerateVideoInput): Promise<Generate
   
   return { videoUrl: videoUrlWithKey };
 }
+    

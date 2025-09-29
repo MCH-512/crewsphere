@@ -4,7 +4,6 @@
 import { collection, getDocs, query, where, writeBatch, doc, serverTimestamp } from "firebase/firestore";
 import { db, isConfigValid } from "./firebase";
 import { type Chapter } from "@/schemas/course-schema";
-import { type StoredQuestion } from "@/schemas/quiz-question-schema";
 import { z } from 'zod';
 
 const EmptySchema = z.object({});
@@ -113,5 +112,4 @@ export async function seedInitialCourses(): Promise<{ success: boolean; message:
 
     await batch.commit();
     
-    return { success: true, message: `Successfully seeded the course "${courseData.title}" and its ${courseData.questions.length} questions.`, courseTitle: courseData.title };
-}
+    return { success: true, message: `Successfully seeded the course "${courseData.title}" and its ${courseData

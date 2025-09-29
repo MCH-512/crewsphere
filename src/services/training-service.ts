@@ -1,4 +1,3 @@
-
 'use server';
 
 import 'server-only';
@@ -15,7 +14,16 @@ interface SessionForDisplay extends StoredTrainingSession {
     attendeeCount: number;
 }
 
-export async function getTrainingSessionsPageData() {
+export async function getTrainingSessionsPageData(): Promise<{
+    initialSessions: SessionForDisplay[];
+    initialUsers: User[];
+    initialUserMap: Map<string, User>;
+    initialPursers: User[];
+    initialPilots: User[];
+    initialCabinCrew: User[];
+    initialInstructors: User[];
+    initialTrainees: User[];
+}> {
     EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
     if (!user || user.role !== 'admin' || !isConfigValid || !db) {
@@ -43,7 +51,6 @@ export async function getTrainingSessionsPageData() {
         const sessionsData = sessionsSnapshot.docs.map(doc => {
             const data = doc.data() as StoredTrainingSession;
             return {
-                id: doc.id,
                 ...data,
                 attendeeCount: (data.attendeeIds || []).length,
             }

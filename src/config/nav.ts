@@ -89,7 +89,7 @@ export const adminNavConfig: { sidebarNav: NavGroup[] } = {
     {
       title: "Operations",
       items: [
-        { href: "/admin", title: "Dashboard", description: "Vue centralisée pour la gestion de l'application et l'analyse des données opérationnelles.", buttonText: "View Dashboard" },
+        { href: "/admin", title: "Dashboard", icon: LayoutDashboard, description: "Vue centralisée pour la gestion de l'application et l'analyse des données opérationnelles.", buttonText: "View Dashboard" },
         { href: "/admin/flights", title: "Flight Management", icon: Plane, description: "Créez et assignez des vols, gérez les équipages et traitez les demandes d'échange de vols.", buttonText: "Manage Flights", statKey: "pendingSwaps", highlightWhen: v => v > 0 },
         { href: "/admin/training-sessions", title: "Training Sessions", icon: ClipboardCheck, description: "Organisez et planifiez des sessions de formation en présentiel pour tous les membres d'équipage.", buttonText: "Manage Sessions" },
       ]

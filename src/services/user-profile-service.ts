@@ -1,41 +1,51 @@
-
 'use server';
 
-import 'server-only';
-import { db, isConfigValid } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, orderBy, limit, getDocs, Timestamp } from "firebase/firestore";
-import type { User } from "@/schemas/user-schema";
-import type { UserActivity } from "@/schemas/user-activity-schema";
-import type { StoredUserQuizAttempt, StoredCourse } from "@/schemas/course-schema";
-import type { StoredUserRequest } from "@/schemas/request-schema";
-import type { StoredUserDocument } from "@/schemas/user-document-schema";
-import { getAirportByCode, type Airport } from "@/services/airport-service";
-import { z } from 'zod';
+import { db } from "@/lib/firebase";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+} from "firebase/firestore";
+import { User } from "@/schemas/user-schema";
+import { StoredUserQuizAttempt } from "@/schemas/user-progress-schema";
+import { StoredUserRequest } from "@/schemas/request-schema";
+import { Airport, getAirportByCode } from "./airport-service";
+import { ActivityData, getUserActivitiesForMonth } from "./activity-service";
+import { StoredUserDocument } from "@/schemas/user-document-schema";
 
-const UserIdSchema = z.string().min(1, "User ID cannot be empty.");
 
 export interface ProfileData {
-  user: User;
-  activities: UserActivity[];
-  trainings: (StoredUserQuizAttempt & { courseTitle: string })[];
-  requests: StoredUserRequest[];
-  documents: StoredUserDocument[];
-  baseAirport: Airport | null;
+    user: User;
+    activities: ActivityData[];
+    trainings: StoredUserQuizAttempt[];
+    requests: StoredUserRequest[];
+    documents: StoredUserDocument[];
+    baseAirport: Airport | null;
+    userMap: Map<string, User>;
 }
 
+
 /**
- * Fetches all data related to a user's profile for the admin detail page.
- * @param userId The UID of the user to fetch data for.
- * @returns A promise that resolves to a comprehensive profile data object.
+ * Fetches all the necessary data for a user's profile page.
+ * 
+ * @param {string} userId - The UID of the user.
+ * @returns An object containing user details, activities, trainings, requests, documents, and a map of all users.
  */
 export async function getUserProfileData(userId: string): Promise<ProfileData | null> {
-    UserIdSchema.parse(userId); // Zod validation
 
-    if (!isConfigValid || !db) {
-        console.error("Firebase not configured, cannot fetch user profile.");
-        return null;
-    }
+  const userRef = doc(db, "users", userId);
+  
+  const [userDoc, allUsersSnapshot] = await Promise.all([
+    getDoc(userRef),
+    getDocs(collection(db, "users")),
+  ]);
 
+<<<<<<< HEAD
     try {
         const userDocRef = doc(db, "users", userId);
         const userPromise = getDoc(userDocRef);
@@ -45,11 +55,31 @@ export async function getUserProfileData(userId: string): Promise<ProfileData | 
         const documentsPromise = getDocs(query(collection(db, "userDocuments"), where("userId", "==", userId), orderBy("expiryDate", "asc")));
 
         const [userSnap, activitiesSnap, trainingsSnap, requestsSnap, documentsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsPromise, documentsSnap]);
+=======
+  if (!userDoc.exists()) {
+    return null; // User not found
+  }
+  
+  const user = { uid: userDoc.id, ...userDoc.data() } as User;
+  
+  const userMap = new Map(allUsersSnapshot.docs.map(doc => [doc.id, { uid: doc.id, ...doc.data() } as User]));
+  
+  const baseAirport = user.baseAirport ? await getAirportByCode(user.baseAirport) : null;
+  
+  const activities = await getUserActivitiesForMonth(new Date(), userId);
 
-        if (!userSnap.exists()) {
-            throw new Error("User not found.");
-        }
+  const trainingsQuery = query(collection(db, "userQuizAttempts"), where("userId", "==", userId), orderBy("completedAt", "desc"), limit(5));
+  const requestsQuery = query(collection(db, "requests"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(5));
+  const documentsQuery = query(collection(db, "userDocuments"), where("userId", "==", userId), orderBy("expiryDate", "asc"));
+>>>>>>> 574222e9d7c8cb9928d1f30ba4e25ba0e9ad8299
 
+  const [trainingsSnapshot, requestsSnapshot, documentsSnapshot] = await Promise.all([
+      getDocs(trainingsQuery),
+      getDocs(requestsQuery),
+      getDocs(documentsQuery),
+  ]);
+
+<<<<<<< HEAD
         const fetchedUser = { uid: userSnap.id, ...userSnap.data() } as User;
         const baseAirport = fetchedUser.baseAirport ? await getAirportByCode(fetchedUser.baseAirport) : null;
         
@@ -81,3 +111,19 @@ export async function getUserProfileData(userId: string): Promise<ProfileData | 
         return null;
     }
 }
+=======
+  const trainings = trainingsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserQuizAttempt));
+  const requests = requestsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserRequest));
+  const documents = documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredUserDocument));
+
+  return {
+    user,
+    activities,
+    trainings,
+    requests,
+    documents,
+    baseAirport,
+    userMap,
+  };
+}
+>>>>>>> 574222e9d7c8cb9928d1f30ba4e25ba0e9ad8299

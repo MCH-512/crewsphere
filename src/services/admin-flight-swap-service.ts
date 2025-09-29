@@ -1,8 +1,7 @@
-
 'use server';
 
 import { db } from "@/lib/firebase";
-import { doc, runTransaction, serverTimestamp, Timestamp, collection, updateDoc, writeBatch, getDoc } from "firebase/firestore";
+import { doc, runTransaction, serverTimestamp, Timestamp, updateDoc } from "firebase/firestore";
 import type { StoredFlight } from "@/schemas/flight-schema";
 import type { StoredFlightSwap } from "@/schemas/flight-swap-schema";
 import { logAuditEvent } from "@/lib/audit-logger";
@@ -84,8 +83,8 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
             if (activity1Id) newActivityIdsF2[swapData.initiatingUserId] = activity1Id;
             flight2Update.activityIds = newActivityIdsF2;
 
-            transaction.update(flight1Ref, flight1Update as any);
-            transaction.update(flight2Ref, flight2Update as any);
+            transaction.update(flight1Ref, flight1Update);
+            transaction.update(flight2Ref, flight2Update);
 
             if (activity1Id) {
                 transaction.update(doc(db, "userActivities", activity1Id), { 
@@ -181,3 +180,4 @@ export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string 
         return "Could not automatically check for conflicts due to a server error.";
     }
 }
+    

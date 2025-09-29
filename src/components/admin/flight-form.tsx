@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -307,3 +306,4 @@ export function FlightForm({ isEditMode, currentFlight, onFormSubmitSuccess, all
         </>
     );
 }
+    

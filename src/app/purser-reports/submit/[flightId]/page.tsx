@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -169,7 +168,7 @@ export default function SubmitPurserReportPage() {
       const reportData: Partial<StoredPurserReport> = { 
         ...data, 
         userId: user.uid, 
-        userEmail: user.email, 
+        userEmail: user.email || '', 
         createdAt: serverTimestamp() as Timestamp, 
         status: 'submitted', 
         adminNotes: '',

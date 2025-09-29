@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -8,12 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, query, orderBy, Timestamp, doc, updateDoc, onSnapshot } from "firebase/firestore";
+import { collection, query, orderBy, Timestamp, doc, updateDoc, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Inbox, Loader2, AlertTriangle, Edit, Search, Filter } from "lucide-react";
+import { Inbox, Loader2, AlertTriangle, Edit, Filter, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { StoredUserRequest, requestStatuses, getStatusBadgeVariant, getUrgencyBadgeVariant, urgencyLevels, requestCategoryKeys, allRequestCategories } from "@/schemas/request-schema";
+import { StoredUserRequest, requestStatuses, getStatusBadgeVariant, getUrgencyBadgeVariant, allRequestCategories } from "@/schemas/request-schema";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -69,7 +68,7 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
     }, [user, toast]);
     
     const filteredAndSortedRequests = React.useMemo(() => {
-        let filtered = requests.filter(r => {
+        const filtered = requests.filter(r => {
             if (statusFilter !== "all" && r.status !== statusFilter) return false;
             if (categoryFilter !== "all" && r.requestType !== categoryFilter) return false;
             if (searchTerm) {
@@ -177,7 +176,7 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+                        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RequestStatus | "all")}>
                             <SelectTrigger className="w-full md:w-[180px]">
                                 <Filter className="mr-2 h-4 w-4" />
                                 <SelectValue placeholder="Filter by status" />
@@ -185,11 +184,9 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
                             <SelectContent>
                                 <SelectItem value="all">All Statuses</SelectItem>
                                 {requestStatuses.map(status => (
-                                    <SelectItem key={status} value={status} className="capitalize">{status.replace('-', ' ')}</SelectItem>
-                                ))}
-                            </SelectContent>
+                                    <SelectItem key={status} value={status} className="capitalize">{status.replace('-', ' ')}</SelectItem>))}</SelectContent>
                         </Select>
-                        <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as any)}>
+                        <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as RequestCategory | "all")}>
                             <SelectTrigger className="w-full md:w-[220px]">
                                 <Filter className="mr-2 h-4 w-4" />
                                 <SelectValue placeholder="Filter by category" />
@@ -197,8 +194,7 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
                             <SelectContent>
                                 <SelectItem value="all">All Categories</SelectItem>
                                 {allRequestCategories.map(cat => (
-                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                ))}
+                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>))}
                             </SelectContent>
                         </Select>
                     </div>
@@ -236,8 +232,7 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
                                                 <Button variant="ghost" size="sm" onClick={() => handleOpenManageDialog(r)}><Edit className="mr-1 h-4 w-4" />Manage</Button>
                                             </TableCell>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
+                                    ))}</TableBody>
                             </Table>
                         </div>
                     ) : (
@@ -283,5 +278,4 @@ export function UserRequestsClient({ initialRequests }: { initialRequests: Store
         </div>
     );
 }
-
     

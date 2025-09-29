@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
@@ -121,9 +120,9 @@ export const getAdminDashboardWeeklyTrends = cache(
                 }
             });
             
-            // Convert map to array and format for the chart
-            const trendData = Array.from(dailyCounts.entries()).map(([date, counts]) => ({
-                date: format(new Date(date), 'MMM d'), // Format for display
+            // Convert map to array, adhering to the YYYY-MM-DD format
+            const trendData: WeeklyTrendDataPoint[] = Array.from(dailyCounts.entries()).map(([date, counts]) => ({
+                date, // 'date' is already the 'yyyy-MM-dd' string key from the map
                 ...counts
             }));
             

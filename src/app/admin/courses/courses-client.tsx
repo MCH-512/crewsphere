@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -7,7 +6,7 @@ import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -107,7 +106,7 @@ export function CoursesClient({ initialCourses, initialQuizzes, initialCertRules
             setCertRules(certRules);
             setQuestions(questions);
             toast({ title: "Refreshed", description: "All course data has been updated." });
-        } catch (err) {
+        } catch (err: unknown) {
             toast({ title: "Error", description: "Could not refresh course data.", variant: "destructive" });
         } finally {
             setIsLoading(false);
@@ -394,15 +393,15 @@ export function CoursesClient({ initialCourses, initialQuizzes, initialCertRules
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as any)}>
+                        <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as CourseCategory | "all")}>
                             <SelectTrigger className="w-full md:w-[240px]"><Filter className="mr-2 h-4 w-4" /><SelectValue placeholder="Filter by category" /></SelectTrigger>
                             <SelectContent><SelectItem value="all">All Categories</SelectItem>{courseCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                         </Select>
-                         <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as any)}>
+                         <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as CourseType | "all")}>
                             <SelectTrigger className="w-full md:w-[200px]"><Filter className="mr-2 h-4 w-4" /><SelectValue placeholder="Filter by type" /></SelectTrigger>
                             <SelectContent><SelectItem value="all">All Types</SelectItem>{courseTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                         </Select>
-                        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+                        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
                             <SelectTrigger className="w-full md:w-[180px]"><Filter className="mr-2 h-4 w-4" /><SelectValue placeholder="Filter by status" /></SelectTrigger>
                             <SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="published">Published</SelectItem><SelectItem value="draft">Draft</SelectItem></SelectContent>
                         </Select>
@@ -586,7 +585,7 @@ export function CoursesClient({ initialCourses, initialQuizzes, initialCertRules
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the course "{courseToDelete?.title}" and all its associated data, including its quiz, questions, and any user progress.
+                            This action cannot be undone. This will permanently delete the course &quot;{courseToDelete?.title}&quot; and all its associated data, including its quiz, questions, and any user progress.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

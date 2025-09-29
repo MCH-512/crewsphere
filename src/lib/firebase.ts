@@ -1,4 +1,3 @@
-
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
@@ -38,5 +37,6 @@ if (isConfigValid) {
     console.warn("Firebase configuration is invalid or missing. Firebase services will be unavailable.");
 }
 
-// @ts-ignore
+// @ts-expect-error - This is a safe way to export uninitialized services for type-checking, while the runtime check prevents their use.
 export { app, auth, db, storage };
+    

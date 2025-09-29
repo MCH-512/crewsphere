@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -8,9 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, where, doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { FileCheck2, Loader2, AlertTriangle, RefreshCw, Eye, Download, CheckCircle } from "lucide-react";
+import { FileCheck2, Loader2, AlertTriangle, RefreshCw, Eye, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { StoredUserDocument, UserDocumentStatus } from "@/schemas/user-document-schema";
@@ -37,7 +36,7 @@ export function DocumentValidationsClient({ initialDocuments }: DocumentValidati
             const freshDocs = await getDocumentsForValidation();
             setDocuments(freshDocs);
             toast({ title: "Documents Refreshed", description: "The list of documents has been updated." });
-        } catch (err) {
+        } catch (err: unknown) {
             toast({ title: "Loading Error", description: "Could not refresh user documents.", variant: "destructive" });
         } finally {
             setIsLoading(false);
@@ -59,7 +58,7 @@ export function DocumentValidationsClient({ initialDocuments }: DocumentValidati
             await logAuditEvent({ userId: user.uid, userEmail: user.email!, actionType: "APPROVE_USER_DOCUMENT", entityType: "USER_DOCUMENT", entityId: docToApprove.id });
             toast({ title: "Document Approved", description: `${docToApprove.documentName} for ${docToApprove.userEmail} has been marked as approved.` });
             fetchDocuments();
-        } catch (error) {
+        } catch (error: unknown) {
             toast({ title: "Approval Failed", variant: "destructive" });
         } finally {
             setIsUpdating(null);
@@ -99,8 +98,7 @@ export function DocumentValidationsClient({ initialDocuments }: DocumentValidati
                                 )}
                             </TableCell>
                         </TableRow>
-                    ))}
-                </TableBody>
+                    ))}</TableBody>
             </Table>
         </div>
     );
@@ -157,4 +155,3 @@ export function DocumentValidationsClient({ initialDocuments }: DocumentValidati
         </div>
     );
 }
-

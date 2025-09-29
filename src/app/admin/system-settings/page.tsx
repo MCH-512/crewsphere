@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -33,7 +32,7 @@ const systemSettingsSchema = z.object({
   supportEmail: z.string().email("Invalid email address.").min(5, "Support email is required."),
 });
 
-type SystemSettingsFormValues = z.infer<typeof systemSettingsSchema>;
+type SystemSettingsFormValues = z.infer&lt;typeof systemSettingsSchema&gt;;
 
 const SETTINGS_DOC_ID = "appSettings";
 const SETTINGS_COLLECTION = "systemConfiguration";
@@ -45,7 +44,7 @@ export default function SystemSettingsPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSeeding, setIsSeeding] = React.useState(false);
 
-  const form = useForm<SystemSettingsFormValues>({
+  const form = useForm&lt;SystemSettingsFormValues&gt;({
     resolver: zodResolver(systemSettingsSchema),
     defaultValues: {
       appName: "CrewSphere",
@@ -54,14 +53,14 @@ export default function SystemSettingsPage() {
     },
   });
 
-  React.useEffect(() => {
-    if (!authLoading && (!user || user.role !== 'admin')) {
+  React.useEffect(() =&gt; {
+    if (!authLoading &amp;&amp; (!user || user.role !== 'admin')) {
       toast({ title: "Access Denied", description: "You need admin privileges to access this page.", variant: "destructive"});
       return;
     }
 
-    if (user && user.role === 'admin') {
-        const fetchSettings = async () => {
+    if (user &amp;&amp; user.role === 'admin') {
+        const fetchSettings = async () =&gt; {
             setIsLoadingData(true);
             try {
                 const settingsDocRef = doc(db, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
@@ -95,7 +94,7 @@ export default function SystemSettingsPage() {
       const settingsDocRef = doc(db, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
       await setDoc(settingsDocRef, { ...data, lastUpdatedBy: user.uid, updatedAt: serverTimestamp() }, { merge: true });
       await logAuditEvent({ userId: user.uid, userEmail: user.email || "N/A", actionType: "UPDATE_SYSTEM_SETTINGS", entityType: "SYSTEM_CONFIGURATION", entityId: SETTINGS_DOC_ID, details: data });
-      toast({ title: "Settings Saved", description: "System settings have been updated successfully.", action: <CheckCircle className="text-green-500" /> });
+      toast({ title: "Settings Saved", description: "System settings have been updated successfully.", action: &lt;CheckCircle className="text-green-500" /&gt; });
     } catch (error) {
       console.error("Error saving system settings:", error);
       toast({ title: "Save Failed", description: "Could not save system settings. Please try again.", variant: "destructive" });
@@ -104,7 +103,7 @@ export default function SystemSettingsPage() {
     }
   }
   
-  const handleSeedData = async () => {
+  const handleSeedData = async () =&gt; {
     if (!window.confirm("Are you sure you want to seed the initial course data? This will only run if the course doesn't already exist.")) {
         return;
     }
@@ -137,99 +136,99 @@ export default function SystemSettingsPage() {
 
   if (authLoading || isLoadingData) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-         <p className="ml-3 text-muted-foreground">Loading system settings...</p>
-      </div>
+      &lt;div className="flex items-center justify-center min-h-[calc(100vh-200px)]"&gt;
+        &lt;Loader2 className="h-12 w-12 animate-spin text-primary" /&gt;
+         &lt;p className="ml-3 text-muted-foreground"&gt;Loading system settings...&lt;/p&gt;
+      &lt;/div&gt;
     );
   }
   
   if (!user || user.role !== 'admin') {
      return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
-        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <CardTitle className="text-xl mb-2">Access Denied</CardTitle>
-        <p className="text-muted-foreground">You do not have permission to view this page.</p>
-      </div>
+      &lt;div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center"&gt;
+        &lt;AlertTriangle className="h-12 w-12 text-destructive mb-4" /&gt;
+        &lt;CardTitle className="text-xl mb-2"&gt;Access Denied&lt;/CardTitle&gt;
+        &lt;p className="text-muted-foreground"&gt;You do not have permission to view this page.&lt;/p&gt;
+      &lt;/div&gt;
     );
   }
 
   return (
-    <div className="space-y-6">
-      <AnimatedCard>
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-2xl font-headline flex items-center">
-              <Settings className="mr-3 h-7 w-7 text-primary" />
+    &lt;div className="space-y-6"&gt;
+      &lt;AnimatedCard&gt;
+        &lt;Card className="shadow-lg"&gt;
+          &lt;CardHeader&gt;
+            &lt;CardTitle className="text-2xl font-headline flex items-center"&gt;
+              &lt;Settings className="mr-3 h-7 w-7 text-primary" /&gt;
               System Configuration
-            </CardTitle>
-            <CardDescription>
+            &lt;/CardTitle&gt;
+            &lt;CardDescription&gt;
                 Manage application-wide settings. Changes here may affect all users.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </AnimatedCard>
+            &lt;/CardDescription&gt;
+          &lt;/CardHeader&gt;
+        &lt;/Card&gt;
+      &lt;/AnimatedCard&gt;
 
-      <AnimatedCard delay={0.1}>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Application Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <FormField control={form.control} name="appName" render={({ field }) => (
-                  <FormItem><FormLabel>Application Name</FormLabel><FormControl><Input placeholder="e.g., CrewSphere" {...field} disabled={isSubmitting} /></FormControl><FormDescription>The name displayed throughout the application (e.g., in titles).</FormDescription><FormMessage /></FormItem>
-                )}/>
-                <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
-                    <div className="space-y-0.5"><FormLabel className="text-base">Maintenance Mode</FormLabel><FormDescription>Enable to temporarily restrict user access for maintenance.</FormDescription></div>
-                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={isSubmitting} /></FormControl>
-                  </FormItem>
-                )}/>
-                <FormField control={form.control} name="supportEmail" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Support Email Address</FormLabel>
-                    <FormControl><Input type="email" placeholder="support@express-airline.com" {...field} disabled={isSubmitting} /></FormControl><FormDescription>The primary email address for user support inquiries.</FormDescription><FormMessage />
-                  </FormItem>
-                )}/>
-              </CardContent>
-            </Card>
+      &lt;AnimatedCard delay={0.1}&gt;
+        &lt;Form {...form}&gt;
+          &lt;form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8"&gt;
+            &lt;Card&gt;
+              &lt;CardHeader&gt;
+                &lt;CardTitle&gt;Application Settings&lt;/CardTitle&gt;
+              &lt;/CardHeader&gt;
+              &lt;CardContent className="space-y-6"&gt;
+                &lt;FormField control={form.control} name="appName" render={({ field }) =&gt; (
+                  &lt;FormItem&gt;&lt;FormLabel&gt;Application Name&lt;/FormLabel&gt;&lt;FormControl&gt;&lt;Input placeholder="e.g., CrewSphere" {...field} disabled={isSubmitting} /&gt;&lt;/FormControl&gt;&lt;FormDescription&gt;The name displayed throughout the application (e.g., in titles).&lt;/FormDescription&gt;&lt;FormMessage /&gt;&lt;/FormItem&gt;
+                )}/&gt;
+                &lt;FormField control={form.control} name="maintenanceMode" render={({ field }) =&gt; (
+                  &lt;FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm"&gt;
+                    &lt;div className="space-y-0.5"&gt;&lt;FormLabel className="text-base"&gt;Maintenance Mode&lt;/FormLabel&gt;&lt;FormDescription&gt;Enable to temporarily restrict user access for maintenance.&lt;/FormDescription&gt;&lt;/div&gt;
+                    &lt;FormControl&gt;&lt;Switch checked={field.value} onCheckedChange={field.onChange} disabled={isSubmitting} /&gt;&lt;/FormControl&gt;
+                  &lt;/FormItem&gt;
+                )}/&gt;
+                &lt;FormField control={form.control} name="supportEmail" render={({ field }) =&gt; (
+                  &lt;FormItem&gt;
+                    &lt;FormLabel&gt;Support Email Address&lt;/FormLabel&gt;
+                    &lt;FormControl&gt;&lt;Input type="email" placeholder="support@express-airline.com" {...field} disabled={isSubmitting} /&gt;&lt;/FormControl&gt;&lt;FormDescription&gt;The primary email address for user support inquiries.&lt;/FormDescription&gt;&lt;FormMessage /&gt;
+                  &lt;/FormItem&gt;
+                )}/&gt;
+              &lt;/CardContent&gt;
+            &lt;/Card&gt;
 
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting || !form.formState.isDirty}>
-                {isSubmitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving Settings...</>) : (<><Save className="mr-2 h-4 w-4" />Save System Settings</>)}
-              </Button>
-            </div>
-            {!form.formState.isDirty && !isSubmitting && (<p className="text-sm text-muted-foreground text-right">No changes to save.</p>)}
-          </form>
-        </Form>
-      </AnimatedCard>
+            &lt;div className="flex justify-end"&gt;
+              &lt;Button type="submit" disabled={isSubmitting || !form.formState.isDirty}&gt;
+                {isSubmitting ? (&lt;&gt;&lt;Loader2 className="mr-2 h-4 w-4 animate-spin" /&gt;Saving Settings...&lt;/&gt;) : (&lt;&gt;&lt;Save className="mr-2 h-4 w-4" /&gt;Save System Settings&lt;/&gt;)}
+              &lt;/Button&gt;
+            &lt;/div&gt;
+            {!form.formState.isDirty &amp;&amp; !isSubmitting &amp;&amp; (&lt;p className="text-sm text-muted-foreground text-right"&gt;No changes to save.&lt;/p&gt;)}
+          &lt;/form&gt;
+        &lt;/Form&gt;
+      &lt;/AnimatedCard&gt;
 
-      <AnimatedCard delay={0.2}>
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Database className="w-5 h-5 text-primary" /> Data Management</CardTitle>
-                <CardDescription>
+      &lt;AnimatedCard delay={0.2}&gt;
+        &lt;Card&gt;
+            &lt;CardHeader&gt;
+                &lt;CardTitle className="flex items-center gap-2"&gt;&lt;Database className="w-5 h-5 text-primary" /&gt; Data Management&lt;/CardTitle&gt;
+                &lt;CardDescription&gt;
                     Use these actions to set up initial data for the application. These actions are generally safe to run multiple times.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-center justify-between rounded-lg border p-4 shadow-sm">
-                    <div className="space-y-0.5">
-                        <p className="text-sm font-medium leading-none">Seed Initial Course</p>
-                        <p className="text-sm text-muted-foreground">
-                            Creates the "Operational Manual" course if it does not already exist.
-                        </p>
-                    </div>
-                    <Button onClick={handleSeedData} disabled={isSeeding}>
-                        {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                &lt;/CardDescription&gt;
+            &lt;/CardHeader&gt;
+            &lt;CardContent&gt;
+                &lt;div className="flex items-center justify-between rounded-lg border p-4 shadow-sm"&gt;
+                    &lt;div className="space-y-0.5"&gt;
+                        &lt;p className="text-sm font-medium leading-none"&gt;Seed Initial Course&lt;/p&gt;
+                        &lt;p className="text-sm text-muted-foreground"&gt;
+                            Creates the &amp;quot;Operational Manual&amp;quot; course if it does not already exist.
+                        &lt;/p&gt;
+                    &lt;/div&gt;
+                    &lt;Button onClick={handleSeedData} disabled={isSeeding}&gt;
+                        {isSeeding ? &lt;Loader2 className="mr-2 h-4 w-4 animate-spin"/&gt; : null}
                         Seed Data
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
-      </AnimatedCard>
-    </div>
+                    &lt;/Button&gt;
+                &lt;/div&gt;
+            &lt;/CardContent&gt;
+        &lt;/Card&gt;
+      &lt;/AnimatedCard&gt;
+    &lt;/div&gt;
   );
 }

@@ -9,59 +9,43 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldAlert, Loader2, Send, Plane, MapPin, ListChecks, CheckCheck, HelpCircle, EyeOff, ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ShieldAlert, Loader2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
-import { safetyReportFormSchema, type SafetyReportFormValues, eventTypes, flightPhases, contributingFactors } from "@/schemas/safety-report-schema";
+import { 
+  safetyReportFormSchema, 
+  type SafetyReportFormValues, 
+  safetyReportEventTypes,
+  safetyReportFlightPhases, 
+  safetyReportSeverityLevels 
+} from "@/schemas/safety-report-schema";
 import { submitSafetyReport } from "@/services/safety-report-service";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
-import { AnimatedCard } from "@/components/motion/animated-card";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-
-const steps = [
-    { id: 1, title: 'Event Context', fields: ['eventDate', 'flightNumber', 'aircraftId', 'departureAerodrome', 'arrivalAerodrome'], icon: Plane },
-    { id: 2, title: 'Event Details', fields: ['eventLocation', 'eventType', 'eventDescription'], icon: MapPin },
-    { id: 3, title: 'Analysis & Follow-up', fields: ['contributingFactors', 'immediateActionsTaken', 'suggestionsForPrevention'], icon: CheckCheck },
-    { id: 4, title: 'Confidentiality', fields: ['isConfidential'], icon: EyeOff },
-];
-
 
 export function SafetyReportClient() {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [currentStep, setCurrentStep] = React.useState(0);
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
 
   const form = useForm<SafetyReportFormValues>({
     resolver: zodResolver(safetyReportFormSchema),
     defaultValues: {
-      eventDate: new Date().toISOString().substring(0, 16),
-      flightNumber: "", aircraftId: "", departureAerodrome: "", arrivalAerodrome: "",
-      eventLocation: "", eventType: [], eventDescription: "",
-      contributingFactors: [], immediateActionsTaken: "", suggestionsForPrevention: "",
-      isConfidential: false,
+      eventDate: new Date().toISOString().slice(0, 16),
+      flightNumber: "",
+      aircraftRegistration: "",
+      description: "",
+      isAnonymous: false,
+      eventType: undefined,
+      severity: undefined,
+      flightPhase: undefined,
     },
     mode: "onChange",
   });
-
-  const triggerValidation = async (fields: (keyof SafetyReportFormValues)[]) => await form.trigger(fields);
-
-  const nextStep = async () => {
-    const fieldsToValidate = steps[currentStep].fields as (keyof SafetyReportFormValues)[];
-    const isValid = await triggerValidation(fieldsToValidate);
-    if (isValid) {
-      if (currentStep < steps.length - 1) setCurrentStep(prev => prev + 1);
-    } else {
-      toast({ title: "Incomplete Section", description: "Please fill all required fields before continuing.", variant: "destructive" });
-    }
-  };
-
-  const prevStep = () => { if (currentStep > 0) setCurrentStep(prev => prev - 1); };
 
   async function onSubmit() {
     setShowConfirmDialog(true);
@@ -92,86 +76,57 @@ export function SafetyReportClient() {
     }
   }
 
-  const progressPercentage = ((currentStep + 1) / steps.length) * 100;
-
   if (authLoading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (!user) return <div className="text-center p-4"><CardTitle>Access Denied</CardTitle></div>;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl font-headline flex items-center"><ShieldAlert className="mr-3 h-7 w-7 text-primary" />Submit a Safety Report</CardTitle>
-          <CardDescription>Report any event, hazard, or concern that has, or could have, implications for aviation safety. All submissions are treated with confidentiality.</CardDescription>
-          <Progress value={progressPercentage} className="mt-4" />
-          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>Step {currentStep + 1} of {steps.length}: <strong>{steps[currentStep].title}</strong></span>
-            <span>{Math.round(progressPercentage)}% Complete</span>
-          </div>
-        </CardHeader>
-      </Card>
-      
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <AnimatedCard delay={0.1} className={cn(currentStep !== 0 && "hidden")}>
-            <Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Plane />Event Context</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <FormField control={form.control} name="eventDate" render={({ field }) => (<FormItem><FormLabel>Event Date & Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number (Optional)</FormLabel><FormControl><Input placeholder="e.g., TU721" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="aircraftId" render={({ field }) => (<FormItem><FormLabel>Aircraft Registration (Optional)</FormLabel><FormControl><Input placeholder="e.g., TS-IMN" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="departureAerodrome" render={({ field }) => (<FormItem><FormLabel>Departure Aerodrome (ICAO)</FormLabel><FormControl><Input placeholder="e.g., DTTA" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="arrivalAerodrome" render={({ field }) => (<FormItem><FormLabel>Arrival Aerodrome (ICAO)</FormLabel><FormControl><Input placeholder="e.g., LFPG" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                </div>
-              </CardContent>
-            </Card>
-          </AnimatedCard>
+        <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-2xl font-headline flex items-center"><ShieldAlert className="mr-3 h-7 w-7 text-primary" />Submit a Safety Report</CardTitle>
+              <CardDescription>Report any event, hazard, or concern that has, or could have, implications for aviation safety. All submissions are treated with confidentiality.</CardDescription>
+            </CardHeader>
+        </Card>
 
-          <AnimatedCard delay={0.1} className={cn(currentStep !== 1 && "hidden")}>
-            <Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><MapPin />Event Details</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <FormField control={form.control} name="eventLocation" render={({ field }) => (<FormItem><FormLabel>Phase of Flight / Location</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a phase or location"/></SelectTrigger></FormControl><SelectContent>{flightPhases.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="eventType" render={({ field }) => (<FormItem><FormLabel className="text-base">Event Type (select all that apply)</FormLabel><div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">{eventTypes.map((item) => (<FormField key={item} control={form.control} name="eventType" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary transition-colors"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => checked ? field.onChange([...(field.value || []), item]) : field.onChange(field.value?.filter((value) => value !== item))} /></FormControl><FormLabel className="font-normal cursor-pointer w-full">{item}</FormLabel></FormItem>)} />))}</div><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="eventDescription" render={({ field }) => (<FormItem><FormLabel>Factual Description of the Event</FormLabel><FormControl><Textarea placeholder="Describe what happened with factual, objective details. Avoid assumptions or blame." className="min-h-[150px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              </CardContent>
-            </Card>
-          </AnimatedCard>
-
-          <AnimatedCard delay={0.1} className={cn(currentStep !== 2 && "hidden")}>
-            <Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><CheckCheck />Analysis & Follow-up</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                 <FormField control={form.control} name="contributingFactors" render={({ field }) => (<FormItem><FormLabel className="text-base">Potential Contributing Factors (Optional)</FormLabel><div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">{contributingFactors.map((item) => (<FormField key={item} control={form.control} name="contributingFactors" render={({ field }) => (<FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary transition-colors"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => checked ? field.onChange([...(field.value || []), item]) : field.onChange(field.value?.filter((value) => value !== item))} /></FormControl><FormLabel className="font-normal cursor-pointer w-full">{item}</FormLabel></FormItem>)} />))}</div><FormMessage /></FormItem>)} />
-                 <FormField control={form.control} name="immediateActionsTaken" render={({ field }) => (<FormItem><FormLabel>Immediate Actions Taken (Optional)</FormLabel><FormControl><Textarea placeholder="Describe any actions taken by the crew to manage the situation." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                 <FormField control={form.control} name="suggestionsForPrevention" render={({ field }) => (<FormItem><FormLabel>Suggestions for Prevention (Optional)</FormLabel><FormControl><Textarea placeholder="If you have any ideas on how to prevent this from happening again, please share them." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              </CardContent>
-            </Card>
-          </AnimatedCard>
-          
-           <AnimatedCard delay={0.1} className={cn(currentStep !== 3 && "hidden")}>
-            <Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><EyeOff />Confidentiality</CardTitle></CardHeader>
-                <CardContent>
-                    <FormField control={form.control} name="isConfidential" render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
-                        <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                        <div className="space-y-1 leading-none"><FormLabel>Submit this report confidentially</FormLabel>
-                          <FormMessage />
-                          <p className="text-xs text-muted-foreground">If checked, your name and email will be dissociated from this report for administrative review. Your identity will still be logged for audit purposes but will not be visible in the standard review process. This encourages open reporting in line with "Just Culture" principles.</p>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <Card>
+                    <CardHeader><CardTitle className="text-lg">Event Details</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="eventDate" render={({ field }) => (<FormItem><FormLabel>Event Date & Time (UTC)</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="flightNumber" render={({ field }) => (<FormItem><FormLabel>Flight Number (Optional)</FormLabel><FormControl><Input placeholder="e.g., TU721" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="aircraftRegistration" render={({ field }) => (<FormItem><FormLabel>Aircraft Registration (Optional)</FormLabel><FormControl><Input placeholder="e.g., TS-IMN" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            
+                            <FormField control={form.control} name="eventType" render={({ field }) => (<FormItem><FormLabel>Event Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an event type"/></SelectTrigger></FormControl><SelectContent>{safetyReportEventTypes.map((p: string) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="flightPhase" render={({ field }) => (<FormItem><FormLabel>Phase of Flight / Location</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a phase or location"/></SelectTrigger></FormControl><SelectContent>{safetyReportFlightPhases.map((p: string) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="severity" render={({ field }) => (<FormItem><FormLabel>Severity</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Assess the event's severity"/></SelectTrigger></FormControl><SelectContent>{safetyReportSeverityLevels.map((p: string) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                         </div>
-                      </FormItem>
-                    )} />
-                </CardContent>
-            </Card>
-           </AnimatedCard>
 
-          <div className="flex justify-between mt-8">
-            <Button type="button" variant="outline" onClick={prevStep} disabled={currentStep === 0 || isSubmitting}><ArrowLeft className="mr-2 h-4 w-4" />Previous</Button>
-            {currentStep < steps.length - 1 ? 
-                (<Button type="button" onClick={nextStep}>Next<ArrowRight className="ml-2 h-4 w-4" /></Button>) 
-                : (<Button type="submit" disabled={isSubmitting || !form.formState.isValid} size="lg"><Send className="mr-2 h-4 w-4" />Submit Report</Button>)
-            }
-          </div>
-        </form>
-      </Form>
+                        <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Factual Description of the Event</FormLabel><FormControl><Textarea placeholder="Describe what happened with factual, objective details. Avoid assumptions or blame." className="min-h-[150px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader><CardTitle className="text-lg">Confidentiality</CardTitle></CardHeader>
+                    <CardContent>
+                        <FormField control={form.control} name="isAnonymous" render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            <div className="space-y-1 leading-none"><FormLabel>Submit this report anonymously</FormLabel>
+                              <FormMessage />
+                              <p className="text-xs text-muted-foreground">If checked, your name and email will not be included in the report. This ensures your identity is protected.</p>
+                            </div>
+                          </FormItem>
+                        )} />
+                    </CardContent>
+                </Card>
+                
+                <div className="flex justify-end mt-8">
+                   <Button type="submit" disabled={isSubmitting || !form.formState.isValid} size="lg"><Send className="mr-2 h-4 w-4" />Submit Report</Button>
+                </div>
+            </form>
+        </Form>
       
        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
             <AlertDialogContent>
@@ -189,5 +144,3 @@ export function SafetyReportClient() {
             </AlertDialogContent>
         </AlertDialog>
     </div>
-  );
-}

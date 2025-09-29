@@ -1,12 +1,11 @@
-
 "use client";
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useAuth, type User } from "@/contexts/auth-context";
+import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy, addDoc, serverTimestamp, doc } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { ArrowRightLeft, Loader2, PlusCircle, Handshake, Plane, Info, History, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -166,14 +165,14 @@ export default function FlightSwapPage() {
                             getAirportByCode(data.arrivalAirport)
                         ]);
                         return { 
-                            id: doc.id, 
                             ...data,
-                            departureAirportIATA: depAirport?.iata,
-                            arrivalAirportIATA: arrAirport?.iata,
+                            id: doc.id, 
+                            departureAirportIATA: depAirport?.iata || undefined,
+                            arrivalAirportIATA: arrAirport?.iata || undefined,
                         };
                     })
             );
-            setUserFlights(eligibleFlights);
+            setUserFlights(eligibleFlights as FlightForSwap[]);
 
         } catch (error) {
             console.error("Error fetching flight swap data:", error);
