@@ -5,11 +5,20 @@ import * as React from "react";
 import { Clock, CalendarDays } from "lucide-react";
 
 export function HeaderClocks() {
-  const [currentDate, setCurrentDate] = React.useState<string | null>(null);
-  const [tunisTime, setTunisTime] = React.useState<string | null>(null);
-  const [utcTime, setUtcTime] = React.useState<string | null>(null);
+  const [isClient, setIsClient] = React.useState(false);
+  const [currentDate, setCurrentDate] = React.useState<string>("");
+  const [tunisTime, setTunisTime] = React.useState<string>("");
+  const [utcTime, setUtcTime] = React.useState<string>("");
 
   React.useEffect(() => {
+    // This effect runs only on the client, after the initial render.
+    setIsClient(true);
+  }, []);
+
+
+  React.useEffect(() => {
+    if (!isClient) return;
+
     const updateDateTime = () => {
       const now = new Date();
       setCurrentDate(
@@ -39,27 +48,27 @@ export function HeaderClocks() {
       );
     };
 
-    updateDateTime(); // Initial call
-    const intervalId = setInterval(updateDateTime, 1000); // Update every second
+    updateDateTime();
+    const intervalId = setInterval(updateDateTime, 1000);
 
-    return () => clearInterval(intervalId); // Cleanup interval on component unmount
-  }, []);
+    return () => clearInterval(intervalId);
+  }, [isClient]);
 
   return (
     <div className="hidden md:flex items-center gap-2 text-xs font-medium text-foreground">
       <div className="flex items-center gap-2 border bg-card h-9 px-3 rounded-md" title="Current Date">
         <CalendarDays className="h-4 w-4 text-muted-foreground" />
-        <span className="font-mono">{currentDate || "--- -- ---"}</span>
+        <span className="font-mono">{isClient ? currentDate : "--- -- ---"}</span>
       </div>
       <div className="flex items-center gap-2 border bg-card h-9 px-3 rounded-md" title="Local Time (Tunis)">
         <Clock className="h-4 w-4 text-muted-foreground" />
         <span>TUN:</span>
-        <span className="font-mono">{tunisTime || "--:--:--"}</span>
+        <span className="font-mono">{isClient ? tunisTime : "--:--:--"}</span>
       </div>
       <div className="flex items-center gap-2 border bg-card h-9 px-3 rounded-md" title="Coordinated Universal Time">
         <Clock className="h-4 w-4 text-muted-foreground" />
         <span>UTC:</span>
-        <span className="font-mono">{utcTime || "--:--:--"}</span>
+        <span className="font-mono">{isClient ? utcTime : "--:--:--"}</span>
       </div>
     </div>
   );
