@@ -6,9 +6,9 @@ import { Clock, CalendarDays } from "lucide-react";
 
 export function HeaderClocks() {
   const [isClient, setIsClient] = React.useState(false);
-  const [currentDate, setCurrentDate] = React.useState<string>("");
-  const [tunisTime, setTunisTime] = React.useState<string>("");
-  const [utcTime, setUtcTime] = React.useState<string>("");
+  const [currentDate, setCurrentDate] = React.useState("");
+  const [tunisTime, setTunisTime] = React.useState("");
+  const [utcTime, setUtcTime] = React.useState("");
 
   React.useEffect(() => {
     // This effect runs only on the client, after the initial render.
