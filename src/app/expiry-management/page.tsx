@@ -238,11 +238,11 @@ export default function AdminExpiryManagementPage() {
                     <div className="rounded-md border">
                     <Table>
                         <TableHeader><TableRow>
-                            <SortableHeader<SortableColumn> column="userEmail" label="User" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                            <SortableHeader<SortableColumn> column="documentName" label="Document" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                            <SortableHeader<SortableColumn> column="expiryDate" label="Expires On" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                            <SortableHeader<SortableColumn> column="status" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
-                            <SortableHeader<SortableColumn> column="lastUpdatedAt" label="Last Updated" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader column="userEmail" label="User" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader column="documentName" label="Document" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader column="expiryDate" label="Expires On" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader column="status" label="Status" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+                            <SortableHeader column="lastUpdatedAt" label="Last Updated" sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
                             <TableHead>Actions</TableHead>
                         </TableRow></TableHeader>
                         <TableBody>
