@@ -80,7 +80,7 @@ export default function AdminExpiryManagementPage() {
     }, [adminUser, authLoading, router, fetchPageData]);
     
     const sortedAndFilteredDocuments = React.useMemo(() => {
-        const processedDocs = documents.filter(doc => {
+        let processedDocs = documents.filter(doc => {
             const status = getDocumentStatus(doc, EXPIRY_WARNING_DAYS);
             if (statusFilter !== 'all' && status !== statusFilter) return false;
             
