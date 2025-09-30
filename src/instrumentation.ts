@@ -1,3 +1,4 @@
+
 export function register() {
   // This is the instrumentation hook.
   // We have removed Sentry, so this function is currently empty.

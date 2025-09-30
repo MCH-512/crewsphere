@@ -50,28 +50,19 @@ import { Separator } from "@/components/ui/separator";
 
 const PUBLIC_PATHS = ['/login', '/signup'];
 
+// SSR-safe theme hook
 const useTheme = () => {
   const [theme, setTheme] = React.useState("light");
+  const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
-    // On mount, read the theme from localStorage and update the state
-    const localTheme = localStorage.getItem("theme");
-    if (localTheme) {
-      setTheme(localTheme);
-       if (localTheme === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+    setIsMounted(true);
+    const storedTheme = localStorage.getItem("theme");
+    if (storedTheme) {
+      setTheme(storedTheme);
     } else {
-        // If no theme is in localStorage, use system preference
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const systemTheme = prefersDark ? 'dark' : 'light';
-        setTheme(systemTheme);
-        localStorage.setItem('theme', systemTheme);
-        if (prefersDark) {
-            document.documentElement.classList.add('dark');
-        }
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      setTheme(systemTheme);
     }
   }, []);
 
@@ -81,13 +72,14 @@ const useTheme = () => {
     localStorage.setItem("theme", newTheme);
     document.documentElement.classList.toggle("dark", newTheme === "dark");
   };
-  return { theme, toggleTheme };
+
+  return { theme: isMounted ? theme : "light", toggleTheme, isMounted };
 };
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, isMounted } = useTheme();
   const { user, loading, logout } = useAuth();
   const { toast } = useToast();
 
@@ -116,7 +108,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }, [user, loading, isPublicPath, router]);
 
 
-  if (loading || (!user && !isPublicPath) || (user && isPublicPath)) {
+  if (loading || !isMounted || (!user && !isPublicPath) || (user && isPublicPath)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" aria-label="Loading application state" />

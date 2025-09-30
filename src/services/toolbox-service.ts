@@ -1,3 +1,6 @@
+
+'use server';
+
 import { Book, Calculator, CloudSun, Globe, Map, MessagesSquare, Mic, ScrollText, Wrench, ShieldAlert, Waypoints } from "lucide-react";
 import type { ElementType } from "react";
 import { z } from 'zod';
