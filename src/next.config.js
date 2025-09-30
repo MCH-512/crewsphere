@@ -1,4 +1,6 @@
 
+const { withSentryConfig } = require('@sentry/nextjs');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
@@ -35,4 +37,19 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+const sentryWebpackPluginOptions = {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+};
+
+const sentryBuildOptions = {
+  widenClientFileUpload: true,
+  transpileClientSDK: true,
+  hideSourceMaps: true,
+  tunnelRoute: '/monitoring',
+};
+
+// Note: This file might be redundant if the root one is used, but we keep them in sync.
+module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions, sentryBuildOptions);
