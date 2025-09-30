@@ -131,9 +131,8 @@ export const getAdminDashboardWeeklyTrends = cache(
 
         } catch (error) {
             console.error("Error fetching weekly trends:", error);
-            // In case of error, we rethrow it so the Suspense boundary can catch it
-            // and the UI can display a proper error message.
-            throw new Error("Failed to fetch weekly trend data from the database.");
+            // Return an empty array on error to prevent the page from crashing.
+            return [];
         }
     },
     ['admin-weekly-trends'], // Cache key
