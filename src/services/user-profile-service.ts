@@ -61,7 +61,7 @@ export async function getUserProfileData(userId: string): Promise<ProfileData | 
         const requests = requestsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserRequest);
         const documents = documentsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserDocument);
 
-        const trainingAttempts = trainingsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserQuizAttempt);
+        const trainingAttempts = trainingsSnap.docs.map(d => ({ id: d.id, ...d.data() } as StoredUserQuizAttempt);
         const courseIds = [...new Set(trainingAttempts.map(t => t.courseId))];
         
         let trainings: (StoredUserQuizAttempt & { courseTitle: string })[] = [];
