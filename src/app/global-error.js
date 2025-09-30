@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect } from "react";
+import * as Sentry from '@sentry/nextjs';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
@@ -11,7 +12,7 @@ export default function GlobalError({
   reset,
 }) {
   useEffect(() => {
-    console.error("Global error:", error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (
@@ -23,7 +24,7 @@ export default function GlobalError({
               <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
               <CardTitle className="mt-4 text-2xl font-headline">Something Went Wrong</CardTitle>
               <CardDescription className="text-muted-foreground">
-                An unexpected error occurred. This has been logged to the console.
+                An unexpected error occurred. This has been logged.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -37,3 +38,5 @@ export default function GlobalError({
     </html>
   );
 }
+
+    

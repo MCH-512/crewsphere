@@ -25,7 +25,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldAlert, Send, Loader2, Plane, MapPin, CheckCheck, EyeOff, ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
+import { ShieldAlert, Send, Loader2, Plane, MapPin, CheckCheck, EyeOff, ArrowLeft, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
@@ -212,3 +212,5 @@ export function SafetyReportClient() {
     </div>
   );
 }
+
+    

@@ -82,7 +82,7 @@ const nextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), payment=()',
+            value: 'camera=(), microphone=(), geolocation=(), payment=(), autoplay=()',
           }
         ],
       },
@@ -99,6 +99,15 @@ const nextConfig = {
       },
     ];
     return [...defaultHeaders, ...staticCacheHeaders];
+  },
+   webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals.push({
+        '@opentelemetry/instrumentation': 'commonjs @opentelemetry/instrumentation',
+        'require-in-the-middle': 'commonjs require-in-the-middle',
+      });
+    }
+    return config;
   },
 };
 
@@ -117,3 +126,5 @@ const sentryBuildOptions = {
 };
 
 module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions, sentryBuildOptions);
+
+    
