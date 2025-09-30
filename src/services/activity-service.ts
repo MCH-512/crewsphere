@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
@@ -44,7 +43,7 @@ export async function getTodayActivities(): Promise<TodayActivity[]> {
         );
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => {
-            const { id, userId, date, ...activity } = doc.data();
+            const { id: _id, userId: _userId, date: _date, ...activity } = doc.data();
             return activity as TodayActivity;
         });
     } catch (error) {
@@ -64,7 +63,7 @@ const GetUserActivitiesForMonthSchema = z.object({
  * @returns A promise that resolves to an array of UserActivity objects.
  */
 export async function getUserActivitiesForMonth(month: Date, userId?: string): Promise<ActivityData[]> {
-    GetUserActivitiesForMonthSchema.parse({ month, userId });
+    GetUserActivitiesForMonthSchema.parse({ month, userId }); // Zod validation
     if (!isConfigValid || !db) {
         console.error("Firebase is not configured. Cannot fetch user activities.");
         return [];
@@ -133,7 +132,7 @@ export async function checkCrewAvailability(
   endDate: Date,
   activityIdToIgnore?: string
 ): Promise<Record<string, Conflict>> {
-  CheckCrewAvailabilitySchema.parse({ crewUserIds, startDate, endDate, activityIdToIgnore });
+  CheckCrewAvailabilitySchema.parse({ crewUserIds, startDate, endDate, activityIdToIgnore }); // Zod validation
   if (!isConfigValid || !db || crewUserIds.length === 0) {
     return {};
   }
