@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
@@ -13,7 +12,7 @@ const EmptySchema = z.object({});
 
 
 export interface WeeklyTrendDataPoint {
-    date: string; // "YYYY-MM-DD"
+    date: string;
     Requests: number;
     Suggestions: number;
     Swaps: number;

@@ -6,7 +6,7 @@ import { AlertTriangle } from 'lucide-react'
 
 export default function GlobalError({ error, reset }) {
   return (
-    <html lang="en">
+    <html>
       <body>
         <div className="flex min-h-screen items-center justify-center bg-background p-4">
           <Card className="w-full max-w-md text-center shadow-lg">

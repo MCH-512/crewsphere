@@ -15,12 +15,12 @@ export default async function SettingsPage() {
     const user = await getCurrentUser();
 
     if (!user) {
-        // Cette redirection est une sécurité supplémentaire. 
-        // La logique dans AppLayout gère déjà la plupart des cas.
+        // This redirection is a failsafe. 
+        // The logic in AppLayout handles most unauthenticated cases on the client side.
         redirect('/login');
     }
 
-    // Le composant serveur récupère les données et les passe au composant client.
+    // The server component fetches the data and passes it to the client component.
     return (
         <SettingsClientPage initialUser={user} />
     );

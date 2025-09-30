@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
@@ -191,5 +190,3 @@ export async function checkCrewAvailability(
 
   return warnings;
 }
-
-    
