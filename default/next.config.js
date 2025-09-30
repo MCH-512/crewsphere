@@ -1,4 +1,3 @@
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
@@ -23,7 +22,7 @@ const nextConfig = {
         hostname: 'firebasestorage.googleapis.com',
       },
       {
-        protocol: 'httpshttps',
+        protocol: 'https',
         hostname: 'images.unsplash.com',
       },
       {

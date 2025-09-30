@@ -1,15 +1,11 @@
+'use client'
 
-"use client";
+import { useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { AlertTriangle } from 'lucide-react'
 
-import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
-
-export default function GlobalError({
-  error,
-  reset,
-}) {
+export default function GlobalError({ error, reset }) {
   useEffect(() => {
     console.error("Global Error Caught:", error);
   }, [error]);
