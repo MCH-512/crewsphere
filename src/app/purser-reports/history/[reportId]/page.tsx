@@ -104,7 +104,7 @@ export default async function PurserReportHistoryDetailPage({ params }: { params
                         <div>
                             <CardTitle className="text-2xl font-headline flex items-center">Report for Flight {report.flightNumber}</CardTitle>
                             <CardDescription>
-                                {report.departureAirport} → {report.arrivalAirport} on {format(parseISO(report.flightDate), "PPP")}
+                                {report.departureAirport} → {report.arrivalAirport} on {format(parseISO(report.flightDate), "PP")}
                             </CardDescription>
                         </div>
                         <div className="text-right text-sm">
