@@ -100,7 +100,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const isPublicPath = PUBLIC_PATHS.includes(pathname);
+  const isPublicPath = PUBLIC_PATHS.some(p => pathname.endsWith(p));
 
   React.useEffect(() => {
     if (loading) return;
@@ -111,7 +111,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     if (user && isPublicPath) {
       router.replace('/');
     }
-  }, [user, loading, isPublicPath, router]);
+  }, [user, loading, isPublicPath, router, pathname]);
 
 
   if (loading || (!user && !isPublicPath) || (user && isPublicPath)) {
@@ -151,7 +151,7 @@ function LayoutWithSidebar({
   const { isMobile } = useSidebar();
   const pathname = usePathname();
 
-  const isAdminPage = pathname.startsWith('/admin');
+  const isAdminPage = pathname.includes('/admin');
   const currentNavConfig = isAdminPage && user?.role === 'admin' ? adminNavConfig : mainNavConfig;
   
   const avatarFallback = user?.displayName ? user.displayName.substring(0, 2).toUpperCase() : user?.email?.substring(0,2).toUpperCase() || 'U';
@@ -172,7 +172,7 @@ function LayoutWithSidebar({
               <SidebarMenu>
                 {navGroup.items.map((item) => {
                   if (item.roles && !item.roles.some((role: string) => user?.role === role)) return null;
-                  const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
+                  const isActive = item.href === "/" ? pathname.split('/').length <= 2 : pathname.startsWith(item.href);
                   return (
                      <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton
@@ -218,7 +218,7 @@ function LayoutWithSidebar({
             <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  variant={pathname === "/settings" ? "active" : "border"}
+                  variant={pathname.includes("/settings") ? "active" : "border"}
                   tooltip={{ children: "Settings", side: "right", align: "center" }}
                 >
                   <Link href="/settings">
