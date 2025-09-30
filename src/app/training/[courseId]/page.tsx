@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc, collection, query, where, orderBy, limit } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
 import { Loader2, AlertTriangle, ArrowLeft, CheckCircle, Clock, BookOpen, ListChecks, Award } from "lucide-react";
 import { StoredCourse, StoredUserQuizAttempt } from "@/schemas/course-schema";
@@ -33,8 +34,7 @@ export default function CourseDetailPage() {
     const [lastAttempt, setLastAttempt] = React.useState<StoredUserQuizAttempt | null>(null);
 
     React.useEffect(() => {
-        if (!courseId) return;
-        if (authLoading) return;
+        if (!courseId || authLoading) return;
         if (!user) {
             router.push('/login');
             return;

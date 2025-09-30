@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -189,7 +190,7 @@ export default function SystemSettingsPage() {
                 <FormField control={form.control} name="supportEmail" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Support Email Address</FormLabel>
-                    <FormControl><Input type="email" placeholder="support@express-airline.com" {...field} disabled={isSubmitting} /></FormControl><FormDescription>The primary email address for user support inquiries.</FormDescription><FormMessage />
+                    <FormControl><Input type="email" placeholder="support@express-airline.com" {...field} disabled={isSubmitting} /></FormControl><FormDescription>The primary email address for user support inquiries.</FormMessage><FormMessage />
                   </FormItem>
                 )}/>
               </CardContent>

@@ -12,10 +12,10 @@ import { z } from 'zod';
 
 const findUserRoleOnFlight = (flight: StoredFlight, userId: string): { role: string; field: string } | null => {
     if (flight.purserId === userId) return { role: 'purser', field: 'purserId' };
-    if (flight.pilotIds?.includes(userId)) return { role: 'pilot', field: 'pilotIds' };
+    if (flight.pilotIds?.includes(userId)) return { role: 'pilote', field: 'pilotIds' };
     if (flight.cabinCrewIds?.includes(userId)) return { role: 'cabin crew', field: 'cabinCrewIds' };
     if (flight.instructorIds?.includes(userId)) return { role: 'instructor', field: 'instructorIds' };
-    if (flight.traineeIds?.includes(userId)) return { role: 'trainee', field: 'traineeIds' };
+    if (flight.traineeIds?.includes(userId)) return { role: 'stagiaire', field: 'traineeIds' };
     return null;
 };
 

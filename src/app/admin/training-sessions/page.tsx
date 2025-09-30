@@ -1,8 +1,9 @@
+
 'use server';
 
 import "server-only";
 import { TrainingSessionsClient } from "./training-sessions-client";
-import { getTrainingSessionsPageData } from "@/services/training-service";
+import { getTrainingSessionsPageData from "@/services/training-service";
 import { z } from 'zod';
 
 const EmptySchema = z.object({});

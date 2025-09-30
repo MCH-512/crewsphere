@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
@@ -114,12 +115,11 @@ export async function getUserActivitiesForMonth(month: Date, userId?: string): P
 }
 
 const CheckCrewAvailabilitySchema = z.object({
-    crewUserIds: z.array(z.string()),
-    startDate: z.date(),
-    endDate: z.date(),
-    activityIdToIgnore: z.string().optional(),
+  crewUserIds: z.array(z.string()),
+  startDate: z.date(),
+  endDate: z.date(),
+  activityIdToIgnore: z.string().optional(),
 });
-
 /**
  * Checks the availability of a single crew member for a given date range.
  * @param userId The user UID to check.

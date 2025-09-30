@@ -1,9 +1,8 @@
-'use server';
 
 import "server-only";
 import { PurserReportsClient } from "./purser-reports-client";
 import { fetchPurserReports } from "@/services/report-service";
-import { z } from "zod";
+import { z } from 'zod';
 
 const EmptySchema = z.object({});
 

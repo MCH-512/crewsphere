@@ -1,3 +1,4 @@
+
 'use server';
 
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
@@ -44,7 +45,7 @@ export async function getLogbookEntries(userId: string): Promise<LogbookEntry[]>
 
             let userRoleOnFlight = "Crew";
             if (data.purserId === userId) userRoleOnFlight = "Purser";
-            else if (data.pilotIds?.includes(userId as string)) userRoleOnFlight = "Pilot";
+            else if (data.pilotIds?.includes(userId as string)) userRoleOnFlight = "Pilote";
             else if (data.cabinCrewIds?.includes(userId as string)) userRoleOnFlight = "Cabin Crew";
             else if (data.instructorIds?.includes(userId as string)) userRoleOnFlight = "Instructor";
             else if (data.traineeIds?.includes(userId as string)) userRoleOnFlight = "Stagiaire";
