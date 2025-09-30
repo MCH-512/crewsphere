@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -56,7 +57,7 @@ const useTheme = () => {
   React.useEffect(() => {
     setIsMounted(true);
     const storedTheme = localStorage.getItem("theme");
-    if (storedTheme) {
+    if (storedTheme && (storedTheme === 'dark' || storedTheme === 'light')) {
       setTheme(storedTheme);
     } else {
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -71,13 +72,19 @@ const useTheme = () => {
     document.documentElement.classList.toggle("dark", newTheme === "dark");
   };
 
-  return { theme: isMounted ? theme : "light", toggleTheme, isMounted };
+  React.useEffect(() => {
+    if (isMounted) {
+      document.documentElement.classList.toggle("dark", theme === "dark");
+    }
+  }, [theme, isMounted]);
+
+  return { theme: isMounted ? theme : "light", toggleTheme };
 };
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, toggleTheme, isMounted } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { user, loading, logout } = useAuth();
   const { toast } = useToast();
 
@@ -106,7 +113,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }, [user, loading, isPublicPath, router]);
 
 
-  if (loading || !isMounted || (!user && !isPublicPath) || (user && isPublicPath)) {
+  if (loading || (!user && !isPublicPath) || (user && isPublicPath)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" aria-label="Loading application state" />

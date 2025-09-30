@@ -1,3 +1,4 @@
+
 'use server';
 
 import 'server-only';
@@ -6,6 +7,9 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { safetyReportFormSchema, type SafetyReportFormValues } from "@/schemas/safety-report-schema";
 import { getCurrentUser } from "@/lib/session";
 import { logAuditEvent } from "@/lib/audit-logger";
+import { z } from "zod";
+
+const SubmitSafetyReportSchema = z.custom<SafetyReportFormValues>();
 
 export async function submitSafetyReport(data: SafetyReportFormValues): Promise<{ success: boolean; message: string; }> {
     const validatedData = safetyReportFormSchema.safeParse(data);

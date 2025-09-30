@@ -1,3 +1,4 @@
+
 // scripts/run-code-audit.js
 const { Octokit } = require("@octokit/rest");
 const fs = require('fs/promises');
@@ -19,42 +20,41 @@ const octokit = new Octokit({ auth: GITHUB_TOKEN });
 async function main() {
     console.log("🤖 CrewSphere Watchdog: Starting proactive code audit...");
 
-    // We must use dynamic import() here because this script is CommonJS, but the Genkit module is ESM.
-    const { ai } = await import('../ai/genkit.js');
-
-    // Dummy context for demonstration - in a real CI, this would fetch live data.
-    const sentryContext = "Sentry analysis skipped (configuration missing).";
-    const dependabotContext = "No open Dependabot PRs found.";
-    const codeContext = await getSourceCodeContext();
-
-    const prompt = `
-      You are an expert software architect for CrewSphere, a Next.js/Firebase app.
-      Your task is to provide high-impact, non-breaking refactoring suggestions.
-      Analyze the following context:
-      ## External Context ##
-      ${sentryContext}
-      ${dependabotContext}
-      ## Source Code ##
-      ${codeContext}
-      ## Instructions ##
-      Based on ALL the context, provide a single, high-impact optimization.
-      - If Sentry shows frequent 'resource-exhausted' errors for 'getAdminDashboardWeeklyTrends', suggest implementing 'unstable_cache' from 'next/cache' on that function.
-      - If no specific external context applies, look for code smells like duplicated logic or performance bottlenecks.
-      Respond in JSON format only with the following structure:
-      {
-        "actionable": <boolean>,
-        "analysis_id": "<a unique UUID for this analysis>",
-        "quick_issue_title": "<A short, descriptive title for a GitHub pull request, e.g., 'refactor: Centralize airport data fetching'>",
-        "quick_issue_body": "<A Markdown-formatted explanation of the problem and the proposed solution.>",
-        "suggested_patch": {
-            "description": "Concise summary of the code change.",
-            "files": { "path/to/file.ts": "THE FULL, NEW, COMPLETE AND FINAL CONTENT OF THE FILE. DO NOT USE DIFFS." }
-        }
-      }
-      If no high-impact action is clear, set "actionable": false.
-    `;
-
     try {
+        // We must use dynamic import() here because this script is CommonJS, but the Genkit module is ESM.
+        const { ai } = await import(path.resolve(__dirname, '../ai/genkit.js'));
+
+        const sentryContext = "Sentry analysis skipped (configuration missing).";
+        const dependabotContext = "No open Dependabot PRs found.";
+        const codeContext = await getSourceCodeContext();
+
+        const prompt = `
+          You are an expert software architect for CrewSphere, a Next.js/Firebase app.
+          Your task is to provide high-impact, non-breaking refactoring suggestions.
+          Analyze the following context:
+          ## External Context ##
+          ${sentryContext}
+          ${dependabotContext}
+          ## Source Code ##
+          ${codeContext}
+          ## Instructions ##
+          Based on ALL the context, provide a single, high-impact optimization.
+          - If Sentry shows frequent 'resource-exhausted' errors for 'getAdminDashboardWeeklyTrends', suggest implementing 'unstable_cache' from 'next/cache' on that function.
+          - If no specific external context applies, look for code smells like duplicated logic or performance bottlenecks.
+          Respond in JSON format only with the following structure:
+          {
+            "actionable": <boolean>,
+            "analysis_id": "<a unique UUID for this analysis>",
+            "quick_issue_title": "<A short, descriptive title for a GitHub pull request, e.g., 'refactor: Centralize airport data fetching'>",
+            "quick_issue_body": "<A Markdown-formatted explanation of the problem and the proposed solution.>",
+            "suggested_patch": {
+                "description": "Concise summary of the code change.",
+                "files": { "path/to/file.ts": "THE FULL, NEW, COMPLETE AND FINAL CONTENT OF THE FILE. DO NOT USE DIFFS." }
+            }
+          }
+          If no high-impact action is clear, set "actionable": false.
+        `;
+
         const { text } = await ai.generate({
             model: 'googleai/gemini-1.5-pro-latest',
             prompt: prompt,
@@ -106,7 +106,8 @@ async function getSourceCodeContext() {
     let contextString = "";
     for (const filePath of filesToAudit) {
         try {
-            const fullPath = path.resolve(process.cwd(), "..", filePath);
+            // Correct the path resolution to go up one level from `scripts` directory
+            const fullPath = path.resolve(__dirname, '..', filePath);
             const content = await fs.readFile(fullPath, 'utf8');
             contextString += `--- START FILE: ${filePath} ---\n${content}\n--- END FILE: ${filePath} ---\n\n`;
         } catch (e) {
