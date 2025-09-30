@@ -50,12 +50,14 @@ interface DashboardClientPageProps {
 
 export default function DashboardClientPage({ children, heroImage }: DashboardClientPageProps) {
   const { user } = useAuth();
-  const [userNameForGreeting, setUserNameForGreeting] = React.useState<string>("User");
+  const [userName, setUserName] = React.useState("User");
+  const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
+    setIsClient(true);
     if (user) {
       const name = user.fullName || user.displayName || (user.email ? user.email.split('@')[0] : "Crew Member");
-      setUserNameForGreeting(name.charAt(0).toUpperCase() + name.slice(1));
+      setUserName(name.charAt(0).toUpperCase() + name.slice(1));
     }
   }, [user]);
 
@@ -88,7 +90,7 @@ export default function DashboardClientPage({ children, heroImage }: DashboardCl
           </div>
           <div className="relative z-10 text-white w-full">
               <div>
-                <CardTitle as="h1" className="text-4xl font-headline text-primary-foreground">Welcome Back, {userNameForGreeting}!</CardTitle>
+                <CardTitle as="h1" className="text-4xl font-headline text-primary-foreground">Welcome Back, {isClient ? userName : 'User'}!</CardTitle>
                 <CardDescription className="text-primary-foreground/80 text-lg mt-1 max-w-4xl">Your unified dashboard for real-time schedule updates, essential alerts, and direct access to training modules and operational resources. Stay informed, compliant, and connected with everything you need for your duty period.</CardDescription>
             </div>
           </div>
