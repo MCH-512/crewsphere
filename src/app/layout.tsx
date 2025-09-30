@@ -1,4 +1,3 @@
-
 import type { Metadata } from 'next';
 import './globals.css';
 import { AppLayout } from '@/app/layout/app-layout';
@@ -13,7 +12,6 @@ export const metadata: Metadata = {
   description: 'A comprehensive portal for airline crew members.',
 };
 
-// This script is injected into the head to prevent FOUC for the theme
 const ThemeInitializer = () => (
   <script
     dangerouslySetInnerHTML={{
