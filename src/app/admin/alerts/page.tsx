@@ -1,3 +1,5 @@
+'use server';
+
 import "server-only";
 import { AlertsClient } from "./alerts-client";
 import { getAlerts } from "@/services/alert-service";

@@ -1,3 +1,5 @@
+'use server';
+
 import "server-only";
 import { UsersClient } from "./users-client";
 import { fetchUsers } from "@/services/user-service";

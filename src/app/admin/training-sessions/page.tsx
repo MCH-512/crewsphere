@@ -1,3 +1,5 @@
+'use server';
+
 import "server-only";
 import { TrainingSessionsClient } from "./training-sessions-client";
 import { getTrainingSessionsPageData } from "@/services/training-service";

@@ -49,7 +49,6 @@ import { Separator } from "@/components/ui/separator";
 
 const PUBLIC_PATHS = ['/login', '/signup'];
 
-// SSR-safe theme hook
 const useTheme = () => {
   const [theme, setTheme] = React.useState("light");
   const [isMounted, setIsMounted] = React.useState(false);

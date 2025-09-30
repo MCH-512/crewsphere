@@ -1,4 +1,3 @@
-
 // scripts/generate-tests.js
 const fs = require('fs');
 const path = require('path');
@@ -9,10 +8,11 @@ const path = require('path');
 async function generateTestsForFeature(featureName, description) {
   console.log(`🤖 Generating tests for feature: ${featureName}...`);
   
-  // Dynamically import the genkit AI object
-  const { ai } = await import('@/ai/genkit');
+  try {
+    // Dynamically import the genkit AI object
+    const { ai } = await import('../ai/genkit.js');
 
-  const prompt = `
+    const prompt = `
 Generate a complete Jest unit test file in TypeScript for the following feature.
 The feature name is "${featureName}".
 The feature description is: "${description}"
@@ -27,7 +27,6 @@ Follow these rules strictly:
 Start the file with a comment indicating it was auto-generated.
 `;
 
-  try {
     const { text } = await ai.generate({
         prompt: prompt,
         model: 'googleai/gemini-1.5-pro-latest',

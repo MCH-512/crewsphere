@@ -1,3 +1,5 @@
+'use server';
+
 import "server-only";
 import { PurserReportsClient } from "./purser-reports-client";
 import { fetchPurserReports } from "@/services/report-service";

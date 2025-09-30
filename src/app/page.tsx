@@ -1,3 +1,5 @@
+'use server';
+
 import * as React from "react";
 import DashboardClientPage from "@/dashboard-client-page";
 

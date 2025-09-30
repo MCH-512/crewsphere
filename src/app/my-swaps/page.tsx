@@ -1,3 +1,5 @@
+'use server';
+
 import * as React from "react";
 import { MySwapsClient } from "./my-swaps-client";
 import { getCurrentUser } from "@/lib/session";
