@@ -20,10 +20,10 @@ export interface LogbookEntry {
     scheduledArrivalDateTimeUTC: string;
 }
 
-const GetLogbookInputSchema = z.string().min(1, "User ID is required.").optional();
+const GetLogbookInputSchema = z.string().min(1, "User ID is required.");
 
 
-export async function getLogbookEntries(userId: string | undefined): Promise<LogbookEntry[]> {
+export async function getLogbookEntries(userId: string): Promise<LogbookEntry[]> {
     const validatedUserId = GetLogbookInputSchema.safeParse(userId);
     if (!validatedUserId.success || !isConfigValid || !db) {
         return [];

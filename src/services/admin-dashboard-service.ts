@@ -30,7 +30,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
     if (!user || user.role !== 'admin' || !isConfigValid || !db) {
         return {
             pendingRequests: 0, pendingDocValidations: 0, newSuggestions: 0,
-            pendingSwaps: 0, pendingReports: 0, activeAlerts: 0,
+            pendingSwaps: 0, pendingReports: 0, activeAlerts: 0, openPullRequests: 0,
         };
     }
 
@@ -64,7 +64,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
         console.error("Error fetching admin dashboard stats:", error);
         return {
             pendingRequests: 0, pendingDocValidations: 0, newSuggestions: 0,
-            pendingSwaps: 0, pendingReports: 0, activeAlerts: 0,
+            pendingSwaps: 0, pendingReports: 0, activeAlerts: 0, openPullRequests: 0,
         };
     }
 }
