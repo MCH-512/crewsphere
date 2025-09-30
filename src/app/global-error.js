@@ -1,11 +1,10 @@
-'use client'
+'use client';
 
 import React, { useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
 
-export default function GlobalError({ error, reset }) {
+// Use a named export and then export as default for maximum compatibility.
+export const GlobalError = ({ error, reset }) => {
   useEffect(() => {
-    // Log the error to an error reporting service
     console.error(error);
   }, [error]);
 
@@ -14,9 +13,14 @@ export default function GlobalError({ error, reset }) {
       <body>
         <div className="flex min-h-screen items-center justify-center bg-background p-4">
           <div className="w-full max-w-md rounded-lg border bg-card text-card-foreground shadow-lg text-center">
-            <div className="flex flex-col space-y-1.5 p-6">
-              <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
-              <h2 className="mt-4 text-2xl font-semibold leading-none tracking-tight">Something Went Wrong</h2>
+            <div className="flex flex-col space-y-1.5 p-6 items-center">
+              {/* Using inline SVG for lucide-react replacement to remove dependencies */}
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-destructive">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                <path d="M12 9v4" />
+                <path d="M12 17h.01" />
+              </svg>
+              <h3 className="mt-4 text-2xl font-semibold leading-none tracking-tight">Something Went Wrong</h3>
               <p className="text-sm text-muted-foreground">
                 An unexpected error occurred. This has been logged.
               </p>
@@ -34,4 +38,6 @@ export default function GlobalError({ error, reset }) {
       </body>
     </html>
   );
-}
+};
+
+export default GlobalError;
