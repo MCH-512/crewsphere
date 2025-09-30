@@ -92,7 +92,7 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
                     flightId: flight2Snap.id, flightNumber: flight2Data.flightNumber, 
                     departureAirport: flight2Data.departureAirport, arrivalAirport: flight2Data.arrivalAirport, 
                     date: Timestamp.fromDate(startOfDay(new Date(flight2Data.scheduledDepartureDateTimeUTC))), 
-                    comments: `Flight ${flight2Data.flightNumber} from ${flight2Data.departureAirport} to ${flight2Data.arrivalAirport}`, 
+                    comments: `Flight ${flight2Data.flightNumber}`, 
                 });
             }
              if (activity2Id) {
@@ -100,7 +100,7 @@ export async function approveFlightSwap(swapId: string, adminId: string, adminEm
                     flightId: flight1Snap.id, flightNumber: flight1Data.flightNumber, 
                     departureAirport: flight1Data.departureAirport, arrivalAirport: flight1Data.arrivalAirport, 
                     date: Timestamp.fromDate(startOfDay(new Date(flight1Data.scheduledDepartureDateTimeUTC))), 
-                    comments: `Flight ${flight1Data.flightNumber} from ${flight1Data.departureAirport} to ${flight1Data.arrivalAirport}`, 
+                    comments: `Flight ${flight1Data.flightNumber}`, 
                 });
             }
             
