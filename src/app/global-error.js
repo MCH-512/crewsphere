@@ -18,7 +18,7 @@ export default function GlobalError({ error, reset }) {
           <Card className="w-full max-w-md text-center shadow-lg">
             <CardHeader>
               <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
-              <CardTitle className="mt-4 text-2xl font-semibold">Something Went Wrong</CardTitle>
+              <CardTitle className="mt-4 text-2xl">Something Went Wrong</CardTitle>
               <CardDescription className="text-muted-foreground">
                 An unexpected error occurred. This has been logged.
               </CardDescription>
