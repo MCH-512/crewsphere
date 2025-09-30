@@ -47,7 +47,7 @@ export async function getUserProfileData(userId: string): Promise<ProfileData | 
         const requestsPromise = getDocs(query(collection(db, "requests"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(5)));
         const documentsPromise = getDocs(query(collection(db, "userDocuments"), where("userId", "==", userId), orderBy("expiryDate", "asc")));
 
-        const [userSnap, activitiesSnap, trainingsSnap, requestsSnap, documentsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsPromise, documentsSnap]);
+        const [userSnap, activitiesSnap, trainingsSnap, requestsSnap, documentsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsPromise, documentsPromise]);
 
         if (!userSnap.exists()) {
             console.warn(`User document not found for ID: ${userId}`);
@@ -61,7 +61,7 @@ export async function getUserProfileData(userId: string): Promise<ProfileData | 
         const requests = requestsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserRequest);
         const documents = documentsSnap.docs.map(d => ({ id: d.id, ...d.data() }) as StoredUserDocument);
 
-        const trainingAttempts = trainingsSnap.docs.map(d => ({ id: d.id, ...d.data() } as StoredUserQuizAttempt);
+        const trainingAttempts = trainingsSnap.docs.map(d => ({ id: d.id, ...d.data() } as StoredUserQuizAttempt));
         const courseIds = [...new Set(trainingAttempts.map(t => t.courseId))];
         
         let trainings: (StoredUserQuizAttempt & { courseTitle: string })[] = [];
