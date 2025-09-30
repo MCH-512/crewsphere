@@ -146,7 +146,16 @@ export async function rejectFlightSwap(swapId: string, adminId: string, adminEma
     });
 }
 
+const CheckSwapConflictInputSchema = z.object({
+    swap: z.custom<StoredFlightSwap>()
+});
+
 export async function checkSwapConflict(swap: StoredFlightSwap): Promise<string | null> {
+    const validated = CheckSwapConflictInputSchema.safeParse({ swap });
+    if (!validated.success) {
+        return "Invalid input data for conflict check.";
+    }
+
     if (!swap.requestingFlightId || !swap.requestingUserId || !swap.requestingFlightInfo || !swap.initiatingFlightId || !swap.initiatingUserId) {
         return "Swap request is incomplete and cannot be checked.";
     }

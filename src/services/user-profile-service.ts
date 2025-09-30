@@ -29,7 +29,11 @@ export interface ProfileData {
  * @returns A promise that resolves to a comprehensive profile data object.
  */
 export async function getUserProfileData(userId: string): Promise<ProfileData | null> {
-    UserIdSchema.parse(userId); // Zod validation
+    const validation = UserIdSchema.safeParse(userId);
+    if (!validation.success) {
+        console.error("Invalid user ID provided to getUserProfileData.");
+        return null;
+    }
 
     if (!isConfigValid || !db) {
         console.error("Firebase not configured, cannot fetch user profile.");
@@ -47,7 +51,8 @@ export async function getUserProfileData(userId: string): Promise<ProfileData | 
         const [userSnap, activitiesSnap, trainingsSnap, requestsSnap, documentsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsPromise, documentsSnap]);
 
         if (!userSnap.exists()) {
-            throw new Error("User not found.");
+            console.warn(`User document not found for ID: ${userId}`);
+            return null;
         }
 
         const fetchedUser = { uid: userSnap.id, ...userSnap.data() } as User;

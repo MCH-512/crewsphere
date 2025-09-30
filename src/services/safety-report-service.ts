@@ -11,7 +11,9 @@ import { logAuditEvent } from "@/lib/audit-logger";
 export async function submitSafetyReport(data: SafetyReportFormValues): Promise<{ success: boolean; message: string; }> {
     const validatedData = safetyReportFormSchema.safeParse(data);
     if (!validatedData.success) {
-        throw new Error("Invalid report data provided.");
+        // Log the detailed validation error for debugging
+        console.error("Safety report validation failed:", validatedData.error.flatten());
+        throw new Error("Invalid report data provided. Please check the form and try again.");
     }
     
     const user = await getCurrentUser();

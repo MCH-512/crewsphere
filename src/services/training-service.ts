@@ -18,19 +18,20 @@ interface SessionForDisplay extends StoredTrainingSession {
 export async function getTrainingSessionsPageData() {
     EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
+    const defaultEmptyState = {
+        initialSessions: [],
+        initialUsers: [],
+        initialUserMap: new Map(),
+        initialPursers: [],
+        initialPilots: [],
+        initialCabinCrew: [],
+        initialInstructors: [],
+        initialTrainees: [],
+    };
+
     if (!user || user.role !== 'admin' || !isConfigValid || !db) {
         console.error("Unauthorized or unconfigured attempt to fetch training session data.");
-        // Return a default empty state
-        return {
-            initialSessions: [],
-            initialUsers: [],
-            initialUserMap: new Map(),
-            initialPursers: [],
-            initialPilots: [],
-            initialCabinCrew: [],
-            initialInstructors: [],
-            initialTrainees: [],
-        };
+        return defaultEmptyState;
     }
     
     try {
@@ -61,16 +62,6 @@ export async function getTrainingSessionsPageData() {
         };
     } catch (err) {
         console.error("Failed to fetch training sessions or users:", err);
-        // Return a default empty state on error
-        return {
-            initialSessions: [],
-            initialUsers: [],
-            initialUserMap: new Map(),
-            initialPursers: [],
-            initialPilots: [],
-            initialCabinCrew: [],
-            initialInstructors: [],
-            initialTrainees: [],
-        };
+        return defaultEmptyState;
     }
 }
