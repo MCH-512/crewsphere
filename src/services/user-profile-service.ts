@@ -1,3 +1,4 @@
+
 'use server';
 
 import 'server-only';
@@ -47,7 +48,7 @@ export async function getUserProfileData(userId: string): Promise<ProfileData | 
         const requestsPromise = getDocs(query(collection(db, "requests"), where("userId", "==", userId), orderBy("createdAt", "desc"), limit(5)));
         const documentsPromise = getDocs(query(collection(db, "userDocuments"), where("userId", "==", userId), orderBy("expiryDate", "asc")));
 
-        const [userSnap, activitiesSnap, trainingsSnap, requestsSnap, documentsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsPromise, documentsPromise]);
+        const [userSnap, activitiesSnap, trainingsSnap, requestsSnap, documentsSnap] = await Promise.all([userPromise, activitiesPromise, trainingsPromise, requestsPromise, documentsSnap]);
 
         if (!userSnap.exists()) {
             console.warn(`User document not found for ID: ${userId}`);
