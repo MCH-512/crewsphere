@@ -1,5 +1,5 @@
 
-"use server";
+'use server';
 
 import { z } from "zod";
 import type { Timestamp } from 'firebase/firestore';
@@ -42,7 +42,7 @@ export const safetyReportFormSchema = z.object({
   aircraftRegistration: z.string().max(10).optional(),
   eventType: z.enum(safetyReportEventTypes, { required_error: "Please select the most relevant event type." }),
   flightPhase: z.enum(safetyReportFlightPhases).optional(),
-  severity: z.enum(safetyReportSeverityLevels, { required_error: "Please assess the event's severity." }),
+  severity: z.enum(safetyReportSeverityLevels, { required_error: "Please assess the event\'s severity." }),
   description: z.string().min(50, "Description must be at least 50 characters.").max(5000, "Description is too long."),
   isAnonymous: z.boolean().default(false),
 });
