@@ -25,13 +25,10 @@ export default function Error({
             <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
           <CardTitle className="mt-4 text-2xl">Something went wrong!</CardTitle>
           <CardDescription>
-            An unexpected error occurred. This has been logged to the console. You can try to recover by clicking the button below.
+            An unexpected error occurred. This has been logged. You can try to recover by clicking the button below.
           </CardDescription>
         </CardHeader>
         <CardContent>
-           <pre className="mt-2 mb-4 whitespace-pre-wrap rounded-md bg-muted p-4 text-left font-mono text-xs text-muted-foreground">
-             {error.message || "An unknown error has occurred."}
-           </pre>
           <Button onClick={() => reset()}>
             Try again
           </Button>
