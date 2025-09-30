@@ -1,13 +1,12 @@
 'use client'
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { AlertTriangle } from 'lucide-react'
 
 export default function GlobalError({ error, reset }) {
   useEffect(() => {
-    // Log the error to an error reporting service
     console.error(error);
   }, [error]);
 
