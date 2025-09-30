@@ -115,7 +115,7 @@ export default async function PurserReportHistoryDetailPage({ params }: { params
             </Card>
 
             {report.adminNotes && (
-                <Alert variant={getAdminResponseAlertVariant(report.status)}>
+                <Alert variant={getAdminResponseAlertVariant(report.status as any)}>
                     <CheckCircle className="h-4 w-4" />
                     <AlertTitle>Administrator Response</AlertTitle>
                     <AlertDescription className="whitespace-pre-wrap">{report.adminNotes}</AlertDescription>

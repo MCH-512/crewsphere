@@ -49,41 +49,42 @@ import { Separator } from "@/components/ui/separator";
 
 const PUBLIC_PATHS = ['/login', '/signup'];
 
-const useTheme = () => {
-  const [theme, setTheme] = React.useState("light");
-  const [isMounted, setIsMounted] = React.useState(false);
+const ThemeToggleButton = () => {
+    const [theme, setTheme] = React.useState('light');
+    const [isMounted, setIsMounted] = React.useState(false);
 
-  React.useEffect(() => {
-    setIsMounted(true);
-    const storedTheme = localStorage.getItem("theme");
-    if (storedTheme && (storedTheme === 'dark' || storedTheme === 'light')) {
-      setTheme(storedTheme);
-    } else {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      setTheme(systemTheme);
+    React.useEffect(() => {
+        setIsMounted(true);
+        const storedTheme = localStorage.getItem("theme");
+        if (storedTheme) {
+            setTheme(storedTheme);
+        } else {
+             const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+             setTheme(systemTheme);
+        }
+    }, []);
+
+    const toggleTheme = () => {
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
+        document.documentElement.classList.toggle('dark', newTheme === 'dark');
+    };
+    
+    if (!isMounted) {
+        return <div className="h-9 w-9 rounded-md border" />; // placeholder
     }
-  }, []);
 
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    document.documentElement.classList.toggle("dark", newTheme === "dark");
-  };
-
-  React.useEffect(() => {
-    if (isMounted) {
-      document.documentElement.classList.toggle("dark", theme === "dark");
-    }
-  }, [theme, isMounted]);
-
-  return { theme: isMounted ? theme : "light", toggleTheme };
+    return (
+        <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`} className="h-9 w-9">
+            {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+        </Button>
+    );
 };
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, toggleTheme } = useTheme();
   const { user, loading, logout } = useAuth();
   const { toast } = useToast();
 
@@ -129,8 +130,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <LayoutWithSidebar
         user={user}
         handleLogout={handleLogout}
-        theme={theme}
-        toggleTheme={toggleTheme}
       >
         {children}
       </LayoutWithSidebar>
@@ -143,14 +142,10 @@ function LayoutWithSidebar({
   children,
   user,
   handleLogout,
-  theme,
-  toggleTheme,
 }: {
   children: React.ReactNode;
   user: User;
   handleLogout: () => void;
-  theme: string;
-  toggleTheme: () => void;
 }) {
   const { isMobile } = useSidebar();
   const pathname = usePathname();
@@ -243,9 +238,7 @@ function LayoutWithSidebar({
           </div>
           <div className="flex items-center gap-2">
             <HeaderClocks />
-            <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`} className="h-9 w-9">
-              {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-            </Button>
+            <ThemeToggleButton />
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

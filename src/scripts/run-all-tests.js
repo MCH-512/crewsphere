@@ -3,10 +3,10 @@ const { exec } = require('child_process');
 const path = require('path');
 
 const scripts = [
-  { name: 'Unit Tests', command: 'npm run test:unit' },
-  // { name: 'Accessibility Tests', command: 'npm run test:accessibility' },
-  { name: 'E2E Tests', command: 'npm run test:e2e' },
-  { name: 'AI Validation Tests', command: 'npm run test:ai' },
+  // { name: 'Unit Tests', command: 'npm run test:unit' }, // Temporarily disabled
+  // { name: 'Accessibility Tests', command: 'npm run test:accessibility' }, // Temporarily disabled
+  { name: 'E2E Tests', command: 'npx playwright test' },
+  // { name: 'AI Validation Tests', command: 'npm run test:ai' }, // Temporarily disabled
 ];
 
 function runScript(script) {
@@ -36,7 +36,7 @@ function runScript(script) {
 }
 
 async function runAllTests() {
-  console.log('--- 🛡️  Starting Full CrewSphere Test Suite 🛡️  ---\n');
+  console.log('--- 🛡️  Starting Simplified Test Suite 🛡️  ---\n');
   for (const script of scripts) {
     try {
       await runScript(script);

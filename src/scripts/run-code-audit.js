@@ -1,18 +1,6 @@
-
 // scripts/run-code-audit.js
-const { Octokit } = require("@octokit/rest");
 const fs = require('fs/promises');
 const path = require('path');
-
-// --- Configuration ---
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const SENTRY_AUTH_TOKEN = process.env.SENTRY_AUTH_TOKEN;
-const REPO_OWNER = process.env.GITHUB_REPOSITORY_OWNER || "YOUR_USER_OR_ORG"; // Fallback
-const REPO_NAME = process.env.GITHUB_REPOSITORY ? process.env.GITHUB_REPOSITORY.split('/')[1] : "crewsphere"; // Fallback
-const SENTRY_ORG = process.env.SENTRY_ORG;
-const SENTRY_PROJECT = process.env.SENTRY_PROJECT;
-
-const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
 /**
  * Main function to run the AI code audit.
