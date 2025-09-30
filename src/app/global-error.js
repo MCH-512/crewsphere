@@ -6,8 +6,9 @@ import React, { useEffect } from 'react';
  * A failsafe, dependency-free global error boundary.
  * It uses plain JSX and inline styles to avoid any conflicts with the UI library or CSS setup
  * that might occur during a critical application-wide error.
+ * This version uses a named export which is then exported as default for maximum compatibility.
  */
-function GlobalError({ error, reset }) {
+const GlobalError = ({ error, reset }) => {
   useEffect(() => {
     // Log the error to the console for debugging
     console.error(error);
@@ -19,7 +20,7 @@ function GlobalError({ error, reset }) {
         <div style={{
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
           display: 'flex',
-          height: '100vh',
+          minHeight: '100vh',
           textAlign: 'center',
           flexDirection: 'column',
           alignItems: 'center',
@@ -35,9 +36,9 @@ function GlobalError({ error, reset }) {
             backgroundColor: '#ffffff',
             boxShadow: '0 8px 24px rgba(140, 149, 159, 0.2)'
           }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: '0 0 1rem 0' }}>Something went wrong</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: '0 0 1rem 0' }}>Something Went Wrong</h2>
             <p style={{ color: '#57606a', margin: '0 0 1.5rem 0' }}>
-              An unexpected application error occurred. This has been logged.
+              An unexpected error occurred. This has been logged.
             </p>
             <button
               onClick={() => reset()}
@@ -52,13 +53,13 @@ function GlobalError({ error, reset }) {
                 fontWeight: '500',
               }}
             >
-              Try again
+              Try Again
             </button>
           </div>
         </div>
       </body>
     </html>
   );
-}
+};
 
 export default GlobalError;
