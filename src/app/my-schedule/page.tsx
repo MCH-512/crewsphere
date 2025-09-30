@@ -1,5 +1,3 @@
-"use server";
-
 import * as React from "react";
 import { MyScheduleClient } from "./my-schedule-client";
 import { getUserActivitiesForMonth } from "@/services/activity-service";

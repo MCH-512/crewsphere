@@ -1,5 +1,3 @@
-'use server';
-
 import 'server-only';
 import { db, isConfigValid } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";

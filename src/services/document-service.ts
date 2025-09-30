@@ -1,5 +1,3 @@
-'use server';
-
 import 'server-only';
 import { db, isConfigValid } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, Timestamp } from "firebase/firestore";
@@ -7,7 +5,7 @@ import type { StoredUserDocument } from "@/schemas/user-document-schema";
 import { getCurrentUser } from "@/lib/session";
 import { z } from 'zod';
 
-const GetDocumentsInputSchema = z.object({}).optional();
+const EmptySchema = z.object({});
 
 
 /**
@@ -16,7 +14,7 @@ const GetDocumentsInputSchema = z.object({}).optional();
  * @returns A promise that resolves to an array of StoredUserDocument.
  */
 export async function getDocumentsForValidation(): Promise<StoredUserDocument[]> {
-    GetDocumentsInputSchema.parse({}); // Validate input
+    EmptySchema.parse({}); // Validate input
     const user = await getCurrentUser();
     if (!user || user.role !== 'admin' || !isConfigValid || !db) {
         console.error("Unauthorized or unconfigured attempt to fetch documents for validation.");

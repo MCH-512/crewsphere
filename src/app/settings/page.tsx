@@ -1,5 +1,3 @@
-"use server";
-
 import * as React from "react";
 import { getCurrentUser } from "@/lib/session";
 import SettingsClientPage from "./settings-client-page";

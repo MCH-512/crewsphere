@@ -1,5 +1,5 @@
-'use server';
 // src/services/predictive-analyzer.ts
+'use server';
 
 import { ALERT_RULES, type AlertRule } from '@/lib/alert-rules';
 import { promises as fs } from 'fs';

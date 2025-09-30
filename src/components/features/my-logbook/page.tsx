@@ -1,6 +1,3 @@
-
-"use server";
-
 import * as React from "react";
 import { getCurrentUser } from "@/lib/session";
 import { MyLogbookClient } from "./my-logbook-client";

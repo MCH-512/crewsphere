@@ -1,5 +1,3 @@
-"use server";
-
 import * as React from "react";
 import { Suspense } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +14,6 @@ import { WeeklyTrendsChart } from "@/components/admin/weekly-trends-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { z } from 'zod';
 
-// Zod schema for functions that take no arguments
 const EmptySchema = z.object({});
 
 const ChartSkeleton = () => (

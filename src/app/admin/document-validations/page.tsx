@@ -1,5 +1,3 @@
-"use server";
-
 import "server-only";
 import { DocumentValidationsClient } from "./document-validations-client";
 import { getDocumentsForValidation } from "@/services/document-service";

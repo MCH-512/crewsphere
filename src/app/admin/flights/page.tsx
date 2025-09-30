@@ -1,5 +1,3 @@
-"use server";
-
 import "server-only";
 import { AdminFlightsClient } from "./flights-client";
 import { getFlightsForAdmin } from "@/services/flight-service";
