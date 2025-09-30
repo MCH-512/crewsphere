@@ -1,3 +1,5 @@
+"use server";
+
 import "server-only";
 import { CoursesClient } from "./courses-client";
 import { getCourses } from "@/services/course-service";
