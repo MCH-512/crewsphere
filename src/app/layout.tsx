@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description: 'A comprehensive portal for airline crew members.',
 };
 
-// This script is injected into the head to prevent FOUC (Flash of Unstyled Content) for the theme
+// This script is injected into the head to prevent FOUC for the theme
 const ThemeInitializer = () => (
   <script
     dangerouslySetInnerHTML={{
@@ -41,12 +41,6 @@ export default function RootLayout({
         <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
       </head>
       <body className={inter.variable}>
-        <a
-            href="#main"
-            className="sr-only focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 px-4 py-2 bg-primary text-white rounded-md transition-all absolute top-2 left-2 z-[9999]"
-            >
-            Skip to main content
-        </a>
         <AuthProvider>
           <AppLayout>{children}</AppLayout>
         </AuthProvider>
