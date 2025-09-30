@@ -29,29 +29,14 @@ const ThemeInitializer = () => (
   />
 );
 
-const LanguageInitializer = () => (
-    <script
-        dangerouslySetInnerHTML={{
-        __html: `(function() {
-            try {
-                const lang = navigator.language.split('-')[0] || 'fr';
-                document.documentElement.lang = lang;
-            } catch (e) {}
-            })();`,
-        }}
-    />
-);
-
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning className={inter.variable}>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
-        <LanguageInitializer />
         <ThemeInitializer />
         <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
       </head>
@@ -60,7 +45,7 @@ export default function RootLayout({
             href="#main"
             className="sr-only focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 px-4 py-2 bg-primary text-white rounded-md transition-all absolute top-2 left-2 z-[9999]"
             >
-            Aller au contenu principal
+            Skip to main content
         </a>
         <AuthProvider>
           <AppLayout>{children}</AppLayout>
