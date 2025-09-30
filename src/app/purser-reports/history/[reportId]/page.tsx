@@ -1,4 +1,3 @@
-
 'use server';
 
 import * as React from "react";
@@ -36,7 +35,6 @@ const getStatusBadgeVariant = (status: ReportStatus) => {
 
 const getAdminResponseAlertVariant = (status: ReportStatus): VariantProps<typeof alertVariants>["variant"] => {
     switch (status) {
-      case "closed": return "success";
       case "approved": return "success";
       case "rejected": return "destructive";
       default: return "info";

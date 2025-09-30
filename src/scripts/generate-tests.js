@@ -1,4 +1,3 @@
-
 // scripts/generate-tests.js
 const fs = require('fs');
 const path = require('path');
