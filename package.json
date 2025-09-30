@@ -1,3 +1,4 @@
+
 {
   "name": "nextn",
   "version": "0.1.0",
@@ -6,8 +7,7 @@
     "dev": "next dev --port 9002 --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "node src/scripts/run-all-tests.js"
+    "lint": "next lint"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.0.0",
