@@ -1,4 +1,5 @@
 
+
 const { withSentryConfig } = require('@sentry/nextjs');
 
 /** @type {import('next').NextConfig} */
@@ -8,7 +9,7 @@ const cspHeader = `
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' https://placehold.co https://picsum.photos https://*.tile.openstreetmap.org https://unpkg.com https://images.unsplash.com data: blob:;
     font-src 'self' https://fonts.gstatic.com;
-    connect-src 'self' http://127.0.0.1:* https://*.cloudworkstations.dev wss://*.cloudworkstations.dev https://*.firebaseio.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://storage.googleapis.com https://www.googleapis.com https://opensky-network.org https://www.aviationweather.gov *.sentry.io;
+    connect-src 'self' http://127.0.0.1:* https://*.cloudworkstations.dev wss://*.cloudworkstations.dev https://*.firebaseio.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://storage.googleapis.com https://www.googleapis.com https://opensky-network.org https://www.aviationweather.gov;
     frame-src 'self';
     object-src 'none';
     form-action 'self';
@@ -24,7 +25,7 @@ const nextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: '4.5mb',
-      timeout: 120,
+      timeout: 180,
     },
     instrumentationHook: true,
   },
@@ -100,15 +101,6 @@ const nextConfig = {
     ];
     return [...defaultHeaders, ...staticCacheHeaders];
   },
-   webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals.push({
-        '@opentelemetry/instrumentation': 'commonjs @opentelemetry/instrumentation',
-        'require-in-the-middle': 'commonjs require-in-the-middle',
-      });
-    }
-    return config;
-  },
 };
 
 const sentryWebpackPluginOptions = {
@@ -126,5 +118,3 @@ const sentryBuildOptions = {
 };
 
 module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions, sentryBuildOptions);
-
-    
