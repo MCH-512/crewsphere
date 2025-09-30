@@ -15,7 +15,7 @@ import { z } from 'zod';
 /**
  * Generates a video from a text prompt and/or an image.
  * @param input The input data containing the prompt and optional image.
- * @returns A promise that resolves with the URL of the generated video.
+ * @returns A promise that resolves to the URL of the generated video.
  */
 export async function generateVideo(input: GenerateVideoInput): Promise<GenerateVideoOutput> {
   const validatedInput = GenerateVideoInputSchema.parse(input);
