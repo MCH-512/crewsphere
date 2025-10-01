@@ -50,35 +50,26 @@ import { Separator } from "@/components/ui/separator";
 
 const PUBLIC_PATHS = ['/login', '/signup'];
 
-const useTheme = () => {
-  const [theme, setTheme] = React.useState("light");
-  const [isMounted, setIsMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setIsMounted(true);
-    const storedTheme = localStorage.getItem("theme");
-    if (storedTheme) {
-      setTheme(storedTheme);
-    } else {
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        setTheme(systemTheme);
-    }
-  }, []);
-
-  const toggleTheme = React.useCallback(() => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    document.documentElement.classList.toggle("dark", newTheme === "dark");
-  }, [theme]);
-  
-  return { theme, toggleTheme, isMounted };
-};
-
 const ThemeToggleButton = () => {
-    const { theme, toggleTheme, isMounted } = useTheme();
+    const [theme, setTheme] = React.useState('light');
+    const [isClient, setIsClient] = React.useState(false);
     
-    if (!isMounted) {
+    React.useEffect(() => {
+        setIsClient(true);
+        const storedTheme = localStorage.getItem("theme") || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        setTheme(storedTheme);
+    }, []);
+
+    const toggleTheme = React.useCallback(() => {
+        setTheme(currentTheme => {
+            const newTheme = currentTheme === "light" ? "dark" : "light";
+            localStorage.setItem("theme", newTheme);
+            document.documentElement.classList.toggle("dark", newTheme === "dark");
+            return newTheme;
+        });
+    }, []);
+    
+    if (!isClient) {
         return <div className="h-9 w-9 rounded-md border" />; // placeholder to prevent layout shift
     }
 
