@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db, isConfigValid } from "@/lib/firebase";
@@ -20,13 +19,25 @@ export interface ActivityData extends UserActivity {
     userEmail?: string;
 }
 
-const GetTodayActivitiesSchema = z.object({});
+const EmptySchema = z.object({});
+const GetUserActivitiesForMonthSchema = z.object({
+    month: z.date(),
+    userId: z.string().optional(),
+});
+const CheckCrewAvailabilitySchema = z.object({
+  crewUserIds: z.array(z.string()),
+  startDate: z.date(),
+  endDate: z.date(),
+  activityIdToIgnore: z.string().optional(),
+});
+
+
 /**
  * Fetches all activities for the current user for the current day.
  * @returns A promise that resolves to an array of TodayActivity objects.
  */
 export async function getTodayActivities(): Promise<TodayActivity[]> {
-    GetTodayActivitiesSchema.parse({}); // Zod validation
+    EmptySchema.parse({}); // Zod validation
     const user = await getCurrentUser();
     if (!user || !isConfigValid || !db) {
         return [];
@@ -52,10 +63,7 @@ export async function getTodayActivities(): Promise<TodayActivity[]> {
     }
 }
 
-const GetUserActivitiesForMonthSchema = z.object({
-    month: z.date(),
-    userId: z.string().optional(),
-});
+
 /**
  * Fetches all activities for a specific user or globally within a given month.
  * @param month The month to fetch activities for.
@@ -112,12 +120,7 @@ export async function getUserActivitiesForMonth(month: Date, userId?: string): P
     }
 }
 
-const CheckCrewAvailabilitySchema = z.object({
-  crewUserIds: z.array(z.string()),
-  startDate: z.date(),
-  endDate: z.date(),
-  activityIdToIgnore: z.string().optional(),
-});
+
 /**
  * Checks the availability of a single crew member for a given date range.
  * @param userId The user UID to check.

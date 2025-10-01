@@ -1,5 +1,8 @@
-
 /** @type {import('next').NextConfig} */
+
+// This is the combined and cleaned up Next.js configuration.
+// It removes Sentry and other complexities to ensure a stable build.
+
 const nextConfig = {
   experimental: {
     serverActions: {
@@ -7,9 +10,11 @@ const nextConfig = {
     },
   },
   typescript: {
+    // We want to see all type errors during the build.
     ignoreBuildErrors: false,
   },
   eslint: {
+    // We want to enforce ESLint rules during the build.
     ignoreDuringBuilds: false, 
   },
   images: {

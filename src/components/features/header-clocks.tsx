@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -16,6 +15,7 @@ export function HeaderClocks() {
   }, []);
 
   React.useEffect(() => {
+    // This effect only runs on the client, because isClient is false on the server.
     if (!isClient) return;
 
     const updateDateTime = () => {
@@ -47,12 +47,14 @@ export function HeaderClocks() {
       );
     };
 
-    updateDateTime();
+    updateDateTime(); // Run once immediately on the client
     const intervalId = setInterval(updateDateTime, 1000);
 
-    return () => clearInterval(intervalId);
+    return () => clearInterval(intervalId); // Cleanup interval on unmount
   }, [isClient]);
 
+  // On the server, and on the first client render, show placeholders.
+  // This ensures the server-rendered HTML matches the initial client render, preventing hydration errors.
   return (
     <div className="hidden md:flex items-center gap-2 text-xs font-medium text-foreground">
       <div className="flex items-center gap-2 border bg-card h-9 px-3 rounded-md" title="Current Date">

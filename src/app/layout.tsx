@@ -1,4 +1,3 @@
-
 import type { Metadata } from 'next';
 import './globals.css';
 import { AppLayout } from '@/app/layout/app-layout';
@@ -6,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/contexts/auth-context';
 import { Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getLocale, getMessages } from 'next-intl/server';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -38,21 +37,22 @@ const ThemeInitializer = () => (
 
 export default async function RootLayout({
   children,
-  params: {locale}
+  params: { locale },
 }: Readonly<{
   children: React.ReactNode;
-  params: {locale: string};
+  params: { locale: string };
 }>) {
   const messages = await getMessages();
+  const resolvedLocale = await getLocale();
 
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang={resolvedLocale} suppressHydrationWarning>
       <head>
         <ThemeInitializer />
         <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
       </head>
       <body className={inter.variable}>
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlClientProvider locale={resolvedLocale} messages={messages}>
           <AuthProvider>
             <AppLayout>{children}</AppLayout>
           </AuthProvider>

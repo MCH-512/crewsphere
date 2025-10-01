@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -51,26 +50,30 @@ import { Separator } from "@/components/ui/separator";
 const PUBLIC_PATHS = ['/login', '/signup'];
 
 const ThemeToggleButton = () => {
-    const [theme, setTheme] = React.useState('light');
-    const [isClient, setIsClient] = React.useState(false);
+    const [theme, setTheme] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        // This code runs only on the client.
+        const storedTheme = localStorage.getItem("theme");
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        const initialTheme = storedTheme || systemTheme;
+        setTheme(initialTheme);
+    }, []);
     
     React.useEffect(() => {
-        setIsClient(true);
-        const storedTheme = localStorage.getItem("theme") || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        setTheme(storedTheme);
-    }, []);
+        if (theme) {
+            document.documentElement.classList.toggle("dark", theme === "dark");
+            localStorage.setItem("theme", theme);
+        }
+    }, [theme]);
 
-    const toggleTheme = React.useCallback(() => {
-        setTheme(currentTheme => {
-            const newTheme = currentTheme === "light" ? "dark" : "light";
-            localStorage.setItem("theme", newTheme);
-            document.documentElement.classList.toggle("dark", newTheme === "dark");
-            return newTheme;
-        });
-    }, []);
+    const toggleTheme = () => {
+        setTheme(currentTheme => currentTheme === "light" ? "dark" : "light");
+    };
     
-    if (!isClient) {
-        return <div className="h-9 w-9 rounded-md border" />; // placeholder to prevent layout shift
+    if (theme === null) {
+      // Render a placeholder on the server and initial client render to avoid hydration mismatch
+      return <div className="h-9 w-9 rounded-md border" />;
     }
 
     return (

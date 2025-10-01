@@ -1,6 +1,5 @@
-
 {
-  "name": "nextn",
+  "name": "crewsphere-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -38,6 +37,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
+    "fast-xml-parser": "^4.4.0",
     "firebase": "^12.3.0",
     "framer-motion": "^11.3.8",
     "genkit": "^1.0.0",
