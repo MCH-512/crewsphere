@@ -14,7 +14,6 @@ export const metadata: Metadata = {
   description: 'A comprehensive portal for airline crew members.',
 };
 
-// This component is safe because it's a self-executing script with no React state.
 const ThemeInitializer = () => (
   <script
     dangerouslySetInnerHTML={{

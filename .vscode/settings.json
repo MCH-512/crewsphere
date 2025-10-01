@@ -2,7 +2,7 @@
   // Editor and formatting settings
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode", // Assumes Prettier extension is installed
-  "files.autoSave": "onFocusChange",
+  "files.autoSave": "afterDelay",
 
   // Enable Emmet for JSX/TSX
   "emmet.includeLanguages": {

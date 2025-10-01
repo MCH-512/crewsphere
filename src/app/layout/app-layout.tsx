@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -53,7 +54,6 @@ const ThemeToggleButton = () => {
     const [theme, setTheme] = React.useState<string | null>(null);
 
     React.useEffect(() => {
-        // This code runs only on the client.
         const storedTheme = localStorage.getItem("theme");
         const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         const initialTheme = storedTheme || systemTheme;
@@ -72,7 +72,6 @@ const ThemeToggleButton = () => {
     };
     
     if (theme === null) {
-      // Render a placeholder on the server and initial client render to avoid hydration mismatch
       return <div className="h-9 w-9 rounded-md border" />;
     }
 

@@ -159,13 +159,6 @@ L'architecture privilégie une approche **"Server-First"**, en utilisant les **R
     - Accédez à `http://localhost:9002` dans votre navigateur.
     - Utilisez les identifiants par défaut (`admin@crewsphere.app` / `password123`) ou créez un nouveau compte.
 
-### Modes de Développement
-
-- `npm run dev`: Environnement complet (Next.js + émulateurs complets).
-- `npm run dev:core`: Environnement rapide (Next.js + Firestore, Functions, Hosting).
-- `npm run dev:emulators`: Émulateurs complets uniquement.
-- `npm run emulators:core`: Émulateurs essentiels uniquement.
-
 🌙 *Psst... l’application supporte le mode sombre. Parce que les développeurs aussi ont besoin de repos pour les yeux.*
 
 ---
