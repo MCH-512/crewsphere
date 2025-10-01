@@ -29,5 +29,8 @@
 
   // Recommended extensions' settings (user must install the extensions for these to take effect)
   "workbench.iconTheme": "vscode-icons", // From "VSCode Icons" extension
-  "workbench.colorTheme": "GitHub Dark Default" // From "GitHub Theme" extension
+  "workbench.colorTheme": "GitHub Dark Default",
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  } // From "GitHub Theme" extension
 }
