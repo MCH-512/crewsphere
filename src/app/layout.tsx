@@ -6,7 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/contexts/auth-context';
 import { Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
-import { getLocale, getMessages } from 'next-intl/server';
+import { getMessages } from 'next-intl/server';
+import { getLocale } from 'next-intl/server';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 

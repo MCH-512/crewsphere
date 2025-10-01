@@ -54,36 +54,38 @@ const ThemeToggleButton = () => {
   const [theme, setTheme] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-      // This code runs only on the client.
-      const storedTheme = localStorage.getItem("theme");
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      setTheme(storedTheme || systemTheme);
+    // This effect runs only on the client, after the initial render.
+    const storedTheme = localStorage.getItem("theme");
+    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const initialTheme = storedTheme || systemTheme;
+    setTheme(initialTheme);
   }, []);
 
   React.useEffect(() => {
-      if (theme) {
-          if (theme === 'dark') {
-              document.documentElement.classList.add('dark');
-          } else {
-              document.documentElement.classList.remove('dark');
-          }
-          localStorage.setItem("theme", theme);
+    // This effect synchronizes the theme state with the DOM and localStorage.
+    if (theme) {
+      if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+      } else {
+          document.documentElement.classList.remove('dark');
       }
+      localStorage.setItem("theme", theme);
+    }
   }, [theme]);
 
   const toggleTheme = () => {
-      setTheme(currentTheme => currentTheme === "light" ? "dark" : "light");
+    setTheme(currentTheme => (currentTheme === "light" ? "dark" : "light"));
   };
 
-  if (theme === null) {
-      // Render a placeholder on the server and during initial client render
-      return <div className="h-9 w-9 rounded-md border" />;
+  // Render a placeholder on the server and during initial hydration
+  if (!theme) {
+    return <div className="h-9 w-9 rounded-md border" />;
   }
 
   return (
-      <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`} className="h-9 w-9">
-          {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-      </Button>
+    <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`} className="h-9 w-9">
+      {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+    </Button>
   );
 };
 

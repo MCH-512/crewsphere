@@ -1,15 +1,14 @@
+'use client'
 
-'use client';
-
-import React, { useEffect } from 'react';
+import React from 'react';
 
 /**
  * A failsafe, dependency-free global error boundary.
  * It uses plain JSX and inline styles to avoid any conflicts with the UI library or CSS setup
  * that might occur during a critical application-wide error.
  */
-function GlobalError({ error, reset }) {
-  useEffect(() => {
+export default function GlobalError({ error, reset }) {
+  React.useEffect(() => {
     // Log the error to the console for debugging
     console.error(error);
   }, [error]);
@@ -38,7 +37,7 @@ function GlobalError({ error, reset }) {
           }}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: '0 0 1rem 0' }}>Something Went Wrong</h2>
             <p style={{ color: '#57606a', margin: '0 0 1.5rem 0' }}>
-              An unexpected error occurred. This has been logged.
+              An unexpected application error occurred. This has been logged.
             </p>
             <button
               onClick={() => reset()}
@@ -61,5 +60,3 @@ function GlobalError({ error, reset }) {
     </html>
   );
 }
-
-export default GlobalError;
