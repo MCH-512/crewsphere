@@ -1,19 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 
 /**
  * A failsafe, dependency-free global error boundary.
- * It uses plain JSX and basic inline styles to avoid any conflicts with the UI library or CSS setup
+ * It uses plain JSX and inline styles to avoid any conflicts with the UI library or CSS setup
  * that might occur during a critical application-wide error.
- * 
- * Note: This component is intentionally basic. It does not use custom components (Card, Button)
- * to ensure it can render even if the UI library itself has issues.
  */
-export default function GlobalError({ error, reset }) {
-  // We can still log the error to the console.
-  React.useEffect(() => {
-    console.error("A global error occurred:", error);
+function GlobalError({ error, reset }) {
+  useEffect(() => {
+    // Log the error to the console for debugging
+    console.error(error);
   }, [error]);
 
   return (
@@ -63,3 +60,5 @@ export default function GlobalError({ error, reset }) {
     </html>
   );
 }
+
+export default GlobalError;

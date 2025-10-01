@@ -9,10 +9,7 @@ import { getAirportByCode } from "./airport-service";
 import { getCurrentUser } from "@/lib/session";
 import { z } from "zod";
 
-const GetFlightsInputSchema = z.object({
-    // In a real app, you might have filters here, like date ranges or user IDs.
-    // For now, we'll keep it simple as this function has no external inputs.
-}).optional();
+const EmptySchema = z.object({});
 
 export interface FlightForDisplay extends StoredFlight {
     departureAirportName?: string;
@@ -23,7 +20,7 @@ export interface FlightForDisplay extends StoredFlight {
 }
 
 export async function getFlightsForAdmin() {
-    GetFlightsInputSchema.parse({}); // Validate that no input is given
+    EmptySchema.parse({}); // Validate that no input is given
     const user = await getCurrentUser();
     if (!user || user.role !== 'admin' || !isConfigValid || !db) {
         console.warn("Unauthorized or unconfigured attempt to fetch flights for admin.");
