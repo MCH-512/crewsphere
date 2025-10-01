@@ -51,36 +51,42 @@ import { Separator } from "@/components/ui/separator";
 const PUBLIC_PATHS = ['/login', '/signup'];
 
 const ThemeToggleButton = () => {
-    const [theme, setTheme] = React.useState<string | null>(null);
+  const [theme, setTheme] = React.useState<string | null>(null);
 
-    React.useEffect(() => {
-        const storedTheme = localStorage.getItem("theme");
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        const initialTheme = storedTheme || systemTheme;
-        setTheme(initialTheme);
-    }, []);
-    
-    React.useEffect(() => {
-        if (theme) {
-            document.documentElement.classList.toggle("dark", theme === "dark");
-            localStorage.setItem("theme", theme);
-        }
-    }, [theme]);
+  React.useEffect(() => {
+      // This code runs only on the client.
+      const storedTheme = localStorage.getItem("theme");
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      setTheme(storedTheme || systemTheme);
+  }, []);
 
-    const toggleTheme = () => {
-        setTheme(currentTheme => currentTheme === "light" ? "dark" : "light");
-    };
-    
-    if (theme === null) {
+  React.useEffect(() => {
+      if (theme) {
+          if (theme === 'dark') {
+              document.documentElement.classList.add('dark');
+          } else {
+              document.documentElement.classList.remove('dark');
+          }
+          localStorage.setItem("theme", theme);
+      }
+  }, [theme]);
+
+  const toggleTheme = () => {
+      setTheme(currentTheme => currentTheme === "light" ? "dark" : "light");
+  };
+
+  if (theme === null) {
+      // Render a placeholder on the server and during initial client render
       return <div className="h-9 w-9 rounded-md border" />;
-    }
+  }
 
-    return (
-        <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`} className="h-9 w-9">
-            {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-        </Button>
-    );
+  return (
+      <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`} className="h-9 w-9">
+          {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+      </Button>
+  );
 };
+
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

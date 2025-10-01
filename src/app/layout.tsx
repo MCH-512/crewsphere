@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { AppLayout } from '@/app/layout/app-layout';
@@ -14,26 +15,6 @@ export const metadata: Metadata = {
   description: 'A comprehensive portal for airline crew members.',
 };
 
-const ThemeInitializer = () => (
-  <script
-    dangerouslySetInnerHTML={{
-      __html: `(function() {
-        try {
-          const theme = localStorage.getItem('theme');
-          if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-          } else if (!theme) {
-            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            if (systemTheme === 'dark') {
-              document.documentElement.classList.add('dark');
-            }
-          }
-        } catch (e) {}
-      })();`,
-    }}
-  />
-);
-
 export default async function RootLayout({
   children,
   params: { locale },
@@ -47,7 +28,6 @@ export default async function RootLayout({
   return (
     <html lang={resolvedLocale} suppressHydrationWarning>
       <head>
-        <ThemeInitializer />
         <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
       </head>
       <body className={inter.variable}>
