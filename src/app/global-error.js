@@ -1,26 +1,23 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 
 /**
  * A failsafe, dependency-free global error boundary.
- * It uses plain JSX and inline styles to avoid any conflicts with the UI library or CSS setup
- * that might occur during a critical application-wide error.
- * This version uses a named export which is then exported as default for maximum compatibility.
+ * This version is stripped down to the absolute basics to ensure it renders
+ * under all circumstances, avoiding subtle runtime errors.
  */
-const GlobalError = ({ error, reset }) => {
-  useEffect(() => {
-    // Log the error to the console for debugging
-    console.error(error);
-  }, [error]);
-
+export default function GlobalError({ error, reset }) {
+  // The error is logged on the server and client console by Next.js by default.
+  // A useEffect is removed here as a final measure to prevent any hook-related runtime errors.
+  
   return (
     <html>
       <body>
         <div style={{
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
           display: 'flex',
-          minHeight: '100vh',
+          height: '100vh',
           textAlign: 'center',
           flexDirection: 'column',
           alignItems: 'center',
@@ -38,7 +35,7 @@ const GlobalError = ({ error, reset }) => {
           }}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: '0 0 1rem 0' }}>Something Went Wrong</h2>
             <p style={{ color: '#57606a', margin: '0 0 1.5rem 0' }}>
-              An unexpected error occurred. This has been logged.
+              An unexpected application error occurred.
             </p>
             <button
               onClick={() => reset()}
@@ -53,13 +50,11 @@ const GlobalError = ({ error, reset }) => {
                 fontWeight: '500',
               }}
             >
-              Try Again
+              Try again
             </button>
           </div>
         </div>
       </body>
     </html>
   );
-};
-
-export default GlobalError;
+}
