@@ -20,7 +20,7 @@ export interface ActivityData extends UserActivity {
     userEmail?: string;
 }
 
-const GetTodayActivitiesSchema = z.object({}).optional();
+const GetTodayActivitiesSchema = z.object({});
 /**
  * Fetches all activities for the current user for the current day.
  * @returns A promise that resolves to an array of TodayActivity objects.

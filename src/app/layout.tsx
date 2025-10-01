@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   description: 'A comprehensive portal for airline crew members.',
 };
 
+// This component is safe because it's a self-executing script with no React state.
 const ThemeInitializer = () => (
   <script
     dangerouslySetInnerHTML={{
@@ -51,7 +52,7 @@ export default async function RootLayout({
         <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
       </head>
       <body className={inter.variable}>
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
           <AuthProvider>
             <AppLayout>{children}</AppLayout>
           </AuthProvider>

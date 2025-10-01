@@ -15,7 +15,6 @@ export function HeaderClocks() {
     setIsClient(true);
   }, []);
 
-
   React.useEffect(() => {
     if (!isClient) return;
 

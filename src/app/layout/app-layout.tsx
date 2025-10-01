@@ -50,30 +50,36 @@ import { Separator } from "@/components/ui/separator";
 
 const PUBLIC_PATHS = ['/login', '/signup'];
 
+const useTheme = () => {
+  const [theme, setTheme] = React.useState("light");
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+    const storedTheme = localStorage.getItem("theme");
+    if (storedTheme) {
+      setTheme(storedTheme);
+    } else {
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        setTheme(systemTheme);
+    }
+  }, []);
+
+  const toggleTheme = React.useCallback(() => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    localStorage.setItem("theme", newTheme);
+    document.documentElement.classList.toggle("dark", newTheme === "dark");
+  }, [theme]);
+  
+  return { theme, toggleTheme, isMounted };
+};
+
 const ThemeToggleButton = () => {
-    const [theme, setTheme] = React.useState('light');
-    const [isMounted, setIsMounted] = React.useState(false);
-
-    React.useEffect(() => {
-        setIsMounted(true);
-        const storedTheme = localStorage.getItem("theme");
-        if (storedTheme) {
-            setTheme(storedTheme);
-        } else {
-             const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-             setTheme(systemTheme);
-        }
-    }, []);
-
-    const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-        localStorage.setItem('theme', newTheme);
-        document.documentElement.classList.toggle('dark', newTheme === 'dark');
-    };
+    const { theme, toggleTheme, isMounted } = useTheme();
     
     if (!isMounted) {
-        return <div className="h-9 w-9 rounded-md border" />; // placeholder
+        return <div className="h-9 w-9 rounded-md border" />; // placeholder to prevent layout shift
     }
 
     return (
@@ -151,7 +157,7 @@ function LayoutWithSidebar({
   const { isMobile } = useSidebar();
   const pathname = usePathname();
 
-  const isAdminPage = pathname.includes('/admin');
+  const isAdminPage = pathname.startsWith('/admin');
   const currentNavConfig = isAdminPage && user?.role === 'admin' ? adminNavConfig : mainNavConfig;
   
   const avatarFallback = user?.displayName ? user.displayName.substring(0, 2).toUpperCase() : user?.email?.substring(0,2).toUpperCase() || 'U';
@@ -172,7 +178,7 @@ function LayoutWithSidebar({
               <SidebarMenu>
                 {navGroup.items.map((item) => {
                   if (item.roles && !item.roles.some((role: string) => user?.role === role)) return null;
-                  const isActive = item.href === "/" ? pathname.split('/').length <= 2 : pathname.startsWith(item.href);
+                  const isActive = item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);
                   return (
                      <SidebarMenuItem key={item.href}>
                         <SidebarMenuButton
@@ -218,7 +224,7 @@ function LayoutWithSidebar({
             <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  variant={pathname.includes("/settings") ? "active" : "border"}
+                  variant={pathname === "/settings" ? "active" : "border"}
                   tooltip={{ children: "Settings", side: "right", align: "center" }}
                 >
                   <Link href="/settings">
