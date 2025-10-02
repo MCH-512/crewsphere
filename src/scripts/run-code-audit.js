@@ -1,3 +1,4 @@
+
 // scripts/run-code-audit.js
 const fs = require('fs/promises');
 const path = require('path');
@@ -10,7 +11,7 @@ async function main() {
 
     try {
         // We must use dynamic import() here because this script is CommonJS, but the Genkit module is ESM.
-        const { ai } = await import(path.resolve(__dirname, '../ai/genkit.js'));
+        const { ai } = await import(path.resolve(__dirname, '../ai/genkit.ts'));
 
         const sentryContext = "Sentry analysis skipped (configuration missing).";
         const dependabotContext = "No open Dependabot PRs found.";

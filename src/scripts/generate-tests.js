@@ -1,3 +1,4 @@
+
 // scripts/generate-tests.js
 const fs = require('fs');
 const path = require('path');
@@ -10,7 +11,7 @@ async function generateTestsForFeature(featureName, description) {
   
   try {
     // Dynamically import the genkit AI object which is an ES Module
-    const { ai } = await import(path.resolve(__dirname, '../ai/genkit.js'));
+    const { ai } = await import(path.resolve(__dirname, '../ai/genkit.ts'));
 
     const prompt = `
 Generate a complete Jest unit test file in TypeScript for the following feature.

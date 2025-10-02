@@ -1,10 +1,11 @@
+
 import {getRequestConfig} from 'next-intl/server';
  
 export default getRequestConfig(async () => {
-  // For stability, we'll only support the 'en' locale for now.
-  const locale = 'en';
- 
+  // Provide a static locale, simplifying the configuration.
+  // Messages can be defined here or in separate JSON files.
   return {
-    messages: (await import(`./messages/${locale}.json`)).default
+    locale: 'en',
+    messages: (await import('./messages/en.json')).default
   };
 });

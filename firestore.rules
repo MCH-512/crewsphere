@@ -1,67 +1,42 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Default deny all reads and writes
+  
+    // Default deny: No user can read or write any data unless explicitly allowed.
     match /{document=**} {
       allow read, write: if false;
     }
     
-    // Users can read and write their own data, but not create their own doc.
-    // User doc creation should be handled by a secure backend process (e.g. Cloud Function) on signup.
+    // Users can read and update their own user profile document.
     match /users/{userId} {
       allow read, update: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Allow read access to public collections for all authenticated users
-    match /courses/{docId} {
-       allow read: if request.auth != null;
+    // Logged-in users can create documents in these collections.
+    match /suggestions/{suggestionId} {
+      allow create: if request.auth != null;
     }
-    match /documents/{docId} {
-       allow read: if request.auth != null;
-    }
-    match /flights/{docId} {
-       allow read: if request.auth != null;
-    }
-    match /alerts/{docId} {
-       allow read: if request.auth != null;
-    }
-     match /trainingSessions/{docId} {
-       allow read: if request.auth != null;
-    }
-
-    // Allow users to read/write their own progress and attempts
-    match /userProgress/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    match /userQuizAttempts/{docId} {
-        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-        allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-    }
-    match /userDocuments/{docId} {
-        allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
-    }
-    match /userActivities/{docId} {
-        allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
+    match /safetyReports/{reportId} {
+      allow create: if request.auth != null;
     }
     
-    // Community features: logged in users can create, read all, and edit/delete their own
-    match /communityPosts/{postId} {
-      allow read, create: if request.auth != null;
-      allow update, delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+    // Logged-in users can read documents from these public-knowledge collections.
+    match /courses/{courseId} {
+      allow read: if request.auth != null;
+    }
+    match /documents/{documentId} {
+      allow read: if request.auth != null;
+    }
+    match /alerts/{alertId} {
+      allow read: if request.auth != null;
     }
 
-    // Suggestions: logged in users can read and create, and upvote
-    match /suggestions/{suggestionId} {
-      allow read, create: if request.auth != null;
-      allow update: if request.auth != null; // For upvoting
-    }
-
-    // Requests: users can create and read their own
-    match /requests/{requestId} {
-        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-        allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+    // Allow admins to perform any action on any document.
+    // This is a broad rule for development; production rules should be more granular.
+    match /{document=**} {
+      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
