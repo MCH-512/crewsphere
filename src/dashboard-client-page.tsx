@@ -12,36 +12,6 @@ import { type User } from "@/schemas/user-schema";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { ActiveAlerts } from "@/components/features/active-alerts";
 import { Suspense } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
-
-const WidgetSkeleton = () => (
-  <Card className="h-full shadow-md">
-    <CardHeader>
-      <Skeleton className="h-5 w-2/4 mb-2" />
-      <Skeleton className="h-4 w-3/4" />
-    </CardHeader>
-    <CardContent>
-      <Skeleton className="h-10 w-full" />
-    </CardContent>
-    <CardFooter>
-      <Skeleton className="h-9 w-full" />
-    </CardFooter>
-  </Card>
-);
-
-const ChartSkeleton = () => (
-  <Card className="h-full shadow-sm">
-    <CardHeader>
-      <Skeleton className="h-5 w-3/4 mb-2" />
-      <Skeleton className="h-4 w-1/2" />
-    </CardHeader>
-    <CardContent>
-      <div className="flex items-center justify-center h-[250px]">
-        <Skeleton className="h-48 w-48 rounded-full" />
-      </div>
-    </CardContent>
-  </Card>
-);
 
 interface DashboardClientPageProps {
   children: React.ReactNode;
@@ -66,8 +36,6 @@ export default function DashboardClientPage({ children, heroImage }: DashboardCl
     { href: "/suggestion-box", label: "Submit an Idea", icon: Lightbulb },
     { href: "/toolbox", label: "Open Toolbox", icon: Wrench },
   ];
-
-  const [scheduleWidget, trainingWidget, requestsWidget, trainingChart, requestsChart] = React.Children.toArray(children);
 
   if (!heroImage || !heroImage.src || typeof heroImage.src !== 'string') {
     return <div>Error: heroImage.src is invalid or undefined</div>;
@@ -100,27 +68,11 @@ export default function DashboardClientPage({ children, heroImage }: DashboardCl
       <Suspense>
         <ActiveAlerts />
       </Suspense>
-      
-       <AnimatedCard delay={0.1} className="lg:col-span-1">
-          <Suspense fallback={<WidgetSkeleton />}>
-            {scheduleWidget}
-          </Suspense>
-       </AnimatedCard>
+
+      {/* Server-rendered widgets are passed in here */}
+      {children}
        
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AnimatedCard delay={0.15}>
-          <Suspense fallback={<WidgetSkeleton />}>
-            {trainingWidget}
-          </Suspense>
-        </AnimatedCard>
-        <AnimatedCard delay={0.2}>
-          <Suspense fallback={<WidgetSkeleton />}>
-            {requestsWidget}
-          </Suspense>
-        </AnimatedCard>
-      </div>
-      
-       <AnimatedCard delay={0.25}>
+      <AnimatedCard delay={0.25}>
            <Card className="h-full shadow-md hover:shadow-lg transition-shadow flex flex-col">
               <CardHeader>
                   <CardTitle as="h2" className="font-headline text-xl">Resources & Actions</CardTitle>
@@ -140,19 +92,6 @@ export default function DashboardClientPage({ children, heroImage }: DashboardCl
           </Card>
       </AnimatedCard>
 
-
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-         <AnimatedCard delay={0.3}>
-           <Suspense fallback={<ChartSkeleton />}>
-            {trainingChart}
-          </Suspense>
-        </AnimatedCard>
-         <AnimatedCard delay={0.35}>
-           <Suspense fallback={<ChartSkeleton />}>
-            {requestsChart}
-          </Suspense>
-        </AnimatedCard>
-      </div>
     </div>
   );
 }
