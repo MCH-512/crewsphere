@@ -18,21 +18,19 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
-  params: { locale },
 }: Readonly<{
   children: React.ReactNode;
-  params: { locale: string };
 }>) {
   const messages = await getMessages();
-  const resolvedLocale = await getLocale();
+  const locale = await getLocale();
 
   return (
-    <html lang={resolvedLocale} suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
       </head>
       <body className={inter.variable}>
-        <NextIntlClientProvider locale={resolvedLocale} messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
           <AuthProvider>
             <AppLayout>{children}</AppLayout>
           </AuthProvider>
