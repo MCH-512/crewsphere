@@ -9,34 +9,37 @@ export default function Error({
 }) {
   return (
     <div style={{
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'system-ui, sans-serif',
       display: 'flex',
       minHeight: 'calc(100vh - 8rem)',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '1rem',
+      backgroundColor: 'var(--background)',
+      color: 'var(--foreground)'
     }}>
       <div style={{
-        border: '1px solid #d0d7de',
+        border: '1px solid hsl(var(--border))',
         borderRadius: '0.5rem',
-        padding: '1.5rem',
+        padding: '2rem',
         width: '100%',
         maxWidth: '512px',
         textAlign: 'center',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+        backgroundColor: 'var(--card)'
       }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginTop: '1rem', color: '#cf222e' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginTop: '1rem', color: 'hsl(var(--destructive))' }}>
           Something went wrong!
         </h2>
-        <p style={{ marginTop: '0.5rem', color: '#57606a' }}>
+        <p style={{ marginTop: '0.5rem', color: 'hsl(var(--muted-foreground))' }}>
           An error occurred in this part of the application.
         </p>
         <button
           onClick={() => reset()}
           style={{
             marginTop: '1.5rem',
-            backgroundColor: '#0969da',
-            color: 'white',
+            backgroundColor: 'hsl(var(--primary))',
+            color: 'hsl(var(--primary-foreground))',
             padding: '0.5rem 1rem',
             borderRadius: '0.375rem',
             border: 'none',
