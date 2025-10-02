@@ -1,3 +1,4 @@
+
 import createMiddleware from 'next-intl/middleware';
  
 export default createMiddleware({
@@ -10,5 +11,6 @@ export default createMiddleware({
  
 export const config = {
   // Match only internationalized pathnames
+  // This skips middleware for `_next`, api, etc.
   matcher: ['/', '/(en)/:path*']
 };

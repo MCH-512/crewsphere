@@ -6,6 +6,6 @@ export default getRequestConfig(async () => {
   // Messages can be defined here or in separate JSON files.
   return {
     locale: 'en',
-    messages: (await import('./messages/en.json')).default
+    messages: (await import('../messages/en.json')).default
   };
 });
