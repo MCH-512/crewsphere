@@ -19,10 +19,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Messages are now handled by the root `i18n.ts` config and middleware
-  // We can provide an empty object here as it's no longer the primary source.
-  const messages = {};
+  // A single locale is used, so we can define it statically.
+  // The messages can be an empty object as they are handled by middleware.
   const locale = 'en';
+  const messages = {};
 
   return (
     <html lang={locale} suppressHydrationWarning>
