@@ -3884,3 +3884,525 @@ INFO: Connected to new websocket client
 [error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
 [debug] [2025-10-01T14:13:59.055Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
 [debug] [2025-10-01T14:13:59.055Z] > authorizing via signed-in user (chabouha.mahmoud@gmail.com)
+[debug] [2025-10-02T08:33:07.761Z] ----------------------------------------------------------------------
+[debug] [2025-10-02T08:33:07.769Z] Command:       /nix/store/ws50yvm6vzlzf7jzz6n7xh4szddrack1-nodejs-20.19.1/bin/node /nix/store/a3jfkfzmr1h8lmk31a8fbchkg5sp12q9-firebase-tools-14.16.0/lib/node_modules/firebase-tools/lib/bin/firebase.js emulators:start --project=demo-app --only=auth,firestore
+[debug] [2025-10-02T08:33:07.773Z] CLI Version:   14.16.0
+[debug] [2025-10-02T08:33:07.773Z] Platform:      linux
+[debug] [2025-10-02T08:33:07.773Z] Node Version:  v20.19.1
+[debug] [2025-10-02T08:33:07.774Z] Time:          Thu Oct 02 2025 08:33:07 GMT+0000 (Coordinated Universal Time)
+[debug] [2025-10-02T08:33:07.775Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-10-02T08:33:07.781Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2025-10-02T08:33:09.483Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2025-10-02T08:33:09.486Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2025-10-02T08:33:10.421Z] openjdk version "21.0.7" 2025-04-15
+OpenJDK Runtime Environment (build 21.0.7+6-nixos)
+OpenJDK 64-Bit Server VM (build 21.0.7+6-nixos, mixed mode, sharing)
+
+[debug] [2025-10-02T08:33:10.495Z] Parsed Java major version: 21
+[info] i  emulators: Starting emulators: firestore {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: firestore"}}
+[info] i  emulators: Detected demo project ID "demo-app", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail. {"metadata":{"emulator":{"name":"hub"},"message":"Detected demo project ID \"demo-app\", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail."}}
+[warn] ⚠  auth: Not starting the auth emulator, make sure you have run firebase init. {"metadata":{"emulator":{"name":"auth"},"message":"Not starting the auth emulator, make sure you have run firebase init."}}
+[debug] [2025-10-02T08:33:10.533Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4402}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4501}],"firestore":[{"address":"127.0.0.1","family":"IPv4","port":8081}],"firestore.websocket":[{"address":"127.0.0.1","family":"IPv4","port":9150}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2025-10-02T08:33:10.594Z] Emulator locator file path: /tmp/hub-demo-app.json
+[debug] [2025-10-02T08:33:10.595Z] [hub] writing locator at /tmp/hub-demo-app.json
+[debug] [2025-10-02T08:33:10.684Z] Ignoring unsupported arg: auto_download {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: auto_download"}}
+[debug] [2025-10-02T08:33:10.684Z] Ignoring unsupported arg: single_project_mode_error {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: single_project_mode_error"}}
+[debug] [2025-10-02T08:33:10.685Z] Starting Firestore Emulator with command {"binary":"java","args":["-Dgoogle.cloud_firestore.debug_log_level=FINE","-Duser.language=en","-jar","/nix/store/3j1y38zp0l5fzbc60qxsn8f62pcn7bpg-emulators/cloud-firestore-emulator-v1.19.8.jar","--host","127.0.0.1","--port",8081,"--websocket_port",9150,"--project_id","demo-app","--rules","/home/user/studio/firestore.rules","--single_project_mode",true],"optionalArgs":["port","webchannel_port","host","rules","websocket_port","functions_emulator","seed_from_export","project_id","single_project_mode"],"joinArgs":false,"shell":false,"port":8081} {"metadata":{"emulator":{"name":"firestore"},"message":"Starting Firestore Emulator with command {\"binary\":\"java\",\"args\":[\"-Dgoogle.cloud_firestore.debug_log_level=FINE\",\"-Duser.language=en\",\"-jar\",\"/nix/store/3j1y38zp0l5fzbc60qxsn8f62pcn7bpg-emulators/cloud-firestore-emulator-v1.19.8.jar\",\"--host\",\"127.0.0.1\",\"--port\",8081,\"--websocket_port\",9150,\"--project_id\",\"demo-app\",\"--rules\",\"/home/user/studio/firestore.rules\",\"--single_project_mode\",true],\"optionalArgs\":[\"port\",\"webchannel_port\",\"host\",\"rules\",\"websocket_port\",\"functions_emulator\",\"seed_from_export\",\"project_id\",\"single_project_mode\"],\"joinArgs\":false,\"shell\":false,\"port\":8081}"}}
+[info] i  firestore: Firestore Emulator logging to firestore-debug.log {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator logging to firestore-debug.log"}}
+[debug] [2025-10-02T08:33:15.802Z] Oct 02, 2025 8:33:15 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start
+INFO: Started WebSocket server on ws://127.0.0.1:9150
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 02, 2025 8:33:15 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start\nINFO: Started WebSocket server on ws://127.0.0.1:9150\n"}}
+[debug] [2025-10-02T08:33:15.883Z] API endpoint: http:// {"metadata":{"emulator":{"name":"firestore"},"message":"API endpoint: http://"}}
+[debug] [2025-10-02T08:33:15.887Z] 127.0.0.1:8081
+If you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:
+
+   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8081
+
+If you are running a Firestore in Datastore Mode project, run:
+
+   export DATASTORE_EMULATOR_HOST=127.0.0.1:8081
+
+Note: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.
+Dev App Server is now running.
+
+ {"metadata":{"emulator":{"name":"firestore"},"message":"127.0.0.1:8081\nIf you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:\n\n   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8081\n\nIf you are running a Firestore in Datastore Mode project, run:\n\n   export DATASTORE_EMULATOR_HOST=127.0.0.1:8081\n\nNote: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.\nDev App Server is now running.\n\n"}}
+[info] ✔  firestore: Firestore Emulator UI websocket is running on 9150. {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator UI websocket is running on 9150."}}
+[warn] ⚠  emulators: The Emulator UI is not starting because none of the running emulators have a UI component. {"metadata":{"emulator":{"name":"hub"},"message":"The Emulator UI is not starting because none of the running emulators have a UI component."}}
+[debug] [2025-10-02T08:33:16.090Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: connect ECONNREFUSED 127.0.0.1:40001. If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+└─────────────────────────────────────────────────────────────┘
+
+┌───────────┬────────────────┐
+│ Emulator  │ Host:Port      │
+├───────────┼────────────────┤
+│ Firestore │ 127.0.0.1:8081 │
+└───────────┴────────────────┘
+  Emulator Hub host: 127.0.0.1 port: 4402
+  Other reserved ports: 4501, 9150
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2025-10-02T08:33:22.433Z] >>> [apiv2][query] PUT http://127.0.0.1:8081/emulator/v1/projects/demo-app:securityRules [none]
+[debug] [2025-10-02T08:33:22.433Z] >>> [apiv2][body] PUT http://127.0.0.1:8081/emulator/v1/projects/demo-app:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"\nrules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    // Deny all reads and writes by default.\n    // This is a secure default. You must explicitly\n    // enable access to specific collections.\n    match /{document=**} {\n      allow read, write: if false;\n    }\n\n    // Allow users to read and write their own documents\n    match /users/{userId} {\n      allow read, update: if request.auth != null && request.auth.uid == userId;\n    }\n\n    // Allow logged-in users to read from collections they need\n    match /courses/{docId} {\n      allow read: if request.auth != null;\n    }\n    match /documents/{docId} {\n      allow read: if request.auth != null;\n    }\n    match /flights/{docId} {\n      allow read: if request.auth != null;\n    }\n    \n    // Allow users to manage their own specific sub-collections or documents\n     match /userDocuments/{docId} {\n      allow read, create, update, delete: if request.auth != null && request.auth.uid == request.resource.data.userId;\n    }\n     match /userQuizAttempts/{docId} {\n      allow read, create: if request.auth != null && request.auth.uid == request.resource.data.userId;\n    }\n     match /userActivities/{docId} {\n      allow read, create, delete: if request.auth != null && request.auth.uid == request.resource.data.userId;\n    }\n\n    // Community hub: must be logged in to read, can only create/edit own posts\n    match /communityPosts/{postId} {\n      allow read: if request.auth != null;\n      allow create: if request.auth != null && request.auth.uid == request.resource.data.authorId;\n      allow update: if request.auth != null && (\n        (request.resource.data.likes != resource.data.likes && request.resource.data.authorId == resource.data.authorId) || // allow liking\n        (request.auth.uid == resource.data.authorId) // allow owner to edit\n      );\n    }\n    \n    // Requests: users can create for themselves, admins can update\n    match /requests/{requestId} {\n        allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;\n        allow read, update: if request.auth != null && (request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');\n    }\n    \n    // Suggestions: logged-in users can create, can only upvote, admin can update status\n    match /suggestions/{suggestionId} {\n        allow read: if request.auth != null;\n        allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;\n        allow update: if request.auth != null && (\n            (request.resource.data.upvotes != resource.data.upvotes) || // allow upvoting\n            (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') // allow admin to update status/notes\n        );\n    }\n    \n    // Admin-only write access for core collections\n    match /alerts/{alertId} {\n        allow read: if request.auth != null;\n        allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';\n    }\n     match /trainingSessions/{sessionId} {\n        allow read: if request.auth != null;\n        allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';\n    }\n\n    // Safety reports are write-only for authenticated users to ensure confidentiality. Admins read them through backend functions.\n    match /safetyReports/{reportId} {\n        allow read: if false; // No one can read directly.\n        allow create: if request.auth != null;\n    }\n  }\n}\n"}]}}
+[debug] [2025-10-02T08:33:22.458Z] Oct 02, 2025 8:33:22 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 02, 2025 8:33:22 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-10-02T08:33:22.885Z] Oct 02, 2025 8:33:22 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 02, 2025 8:33:22 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected HTTP/2 connection.\n"}}
+[debug] [2025-10-02T08:33:27.640Z] <<< [apiv2][status] PUT http://127.0.0.1:8081/emulator/v1/projects/demo-app:securityRules 200
+[debug] [2025-10-02T08:33:27.642Z] <<< [apiv2][body] PUT http://127.0.0.1:8081/emulator/v1/projects/demo-app:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-10-02T08:33:59.256Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.257Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.258Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T08:33:59.262Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T08:33:59.262Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:33:59.342Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.343Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.345Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T08:33:59.348Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T08:33:59.348Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:33:59.367Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.382Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.383Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T08:33:59.400Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T08:33:59.401Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:33:59.434Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.434Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.434Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T08:33:59.435Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T08:33:59.435Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:33:59.440Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.440Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.440Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T08:33:59.441Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T08:33:59.442Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-10-02T08:33:59.839Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.839Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.839Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T08:33:59.843Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T08:33:59.843Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:33:59.846Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.848Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.848Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T08:33:59.849Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T08:33:59.850Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:33:59.854Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.854Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.855Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T08:33:59.855Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T08:33:59.855Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:33:59.860Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.862Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.862Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T08:33:59.863Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T08:33:59.863Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:33:59.867Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.873Z] Checked if tokens are valid: false, expires at: 1759331637037
+[debug] [2025-10-02T08:33:59.873Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T08:33:59.874Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T08:33:59.874Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:33:59.920Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T08:33:59.922Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:34:00.017Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-10-02T08:34:00.018Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T08:34:00.067Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T08:34:00.067Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:34:00.096Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [none]
+[debug] [2025-10-02T08:34:00.096Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T08:34:00.139Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T08:34:00.141Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:34:00.162Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-10-02T08:34:00.162Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T08:34:00.188Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T08:34:00.191Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:34:00.204Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [none]
+[debug] [2025-10-02T08:34:00.204Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T08:34:00.211Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T08:34:00.211Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:34:00.223Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2025-10-02T08:34:00.224Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T08:34:00.229Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T08:34:00.229Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:34:00.265Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-10-02T08:34:00.265Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T08:34:00.270Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T08:34:00.270Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:34:00.311Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [none]
+[debug] [2025-10-02T08:34:00.311Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T08:34:00.338Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T08:34:00.339Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:34:00.379Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [none]
+[debug] [2025-10-02T08:34:00.380Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T08:34:00.397Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T08:34:00.400Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:34:00.422Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2025-10-02T08:34:00.422Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T08:34:00.439Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T08:34:00.439Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T08:34:00.459Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-10-02T08:34:00.459Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T08:34:00.911Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-10-02T08:34:00.911Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2025-10-02T08:34:01.021Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com 403
+[debug] [2025-10-02T08:34:01.022Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [omitted]
+[debug] [2025-10-02T08:34:01.045Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-10-02T08:34:01.045Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2025-10-02T08:34:01.112Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com 200
+[debug] [2025-10-02T08:34:01.116Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2025-10-02T08:34:01.124Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com 403
+[debug] [2025-10-02T08:34:01.124Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [omitted]
+[debug] [2025-10-02T08:34:01.132Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-10-02T08:34:01.132Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-10-02T08:34:01.264Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-10-02T08:34:01.265Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-10-02T08:34:01.267Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com 200
+[debug] [2025-10-02T08:34:01.268Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2025-10-02T08:34:01.335Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ 200
+[debug] [2025-10-02T08:34:01.335Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [omitted]
+[debug] [2025-10-02T08:34:01.378Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ 200
+[debug] [2025-10-02T08:34:01.378Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [omitted]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-10-02T08:34:01.395Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-10-02T08:34:01.396Z] > authorizing via signed-in user (chabouha.mahmoud@gmail.com)
+[debug] [2025-10-02T09:06:24.572Z] Oct 02, 2025 9:06:24 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler initChannel
+INFO: Connected to new websocket client
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 02, 2025 9:06:24 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler initChannel\nINFO: Connected to new websocket client\n"}}
+[debug] [2025-10-02T09:06:24.928Z] Oct 02, 2025 9:06:24 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 02, 2025 9:06:24 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-10-02T09:06:24.965Z] Oct 02, 2025 9:06:24 AM io.grpc.netty.NettyServerTransport notifyTerminated
+INFO: Transport failed
+io.netty.handler.codec.http2.Http2Exception: Unexpected HTTP/1.x request: GET / 
+	at io.netty.handler.codec.http2.Http2Exception.connectionError(Http2Exception.java:107)
+	at io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.readClientPrefaceString(Http2ConnectionHandler.java:315)
+	at io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.decode(Http2ConnectionHandler.java:245)
+	at io.netty.handler.codec.http2.Http2ConnectionHandler.decode(Http2ConnectionHandler.java:451)
+	at io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530)
+	at io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469)
+	at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
+	at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1407)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
+	at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:918)
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:166)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:788)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:994)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 02, 2025 9:06:24 AM io.grpc.netty.NettyServerTransport notifyTerminated\nINFO: Transport failed\nio.netty.handler.codec.http2.Http2Exception: Unexpected HTTP/1.x request: GET / \n\tat io.netty.handler.codec.http2.Http2Exception.connectionError(Http2Exception.java:107)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.readClientPrefaceString(Http2ConnectionHandler.java:315)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.decode(Http2ConnectionHandler.java:245)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler.decode(Http2ConnectionHandler.java:451)\n\tat io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530)\n\tat io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469)\n\tat io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)\n\tat io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)\n\tat io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1407)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)\n\tat io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:918)\n\tat io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:166)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:788)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)\n\tat io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)\n\tat io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:994)\n\tat io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)\n\tat io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\n\n"}}
+[debug] [2025-10-02T09:06:24.999Z] Oct 02, 2025 9:06:24 AM io.grpc.netty.NettyServerTransport notifyTerminated
+INFO: Transport failed
+io.netty.handler.codec.http2.Http2Exception: HTTP/2 client preface string missing or corrupt. Hex dump for received bytes: 16030105a8010005a403039c158b54ae1e7235be4f13753c
+	at io.netty.handler.codec.http2.Http2Exception.connectionError(Http2Exception.java:107)
+	at io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.readClientPrefaceString(Http2ConnectionHandler.java:319)
+	at io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.decode(Http2ConnectionHandler.java:245)
+	at io.netty.handler.codec.http2.Http2ConnectionHandler.decode(Http2ConnectionHandler.java:451)
+	at io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530)
+	at io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469)
+	at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
+	at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1407)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
+	at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:918)
+	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:166)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:788)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:994)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 02, 2025 9:06:24 AM io.grpc.netty.NettyServerTransport notifyTerminated\nINFO: Transport failed\nio.netty.handler.codec.http2.Http2Exception: HTTP/2 client preface string missing or corrupt. Hex dump for received bytes: 16030105a8010005a403039c158b54ae1e7235be4f13753c\n\tat io.netty.handler.codec.http2.Http2Exception.connectionError(Http2Exception.java:107)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.readClientPrefaceString(Http2ConnectionHandler.java:319)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler$PrefaceDecoder.decode(Http2ConnectionHandler.java:245)\n\tat io.netty.handler.codec.http2.Http2ConnectionHandler.decode(Http2ConnectionHandler.java:451)\n\tat io.netty.handler.codec.ByteToMessageDecoder.decodeRemovalReentryProtection(ByteToMessageDecoder.java:530)\n\tat io.netty.handler.codec.ByteToMessageDecoder.callDecode(ByteToMessageDecoder.java:469)\n\tat io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:290)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)\n\tat io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)\n\tat io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1407)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440)\n\tat io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)\n\tat io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:918)\n\tat io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:166)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:788)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)\n\tat io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)\n\tat io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)\n\tat io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:994)\n\tat io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)\n\tat io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)\n\tat java.base/java.lang.Thread.run(Thread.java:1583)\n\n"}}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-10-02T09:07:02.488Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.490Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.491Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.491Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.492Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.493Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.493Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.493Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.494Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.494Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.495Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [none]
+[debug] [2025-10-02T09:07:02.496Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T09:07:02.527Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-10-02T09:07:02.528Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T09:07:02.532Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2025-10-02T09:07:02.533Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T09:07:02.536Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-10-02T09:07:02.536Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T09:07:02.539Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [none]
+[debug] [2025-10-02T09:07:02.539Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com x-goog-quota-user=projects/aircrew-hub
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-10-02T09:07:02.614Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.615Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.615Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.616Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.616Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.616Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.617Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.617Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.617Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.617Z] Checked if tokens are valid: true, expires at: 1759397639439
+[debug] [2025-10-02T09:07:02.617Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [none]
+[debug] [2025-10-02T09:07:02.618Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T09:07:02.619Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-10-02T09:07:02.620Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T09:07:02.621Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2025-10-02T09:07:02.621Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T09:07:02.623Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-10-02T09:07:02.623Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T09:07:02.625Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [none]
+[debug] [2025-10-02T09:07:02.626Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T09:07:03.257Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com 403
+[debug] [2025-10-02T09:07:03.258Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [omitted]
+[debug] [2025-10-02T09:07:03.327Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com 403
+[debug] [2025-10-02T09:07:03.328Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [omitted]
+[debug] [2025-10-02T09:07:03.362Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-10-02T09:07:03.362Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-10-02T09:07:03.376Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com 200
+[debug] [2025-10-02T09:07:03.376Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2025-10-02T09:07:03.409Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com 200
+[debug] [2025-10-02T09:07:03.412Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2025-10-02T09:07:03.421Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-10-02T09:07:03.422Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2025-10-02T09:07:03.440Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-10-02T09:07:03.441Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2025-10-02T09:07:03.442Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-10-02T09:07:03.442Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-10-02T09:07:03.630Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ 200
+[debug] [2025-10-02T09:07:03.630Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [omitted]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-10-02T09:07:03.644Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-10-02T09:07:03.645Z] > authorizing via signed-in user (chabouha.mahmoud@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-10-02T09:07:03.684Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-10-02T09:07:03.685Z] > authorizing via signed-in user (chabouha.mahmoud@gmail.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-10-02T09:07:03.695Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-10-02T09:07:03.695Z] > authorizing via signed-in user (chabouha.mahmoud@gmail.com)
+[debug] [2025-10-02T09:07:03.723Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ 200
+[debug] [2025-10-02T09:07:03.723Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [omitted]
+[debug] [2025-10-02T10:32:27.342Z] Oct 02, 2025 10:32:27 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler channelClosed
+INFO: Websocket client disconnected
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 02, 2025 10:32:27 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketChannelHandler channelClosed\nINFO: Websocket client disconnected\n"}}
+[debug] [2025-10-02T11:24:33.946Z] ----------------------------------------------------------------------
+[debug] [2025-10-02T11:24:33.951Z] Command:       /nix/store/ws50yvm6vzlzf7jzz6n7xh4szddrack1-nodejs-20.19.1/bin/node /nix/store/a3jfkfzmr1h8lmk31a8fbchkg5sp12q9-firebase-tools-14.16.0/lib/node_modules/firebase-tools/lib/bin/firebase.js emulators:start --project=demo-app --only=auth,firestore
+[debug] [2025-10-02T11:24:33.953Z] CLI Version:   14.16.0
+[debug] [2025-10-02T11:24:33.953Z] Platform:      linux
+[debug] [2025-10-02T11:24:33.954Z] Node Version:  v20.19.1
+[debug] [2025-10-02T11:24:33.954Z] Time:          Thu Oct 02 2025 11:24:33 GMT+0000 (Coordinated Universal Time)
+[debug] [2025-10-02T11:24:33.954Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-10-02T11:24:36.446Z] openjdk version "21.0.7" 2025-04-15
+
+[debug] [2025-10-02T11:24:36.447Z] OpenJDK Runtime Environment (build 21.0.7+6-nixos)
+OpenJDK 64-Bit Server VM (build 21.0.7+6-nixos, mixed mode, sharing)
+
+[debug] [2025-10-02T11:24:36.502Z] Parsed Java major version: 21
+[info] i  emulators: Starting emulators: firestore {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: firestore"}}
+[info] i  emulators: Detected demo project ID "demo-app", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail. {"metadata":{"emulator":{"name":"hub"},"message":"Detected demo project ID \"demo-app\", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail."}}
+[warn] ⚠  auth: Not starting the auth emulator, make sure you have run firebase init. {"metadata":{"emulator":{"name":"auth"},"message":"Not starting the auth emulator, make sure you have run firebase init."}}
+[debug] [2025-10-02T11:24:36.525Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4402}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4501}],"firestore":[{"address":"127.0.0.1","family":"IPv4","port":8081}],"firestore.websocket":[{"address":"127.0.0.1","family":"IPv4","port":9150}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2025-10-02T11:24:36.538Z] Emulator locator file path: /tmp/hub-demo-app.json
+[debug] [2025-10-02T11:24:36.538Z] [hub] writing locator at /tmp/hub-demo-app.json
+[debug] [2025-10-02T11:24:36.565Z] Ignoring unsupported arg: auto_download {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: auto_download"}}
+[debug] [2025-10-02T11:24:36.565Z] Ignoring unsupported arg: single_project_mode_error {"metadata":{"emulator":{"name":"firestore"},"message":"Ignoring unsupported arg: single_project_mode_error"}}
+[debug] [2025-10-02T11:24:36.566Z] Starting Firestore Emulator with command {"binary":"java","args":["-Dgoogle.cloud_firestore.debug_log_level=FINE","-Duser.language=en","-jar","/nix/store/3j1y38zp0l5fzbc60qxsn8f62pcn7bpg-emulators/cloud-firestore-emulator-v1.19.8.jar","--host","127.0.0.1","--port",8081,"--websocket_port",9150,"--project_id","demo-app","--rules","/home/user/studio/firestore.rules","--single_project_mode",true],"optionalArgs":["port","webchannel_port","host","rules","websocket_port","functions_emulator","seed_from_export","project_id","single_project_mode"],"joinArgs":false,"shell":false,"port":8081} {"metadata":{"emulator":{"name":"firestore"},"message":"Starting Firestore Emulator with command {\"binary\":\"java\",\"args\":[\"-Dgoogle.cloud_firestore.debug_log_level=FINE\",\"-Duser.language=en\",\"-jar\",\"/nix/store/3j1y38zp0l5fzbc60qxsn8f62pcn7bpg-emulators/cloud-firestore-emulator-v1.19.8.jar\",\"--host\",\"127.0.0.1\",\"--port\",8081,\"--websocket_port\",9150,\"--project_id\",\"demo-app\",\"--rules\",\"/home/user/studio/firestore.rules\",\"--single_project_mode\",true],\"optionalArgs\":[\"port\",\"webchannel_port\",\"host\",\"rules\",\"websocket_port\",\"functions_emulator\",\"seed_from_export\",\"project_id\",\"single_project_mode\"],\"joinArgs\":false,\"shell\":false,\"port\":8081}"}}
+[info] i  firestore: Firestore Emulator logging to firestore-debug.log {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator logging to firestore-debug.log"}}
+[debug] [2025-10-02T11:24:43.001Z] Oct 02, 2025 11:24:42 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start
+INFO: Started WebSocket server on ws://127.0.0.1:9150
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 02, 2025 11:24:42 AM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start\nINFO: Started WebSocket server on ws://127.0.0.1:9150\n"}}
+[debug] [2025-10-02T11:24:43.114Z] API endpoint: http:// {"metadata":{"emulator":{"name":"firestore"},"message":"API endpoint: http://"}}
+[debug] [2025-10-02T11:24:43.121Z] 127.0.0.1:8081
+If you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:
+
+   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8081
+
+If you are running a Firestore in Datastore Mode project, run:
+
+   export DATASTORE_EMULATOR_HOST= {"metadata":{"emulator":{"name":"firestore"},"message":"127.0.0.1:8081\nIf you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:\n\n   export FIRESTORE_EMULATOR_HOST=127.0.0.1:8081\n\nIf you are running a Firestore in Datastore Mode project, run:\n\n   export DATASTORE_EMULATOR_HOST="}}
+[debug] [2025-10-02T11:24:43.125Z] 127.0.0.1:8081
+
+Note: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.
+Dev App Server is now running.
+
+ {"metadata":{"emulator":{"name":"firestore"},"message":"127.0.0.1:8081\n\nNote: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.\nDev App Server is now running.\n\n"}}
+[info] ✔  firestore: Firestore Emulator UI websocket is running on 9150. {"metadata":{"emulator":{"name":"firestore"},"message":"Firestore Emulator UI websocket is running on 9150."}}
+[warn] ⚠  emulators: The Emulator UI is not starting because none of the running emulators have a UI component. {"metadata":{"emulator":{"name":"hub"},"message":"The Emulator UI is not starting because none of the running emulators have a UI component."}}
+[debug] [2025-10-02T11:24:43.208Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: connect ECONNREFUSED 127.0.0.1:40001. If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+└─────────────────────────────────────────────────────────────┘
+
+┌───────────┬────────────────┐
+│ Emulator  │ Host:Port      │
+├───────────┼────────────────┤
+│ Firestore │ 127.0.0.1:8081 │
+└───────────┴────────────────┘
+  Emulator Hub host: 127.0.0.1 port: 4402
+  Other reserved ports: 4501, 9150
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+[info] i  firestore: Change detected, updating rules... 
+[debug] [2025-10-02T11:24:44.345Z] >>> [apiv2][query] PUT http://127.0.0.1:8081/emulator/v1/projects/demo-app:securityRules [none]
+[debug] [2025-10-02T11:24:44.346Z] >>> [apiv2][body] PUT http://127.0.0.1:8081/emulator/v1/projects/demo-app:securityRules {"ignore_errors":true,"rules":{"files":[{"name":"security.rules","content":"\nrules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    // Deny all reads and writes by default.\n    // This is a secure default. You must explicitly\n    // enable access to specific collections.\n    match /{document=**} {\n      allow read, write: if false;\n    }\n\n    // Allow users to read and write their own documents\n    match /users/{userId} {\n      allow read, update: if request.auth != null && request.auth.uid == userId;\n    }\n\n    // Allow logged-in users to read from collections they need\n    match /courses/{docId} {\n      allow read: if request.auth != null;\n    }\n    match /documents/{docId} {\n      allow read: if request.auth != null;\n    }\n    match /flights/{docId} {\n      allow read: if request.auth != null;\n    }\n    \n    // Allow users to manage their own specific sub-collections or documents\n     match /userDocuments/{docId} {\n      allow read, create, update, delete: if request.auth != null && request.auth.uid == request.resource.data.userId;\n    }\n     match /userQuizAttempts/{docId} {\n      allow read, create: if request.auth != null && request.auth.uid == request.resource.data.userId;\n    }\n     match /userActivities/{docId} {\n      allow read, create, delete: if request.auth != null && request.auth.uid == request.resource.data.userId;\n    }\n\n    // Community hub: must be logged in to read, can only create/edit own posts\n    match /communityPosts/{postId} {\n      allow read: if request.auth != null;\n      allow create: if request.auth != null && request.auth.uid == request.resource.data.authorId;\n      allow update: if request.auth != null && (\n        (request.resource.data.likes != resource.data.likes && request.resource.data.authorId == resource.data.authorId) || // allow liking\n        (request.auth.uid == resource.data.authorId) // allow owner to edit\n      );\n    }\n    \n    // Requests: users can create for themselves, admins can update\n    match /requests/{requestId} {\n        allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;\n        allow read, update: if request.auth != null && (request.auth.uid == resource.data.userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');\n    }\n    \n    // Suggestions: logged-in users can create, can only upvote, admin can update status\n    match /suggestions/{suggestionId} {\n        allow read: if request.auth != null;\n        allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;\n        allow update: if request.auth != null && (\n            (request.resource.data.upvotes != resource.data.upvotes) || // allow upvoting\n            (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') // allow admin to update status/notes\n        );\n    }\n    \n    // Admin-only write access for core collections\n    match /alerts/{alertId} {\n        allow read: if request.auth != null;\n        allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';\n    }\n     match /trainingSessions/{sessionId} {\n        allow read: if request.auth != null;\n        allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';\n    }\n\n    // Safety reports are write-only for authenticated users to ensure confidentiality. Admins read them through backend functions.\n    match /safetyReports/{reportId} {\n        allow read: if false; // No one can read directly.\n        allow create: if request.auth != null;\n    }\n  }\n}\n"}]}}
+[debug] [2025-10-02T11:24:44.363Z] Oct 02, 2025 11:24:44 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected non-HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 02, 2025 11:24:44 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected non-HTTP/2 connection.\n"}}
+[debug] [2025-10-02T11:24:44.768Z] Oct 02, 2025 11:24:44 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+INFO: Detected HTTP/2 connection.
+ {"metadata":{"emulator":{"name":"firestore"},"message":"Oct 02, 2025 11:24:44 AM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead\nINFO: Detected HTTP/2 connection.\n"}}
+[debug] [2025-10-02T11:24:47.206Z] <<< [apiv2][status] PUT http://127.0.0.1:8081/emulator/v1/projects/demo-app:securityRules 200
+[debug] [2025-10-02T11:24:47.207Z] <<< [apiv2][body] PUT http://127.0.0.1:8081/emulator/v1/projects/demo-app:securityRules {}
+[info] ✔  firestore: Rules updated. 
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-10-02T11:25:15.803Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.804Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.804Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T11:25:15.809Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T11:25:15.809Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:15.854Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.855Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.855Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T11:25:15.856Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T11:25:15.857Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:15.862Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.862Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.863Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T11:25:15.864Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T11:25:15.864Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:15.869Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.869Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.869Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T11:25:15.869Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T11:25:15.870Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:15.873Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.873Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.873Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T11:25:15.874Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T11:25:15.874Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-10-02T11:25:15.937Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.937Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.938Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T11:25:15.938Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T11:25:15.938Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:15.941Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.941Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.942Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T11:25:15.942Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T11:25:15.942Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:15.945Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.945Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.945Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T11:25:15.946Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T11:25:15.946Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:15.949Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.950Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.950Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T11:25:15.950Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T11:25:15.950Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:15.954Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.954Z] Checked if tokens are valid: false, expires at: 1759397639439
+[debug] [2025-10-02T11:25:15.955Z] > refreshing access token with scopes: []
+[debug] [2025-10-02T11:25:15.955Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-10-02T11:25:15.955Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:16.026Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T11:25:16.027Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:16.065Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [none]
+[debug] [2025-10-02T11:25:16.065Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T11:25:16.121Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T11:25:16.125Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:16.152Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2025-10-02T11:25:16.152Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T11:25:16.162Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T11:25:16.163Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:16.187Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [none]
+[debug] [2025-10-02T11:25:16.187Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T11:25:16.206Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T11:25:16.206Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:16.236Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-10-02T11:25:16.237Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T11:25:16.241Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T11:25:16.241Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:16.259Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [none]
+[debug] [2025-10-02T11:25:16.259Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T11:25:16.317Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T11:25:16.320Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:16.351Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-10-02T11:25:16.351Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T11:25:16.377Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T11:25:16.377Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:16.400Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [none]
+[debug] [2025-10-02T11:25:16.402Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T11:25:16.409Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T11:25:16.409Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:16.429Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [none]
+[debug] [2025-10-02T11:25:16.430Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T11:25:16.454Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T11:25:16.455Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:16.497Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [none]
+[debug] [2025-10-02T11:25:16.497Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T11:25:16.505Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-10-02T11:25:16.505Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-10-02T11:25:16.550Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [none]
+[debug] [2025-10-02T11:25:16.550Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/aircrew-hub
+[debug] [2025-10-02T11:25:16.889Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com 403
+[debug] [2025-10-02T11:25:16.889Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [omitted]
+[debug] [2025-10-02T11:25:17.084Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com 200
+[debug] [2025-10-02T11:25:17.084Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2025-10-02T11:25:17.145Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-10-02T11:25:17.147Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-10-02T11:25:17.175Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com 403
+[debug] [2025-10-02T11:25:17.175Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseio.com [omitted]
+[debug] [2025-10-02T11:25:17.240Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com 200
+[debug] [2025-10-02T11:25:17.241Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2025-10-02T11:25:17.243Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-10-02T11:25:17.245Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2025-10-02T11:25:17.322Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ 200
+[debug] [2025-10-02T11:25:17.322Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [omitted]
+[debug] [2025-10-02T11:25:17.342Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com 200
+[debug] [2025-10-02T11:25:17.342Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasecrashlytics.googleapis.com [omitted]
+[debug] [2025-10-02T11:25:17.360Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com 200
+[debug] [2025-10-02T11:25:17.360Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/firebasedataconnect.googleapis.com [omitted]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2025-10-02T11:25:17.377Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2025-10-02T11:25:17.378Z] > authorizing via signed-in user (chabouha.mahmoud@gmail.com)
+[debug] [2025-10-02T11:25:17.467Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ 200
+[debug] [2025-10-02T11:25:17.467Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/aircrew-hub/services/ [omitted]

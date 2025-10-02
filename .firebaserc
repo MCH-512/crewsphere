@@ -1,7 +1,5 @@
 {
   "projects": {
     "default": "aircrew-hub"
-  },
-  "targets": {},
-  "etags": {}
+  }
 }
