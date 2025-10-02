@@ -1,3 +1,4 @@
+
 'use client'
 
 export default function Error({
@@ -15,31 +16,29 @@ export default function Error({
       alignItems: 'center',
       justifyContent: 'center',
       padding: '1rem',
-      backgroundColor: 'var(--background)',
-      color: 'var(--foreground)'
     }}>
       <div style={{
-        border: '1px solid hsl(var(--border))',
+        border: '1px solid #d0d7de',
         borderRadius: '0.5rem',
-        padding: '2rem',
+        padding: '1.5rem',
         width: '100%',
         maxWidth: '512px',
         textAlign: 'center',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        backgroundColor: 'var(--card)'
+        backgroundColor: '#ffffff'
       }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginTop: '1rem', color: 'hsl(var(--destructive))' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginTop: '1rem', color: '#cf222e' }}>
           Something went wrong!
         </h2>
-        <p style={{ marginTop: '0.5rem', color: 'hsl(var(--muted-foreground))' }}>
+        <p style={{ marginTop: '0.5rem', color: '#57606a' }}>
           An error occurred in this part of the application.
         </p>
         <button
           onClick={() => reset()}
           style={{
             marginTop: '1.5rem',
-            backgroundColor: 'hsl(var(--primary))',
-            color: 'hsl(var(--primary-foreground))',
+            backgroundColor: '#0969da',
+            color: 'white',
             padding: '0.5rem 1rem',
             borderRadius: '0.375rem',
             border: 'none',

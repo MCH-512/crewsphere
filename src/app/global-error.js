@@ -1,3 +1,4 @@
+
 'use client'
 
 export default function GlobalError({ error, reset }) {
@@ -14,7 +15,7 @@ export default function GlobalError({ error, reset }) {
           backgroundColor: '#f6f8fa',
           color: '#24292f'
         }}>
-          <div style={{ padding: '2rem', maxWidth: '450px', textAlign: 'center', border: '1px solid #e1e4e8', borderRadius: '6px', backgroundColor: '#fff' }}>
+          <div style={{ padding: '2rem', maxWidth: '450px', textAlign: 'center' }}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: '0 0 1rem 0' }}>
               Application Error
             </h2>
