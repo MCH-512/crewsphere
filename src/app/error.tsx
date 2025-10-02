@@ -1,12 +1,16 @@
-'use client'
+'use client';
 
 export default function Error({
   error,
   reset,
 }: {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }) {
+  React.useEffect(() => {
+    console.error(error);
+  }, [error]);
+
   return (
     <div style={{
       fontFamily: 'system-ui, sans-serif',
@@ -15,7 +19,6 @@ export default function Error({
       alignItems: 'center',
       justifyContent: 'center',
       padding: '1rem',
-      backgroundColor: '#fff'
     }}>
       <div style={{
         border: '1px solid #d0d7de',
@@ -50,5 +53,5 @@ export default function Error({
         </button>
       </div>
     </div>
-  )
+  );
 }
