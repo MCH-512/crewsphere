@@ -7,7 +7,7 @@ import React from 'react';
  * It uses plain JSX and inline styles to avoid any conflicts with the UI library or CSS setup
  * that might occur during a critical application-wide error.
  */
-export function GlobalError({ error, reset }) {
+export default function GlobalError({ error, reset }) {
   React.useEffect(() => {
     // Log the error to the console for debugging
     console.error(error);
@@ -63,6 +63,3 @@ export function GlobalError({ error, reset }) {
 
 // Set a display name for the component
 GlobalError.displayName = 'GlobalError';
-
-// Export as default for Next.js to recognize it as the global error handler
-export default GlobalError;
