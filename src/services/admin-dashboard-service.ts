@@ -21,53 +21,60 @@ export interface WeeklyTrendDataPoint {
 
 /**
  * Fetches and aggregates key statistics for the admin dashboard.
- * This function performs several count queries in parallel.
+ * This function performs several count queries in parallel and is cached.
  * @returns A promise that resolves to an AdminDashboardStats object or null on error.
  */
-export async function getAdminDashboardStats(): Promise<AdminDashboardStats | null> {
-    EmptySchema.parse({}); // Zod validation
-    const user = await getCurrentUser();
-    if (!user || user.role !== 'admin' || !isConfigValid || !db) {
-        return {
-            pendingRequests: 0, pendingDocValidations: 0, newSuggestions: 0,
-            pendingSwaps: 0, pendingReports: 0, activeAlerts: 0, openPullRequests: 0,
-        };
+export const getAdminDashboardStats = cache(
+    async (): Promise<AdminDashboardStats | null> => {
+        EmptySchema.parse({}); // Zod validation
+        const user = await getCurrentUser();
+        if (!user || user.role !== 'admin' || !isConfigValid || !db) {
+            return {
+                pendingRequests: 0, pendingDocValidations: 0, newSuggestions: 0,
+                pendingSwaps: 0, pendingReports: 0, activeAlerts: 0, openPullRequests: 0,
+            };
+        }
+
+        try {
+            const requestsQuery = query(collection(db, "requests"), where("status", "in", ["pending", "in-progress"]));
+            const validationsQuery = query(collection(db, "userDocuments"), where("status", "==", "pending-validation"));
+            const suggestionsQuery = query(collection(db, "suggestions"), where("status", "==", "new"));
+            const swapsQuery = query(collection(db, "flightSwaps"), where("status", "==", "pending_approval"));
+            const reportsQuery = query(collection(db, "purserReports"), where("status", "==", "submitted"));
+            const alertsQuery = query(collection(db, "alerts"), where("isActive", "==", true));
+
+            const [
+                requestsSnapshot, validationsSnapshot, suggestionsSnapshot,
+                swapsSnapshot, reportsSnapshot, alertsSnapshot
+            ] = await Promise.all([
+                getCountFromServer(requestsQuery), getCountFromServer(validationsQuery),
+                getCountFromServer(suggestionsQuery), getCountFromServer(swapsQuery),
+                getCountFromServer(reportsQuery), getCountFromServer(alertsQuery),
+            ]);
+
+            return {
+                pendingRequests: requestsSnapshot.data().count,
+                pendingDocValidations: validationsSnapshot.data().count,
+                newSuggestions: suggestionsSnapshot.data().count,
+                pendingSwaps: swapsSnapshot.data().count,
+                pendingReports: reportsSnapshot.data().count,
+                activeAlerts: alertsSnapshot.data().count,
+            };
+
+        } catch (error) {
+            console.error("Error fetching admin dashboard stats:", error);
+            return {
+                pendingRequests: 0, pendingDocValidations: 0, newSuggestions: 0,
+                pendingSwaps: 0, pendingReports: 0, activeAlerts: 0, openPullRequests: 0,
+            };
+        }
+    },
+    ['admin-dashboard-stats'], // Cache key
+    {
+        revalidate: 60, // Revalidate every 60 seconds
+        tags: ['admin-dashboard', 'stats'], // Tags for on-demand revalidation
     }
-
-    try {
-        const requestsQuery = query(collection(db, "requests"), where("status", "in", ["pending", "in-progress"]));
-        const validationsQuery = query(collection(db, "userDocuments"), where("status", "==", "pending-validation"));
-        const suggestionsQuery = query(collection(db, "suggestions"), where("status", "==", "new"));
-        const swapsQuery = query(collection(db, "flightSwaps"), where("status", "==", "pending_approval"));
-        const reportsQuery = query(collection(db, "purserReports"), where("status", "==", "submitted"));
-        const alertsQuery = query(collection(db, "alerts"), where("isActive", "==", true));
-
-        const [
-            requestsSnapshot, validationsSnapshot, suggestionsSnapshot,
-            swapsSnapshot, reportsSnapshot, alertsSnapshot
-        ] = await Promise.all([
-            getCountFromServer(requestsQuery), getCountFromServer(validationsQuery),
-            getCountFromServer(suggestionsQuery), getCountFromServer(swapsQuery),
-            getCountFromServer(reportsQuery), getCountFromServer(alertsQuery),
-        ]);
-
-        return {
-            pendingRequests: requestsSnapshot.data().count,
-            pendingDocValidations: validationsSnapshot.data().count,
-            newSuggestions: suggestionsSnapshot.data().count,
-            pendingSwaps: swapsSnapshot.data().count,
-            pendingReports: reportsSnapshot.data().count,
-            activeAlerts: alertsSnapshot.data().count,
-        };
-
-    } catch (error) {
-        console.error("Error fetching admin dashboard stats:", error);
-        return {
-            pendingRequests: 0, pendingDocValidations: 0, newSuggestions: 0,
-            pendingSwaps: 0, pendingReports: 0, activeAlerts: 0, openPullRequests: 0,
-        };
-    }
-}
+);
 
 
 /**

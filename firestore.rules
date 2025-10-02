@@ -4,39 +4,108 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    // Default deny: No user can read or write any data unless explicitly allowed.
-    match /{document=**} {
-      allow read, write: if false;
+    // Helper functions
+    function isAuth() {
+      return request.auth != null;
     }
     
-    // Users can read and update their own user profile document.
-    match /users/{userId} {
-      allow read, update: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Logged-in users can create documents in these collections.
-    match /suggestions/{suggestionId} {
-      allow create: if request.auth != null;
-    }
-    match /safetyReports/{reportId} {
-      allow create: if request.auth != null;
-    }
-    
-    // Logged-in users can read documents from these public-knowledge collections.
-    match /courses/{courseId} {
-      allow read: if request.auth != null;
-    }
-    match /documents/{documentId} {
-      allow read: if request.auth != null;
-    }
-    match /alerts/{alertId} {
-      allow read: if request.auth != null;
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
     }
 
-    // Allow admins to perform any action on any document.
-    // This is a broad rule for development; production rules should be more granular.
-    match /{document=**} {
-      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    function isAdmin() {
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
+
+    // Users can read/update their own profile. Admins can manage all.
+    match /users/{userId} {
+      allow read, update: if isOwner(userId) || isAdmin();
+      allow create, delete: if isAdmin();
+    }
+    
+    // Config and logs are admin-only
+    match /systemConfiguration/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /auditLogs/{logId} {
+        allow read: if isAdmin();
+        allow create: if isAuth(); // Any authenticated user can trigger a loggable event
+    }
+
+    // Read-only for authenticated users, write for admins
+    match /courses/{courseId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+    match /quizzes/{quizId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+    match /questions/{questionId} {
+       allow read: if isAuth();
+       allow write: if isAdmin();
+    }
+     match /certificateRules/{ruleId} {
+       allow read: if isAuth();
+       allow write: if isAdmin();
+    }
+    
+    // User-specific data
+    match /userProgress/{userId}/{doc=**} {
+      allow read, write: if isOwner(userId);
+    }
+    match /userQuizAttempts/{attemptId} {
+      allow create: if isAuth(); // User creates their own attempt
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+    }
+    match /userDocuments/{docId} {
+       allow read, create, update: if isAuth() && request.auth.uid == request.resource.data.userId;
+       allow read, update, delete: if isAuth() && request.auth.uid == resource.data.userId;
+       allow read, update, delete: if isAdmin();
+    }
+
+    // Collaborative/public data
+    match /suggestions/{suggestionId} {
+      allow read, create: if isAuth();
+      // Allow anyone to update upvotes, but not other fields
+      allow update: if isAuth() && request.resource.data.keys().hasAll(['upvotes', 'upvoteCount']) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes', 'upvoteCount']);
+      // Allow admin to update status and notes
+      allow update: if isAdmin();
+    }
+    match /communityPosts/{postId} {
+      allow read, create: if isAuth();
+      allow update: if isAuth() && (isOwner(resource.data.authorId) || request.resource.data.keys().hasAll(['likes', 'likeCount']));
+      allow delete: if isOwner(resource.data.authorId) || isAdmin();
+    }
+    
+    // Operational Data
+    match /flights/{flightId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+    match /purserReports/{reportId} {
+        allow read: if isAdmin() || isOwner(resource.data.userId);
+        allow create: if isAuth(); // Pursers/Admins can create
+        allow update: if isAdmin(); // Only admins can update status/notes
+    }
+    match /flightSwaps/{swapId} {
+        allow read: if isAuth();
+        allow create: if isAuth();
+        allow update: if isAuth() && (isOwner(resource.data.initiatingUserId) || isOwner(resource.data.requestingUserId) || isAdmin());
+    }
+     match /trainingSessions/{sessionId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+     match /userActivities/{activityId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+       allow create, delete: if isAdmin(); // Only admins can create/delete activities manually
+    }
+    
+     match /safetyReports/{reportId} {
+        allow create: if isAuth(); // Anyone can submit
+        allow read, update: if isAdmin(); // Only admins can read/update
+    }
+
   }
 }
