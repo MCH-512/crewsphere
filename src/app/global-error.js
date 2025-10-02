@@ -1,41 +1,25 @@
-'use client';
+'use client'
 
-/**
- * A failsafe, dependency-free global error boundary.
- * It uses plain JSX and inline styles to avoid any conflicts with the UI library or CSS setup
- * that might occur during a critical application-wide error.
- */
-export default function GlobalError({ error, reset }) {
-  // We log the error on the server, and this UI is just for the user.
-  // No useEffect or other hooks are used to maximize stability.
+export default function GlobalError({ reset }) {
   return (
     <html>
       <body>
         <div style={{
-          fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          fontFamily: 'system-ui, sans-serif',
           display: 'flex',
-          minHeight: '100vh',
+          height: '100vh',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: '#f6f8fa',
-          color: '#24292f',
-          textAlign: 'center',
-          padding: '1rem',
+          color: '#24292f'
         }}>
-          <div style={{
-            padding: '2rem',
-            maxWidth: '450px',
-            backgroundColor: '#ffffff',
-            border: '1px solid #d0d7de',
-            borderRadius: '0.75rem',
-            boxShadow: '0 8px 24px rgba(140, 149, 159, 0.2)'
-          }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: '0 0 1rem' }}>
-              Something Went Wrong
+          <div style={{ padding: '2rem', maxWidth: '450px', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: '0 0 1rem 0' }}>
+              Application Error
             </h2>
-            <p style={{ color: '#57606a', margin: '0 0 1.5rem' }}>
-              An unexpected application error occurred.
+            <p style={{ color: '#57606a', margin: '0 0 1.5rem 0' }}>
+              A critical error occurred in the application.
             </p>
             <button
               onClick={() => reset()}
@@ -56,5 +40,5 @@ export default function GlobalError({ error, reset }) {
         </div>
       </body>
     </html>
-  );
+  )
 }
