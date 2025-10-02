@@ -1,4 +1,3 @@
-
 'use client'
 
 export default function Error({
@@ -16,6 +15,7 @@ export default function Error({
       alignItems: 'center',
       justifyContent: 'center',
       padding: '1rem',
+      backgroundColor: '#fff'
     }}>
       <div style={{
         border: '1px solid #d0d7de',
@@ -24,8 +24,7 @@ export default function Error({
         width: '100%',
         maxWidth: '512px',
         textAlign: 'center',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        backgroundColor: '#ffffff'
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
       }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginTop: '1rem', color: '#cf222e' }}>
           Something went wrong!
