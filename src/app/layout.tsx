@@ -6,8 +6,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/contexts/auth-context';
 import { Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
-import { getLocale } from 'next-intl/server';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -16,13 +14,15 @@ export const metadata: Metadata = {
   description: 'A comprehensive portal for airline crew members.',
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const messages = await getMessages();
-  const locale = await getLocale();
+  // Messages are now handled by the root `i18n.ts` config and middleware
+  // We can provide an empty object here as it's no longer the primary source.
+  const messages = {};
+  const locale = 'en';
 
   return (
     <html lang={locale} suppressHydrationWarning>

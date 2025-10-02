@@ -1,5 +1,10 @@
+
 'use client';
 
+import * as React from 'react';
+
+// This is a robust, self-contained error boundary.
+// It uses inline styles and no external components to ensure it can render even if the rest of the app's styles or components fail.
 export default function Error({
   error,
   reset,
@@ -8,6 +13,7 @@ export default function Error({
   reset: () => void;
 }) {
   React.useEffect(() => {
+    // Log the error to the console for debugging
     console.error(error);
   }, [error]);
 
