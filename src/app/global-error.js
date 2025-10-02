@@ -1,11 +1,16 @@
 'use client'
 
-export default function GlobalError({ reset }) {
+/**
+ * A failsafe, dependency-free global error boundary.
+ * It uses plain JSX and inline styles to avoid any conflicts with the UI library or CSS setup
+ * that might occur during a critical application-wide error.
+ */
+export default function GlobalError({ error, reset }) {
   return (
     <html>
       <body>
         <div style={{
-          fontFamily: 'system-ui, sans-serif',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
           display: 'flex',
           height: '100vh',
           flexDirection: 'column',
@@ -14,12 +19,20 @@ export default function GlobalError({ reset }) {
           backgroundColor: '#f6f8fa',
           color: '#24292f'
         }}>
-          <div style={{ padding: '2rem', maxWidth: '450px', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: '0 0 1rem 0' }}>
+          <div style={{
+            border: '1px solid #d0d7de',
+            borderRadius: '0.5rem',
+            padding: '2rem',
+            maxWidth: '450px',
+            backgroundColor: '#ffffff',
+            boxShadow: '0 8px 24px rgba(140, 149, 159, 0.2)',
+            textAlign: 'center'
+          }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '600', margin: '0 0 1rem 0', color: '#cf222e' }}>
               Application Error
             </h2>
             <p style={{ color: '#57606a', margin: '0 0 1.5rem 0' }}>
-              A critical error occurred in the application.
+              A critical error occurred. This has been logged.
             </p>
             <button
               onClick={() => reset()}
